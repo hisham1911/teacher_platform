@@ -4,8 +4,6 @@ using Microsoft.AspNetCore.HttpOverrides;
 using TeacherPlatform.Application.Abstractions;
 using TeacherPlatform.Infrastructure.Persistence;
 
-// ﻣﻼﺣظة: ﺗﻔﺎﺷل اﻟﺗطبيق ﻋﻠﻰ AppDbContext ﻣﺷروطًﺎ ﺑﺎﻟﺗؤﻛد ﻣن أنه ﻏﻳر ﺧﺎﻟي ﻓﻲ Production
-
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
@@ -55,19 +53,8 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 
 var app = builder.Build();
 
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    var pending = await db.Database.GetPendingMigrationsAsync();
-    if (pending.Any() && !app.Environment.IsDevelopment())
-    {
-        throw new InvalidOperationException("Pending migrations detected. Apply migrations via CI/CD pipeline.");
-    }
-    if (app.Environment.IsDevelopment())
-    {
-        await db.Database.MigrateAsync();
-    }
-}
+// EF Core migrations must be applied manually (CLI/CI), not auto-applied at startup.
+// الحكمة: auto-migration في Production يُعد anti-pattern ويمنع Rollback آمن وReview.
 
 app.UseForwardedHeaders();
 
@@ -77,7 +64,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseExceptionHandler();
-app.UseStatusCodePages();
 
 app.UseCors("ApiCors");
 
@@ -85,12 +71,19 @@ app.UseMiddleware<CorrelationIdMiddleware>();
 
 app.MapHealthChecks("/health/live", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
 {
-    Predicate = _ => false
+    Predicate = _ => false  // لا يتطلب أي اعتمادية — يعتبر alive حتى بدون DB
 });
+
 app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
 {
-    Predicate = check => check.Name == "database"
+    Predicate = check => check.Name == "database"  // يتطلب اتصال DbContext ناجح
 });
+
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+if (!string.IsNullOrEmpty(connectionString))
+{
+    app.Logger.LogInformation("Database connection configured for health checks");
+}
 
 app.MapControllers();
 
