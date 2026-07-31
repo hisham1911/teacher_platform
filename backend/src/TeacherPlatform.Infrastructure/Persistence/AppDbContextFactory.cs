@@ -15,7 +15,9 @@ public sealed class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbConte
 
         var connectionString =
             Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
-            ?? "Host=localhost;Port=5432;Database=teacher_platform_dev;Username=teacher_dev;Password=teacher_dev_local_pw";
+            ?? throw new InvalidOperationException(
+                "ConnectionStrings__DefaultConnection environment variable is required for design-time tools. " +
+                "Set it to your local development database connection string.");
 
         builder.UseNpgsql(connectionString, options =>
         {

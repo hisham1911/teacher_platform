@@ -47,15 +47,25 @@ jobs:
   backend:
     name: Backend
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+
     services:
       postgres:
-        image: postgres:15
+        image: postgres:15-alpine
         env:
-          POSTGRES_USER: teacher_dev
-          POSTGRES_PASSWORD: teacher_dev_local_pw
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres_ci_password
           POSTGRES_DB: teacher_platform_ci
         ports:
           - '5432:5432'
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+
+    env:
+      INTEGRATION_TEST_DB: Host=localhost;Port=5432;Database=teacher_platform_ci;Username=postgres;Password=postgres_ci_password
 
     steps:
       - name: Checkout
@@ -72,7 +82,29 @@ jobs:
 
       - name: Build
         working-directory: backend
-        run: dotnet build
+        run: dotnet build --no-restore
+
+      - name: Wait for PostgreSQL
+        shell: bash
+        run: |
+          for i in $(seq 1 30); do
+            if pg_isready -h localhost -p 5432 -U postgres; then
+              echo "PostgreSQL is ready"
+              exit 0
+            fi
+            echo "Waiting for PostgreSQL... attempt $i"
+            sleep 2
+          done
+          echo "PostgreSQL did not become ready in time"
+          exit 1
+
+      - name: Setup test database
+        shell: bash
+        env:
+          PGPASSWORD: postgres_ci_password
+        run: |
+          psql -h localhost -U postgres -d teacher_platform_ci -c "SELECT 1" > /dev/null
+          echo "Test database ready"
 
       - name: Test Domain
         working-directory: backend
@@ -82,7 +114,7 @@ jobs:
         working-directory: backend
         run: dotnet test tests/TeacherPlatform.Api.Tests --no-build
 
-      - name: Test Integration
+      - name: Test Integration (PostgreSQL)
         working-directory: backend
         run: dotnet test tests/TeacherPlatform.IntegrationTests --no-build
 
