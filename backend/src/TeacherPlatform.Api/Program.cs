@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.HttpOverrides;
 using TeacherPlatform.Application.Abstractions;
 using TeacherPlatform.Infrastructure.Persistence;
 
+// ﻣﻼﺣظة: ﺗﻔﺎﺷل اﻟﺗطبيق ﻋﻠﻰ AppDbContext ﻣﺷروطًﺎ ﺑﺎﻟﺗؤﻛد ﻣن أنه ﻏﻳر ﺧﺎﻟي ﻓﻲ Production
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
