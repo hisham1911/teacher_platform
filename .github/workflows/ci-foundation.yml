@@ -1,0 +1,91 @@
+name: Foundation CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: ['**']
+
+jobs:
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install
+        working-directory: apps/web
+        run: npm install --registry https://registry.npmjs.org
+
+      - name: Lint
+        working-directory: apps/web
+        run: npm run lint
+
+      - name: Typecheck
+        working-directory: apps/web
+        run: npm run typecheck
+
+      - name: Test
+        working-directory: apps/web
+        run: npm run test
+
+      - name: Build
+        working-directory: apps/web
+        run: npm run build
+
+      - name: Verify dist
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "apps/web/dist/index.html")) { throw "dist missing" }
+
+  backend:
+    name: Backend
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: teacher_dev
+          POSTGRES_PASSWORD: teacher_dev_local_pw
+          POSTGRES_DB: teacher_platform_ci
+        ports:
+          - '5432:5432'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        working-directory: backend
+        run: dotnet restore
+
+      - name: Build
+        working-directory: backend
+        run: dotnet build
+
+      - name: Test Domain
+        working-directory: backend
+        run: dotnet test tests/TeacherPlatform.Domain.Tests --no-build
+
+      - name: Test Api
+        working-directory: backend
+        run: dotnet test tests/TeacherPlatform.Api.Tests --no-build
+
+      - name: Test Integration
+        working-directory: backend
+        run: dotnet test tests/TeacherPlatform.IntegrationTests --no-build
+
+      - name: Publish smoke
+        working-directory: backend
+        run: dotnet publish src/TeacherPlatform.Api/TeacherPlatform.Api.csproj -c Release -o obj/Release/publish-test --no-build

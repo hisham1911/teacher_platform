@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/TeacherPlatform.Api/TeacherPlatform.Api.csproj" />
+    <Project Path="src/TeacherPlatform.Application/TeacherPlatform.Application.csproj" />
+    <Project Path="src/TeacherPlatform.Domain/TeacherPlatform.Domain.csproj" />
+    <Project Path="src/TeacherPlatform.Infrastructure/TeacherPlatform.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/TeacherPlatform.Api.Tests/TeacherPlatform.Api.Tests.csproj" />
+    <Project Path="tests/TeacherPlatform.Domain.Tests/TeacherPlatform.Domain.Tests.csproj" />
+    <Project Path="tests/TeacherPlatform.IntegrationTests/TeacherPlatform.IntegrationTests.csproj" />
+  </Folder>
+</Solution>
