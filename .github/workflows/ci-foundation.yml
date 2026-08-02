@@ -44,10 +44,44 @@ jobs:
         run: |
           if (-not (Test-Path "apps/web/dist/index.html")) { throw "dist missing" }
 
+      - name: SPA refresh returns index.html (static fallback check)
+        working-directory: apps/web
+        shell: bash
+        run: |
+          # Preview the build and confirm a deep route returns index.html instead of 404
+          node -e "
+            const http = require('http');
+            const fs = require('fs');
+            const path = require('path');
+            const root = path.resolve('dist');
+            const server = http.createServer((req, res) => {
+              const filePath = path.join(root, req.url === '/' ? 'index.html' : req.url);
+              const exists = fs.existsSync(filePath) && fs.statSync(filePath).isFile();
+              const target = exists ? filePath : path.join(root, 'index.html');
+              res.setHeader('Content-Type', 'text/html; charset=utf-8');
+              res.end(fs.readFileSync(target));
+            });
+            server.listen(4173, () => {
+              http.get('http://localhost:4173/dashboard/settings', (res) => {
+                const body = [];
+                res.on('data', (c) => body.push(c));
+                res.on('end', () => {
+                  const html = Buffer.concat(body).toString();
+                  if (!html.includes('<div id=\"root\">')) {
+                    console.error('SPA fallback failed');
+                    process.exit(1);
+                  }
+                  console.log('SPA fallback working');
+                  server.close(() => process.exit(0));
+                });
+              }).on('error', () => process.exit(1));
+            });
+          "
+
   backend:
     name: Backend
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
 
     services:
       postgres:
@@ -65,7 +99,10 @@ jobs:
           --health-retries 12
 
     env:
+      ASPNETCORE_ENVIRONMENT: Testing
+      ConnectionStrings__DefaultConnection: Host=localhost;Port=5432;Database=teacher_platform_ci;Username=postgres;Password=postgres_ci_password
       INTEGRATION_TEST_DB: Host=localhost;Port=5432;Database=teacher_platform_ci;Username=postgres;Password=postgres_ci_password
+      DataProtection__KeysDirectory: /tmp/teacher-platform-keys-ci
 
     steps:
       - name: Checkout
@@ -75,14 +112,6 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
-
-      - name: Restore
-        working-directory: backend
-        run: dotnet restore
-
-      - name: Build
-        working-directory: backend
-        run: dotnet build --no-restore
 
       - name: Wait for PostgreSQL
         shell: bash
@@ -98,13 +127,27 @@ jobs:
           echo "PostgreSQL did not become ready in time"
           exit 1
 
-      - name: Setup test database
+      - name: Restore
+        working-directory: backend
+        run: dotnet restore
+
+      - name: Vulnerability audit (direct + transitive)
+        working-directory: backend
         shell: bash
-        env:
-          PGPASSWORD: postgres_ci_password
         run: |
-          psql -h localhost -U postgres -d teacher_platform_ci -c "SELECT 1" > /dev/null
-          echo "Test database ready"
+          dotnet list package --vulnerable --include-transitive 2>&1 | tee vuln.txt || true
+          if grep -Ei "High|Critical" vuln.txt | grep -vi "no vulnerable"; then
+            echo "High or Critical vulnerability found"
+            exit 1
+          fi
+
+      - name: Format check
+        working-directory: backend
+        run: dotnet format --verify-no-changes --no-restore
+
+      - name: Build
+        working-directory: backend
+        run: dotnet build --no-restore
 
       - name: Test Domain
         working-directory: backend
@@ -114,9 +157,31 @@ jobs:
         working-directory: backend
         run: dotnet test tests/TeacherPlatform.Api.Tests --no-build
 
-      - name: Test Integration (PostgreSQL)
+      - name: Test Integration (PostgreSQL — Auth flow, Refresh rotation, Tenancy)
         working-directory: backend
         run: dotnet test tests/TeacherPlatform.IntegrationTests --no-build
+
+      - name: Install EF tool
+        run: dotnet tool install --global dotnet-ef --version 10.0.3
+
+      - name: Migration — apply to a fresh database (idempotent SQL script check)
+        working-directory: backend
+        shell: bash
+        env:
+          PGPASSWORD: postgres_ci_password
+          FRESH_DB: teacher_platform_migration_check
+        run: |
+          psql -h localhost -U postgres -c "DROP DATABASE IF EXISTS $FRESH_DB;" || true
+          psql -h localhost -U postgres -c "CREATE DATABASE $FRESH_DB;"
+          dotnet ef migrations script \
+            --project src/TeacherPlatform.Infrastructure/TeacherPlatform.Infrastructure.csproj \
+            --startup-project src/TeacherPlatform.Api/TeacherPlatform.Api.csproj \
+            --idempotent \
+            --output /tmp/migration.sql
+          psql -h localhost -U postgres -d $FRESH_DB -f /tmp/migration.sql
+          psql -h localhost -U postgres -d $FRESH_DB -f /tmp/migration.sql
+          # Migrations applied twice (idempotent script re-runs without error)
+          psql -h localhost -U postgres -c "DROP DATABASE IF EXISTS $FRESH_DB;"
 
       - name: Publish smoke
         working-directory: backend

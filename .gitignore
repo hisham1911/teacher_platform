@@ -25,6 +25,12 @@ appsettings.Development.json
 TestResults/
 coverage/
 
+# Local email/Data Protection test artifacts (gitignored)
+.test-mail/
+.dev-mail/
+backend/src/TeacherPlatform.Api/.test-mail/
+backend/src/TeacherPlatform.Api/.dev-mail/
+
 # Tooling
 .vs/
 .idea/
@@ -35,3 +41,6 @@ coverage/
 # OS
 Thumbs.db
 .DS_Store
+
+# Local agent workspace
+.kilo/

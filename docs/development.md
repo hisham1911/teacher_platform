@@ -84,8 +84,11 @@ dotnet build
 dotnet test
 ```
 
-- `dotnet test` يشمل: Domain.Tests و Api.Tests (WebApplicationFactory) و IntegrationTests (Migrations على PostgreSQL حقيقية).
-- اختبارات Integration تحتاج PostgreSQL متاحة. في CI تعمل عبر service container؛ محليًا اضبط الـ Connection String أو شغّل قاعدة `teacher_platform_test`.
+- `dotnet test` يشمل: Domain.Tests و Api.Tests (WebApplicationFactory) و IntegrationTests (Auth Flow + Tenancy على PostgreSQL حقيقية).
+- اختبارات Integration تحتاج PostgreSQL متاحة. في CI تعمل عبر service container؛ محليًا شغّل PostgreSQL واضبط:
+  - `INTEGRATION_TEST_DB=Host=localhost;Port=5432;Database=teacher_platform_test;Username=postgres;Password=postgres`
+  - ثم `dotnet test tests/TeacherPlatform.IntegrationTests`
+- عند أول تشغيل محلي: قاعدة الاختبار تُنشأ تلقائيًا عبر الاختبار نفسه (لا حاجة لإنشائها يدويًا).
 
 ##         4. Migrations
 
@@ -106,7 +109,61 @@ dotnet ef migrations script -p src/TeacherPlatform.Infrastructure -s src/Teacher
 - راجع الـ SQL الناتج قبل أي نشر.
 - لا `Database.Migrate()` تلقائي عند تشغيل الأحداث في Production.
 
-## 5. نشر Vercel (الواجهة فقط)
+## 5. تشغيل Phase 1 كاملة (Identity + Tenancy + Frontend)
+
+### تشغيل PostgreSQL محليًا
+
+```powershell
+# تنزيل وتشغيل PostgreSQL 15 (native, لا Docker إلزامي)
+# بعد التثبيت: أنشئ قاعدة التطوير والاختبار
+psql -U postgres -c "CREATE DATABASE teacher_platform_dev;"
+psql -U postgres -c "CREATE DATABASE teacher_platform_test;"
+```
+
+أو عبر Docker للتطوير فقط:
+```bash
+docker compose -f docker-compose.dev.yml up -d
+```
+
+### API (Backend)
+
+```bash
+cd backend
+dotnet ef database update -p src/TeacherPlatform.Infrastructure -s src/TeacherPlatform.Api
+dotnet run --project src/TeacherPlatform.Api --urls http://localhost:5000
+```
+
+- OpenAPI: http://localhost:5000/openapi/v1.json
+- Liveness: http://localhost:5000/health/live
+
+### الواجهة
+
+```bash
+cd apps/web
+npm run dev
+```
+- ثم افتح `http://localhost:5173`.
+- سجّل مستخدمًا; اذهب إلى Onboarding ثم Dashboard.
+
+### تجربة تدفق الهوية الكامل يدوياً
+
+```bash
+# Register (Email confirmation تُلتقط في .test-mail/)
+curl -X POST http://localhost:5000/api/v1/auth/register -H "Content-Type: application/json" -d '{"email":"t@example.com","password":"SecurePassword123!","fullName":"Test User"}'
+# ثم Login:
+curl -X POST http://localhost:5000/api/v1/auth/login -H "Content-Type: application/json" -d '{"email":"t@example.com","password":"SecurePassword123!"}' -i
+# ثم /me مع Authorization: Bearer <token>
+curl http://localhost:5000/api/v1/auth/me -H "Authorization: Bearer <access-token>"
+```
+
+## 6. إعداد Testing لبيئة WebApplicationFactory
+
+- يُملي `TestWebApplicationFactory` البيئة `Testing` مسبقًا.
+- يحمّل `appsettings.Testing.json` تلقائيًا من مجلد الـAPI (CopyToOutputDirectory) → يحمل كل الـJWT/Auth/Lockout/Mail/RateLimit/CORS.
+- التعديلات الوحيدة المباشرة: `DataProtection__KeysDirectory` مسارات صياملة مؤقتة معزولة لكل factory، و`ConnectionStrings__DefaultConnection` من env.
+- لا يتم تعطيل `ValidateOnStart` ولا أي قيود أمنية للاختبار.
+
+## 7. نشر Vercel (الواجهة فقط)
 
 - Build command: `npm run build` من `apps/web`؛ Output: `dist`.
 - `vercel.json` يتضمن SPA fallback (rewrite إلى index.html) ولا يمرر `/api` إلى Vercel — عنوان الـ API يأتي من `VITE_API_BASE_URL`.
