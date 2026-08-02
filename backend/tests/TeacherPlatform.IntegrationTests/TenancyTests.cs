@@ -51,7 +51,12 @@ public class TenancyTests : IClassFixture<TestWebApplicationFactory>, IAsyncLife
         var userId = payload.GetProperty("user").GetProperty("id").GetString()!;
 
         var cookies = loginResponse.Headers.GetValues("Set-Cookie");
-        var refreshCookie = cookies.First(c => c.Contains("__Host-tp-refresh")).Split(';')[0].Split('=', 2)[1];
+        // يقبل كلا الاسمين — __Host-tp-refresh (Production مع Secure) و tp-refresh (Development/Testing بدون Secure)
+        // المقارنة الحساسة للحالة تتجنب التقاط __Host-tp-refresh عبر tp-refresh=
+        var refreshCookie = cookies.First(c =>
+                c.Contains("__Host-tp-refresh", StringComparison.Ordinal)
+                || c.Contains("tp-refresh=", StringComparison.Ordinal))
+            .Split(';')[0].Split('=', 2)[1];
 
         return (email, accessToken, refreshCookie, userId);
     }
