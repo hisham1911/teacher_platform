@@ -33,6 +33,15 @@ public class AppDbContext(
 
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
+    // Phase 2 — MediaAssets & Question Bank (Tenant-owned، Global Filters مطلوبة)
+    public DbSet<Domain.Media.MediaAsset> MediaAssets => Set<Domain.Media.MediaAsset>();
+    public DbSet<Domain.Questions.QuestionBank> QuestionBanks => Set<Domain.Questions.QuestionBank>();
+    public DbSet<Domain.Questions.Question> Questions => Set<Domain.Questions.Question>();
+    public DbSet<Domain.Questions.QuestionVersion> QuestionVersions => Set<Domain.Questions.QuestionVersion>();
+    public DbSet<Domain.Questions.QuestionOption> QuestionOptions => Set<Domain.Questions.QuestionOption>();
+    public DbSet<Domain.Questions.QuestionTag> QuestionTags => Set<Domain.Questions.QuestionTag>();
+    public DbSet<Domain.Questions.QuestionTagLink> QuestionTagLinks => Set<Domain.Questions.QuestionTagLink>();
+
     // Tenancy sets — تُخفى من النموذج عندما تُجمد Tenancy أثناء توليد AddIdentity
     private DbSet<Tenant>? _tenants;
     private DbSet<TenantMembership>? _tenantMemberships;
@@ -70,12 +79,28 @@ public class AppDbContext(
             modelBuilder.ApplyConfiguration(new Configurations.TenantConfiguration());
             modelBuilder.ApplyConfiguration(new Configurations.TenantMembershipConfiguration());
             modelBuilder.ApplyConfiguration(new Configurations.TenantSettingsConfiguration());
+
+            // Phase 2 — MediaAssets & Question Bank
+            modelBuilder.ApplyConfiguration(new Configurations.MediaAssetConfiguration());
+            modelBuilder.ApplyConfiguration(new Configurations.QuestionBankConfiguration());
+            modelBuilder.ApplyConfiguration(new Configurations.QuestionConfiguration());
+            modelBuilder.ApplyConfiguration(new Configurations.QuestionVersionConfiguration());
+            modelBuilder.ApplyConfiguration(new Configurations.QuestionOptionConfiguration());
+            modelBuilder.ApplyConfiguration(new Configurations.QuestionTagConfiguration());
+            modelBuilder.ApplyConfiguration(new Configurations.QuestionTagLinkConfiguration());
         }
         else
         {
             modelBuilder.Ignore<Tenant>();
             modelBuilder.Ignore<TenantMembership>();
             modelBuilder.Ignore<TenantSettings>();
+            modelBuilder.Ignore<Domain.Media.MediaAsset>();
+            modelBuilder.Ignore<Domain.Questions.QuestionBank>();
+            modelBuilder.Ignore<Domain.Questions.Question>();
+            modelBuilder.Ignore<Domain.Questions.QuestionVersion>();
+            modelBuilder.Ignore<Domain.Questions.QuestionOption>();
+            modelBuilder.Ignore<Domain.Questions.QuestionTag>();
+            modelBuilder.Ignore<Domain.Questions.QuestionTagLink>();
         }
 
         ApplyTenantQueryFilters(modelBuilder);

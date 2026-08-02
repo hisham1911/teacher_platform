@@ -305,6 +305,58 @@ namespace TeacherPlatform.Infrastructure.Persistence.Migrations
                     b.ToTable("UserProfiles", (string)null);
                 });
 
+            modelBuilder.Entity("TeacherPlatform.Domain.Media.MediaAsset", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("MimeType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("ObjectKey")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("OriginalFileName")
+                        .IsRequired()
+                        .HasMaxLength(260)
+                        .HasColumnType("character varying(260)");
+
+                    b.Property<long>("SizeBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ObjectKey")
+                        .IsUnique();
+
+                    b.HasIndex("TenantId");
+
+                    b.ToTable("MediaAssets", (string)null);
+                });
+
             modelBuilder.Entity("TeacherPlatform.Domain.Metadata.SystemMessage", b =>
                 {
                     b.Property<Guid>("Id")
@@ -330,6 +382,230 @@ namespace TeacherPlatform.Infrastructure.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("SystemMessages");
+                });
+
+            modelBuilder.Entity("TeacherPlatform.Domain.Questions.Question", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("BankId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CurrentVersionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BankId", "TenantId");
+
+                    b.HasIndex("TenantId", "BankId");
+
+                    b.ToTable("Questions", (string)null);
+                });
+
+            modelBuilder.Entity("TeacherPlatform.Domain.Questions.QuestionBank", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId");
+
+                    b.ToTable("QuestionBanks", (string)null);
+                });
+
+            modelBuilder.Entity("TeacherPlatform.Domain.Questions.QuestionOption", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsCorrect")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("OptionText")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid>("QuestionVersionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("QuestionVersionId", "SortOrder")
+                        .IsUnique();
+
+                    b.HasIndex("QuestionVersionId", "TenantId");
+
+                    b.ToTable("QuestionOptions", (string)null);
+                });
+
+            modelBuilder.Entity("TeacherPlatform.Domain.Questions.QuestionTag", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)");
+
+                    b.Property<string>("NormalizedName")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "NormalizedName")
+                        .IsUnique();
+
+                    b.ToTable("QuestionTags", (string)null);
+                });
+
+            modelBuilder.Entity("TeacherPlatform.Domain.Questions.QuestionTagLink", b =>
+                {
+                    b.Property<Guid>("QuestionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TagId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("QuestionId", "TagId");
+
+                    b.HasIndex("QuestionId", "TenantId");
+
+                    b.HasIndex("TagId", "TenantId");
+
+                    b.ToTable("QuestionTagLinks", (string)null);
+                });
+
+            modelBuilder.Entity("TeacherPlatform.Domain.Questions.QuestionVersion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ConfigJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Difficulty")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Explanation")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("Language")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<Guid?>("MediaAssetId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Prompt")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<Guid>("QuestionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("QuestionType")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("VersionNumber")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId");
+
+                    b.HasIndex("MediaAssetId", "TenantId");
+
+                    b.HasIndex("QuestionId", "TenantId");
+
+                    b.HasIndex("QuestionId", "VersionNumber")
+                        .IsUnique();
+
+                    b.ToTable("QuestionVersions", (string)null);
                 });
 
             modelBuilder.Entity("TeacherPlatform.Domain.Tenancy.Tenant", b =>
@@ -535,6 +811,71 @@ namespace TeacherPlatform.Infrastructure.Persistence.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("TeacherPlatform.Domain.Questions.Question", b =>
+                {
+                    b.HasOne("TeacherPlatform.Domain.Questions.QuestionBank", "Bank")
+                        .WithMany("Questions")
+                        .HasForeignKey("BankId", "TenantId")
+                        .HasPrincipalKey("Id", "TenantId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Bank");
+                });
+
+            modelBuilder.Entity("TeacherPlatform.Domain.Questions.QuestionOption", b =>
+                {
+                    b.HasOne("TeacherPlatform.Domain.Questions.QuestionVersion", "QuestionVersion")
+                        .WithMany("Options")
+                        .HasForeignKey("QuestionVersionId", "TenantId")
+                        .HasPrincipalKey("Id", "TenantId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("QuestionVersion");
+                });
+
+            modelBuilder.Entity("TeacherPlatform.Domain.Questions.QuestionTagLink", b =>
+                {
+                    b.HasOne("TeacherPlatform.Domain.Questions.Question", "Question")
+                        .WithMany("TagLinks")
+                        .HasForeignKey("QuestionId", "TenantId")
+                        .HasPrincipalKey("Id", "TenantId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("TeacherPlatform.Domain.Questions.QuestionTag", "Tag")
+                        .WithMany("QuestionLinks")
+                        .HasForeignKey("TagId", "TenantId")
+                        .HasPrincipalKey("Id", "TenantId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Question");
+
+                    b.Navigation("Tag");
+                });
+
+            modelBuilder.Entity("TeacherPlatform.Domain.Questions.QuestionVersion", b =>
+                {
+                    b.HasOne("TeacherPlatform.Domain.Media.MediaAsset", "MediaAsset")
+                        .WithMany()
+                        .HasForeignKey("MediaAssetId", "TenantId")
+                        .HasPrincipalKey("Id", "TenantId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("TeacherPlatform.Domain.Questions.Question", "Question")
+                        .WithMany("Versions")
+                        .HasForeignKey("QuestionId", "TenantId")
+                        .HasPrincipalKey("Id", "TenantId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("MediaAsset");
+
+                    b.Navigation("Question");
+                });
+
             modelBuilder.Entity("TeacherPlatform.Domain.Tenancy.TenantMembership", b =>
                 {
                     b.HasOne("TeacherPlatform.Domain.Tenancy.Tenant", "Tenant")
@@ -560,6 +901,28 @@ namespace TeacherPlatform.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("TeacherPlatform.Domain.Identity.ApplicationUser", b =>
                 {
                     b.Navigation("Profile");
+                });
+
+            modelBuilder.Entity("TeacherPlatform.Domain.Questions.Question", b =>
+                {
+                    b.Navigation("TagLinks");
+
+                    b.Navigation("Versions");
+                });
+
+            modelBuilder.Entity("TeacherPlatform.Domain.Questions.QuestionBank", b =>
+                {
+                    b.Navigation("Questions");
+                });
+
+            modelBuilder.Entity("TeacherPlatform.Domain.Questions.QuestionTag", b =>
+                {
+                    b.Navigation("QuestionLinks");
+                });
+
+            modelBuilder.Entity("TeacherPlatform.Domain.Questions.QuestionVersion", b =>
+                {
+                    b.Navigation("Options");
                 });
 
             modelBuilder.Entity("TeacherPlatform.Domain.Tenancy.Tenant", b =>

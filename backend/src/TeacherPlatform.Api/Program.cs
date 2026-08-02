@@ -161,6 +161,11 @@ builder.Services.AddAuthorization(options =>
         p.RequireAuthenticatedUser();
         p.Requirements.Add(new TenantRoleRequirement(TenantRoleRequirement.OwnerOnly));
     });
+    options.AddPolicy(AuthorizationPolicies.TenantContentManagement, p =>
+    {
+        p.RequireAuthenticatedUser();
+        p.Requirements.Add(new TenantRoleRequirement(TenantRoleRequirement.OwnerOrTeacher));
+    });
 });
 builder.Services.AddScoped<IAuthorizationHandler, TenantRoleHandler>();
 
@@ -229,6 +234,36 @@ builder.Services.AddScoped<TenantService>();
 builder.Services.AddScoped<TenantBypassService>();
 builder.Services.AddScoped<RefreshTokenService>();
 builder.Services.AddSingleton<JwtTokenGenerator>();
+
+// ---------- Phase 2: Object Storage + Questions ----------
+builder.Services.AddOptions<TeacherPlatform.Application.Options.StorageOptions>()
+    .Bind(configuration.GetSection(TeacherPlatform.Application.Options.StorageOptions.SectionName))
+    .ValidateDataAnnotations()
+    .Validate(o => o.Provider is "Local" or "S3", "Storage Provider must be Local or S3.")
+    .Validate(o => o.Provider != "S3"
+        || (!string.IsNullOrWhiteSpace(o.Endpoint) && !string.IsNullOrWhiteSpace(o.Bucket)
+            && !string.IsNullOrWhiteSpace(o.AccessKey) && !string.IsNullOrWhiteSpace(o.SecretKey)),
+        "S3 storage requires Endpoint/Bucket/AccessKey/SecretKey.")
+    .ValidateOnStart();
+
+var storageOptions = configuration.GetSection(TeacherPlatform.Application.Options.StorageOptions.SectionName)
+    .Get<TeacherPlatform.Application.Options.StorageOptions>() ?? new TeacherPlatform.Application.Options.StorageOptions();
+if (string.Equals(storageOptions.Provider, "S3", StringComparison.OrdinalIgnoreCase))
+{
+    builder.Services.AddSingleton<TeacherPlatform.Application.Abstractions.IObjectStorage>(
+        _ => new TeacherPlatform.Infrastructure.Services.S3ObjectStorage(storageOptions));
+}
+else
+{
+    var storageRoot = storageOptions.LocalRootPath;
+    builder.Services.AddSingleton<TeacherPlatform.Application.Abstractions.IObjectStorage>(sp =>
+    {
+        var env = sp.GetRequiredService<Microsoft.AspNetCore.Hosting.IWebHostEnvironment>();
+        return new TeacherPlatform.Infrastructure.Services.LocalObjectStorage(env, storageRoot);
+    });
+}
+builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.MediaService>();
+builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.QuestionService>();
 
 // ---------- Health Checks ----------
 builder.Services.AddHealthChecks().AddDbContextCheck<AppDbContext>("database");

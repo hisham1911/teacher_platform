@@ -8,6 +8,9 @@ public static class AuthorizationPolicies
     public const string TenantOwner = "TenantOwner";
     public const string TenantMemberManagement = "TenantMemberManagement";
     public const string TenantSettingsManagement = "TenantSettingsManagement";
+
+    /// <summary>كتابة المحتوى التعليمي (بنوك، أسئلة): Owner وTeacher فقط — Assistant/Viewer للقراءة.</summary>
+    public const string TenantContentManagement = "TenantContentManagement";
 }
 
 public static class RateLimitPolicies

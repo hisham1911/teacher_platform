@@ -18,6 +18,9 @@ public sealed class TenantRoleRequirement : IAuthorizationRequirement
     /// <summary>Owner فقط.</summary>
     public const string OwnerOnly = "OwnerOnly";
 
+    /// <summary>Owner أو Teacher — إدارة المحتوى التعليمي (بنوك أسئلة، أسئلة، وسائط).</summary>
+    public const string OwnerOrTeacher = "OwnerOrTeacher";
+
     public TenantRoleRequirement(string mode)
     {
         Mode = mode;
@@ -75,6 +78,13 @@ public sealed class TenantRoleHandler : AuthorizationHandler<TenantRoleRequireme
         }
 
         if (requirement.Mode == TenantRoleRequirement.OwnerOnly && membership.Role == TenantMemberRole.Owner)
+        {
+            context.Succeed(requirement);
+            return;
+        }
+
+        if (requirement.Mode == TenantRoleRequirement.OwnerOrTeacher
+            && membership.Role is TenantMemberRole.Owner or TenantMemberRole.Teacher)
         {
             context.Succeed(requirement);
         }

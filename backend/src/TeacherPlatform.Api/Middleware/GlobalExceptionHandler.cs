@@ -36,6 +36,8 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
                     "NotFound" => StatusCodes.Status404NotFound,
                     "SlugConflict" => StatusCodes.Status409Conflict,
                     "DuplicateMember" => StatusCodes.Status409Conflict,
+                    "Conflict" => StatusCodes.Status409Conflict,
+                    "FileTooLarge" => StatusCodes.Status413PayloadTooLarge,
                     _ => StatusCodes.Status400BadRequest
                 };
                 title = serviceError.ErrorCode;
