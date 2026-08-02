@@ -125,22 +125,27 @@
 - `/dashboard/questions/:id/versions` — Timeline صالح/غير صالح تواريخيًا.
 - RTL/LTR: كل الحقول النصية تعتمد `dir` حسب `language` المختار للسؤال.
 
-## Commits (ازدة Phase 2 فقط)
+## Commits و Final SHA
 
-تنفذ في نهاية هذه الرسالة بهذا النمط:
-- `feat(backend): Phase 2 question bank & media storage` — ملفات Domain/Application/Infrastructure/Api للمرحلة.
-- `feat(frontend): Phase 2 question management & preview` — صفحات وفرص endpoints الجديدة.
-- `docs: Phase 2 ADRs and completion report` — ADR 003/004 وdocs api/database/architecture/development/هذا الملف.
-- `test: Phase 2 validation, media upload, tenancy иправления` — مجموعات Domain.Tests + IntegrationTests.
-- `chore: ignore local media storage dirs` — `.gitignore` update.
+**Commits منفذة ضمن Phase 2 closure:**
+- `bcce058` feat(backend): Phase 2 question bank, media storage, and versioning
+- `78f70ad` feat(frontend): Phase 2 question management pages and media preview
+- `04cf5e2` test: Phase 2 question validation, media upload, versioning and tenancy isolation
+- `8f651d4` docs: Phase 2 openAPI/database/development docs and ADRs + completion report
 
-> ملاحظة: TenancyTests.cs extension (تستجيب لكلا أسماء الكوكي) احتياج لتوافق الاختبارات مع إصلاح المصادقة `1d9edae`، ولا يمس هذا ملفات العامل الآخر ولا يعيد تصميم Phase 1.
+**Commits إغلاق إضافية لحالة نظيفة (تبقّى من الوكيل الآخر ولم تُدخل في 67b/1d9):**
+- `18c624a` fix(backend): UrlEncode email action links and add plain-text dev mail output
+- `9d614a5` chore(frontend): lock @vitejs/plugin-react-swc dependency and proxy dev config
 
-## التغييرات التي لاحظتها ولم ألمسها
+**Final SHA:** `9d614a51b2353dd7cc3e95bb608bdc00e8f7ffd7`
 
-- Commit `67b48bf`: إصلاح النصوص العربية المشوهة ورابط Dev Mail (`index.html` وFileEmailSender وAuthService link builder).
-- Commit `1d9edae`: استمرار session بعد F5/restart (Session persistence + cookie naming per environment + bootstrap changes) في `session.ts`, `require-auth.tsx`, `endpoints.ts` (status:'authenticated'), `vite.config.ts`, `package.json` (@vitejs/plugin-react-swc).
-- `apps/web/session-repro.mjs` — سكربت تشخيص غير ملتزم؛ لا علاقة لي به ولن ألغيه.
+**Git:** `git status --short` فارغ (تم التحقق 2026-08-03T00:32).
+
+## التغييرات التي لاحظتها من وكيل آخر
+
+- Commit `67b48bf`: إصلاح النصوص العربية المشوهة ورابط Dev Mail — يتضمن الجزء الأكبر ضمن untrack. **أي بقايا (AuthService/FileEmailSender)** التي لم تدخل الـcommit ذاته التُزمت هنا في `18c624a` لأنها مطلوبة لنفس الإصلاح.
+- Commit `1d9edae`: استمرار session بعد F5/restart. **أي بقايا (package.json/package-lock.json/vite.config.ts)** المطلوبة لهذا الإصلاح التُزمت في `9d614a5`.
+- نتيجة: Worktree نظيف وFinal SHA يمثّل حالة يمكن إعادة بنائها من الـCommits فقط.
 
 ## نقص حقيقي (غير مُجمل)
 
