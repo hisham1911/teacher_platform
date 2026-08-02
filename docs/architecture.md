@@ -54,3 +54,14 @@ ASP.NET Core Web API (Kestrel خلف Nginx)
 - الواجهة: Vercel (Static SPA مع rewrite إلى index.html).
 - الـ API: Linux VPS + Nginx + systemd، مع `ForwardedHeaders` مهيأة مسبقًا.
 - SignalR سيُضاف للمسابقات المباشرة (Phase 6) بنفس الـ API.
+
+## Phase 2 — Media و Object Storage
+
+- كل الوسائط تُخزن كـObjects خارج PostgreSQL (لا Binary).
+- تجريد `IObjectStorage` مع تنفيذ Local (`Provider=Local`) للتطوير/الاختبارات:
+  يحفظ تحت `.media-storage/` ولا يكشف المسار؛ كل القراءة تمر عبر
+  `GET /api/v1/tenants/{tenantId}/media/{id}/content` بعد تحقق العضوية والمستأجر.
+- تنفيذ S3-compatible موجودكعلاج للإنتاج، لكن لا يُفعّل إلا بعد اختيار SDK،
+  وبيانات الاعتماد في Secret دائمًا — لا في المستودع.
+- Question/QuestionVersion: نموذج تعدد نسخ مع إصدارات Immutable، وRowVersion (xmin)
+  للحماية من التعديل المتزامن: أي `<baseVersion>` قديمة تعيد 409.

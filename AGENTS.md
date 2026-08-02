@@ -16,6 +16,13 @@ docs/              توثيق المعمارية والتشغيل والقرار
 scripts/           سكربتات مساعدة
 ```
 
+## Phase 2 (بنك الأسئلة والوسائط)
+
+- جداول جديدة: MediaAssets, QuestionBanks, Questions, QuestionVersions, QuestionOptions, QuestionTags, QuestionTagLinks.
+- تجريد IObjectStorage مع تنفيذ Local للتطوير/الاختبارات (مساحة `.media-storage/` مستبعدة) وS3-compatible fail-fast للإنتاج.
+- رفع الوسائط عبر `/api/v1/tenants/{id}/media` مع فحص Magic bytes والحجم (5MB صور، 20MB صوت في البيئة الافتراضية).
+- الأسئلة تعتمد تعدد نسخ Immutable (الإصدار رقم 1 عند الإنشاء، وأي تعديل = نسخة جديدة، وBaseVersion mismatch → 409).
+
 ## قواعد إلزامية
 
 - الواجهة لا تتصل بقاعدة البيانات مباشرة أبدًا؛ كل الطلبات عبر `src/data/api-client/`.

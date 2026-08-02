@@ -31,6 +31,12 @@ coverage/
 backend/src/TeacherPlatform.Api/.test-mail/
 backend/src/TeacherPlatform.Api/.dev-mail/
 
+# Local object storage (Phase 2)
+.media-storage/
+.test-media-storage/
+**/.media-storage/
+**/.test-media-storage/
+
 # Tooling
 .vs/
 .idea/

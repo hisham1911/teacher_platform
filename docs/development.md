@@ -152,9 +152,46 @@ npm run dev
 curl -X POST http://localhost:5000/api/v1/auth/register -H "Content-Type: application/json" -d '{"email":"t@example.com","password":"SecurePassword123!","fullName":"Test User"}'
 # ثم Login:
 curl -X POST http://localhost:5000/api/v1/auth/login -H "Content-Type: application/json" -d '{"email":"t@example.com","password":"SecurePassword123!"}' -i
-# ثم /me مع Authorization: Bearer <token>
+# ثم /me مع Authorization: Bearer <access-token>
 curl http://localhost:5000/api/v1/auth/me -H "Authorization: Bearer <access-token>"
 ```
+
+### Phase 2 — Media و Question Bank
+
+- التخزين المحلي يكتب تحت `backend/src/TeacherPlatform.Api/.media-storage/` (مستبعد Git) افتراضيًا. مسارات تنظيفه عند إعادة الضبط:
+  - Development: `Remove-Item -Recurse -Force backend/src/TeacherPlatform.Api/.media-storage` (بلا ضرر).
+  - Testing: المجلد `.test-media-storage`؛ يعاد تهيئته عند كل تشغيل جديد من WebApplicationFactory.
+- رفع ملف من curl (مع توكن صالح ومعرف مستأجر حقيقي):
+
+```bash
+curl -i -X POST http://localhost:5000/api/v1/tenants/{tenantId}/media \
+  -H "Authorization: Bearer <access-token>" \
+  -H "X-Tenant-Id: {tenantId}" \
+  -F "file=@/path/to/image.png;type=image/png"
+```
+
+- بنك أسئلة ثم سؤال اختيار متعدد:
+
+```bash
+curl -X POST http://localhost:5000/api/v1/tenants/{tenantId}/question-banks \
+  -H "Authorization: Bearer <access-token>" -H "X-Tenant-Id: {tenantId}" \
+  -H "Content-Type: application/json" -d '{"name":"General"}'
+
+curl -X POST http://localhost:5000/api/v1/tenants/{tenantId}/questions \
+  -H "Authorization: Bearer <access-token>" -H "X-Tenant-Id: {tenantId}" \
+  -H "Content-Type: application/json" \
+  -d '{"bankId":"<bank-guid>","questionType":"MultipleChoice","prompt":"ما عاصمة مصر؟","options":[{"text":"القاهرة","isCorrect":true},{"text":"عمان","isCorrect":false}]}'
+```
+
+- إنشاء نسخة جديدة باستخدام baseVersion الحالي من `GET /questions/{id}`:
+
+```bash
+curl -X POST http://localhost:5000/api/v1/tenants/{tenantId}/questions/{questionId}/versions \
+  -H "Authorization: Bearer <access-token>" -H "X-Tenant-Id: {tenantId}" \
+  -H "Content-Type: application/json" \
+  -d '{"prompt":"النص الجديد","options":[{"text":"A","isCorrect":true},{"text":"B","isCorrect":false}],"baseVersion":<xmin-number>}'
+```
+
 
 ## 6. إعداد Testing لبيئة WebApplicationFactory
 
