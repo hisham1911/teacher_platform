@@ -5,7 +5,8 @@ namespace TeacherPlatform.Infrastructure.Persistence;
 
 /// <summary>
 /// مصنع يستخدمه dotnet-ef لتوليد Migrations دون تشغيل التطبيق الكامل.
-/// يقرأ Connection String من متغيرات البيئة أو يستخدم قيمة تطوير افتراضية محلية.
+/// يقرأ Connection String من `ConnectionStrings__DefaultConnection` إن وُجد،
+/// وإلا يفترض قيمة تطوير محلية غير سرية مناسبة فقط لأدوات Design-Time.
 /// </summary>
 public sealed class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
 {
@@ -15,15 +16,14 @@ public sealed class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbConte
 
         var connectionString =
             Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
-            ?? throw new InvalidOperationException(
-                "ConnectionStrings__DefaultConnection environment variable is required for design-time tools. " +
-                "Set it to your local development database connection string.");
+            ?? "Host=localhost;Port=5432;Database=teacher_platform_dev;Username=teacher_dev;Password=teacher_dev_local_pw";
 
         builder.UseNpgsql(connectionString, options =>
         {
             options.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName);
         });
 
-        return new AppDbContext(builder.Options);
+        // سياق مستأجر غير محلول في زمن التصميم — الفلاتر تُقيّم وقت التنفيذ وليس بناء النموذج.
+        return new AppDbContext(builder.Options, new TenantContext());
     }
 }

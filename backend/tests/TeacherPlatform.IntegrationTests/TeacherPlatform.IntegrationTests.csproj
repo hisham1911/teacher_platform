@@ -20,8 +20,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\TeacherPlatform.Infrastructure\TeacherPlatform.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\TeacherPlatform.Api\TeacherPlatform.Api.csproj" />
+    <ProjectReference Include="..\..\src\TeacherPlatform.Domain\TeacherPlatform.Domain.csproj" />
+    <ProjectReference Include="..\..\src\TeacherPlatform.Application\TeacherPlatform.Application.csproj" />
   </ItemGroup>
 
 </Project>
