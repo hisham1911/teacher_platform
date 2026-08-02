@@ -12,7 +12,6 @@ public sealed class IssuedRefreshToken
     public string RawToken { get; set; } = string.Empty;
     public DateTime ExpiresAt { get; set; }
     public Guid FamilyId { get; set; }
-    public string CookieName { get; set; } = string.Empty;
 }
 
 public enum RefreshRotationResult
@@ -34,7 +33,12 @@ public enum RefreshRotationResult
 /// </summary>
 public sealed class RefreshTokenService
 {
-    public const string CookieName = "__Host-tp-refresh";
+    // __Host- prefix يتطلب متصفحات تفرض Secure=true + Path=/ + بدون Domain.
+    // في Development (HTTP بدون Secure) المُتصفح يرفض تخزين كوكي بهذا الاسم،
+    // فيختفي الجلسة بعد F5. نستخدم اسمًا آمنًا عاديًا في Development ونُبقي
+    // اسم __Host- الصارم عند تفعيل Secure في Production.
+    public const string CookieNameSecure = "__Host-tp-refresh";
+    public const string CookieNameDev = "tp-refresh";
 
     private readonly AppDbContext _db;
     private readonly IClock _clock;
@@ -75,8 +79,7 @@ public sealed class RefreshTokenService
         {
             RawToken = rawToken,
             ExpiresAt = record.ExpiresAt,
-            FamilyId = familyId,
-            CookieName = CookieName
+            FamilyId = familyId
         };
     }
 
@@ -166,8 +169,7 @@ public sealed class RefreshTokenService
         {
             RawToken = newRaw,
             ExpiresAt = newRecord.ExpiresAt,
-            FamilyId = existing.FamilyId,
-            CookieName = CookieName
+            FamilyId = existing.FamilyId
         });
     }
 

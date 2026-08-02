@@ -116,6 +116,7 @@ async function performSingleFlightRefresh(signal?: AbortSignal): Promise<Session
 
     const data = (await response.json()) as SessionResponse;
     return {
+      status: 'authenticated',
       accessToken: data.accessToken,
       accessTokenExpiresAtMs: Date.parse(data.accessTokenExpiresAt),
       user: data.user,
@@ -252,9 +253,8 @@ export const tenantsApi = {
   },
 };
 
-/** Boot-after-Reload: يستدعي Refresh مرة واحدة ثم يجلب /auth/me لملء الـSession */
+/** Boot-after-Reload: يستدعي Refresh مرة واحدة (single-flight) ثم يجلب /auth/me */
 export async function bootstrapSession(): Promise<AuthUser | null> {
-  // لا توجد Refresh Cookie إلا بعد login ساري — نعامِل 401 كإشارة عدم تسجيل
   try {
     await performSingleFlightRefresh();
   } catch {
@@ -263,14 +263,16 @@ export async function bootstrapSession(): Promise<AuthUser | null> {
 
   try {
     const meData = await authApi.me();
+    // لا نفقد accessToken الجديد الذي أعاده الـRefresh
+    const current = getSessionSnapshot();
     establishSession({
-      accessToken: meData.accessToken,
-      accessTokenExpiresAtMs: Date.parse(meData.accessTokenExpiresAt),
+      accessToken: current.accessToken,
+      accessTokenExpiresAtMs: current.accessTokenExpiresAtMs,
       user: meData.user,
       activeWorkspace: meData.activeWorkspace,
     });
     return meData.user;
   } catch {
-    return getSessionSnapshot().user;
+    return null;
   }
 }

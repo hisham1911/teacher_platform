@@ -7,11 +7,15 @@ import type { AuthUser, Workspace } from '../../types/auth';
  * - Refresh Token يعيش في HttpOnly Cookie لا يستطيع JavaScript قراءتها.
  *
  * Single-flight: connectRefresh يضمن أن مجموعة من المتزامنين يشتركون في نفس Promise.
+ * حالة الجلسة (initializing/authenticated/anonymous) تمنع Route Guard من تحويل أول الرسم.
  */
 
 const ACTIVE_TENANT_KEY = 'teacher-platform:active-tenant-id';
 
+export type SessionStatus = 'initializing' | 'authenticated' | 'anonymous';
+
 export interface SessionSnapshot {
+  status: SessionStatus;
   accessToken: string | null;
   accessTokenExpiresAtMs: number | null;
   user: AuthUser | null;
@@ -19,6 +23,7 @@ export interface SessionSnapshot {
 }
 
 interface SessionState {
+  status: SessionStatus;
   accessToken: string | null;
   accessTokenExpiresAtMs: number | null;
   user: AuthUser | null;
@@ -29,6 +34,7 @@ interface SessionState {
 }
 
 const state: SessionState = {
+  status: 'initializing',
   accessToken: null,
   accessTokenExpiresAtMs: null,
   user: null,
@@ -43,6 +49,7 @@ let cachedSnapshot: SessionSnapshot = toSnapshot(state);
 
 function toSnapshot(s: SessionState): SessionSnapshot {
   return {
+    status: s.status,
     accessToken: s.accessToken,
     accessTokenExpiresAtMs: s.accessTokenExpiresAtMs,
     user: s.user,
@@ -72,7 +79,10 @@ export function subscribeToSession(listener: () => void): () => void {
 }
 
 /** يضبط الجلسة بعد Login/Refresh — تكتمل في ذرّة واحدة */
-export function establishSession(snapshot: SessionSnapshot): void {
+export function establishSession(
+  snapshot: Omit<SessionSnapshot, 'status'> & Partial<Pick<SessionSnapshot, 'status'>>,
+): void {
+  state.status = snapshot.status ?? 'authenticated';
   state.accessToken = snapshot.accessToken;
   state.accessTokenExpiresAtMs = snapshot.accessTokenExpiresAtMs;
   state.user = snapshot.user;
@@ -85,6 +95,7 @@ export function establishSession(snapshot: SessionSnapshot): void {
 
 /** يمسح كل شيء من الذاكرة — Logout/Fresh-boot Refresh فشل */
 export function clearSession(): void {
+  state.status = 'anonymous';
   state.accessToken = null;
   state.accessTokenExpiresAtMs = null;
   state.user = null;
@@ -146,4 +157,15 @@ export async function singleFlightRefresh(
 
   state.refreshPromise = refreshPromise;
   return refreshPromise;
+}
+
+/** Test-only reset: يعيد الحالة الأولى (initializing) قبل كل اختبار لضمان الاستقلال. */
+export function __unsafeResetSessionForTests(): void {
+  state.status = 'initializing';
+  state.accessToken = null;
+  state.accessTokenExpiresAtMs = null;
+  state.user = null;
+  state.activeWorkspace = null;
+  state.refreshPromise = null;
+  notify();
 }

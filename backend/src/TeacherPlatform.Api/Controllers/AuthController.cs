@@ -20,6 +20,13 @@ namespace TeacherPlatform.Api.Controllers;
 [Produces("application/json")]
 public sealed class AuthController : ControllerBase
 {
+    // __Host- prefix يفرض Secure=true عند المتصفحات، لذا نستخدمه فقط مع كوكي Secure.
+    // في Development (HTTP) نستخدم اسمًا عاديًا مع نفس خصائص HttpOnly/Path=/.
+    private static string ResolveCookieName(AuthOptions options) =>
+        options.UseSecureCookie
+            ? RefreshTokenService.CookieNameSecure
+            : RefreshTokenService.CookieNameDev;
+
     private readonly AuthService _authService;
     private readonly RefreshTokenService _refreshTokenService;
     private readonly JwtTokenGenerator _jwtTokenGenerator;
@@ -162,8 +169,9 @@ public sealed class AuthController : ControllerBase
     public async Task<IActionResult> Refresh(CancellationToken cancellationToken)
     {
         var authOptions = _authOptions.Value;
+        var cookieName = ResolveCookieName(authOptions);
 
-        if (!Request.Cookies.TryGetValue(RefreshTokenService.CookieName, out var rawToken) || string.IsNullOrEmpty(rawToken))
+        if (!Request.Cookies.TryGetValue(cookieName, out var rawToken) || string.IsNullOrEmpty(rawToken))
         {
             return Unauthorized(new { title = "Unauthorized", status = 401 });
         }
@@ -216,8 +224,9 @@ public sealed class AuthController : ControllerBase
     public async Task<IActionResult> Logout(CancellationToken cancellationToken)
     {
         var authOptions = _authOptions.Value;
+        var cookieName = ResolveCookieName(authOptions);
 
-        if (Request.Cookies.TryGetValue(RefreshTokenService.CookieName, out var rawToken) && !string.IsNullOrEmpty(rawToken))
+        if (Request.Cookies.TryGetValue(cookieName, out var rawToken) && !string.IsNullOrEmpty(rawToken))
         {
             await _refreshTokenService.RevokeAsync(rawToken, RefreshTokenRevocationReasons.Logout, cancellationToken);
         }
@@ -338,12 +347,13 @@ public sealed class AuthController : ControllerBase
             _ => SameSiteMode.Strict
         };
 
-        Response.Cookies.Append(RefreshTokenService.CookieName, rawToken, new CookieOptions
+        Response.Cookies.Append(ResolveCookieName(options), rawToken, new CookieOptions
         {
             HttpOnly = true,
             Secure = options.UseSecureCookie,
             SameSite = sameSite,
-            Path = "/api/v1/auth", // Host-only قدر الإمكان: لا Domain
+            // Path=/ حتى تُرفق الكوكي بأي مسار API ضمن نفس Host، ولتفادي تعارض Path
+            Path = "/",
             Expires = expiresAt,
             IsEssential = true
         });
@@ -358,12 +368,12 @@ public sealed class AuthController : ControllerBase
             _ => SameSiteMode.Strict
         };
 
-        Response.Cookies.Delete(RefreshTokenService.CookieName, new CookieOptions
+        Response.Cookies.Delete(ResolveCookieName(options), new CookieOptions
         {
             HttpOnly = true,
             Secure = options.UseSecureCookie,
             SameSite = sameSite,
-            Path = "/api/v1/auth"
+            Path = "/"
         });
     }
 }
