@@ -1,4 +1,4 @@
-import { HttpError } from './http-error';
+﻿import { HttpError } from './http-error';
 import type {
   AuthUser,
   MessageResponse,
@@ -40,7 +40,7 @@ function resolveBaseUrl(): string {
 }
 
 interface CallOptions {
-  method: 'GET' | 'POST' | 'PATCH';
+  method: 'GET' | 'POST' | 'PATCH' | 'DELETE';
   path: string;
   body?: unknown;
   signal?: AbortSignal;
@@ -49,6 +49,56 @@ interface CallOptions {
   needsTenant?: boolean;
   /** علامة داخلية لمنع Infinite Loop: لا نعيد الطلب إذا كان هذا هو الطلب المعاد بعد Refresh */
   retriedAfterRefresh?: boolean;
+}
+
+/** طلب ملف ثنائي 🡒 Blob — يُستخدم لوسائط المعاينة لأن <img>/<audio> لا ترسل Authorization */
+async function callBlob(path: string, signal?: AbortSignal, retriedAfterRefresh = false): Promise<Blob> {
+  const response = await fetch(`${resolveBaseUrl()}${path}`, {
+    method: 'GET',
+    credentials: 'include',
+    signal,
+    headers: {
+      ...authHeader(),
+      ...tenantHeader(),
+    },
+  });
+
+  if (response.status === 401 && !retriedAfterRefresh) {
+    await performSingleFlightRefresh(signal);
+    return callBlob(path, signal, true);
+  }
+
+  if (!response.ok) {
+    const errorBody: unknown = await response.json().catch(() => null);
+    throw new HttpError(response.status, errorBody);
+  }
+
+  return response.blob();
+}
+
+/** طلب متعدد الوسائط — لا نضبط Content-Type يدويًا: المتصفح يضعه مع boundary تلقائيًا */
+async function callMultipart<T>(path: string, file: File, signal?: AbortSignal): Promise<T> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await fetch(`${resolveBaseUrl()}${path}`, {
+    method: 'POST',
+    credentials: 'include',
+    signal,
+    headers: {
+      Accept: 'application/json',
+      ...authHeader(),
+      ...tenantHeader(),
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorBody: unknown = await response.json().catch(() => null);
+    throw new HttpError(response.status, errorBody);
+  }
+
+  return (await response.json()) as T;
 }
 
 /** ينفّذ الطلب ويعيد النافذة المنظمة. عند 401 يحاول Refresh مرة واحدة ثم يعيد الطلب مرة واحدة فقط. */
@@ -250,6 +300,173 @@ export const tenantsApi = {
       needsAuth: true,
       needsTenant: true,
     });
+  },
+};
+
+// ---------- Phase 2: Question Banks / Tags / Questions / Media ----------
+import type {
+  QuestionBank,
+  QuestionDetail,
+  QuestionListItem,
+  QuestionTag,
+  QuestionVersion,
+  QuestionVersionSummary,
+  PagedResponse,
+  CreateQuestionRequest,
+  CreateQuestionVersionRequest,
+  MediaAsset,
+} from '../../types/questions';
+
+export const questionBanksApi = {
+  list(tenantId: string, signal?: AbortSignal) {
+    return call<QuestionBank[]>({
+      method: 'GET',
+      path: `/api/v1/tenants/${tenantId}/question-banks`,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+  create(tenantId: string, payload: { name: string; description?: string }, signal?: AbortSignal) {
+    return call<QuestionBank>({
+      method: 'POST',
+      path: `/api/v1/tenants/${tenantId}/question-banks`,
+      body: payload,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+  update(tenantId: string, bankId: string, payload: { name: string; description?: string }, signal?: AbortSignal) {
+    return call<void>({
+      method: 'PATCH',
+      path: `/api/v1/tenants/${tenantId}/question-banks/${bankId}`,
+      body: payload,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+};
+
+export const questionTagsApi = {
+  list(tenantId: string, signal?: AbortSignal) {
+    return call<QuestionTag[]>({
+      method: 'GET',
+      path: `/api/v1/tenants/${tenantId}/question-tags`,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+};
+
+export interface QuestionListQuery {
+  bankId?: string;
+  type?: string;
+  difficulty?: string;
+  tag?: string;
+  search?: string;
+  includeArchived?: boolean;
+  page?: number;
+  pageSize?: number;
+}
+
+export const questionsApi = {
+  list(tenantId: string, query: QuestionListQuery, signal?: AbortSignal) {
+    const params = new URLSearchParams();
+    if (query.bankId) params.set('bankId', query.bankId);
+    if (query.type) params.set('type', query.type);
+    if (query.difficulty) params.set('difficulty', query.difficulty);
+    if (query.tag) params.set('tag', query.tag);
+    if (query.search) params.set('search', query.search);
+    if (query.includeArchived) params.set('includeArchived', 'true');
+    if (query.page) params.set('page', String(query.page));
+    if (query.pageSize) params.set('pageSize', String(query.pageSize));
+
+    const qs = params.toString();
+    return call<PagedResponse<QuestionListItem>>({
+      method: 'GET',
+      path: `/api/v1/tenants/${tenantId}/questions${qs ? `?${qs}` : ''}`,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+  get(tenantId: string, questionId: string, signal?: AbortSignal) {
+    return call<QuestionDetail>({
+      method: 'GET',
+      path: `/api/v1/tenants/${tenantId}/questions/${questionId}`,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+  create(tenantId: string, payload: CreateQuestionRequest, signal?: AbortSignal) {
+    return call<QuestionDetail>({
+      method: 'POST',
+      path: `/api/v1/tenants/${tenantId}/questions`,
+      body: payload,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+  createNewVersion(tenantId: string, questionId: string, payload: CreateQuestionVersionRequest, signal?: AbortSignal) {
+    return call<QuestionDetail>({
+      method: 'POST',
+      path: `/api/v1/tenants/${tenantId}/questions/${questionId}/versions`,
+      body: payload,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+  listVersions(tenantId: string, questionId: string, signal?: AbortSignal) {
+    return call<QuestionVersionSummary[]>({
+      method: 'GET',
+      path: `/api/v1/tenants/${tenantId}/questions/${questionId}/versions`,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+  getVersion(tenantId: string, questionId: string, versionNumber: number, signal?: AbortSignal) {
+    return call<QuestionVersion>({
+      method: 'GET',
+      path: `/api/v1/tenants/${tenantId}/questions/${questionId}/versions/${versionNumber}`,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+  archive(tenantId: string, questionId: string, signal?: AbortSignal) {
+    return call<void>({
+      method: 'POST',
+      path: `/api/v1/tenants/${tenantId}/questions/${questionId}/archive`,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+};
+
+export const mediaApi = {
+  upload(tenantId: string, file: File, signal?: AbortSignal) {
+    return callMultipart<MediaAsset>(`/api/v1/tenants/${tenantId}/media`, file, signal);
+  },
+  get(tenantId: string, mediaId: string, signal?: AbortSignal) {
+    return call<MediaAsset>({
+      method: 'GET',
+      path: `/api/v1/tenants/${tenantId}/media/${mediaId}`,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+  /** محتوى الوسيط كـBlob — لفتحه عبر URL.createObjectURL بعد مصادقة Bearer */
+  fetchContentBlob(tenantId: string, mediaId: string, signal?: AbortSignal) {
+    return callBlob(`/api/v1/tenants/${tenantId}/media/${mediaId}/content`, signal);
   },
 };
 

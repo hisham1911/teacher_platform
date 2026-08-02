@@ -59,6 +59,9 @@ export function RootLayout({ children }: { children: ReactNode }) {
                 <NavLink to="/dashboard" className={navLinkClass}>
                   لوحة التحكم
                 </NavLink>
+                <NavLink to="/dashboard/questions" className={navLinkClass}>
+                  بنك الأسئلة
+                </NavLink>
                 <NavLink to="/dashboard/settings" className={navLinkClass}>
                   الإعدادات
                 </NavLink>

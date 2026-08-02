@@ -18,6 +18,12 @@ const ChooseWorkspacePage = lazy(() => import('../routes/onboarding/choose-works
 const DashboardPage = lazy(() => import('../routes/dashboard/dashboard-page'));
 const SettingsPage = lazy(() => import('../routes/dashboard/settings-page'));
 
+const QuestionsPage = lazy(() => import('../routes/dashboard/questions/questions-page'));
+const QuestionNewPage = lazy(() => import('../routes/dashboard/questions/question-new-page'));
+const QuestionEditPage = lazy(() => import('../routes/dashboard/questions/question-edit-page'));
+const QuestionPreviewPage = lazy(() => import('../routes/dashboard/questions/question-preview-page'));
+const QuestionVersionsPage = lazy(() => import('../routes/dashboard/questions/question-versions-page'));
+
 const PlayDemoPage = lazy(() => import('../routes/play/play-demo-page'));
 
 export const router = createBrowserRouter([
@@ -43,6 +49,11 @@ export const router = createBrowserRouter([
           { path: '/onboarding/choose', element: <ChooseWorkspacePage /> },
           { path: '/dashboard', element: <DashboardPage /> },
           { path: '/dashboard/settings', element: <SettingsPage /> },
+          { path: '/dashboard/questions', element: <QuestionsPage /> },
+          { path: '/dashboard/questions/new', element: <QuestionNewPage /> },
+          { path: '/dashboard/questions/:questionId/edit', element: <QuestionEditPage /> },
+          { path: '/dashboard/questions/:questionId/preview', element: <QuestionPreviewPage /> },
+          { path: '/dashboard/questions/:questionId/versions', element: <QuestionVersionsPage /> },
         ],
       },
       { path: '/play/demo', element: <PlayDemoPage /> },

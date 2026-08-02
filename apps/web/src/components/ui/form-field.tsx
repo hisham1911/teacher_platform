@@ -38,3 +38,11 @@ const inputBase =
 export function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return <input {...props} className={`${inputBase} ${props.className ?? ''}`} />;
 }
+
+export function TextArea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  return <textarea {...props} className={`${inputBase} ${props.className ?? ''}`} />;
+}
+
+export function SelectInput(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
+  return <select {...props} className={`${inputBase} ${props.className ?? ''}`} />;
+}

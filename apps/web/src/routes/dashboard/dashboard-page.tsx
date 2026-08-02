@@ -56,9 +56,26 @@ export default function DashboardPage() {
         </div>
       ) : null}
 
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <button
+          type="button"
+          onClick={() => navigate('/dashboard/questions')}
+          className="min-h-24 rounded-lg border border-slate-200 bg-white p-4 text-start hover:border-sky-300 focus-visible:outline-2 focus-visible:outline-sky-600">
+          <p className="text-sm font-semibold text-slate-900">بنك الأسئلة</p>
+          <p className="mt-1 text-xs text-slate-500">إنشاء وتعديل أسئلة مع إصدارات Immutable ووسائط صوت/صورة.</p>
+        </button>
+        <button
+          type="button"
+          onClick={() => navigate('/dashboard/settings')}
+          className="min-h-24 rounded-lg border border-slate-200 bg-white p-4 text-start hover:border-sky-300 focus-visible:outline-2 focus-visible:outline-sky-600">
+          <p className="text-sm font-semibold text-slate-900">إعدادات مساحة العمل</p>
+          <p className="mt-1 text-xs text-slate-500">اسم المعلم الظاهر والألوان واللغة.</p>
+        </button>
+      </div>
+
       <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50/60 p-8">
         <p className="text-sm text-slate-600">
-          إحصائيات الاختبارات، والأسئلة، والمحاولات ستظهر هنا في المرحلة القادمة.
+          إحصائيات الاختبارات والمحاولات ستظهر هنا في المرحلة القادمة.
         </p>
       </div>
     </div>
