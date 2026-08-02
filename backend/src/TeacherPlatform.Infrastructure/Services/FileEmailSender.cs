@@ -43,7 +43,11 @@ public sealed class FileEmailSender : IEmailSender
 
         var payload = new { To = to, Kind = kind.ToString(), ActionUrl = actionUrl, AtUtc = DateTime.UtcNow };
         var file = Path.Combine(_dropDirectory, $"{DateTime.UtcNow:yyyyMMddHHmmssfff}-{Guid.NewGuid():N}.json");
-        await File.WriteAllTextAsync(file, JsonSerializer.Serialize(payload), cancellationToken);
+        await File.WriteAllTextAsync(file, JsonSerializer.Serialize(payload, new JsonSerializerOptions { WriteIndented = false }), cancellationToken);
+
+        // Also write a Clickable plain-text version for easy manual testing.
+        var txtFile = Path.Combine(_dropDirectory, $"{Path.GetFileNameWithoutExtension(file)}.txt");
+        await File.WriteAllTextAsync(txtFile, $"To: {to}{Environment.NewLine}Kind: {kind}{Environment.NewLine}Link:{Environment.NewLine}{actionUrl}", cancellationToken);
 
         _logger.LogInformation("Dev email captured Kind={Kind} To={To} (file sink)", kind, to);
     }

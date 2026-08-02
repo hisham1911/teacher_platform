@@ -185,7 +185,8 @@ public sealed class AuthService
     {
         var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(rawToken));
         var baseUrl = _authOptions.WebBaseUrl.TrimEnd('/');
-        return $"{baseUrl}{path}?uid={userId}&token={encodedToken}";
+        // UrlEncode handles special chars properly for browsers reading query strings
+        return $"{baseUrl}{path}?uid={userId}&token={Uri.EscapeDataString(encodedToken)}";
     }
 
     private static string? DecodeToken(string encoded)
