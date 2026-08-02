@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { getSystemInfo } from '../api-client/endpoints';
+import { getSystemInfo } from '../api-client/public-endpoints';
 import { MissingApiBaseUrlError } from '../api-client/http-error';
 
 /**
