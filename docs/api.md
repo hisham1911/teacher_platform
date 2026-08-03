@@ -73,14 +73,21 @@ GET  /api/v1/tenants/{tenantId}/media/{mediaId}/content    # بث المحتوى
 
 ```text
 GET    /api/v1/tenants/{tenantId}/quizzes?search=&status=&page=&pageSize=
-POST   /api/v1/tenants/{tenantId}/quizzes                    # إنشاء مسودة — Owner/Teacher
+POST   /api/v1/tenants/{tenantId}/quizzes                          # إنشاء مسودة — Owner/Teacher
 GET    /api/v1/tenants/{tenantId}/quizzes/{quizId}
-PATCH  /api/v1/tenants/{tenantId}/quizzes/{quizId}           # تعديل المسودة — BaseVersion مطلوب
-POST   /api/v1/tenants/{tenantId}/quizzes/{quizId}/items     # إضافة سؤال — Owner/Teacher
-DELETE /api/v1/tenants/{tenantId}/quizzes/{quizId}/items/{itemId}  # إزالة سؤال — Owner/Teacher
-PUT    /api/v1/tenants/{tenantId}/quizzes/{quizId}/items/reorder   # إعادة ترتيب — Owner/Teacher
-POST   /api/v1/tenants/{tenantId}/quizzes/{quizId}/publish   # نشر المسودة — Owner/Teacher
-POST   /api/v1/tenants/{tenantId}/quizzes/{quizId}/archive   # أرشفة — Owner/Teacher
+PATCH  /api/v1/tenants/{tenantId}/quizzes/{quizId}                 # تعديل بيانات الاختبار — BaseVersion مطلوب
+POST   /api/v1/tenants/{tenantId}/quizzes/{quizId}/archive         # أرشفة — Owner/Teacher
+GET    /api/v1/tenants/{tenantId}/quizzes/{quizId}/draft           # المسودة الحالية مع العناصر
+PUT    /api/v1/tenants/{tenantId}/quizzes/{quizId}/draft           # تعديل المسودة — BaseVersion مطلوب
+POST   /api/v1/tenants/{tenantId}/quizzes/{quizId}/draft/items     # إضافة سؤال — Owner/Teacher
+PATCH  /api/v1/tenants/{tenantId}/quizzes/{quizId}/draft/items/{itemId}   # تعديل عنصر (النقاط) — Owner/Teacher
+DELETE /api/v1/tenants/{tenantId}/quizzes/{quizId}/draft/items/{itemId}   # إزالة سؤال — Owner/Teacher
+PUT    /api/v1/tenants/{tenantId}/quizzes/{quizId}/draft/items/order      # إعادة ترتيب — Owner/Teacher
+GET    /api/v1/tenants/{tenantId}/quizzes/{quizId}/preview         # معاينة النسخة المنشورة
+GET    /api/v1/tenants/{tenantId}/quizzes/{quizId}/versions        # سجل النسخ
+GET    /api/v1/tenants/{tenantId}/quizzes/{quizId}/versions/{versionNumber}  # نسخة محددة
+POST   /api/v1/tenants/{tenantId}/quizzes/{quizId}/publish         # نشر المسودة — Owner/Teacher
+GET    /api/v1/tenants/{tenantId}/quizzes/{quizId}/share           # رابط المشاركة + PublicCode
 ```
 
 قواعد:
@@ -92,11 +99,34 @@ POST   /api/v1/tenants/{tenantId}/quizzes/{quizId}/archive   # أرشفة — Ow
 ### الاختبارات العامة (Public Quizzes)
 
 ```text
-GET    /api/v1/public/quizzes/{publicCode}                   # بدون مصادقة — يعرض النسخة المنشورة فقط
+GET    /api/v1/public/quizzes/{publicCode}                   # بدون مصادقة — metadata فقط
 ```
 
-- يعيد `404` إذا كان الاختبار `Draft` أو `Archived`.
-- لا يعرض الإجابات الصحيحة — فقط الأسئلة والخيارات.
+- يعيد `available: false` إذا كان الاختبار `Draft` أو `Archived` أو غير موجود.
+- **Metadata فقط** — لا أسئلة ولا خيارات ولا إجابات ولا درجات ولا تفاصيل مستأجر. الأسئلة تُسلَّم فقط عند بدء المحاولة (Phase 4).
+- شكل الاستجابة (`PublicQuizPageResponse`):
+
+```json
+{
+  "title": "اختبار الوحدة الأولى",
+  "description": "وصف اختياري",
+  "instructions": "تعليمات اختيارية",
+  "passingPercentage": 60,
+  "timeMode": "NoLimit | TotalTime | PerQuestion",
+  "timeLimitSeconds": null,
+  "questionCount": 5,
+  "totalPoints": 50,
+  "theme": {
+    "template": "default",
+    "primaryColor": "#2563eb",
+    "secondaryColor": "#7c3aed",
+    "backgroundColor": "#ffffff"
+  },
+  "available": true
+}
+```
+
+- صفحة الهبوط العامة في الواجهة: `/q/{publicCode}` (بدون مصادقة) تعرض هذه البيانات فقط.
 
 ## الاستجابات الشائعة
 

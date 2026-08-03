@@ -23,6 +23,14 @@ scripts/           سكربتات مساعدة
 - رفع الوسائط عبر `/api/v1/tenants/{id}/media` مع فحص Magic bytes والحجم (5MB صور، 20MB صوت في البيئة الافتراضية).
 - الأسئلة تعتمد تعدد نسخ Immutable (الإصدار رقم 1 عند الإنشاء، وأي تعديل = نسخة جديدة، وBaseVersion mismatch → 409).
 
+## Phase 3 (Quiz Builder والنشر)
+
+- جداول جديدة: Quizzes, QuizVersions, QuizVersionItems. الاختبار = هوية + مؤشرات (CurrentDraft/CurrentPublished)؛ المحتوى في QuizVersion Immutable، وQuizVersionItem يثبّت QuestionVersionId.
+- النشر يتطلب IsValid على المسودة وينقل المؤشر ذرّيًا؛ BaseVersion (xmin) mismatch → 409.
+- الوصول العام: `GET /api/v1/public/quizzes/{publicCode}` بدون مصادقة — metadata فقط (لا أسئلة/خيارات/إجابات). صفحة الهبوط: `/q/:publicCode` خارج RequireAuth.
+- حد الاختبارات النشطة: `Quiz:MaxActivePerTenant` (افتراضي 50) عبر IQuizLimitService؛ التجاوز → 403 QuizLimitExceeded.
+- المشاركة: `GET .../quizzes/{id}/share` يعيد PublicCode + ShareUrl؛ صفحة النشر تعرض الرابط + QR Code (react-qr-code).
+
 ## قواعد إلزامية
 
 - الواجهة لا تتصل بقاعدة البيانات مباشرة أبدًا؛ كل الطلبات عبر `src/data/api-client/`.

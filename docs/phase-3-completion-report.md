@@ -49,14 +49,15 @@
 
 ### Frontend
 - `src/types/quizzes.ts` — TypeScript types لكل DTOs.
-- `src/data/api-client/endpoints.ts` — `quizzesApi` + `publicQuizzesApi`.
+- `src/data/api-client/endpoints.ts` — `quizzesApi` + `publicQuizApi`.
 - `src/routes/dashboard/quizzes/` — 5 صفحات:
   - `quiz-list-page.tsx` — قائمة مع بحث وترقيم.
   - `quiz-create-page.tsx` — إنشاء مسودة جديدة.
   - `quiz-edit-page.tsx` — تعديل المسودة + إضافة/إزالة/إعادة ترتيب الأسئلة.
   - `quiz-preview-page.tsx` — معاينة النسخة المنشورة كما يراها الطالب.
-  - `quiz-publish-page.tsx` — نشر النسخة المسودة مع تأكيد.
-- `src/data/api-client/quizzes-endpoints.test.ts` — 12 اختبارًا للـAPI client.
+  - `quiz-publish-page.tsx` — نشر النسخة المسودة مع تأكيد + **QR Code** ورابط المشاركة (للمنشور سابقًا أيضًا عبر `getShare`).
+- `src/routes/public/public-quiz-page.tsx` — **صفحة الهبوط العامة** `/q/:publicCode`: metadata فقط (بدون أسئلة/خيارات/إجابات) مع حالات invalid/loading/404/error/unavailable.
+- `src/data/api-client/quizzes-endpoints.test.ts` — 15 اختبارًا للـAPI client.
 
 ---
 
@@ -70,7 +71,7 @@
 | `dotnet test backend` | Domain 24/24 + Api 1/1 + Integration 59/59 = **84/84** كلها ناجحة |
 | `npm run lint` | ناجح |
 | `npm run typecheck` | ناجح |
-| `npm run test` | **52/52** ناجحة (10 ملفات) |
+| `npm run test` | **60/60** ناجحة (12 ملفًا) |
 | `npm run build` | ✓ built, dist/ جاهز |
 | `dotnet ef migrations script --idempotent` | ✓ توليد ناجح |
 | Apply idempotent SQL إلى قاعدة فارغة مرتين | ✓ بدون خطأ (24 جدولًا في `public`) |
@@ -141,7 +142,8 @@ GET    /api/v1/public/quizzes/{publicCode}                   # عرض النسخ
 - `/dashboard/quizzes/new` — إنشاء مسودة (العنوان + الوصف + الإعدادات).
 - `/dashboard/quizzes/:id/edit` — تعديل المسودة: إضافة أسئلة من بنك الأسئلة، إزالة، إعادة ترتيب بالسحب والإفلات، تعديل الإعدادات.
 - `/dashboard/quizzes/:id/preview` — معاينة النسخة المنشورة كما يراها الطالب (بدون إظهار الإجابات الصحيحة).
-- `/dashboard/quizzes/:id/publish` — نشر المسودة مع تأكيد وعرض `PublicCode` بعد النشر.
+- `/dashboard/quizzes/:id/publish` — نشر المسودة مع تأكيد وعرض `PublicCode` + رابط المشاركة + **QR Code** بعد النشر (وللاختبارات المنشورة سابقًا عبر `GET .../share`).
+- `/q/:publicCode` — **صفحة هبوط عامة** (بدون مصادقة) تعرض metadata الاختبار المنشور فقط: العنوان، الوصف، التعليمات، عدد الأسئلة، إجمالي الدرجات، نسبة النجاح، وضع الوقت، والثيم — بدون أسئلة أو خيارات أو إجابات. الحالات: رابط غير صالح / تحميل / 404 / خطأ عام / غير متاح.
 - RTL/LTR: كل الحقول النصية تعتمد `dir` حسب `language` المختار للسؤال.
 
 ---
@@ -149,10 +151,15 @@ GET    /api/v1/public/quizzes/{publicCode}                   # عرض النسخ
 ## Commits و Final SHA
 
 **Commits منفذة ضمن Phase 3 closure:**
-- `TBD` feat(backend): Phase 3 quiz builder, publishing, and versioning
-- `TBD` feat(frontend): Phase 3 quiz management pages and public quiz view
-- `TBD` test: Phase 3 quiz workflow, publishing, and tenancy isolation
-- `TBD` docs: Phase 3 API/database/architecture docs + completion report
+- `78c46a7` feat(backend): Phase 3 quiz builder, publishing, and versioning
+- `786684b` feat(frontend): Phase 3 quiz management pages and public quiz view
+- `89905b1` test: Phase 3 quiz workflow, publishing, and tenancy isolation
+- `d1ad563` docs: Phase 3 API/database/architecture docs + completion report
+
+**Commits جولة المراجعة والإغلاق (Review Round):**
+- `875735b` fix(frontend): add public quiz landing page at /q/:publicCode — إغلاق GAP-A
+- `dbcb50a` feat(frontend): add QR code to quiz publish share panel — إغلاق GAP-B
+- `TBD` docs: Phase 3 review round — ADRs 005/006 + report closure
 
 **Final SHA:** `TBD`
 
@@ -166,6 +173,38 @@ GET    /api/v1/public/quizzes/{publicCode}                   # عرض النسخ
 2. **لا يوجد SignalR** للمسابقات المباشرة — مؤجل لـPhase 6.
 3. **لا يوجد تصدير/استيراد** للاختبارات — مؤجل لـPhase 5.
 4. **Public Quiz Access** لا يتطلب مصادقة لكنه لا يسجل محاولات الطلاب — مؤجل لـPhase 4 (Student Attempts).
+5. **لا يوجد إجراء "تحديث إلى أحدث نسخة"** للعناصر المثبتة (GAP-C — قرار متعمد): الخطة تشترط فقط ثبات اللقطة المنشورة؛ شارة الكشف موجودة في واجهة التعديل، والمسار اليدوي = إزالة العنصر وإعادة إضافته ثم نشر جديد (موثق في ADR 005).
+6. **`QuizService` يمرر `Guid.Empty` كـtenantId** لبعض فحوص `QuizLimitService` الداخلية (GAP-D — smell مقبول مؤقتًا): العزل يعتمد على Global Query Filters؛ التشديد الكامل موثق في ADR 006.
+
+---
+
+## جولة المراجعة والإغلاق (2026-08-03)
+
+بعد رفض الإغلاق الأول، نُفذت جولة مراجعة فعلية بالمقارنة مع البرومبت الأصلي:
+
+### Gap Analysis — قبل الإصلاح
+
+| # | الفجوة | الدليل |
+|---|--------|--------|
+| GAP-A | لا توجد صفحة هبوط عامة `/q/:publicCode` — الرابط العام لم يكن له مسار فعلي في الـRouter | `src/app/router.tsx` (قبل): لا مسار `/q/*` خارج `RequireAuth` |
+| GAP-B | لا يوجد QR Code في صفحة النشر رغم اشتراط الخطة "رابط + QR للمشاركة" | `quiz-publish-page.tsx` (قبل): رابط نصي فقط |
+| GAP-C | لا يوجد إجراء "تحديث إلى أحدث نسخة" للعناصر المثبتة | قرار متعمد — انظر البند 5 أعلاه |
+| GAP-D | `QuizService` يمرر `Guid.Empty` لفحوص الحد | smell مقبول — انظر البند 6 أعلاه |
+
+### Gap Analysis — بعد الإصلاح
+
+| # | الحالة | الدليل |
+|---|--------|--------|
+| GAP-A | **مُغلقة** | `src/routes/public/public-quiz-page.tsx` + مسار `/q/:publicCode` في `router.tsx` (خارج `RequireAuth`) + 5 اختبارات في `public-quiz-page.test.tsx` + تغطية في `router.test.tsx` |
+| GAP-B | **مُغلقة** | `react-qr-code` مثبتة؛ QR في `quiz-publish-page.tsx` (بعد النشر + للمنشور سابقًا عبر `getShare`) + اختباران في `quiz-publish-page.test.tsx` |
+| GAP-C | **موثقة كقرار** | ADR 005 — القيود |
+| GAP-D | **موثقة كـsmell** | ADR 006 — القيود |
+
+### نتائج التحقق بعد الإصلاحات
+
+- Frontend: typecheck ✓ / lint ✓ / **60/60** اختبارًا (12 ملفًا) / build ✓ / audit 0 vulnerabilities.
+- Backend: restore ✓ / format ✓ / build 0 تحذير 0 خطأ / **84/84** اختبارًا / publish Release ✓ / لا حزم ضعيفة.
+- Migrations: 5 migrations؛ قاعدة CI محدثة (exit 0)؛ تطبيق كامل على قاعدة فارغة (exit 0)؛ سكربت idempotent (29395 بايت) طُبق **مرتين** بنجاح (exit 0)؛ 24 جدولًا بدون جداول اختبارية؛ لا auto-migration في `Program.cs`.
 
 ---
 

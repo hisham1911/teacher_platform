@@ -192,6 +192,34 @@ curl -X POST http://localhost:5000/api/v1/tenants/{tenantId}/questions/{question
   -d '{"prompt":"النص الجديد","options":[{"text":"A","isCorrect":true},{"text":"B","isCorrect":false}],"baseVersion":<xmin-number>}'
 ```
 
+### Phase 3 — Quiz Builder والنشر
+
+- إنشاء اختبار (مسودة) ثم إضافة سؤال إليه ثم نشره:
+
+```bash
+# إنشاء
+curl -X POST http://localhost:5000/api/v1/tenants/{tenantId}/quizzes \
+  -H "Authorization: Bearer <access-token>" -H "X-Tenant-Id: {tenantId}" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"اختبار الوحدة الأولى","timeMode":"NoLimit","passingPercentage":60}'
+
+# إضافة سؤال (questionId من Phase 2)
+curl -X POST http://localhost:5000/api/v1/tenants/{tenantId}/quizzes/{quizId}/draft/items \
+  -H "Authorization: Bearer <access-token>" -H "X-Tenant-Id: {tenantId}" \
+  -H "Content-Type: application/json" \
+  -d '{"questionId":"<question-guid>","points":10}'
+
+# نشر
+curl -X POST http://localhost:5000/api/v1/tenants/{tenantId}/quizzes/{quizId}/publish \
+  -H "Authorization: Bearer <access-token>" -H "X-Tenant-Id: {tenantId}"
+# الاستجابة تحمل publicCode و shareUrl (/q/{publicCode})
+```
+
+- الوصول العام (بدون مصادقة): `GET /api/v1/public/quizzes/{publicCode}` — metadata فقط (لا أسئلة/خيارات/إجابات). صفحة الهبوط في الواجهة: `http://localhost:5173/q/{publicCode}`.
+- حد الاختبارات النشطة: `Quiz:MaxActivePerTenant` (افتراضي 50) — تجاوزه عند الإنشاء يعيد `403 QuizLimitExceeded`. الأرشفة تحرر السعة.
+- تعديل المسودة يتطلب `baseVersion` (xmin) من آخر قراءة؛ الاختلاف يعيد `409 Conflict`.
+- صفحة النشر في الواجهة تعرض رابط المشاركة + QR Code بعد النشر (وللمنشور سابقًا عبر `GET .../share`).
+
 
 ## 6. إعداد Testing لبيئة WebApplicationFactory
 
