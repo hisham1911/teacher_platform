@@ -80,4 +80,38 @@ describe('router — Phase 1', () => {
     await renderRoute('/auth/reset-password');
     await expectHeading(/كلمة مرور جديدة|رابط إعادة التعيين/);
   });
+
+  it('يعرض صفحة الاختبار العامة على /q/:publicCode', async () => {
+    // الصفحة تجلب بيانات عبر API — نحتاج Base URL غير فارغ حتى لا يرمي العميل MissingApiBaseUrlError
+    vi.stubEnv('VITE_API_BASE_URL', 'http://localhost:5000');
+    const publicQuiz = {
+      title: 'اختبار عام تجريبي',
+      description: null,
+      instructions: null,
+      passingPercentage: 50,
+      timeMode: 'None',
+      timeLimitSeconds: null,
+      questionCount: 5,
+      totalPoints: 50,
+      theme: {
+        template: 'default',
+        primaryColor: '#1e40af',
+        secondaryColor: '#64748b',
+        backgroundColor: '#ffffff',
+      },
+      available: true,
+    };
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify(publicQuiz), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      ),
+    );
+
+    await renderRoute('/q/some-public-code');
+    await expectHeading('اختبار عام تجريبي');
+  });
 });

@@ -5,6 +5,7 @@ import { RouteLoadingFallback } from './route-loading-fallback';
 import { RequireAuth } from '../features/auth/require-auth';
 
 const HomePage = lazy(() => import('../routes/public/home-page'));
+const PublicQuizPage = lazy(() => import('../routes/public/public-quiz-page'));
 
 const LoginPage = lazy(() => import('../routes/auth/login-page'));
 const SignupPage = lazy(() => import('../routes/auth/signup-page'));
@@ -68,6 +69,7 @@ export const router = createBrowserRouter([
         ],
       },
       { path: '/play/demo', element: <PlayDemoPage /> },
+      { path: '/q/:publicCode', element: <PublicQuizPage /> },
     ],
   },
 ]);
