@@ -40,7 +40,7 @@ function resolveBaseUrl(): string {
 }
 
 interface CallOptions {
-  method: 'GET' | 'POST' | 'PATCH' | 'DELETE';
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   path: string;
   body?: unknown;
   signal?: AbortSignal;
@@ -493,3 +493,201 @@ export async function bootstrapSession(): Promise<AuthUser | null> {
     return null;
   }
 }
+
+// ---------- Phase 3: Quizzes (Builder & Publishing) ----------
+import type {
+  AddQuizItemRequest,
+  CreateQuizRequest,
+  PublishQuizRequest,
+  PublishQuizResponse,
+  PublicQuizPage,
+  QuizDetail,
+  QuizDraft,
+  QuizListItem,
+  QuizPublishedVersion,
+  QuizShare,
+  QuizVersionSummary,
+  ReorderItemsRequest,
+  UpdateDraftRequest,
+  UpdateQuizItemRequest,
+  UpdateQuizRequest,
+} from '../../types/quizzes';
+
+export interface QuizListQuery {
+  status?: string;
+  search?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export const quizzesApi = {
+  list(tenantId: string, query: QuizListQuery, signal?: AbortSignal) {
+    const params = new URLSearchParams();
+    if (query.status) params.set('status', query.status);
+    if (query.search) params.set('search', query.search);
+    if (query.page) params.set('page', String(query.page));
+    if (query.pageSize) params.set('pageSize', String(query.pageSize));
+
+    const qs = params.toString();
+    return call<PagedResponse<QuizListItem>>({
+      method: 'GET',
+      path: `/api/v1/tenants/${tenantId}/quizzes${qs ? `?${qs}` : ''}`,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+  create(tenantId: string, payload: CreateQuizRequest, signal?: AbortSignal) {
+    return call<QuizDetail>({
+      method: 'POST',
+      path: `/api/v1/tenants/${tenantId}/quizzes`,
+      body: payload,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+  get(tenantId: string, quizId: string, signal?: AbortSignal) {
+    return call<QuizDetail>({
+      method: 'GET',
+      path: `/api/v1/tenants/${tenantId}/quizzes/${quizId}`,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+  update(tenantId: string, quizId: string, payload: UpdateQuizRequest, signal?: AbortSignal) {
+    return call<QuizDetail>({
+      method: 'PATCH',
+      path: `/api/v1/tenants/${tenantId}/quizzes/${quizId}`,
+      body: payload,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+  archive(tenantId: string, quizId: string, signal?: AbortSignal) {
+    return call<void>({
+      method: 'POST',
+      path: `/api/v1/tenants/${tenantId}/quizzes/${quizId}/archive`,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+  getDraft(tenantId: string, quizId: string, signal?: AbortSignal) {
+    return call<QuizDraft>({
+      method: 'GET',
+      path: `/api/v1/tenants/${tenantId}/quizzes/${quizId}/draft`,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+  updateDraft(tenantId: string, quizId: string, payload: UpdateDraftRequest, signal?: AbortSignal) {
+    return call<QuizDraft>({
+      method: 'PUT',
+      path: `/api/v1/tenants/${tenantId}/quizzes/${quizId}/draft`,
+      body: payload,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+  addItem(tenantId: string, quizId: string, payload: AddQuizItemRequest, signal?: AbortSignal) {
+    return call<QuizDraft>({
+      method: 'POST',
+      path: `/api/v1/tenants/${tenantId}/quizzes/${quizId}/draft/items`,
+      body: payload,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+  updateItem(tenantId: string, quizId: string, itemId: string, payload: UpdateQuizItemRequest, signal?: AbortSignal) {
+    return call<QuizDraft>({
+      method: 'PATCH',
+      path: `/api/v1/tenants/${tenantId}/quizzes/${quizId}/draft/items/${itemId}`,
+      body: payload,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+  removeItem(tenantId: string, quizId: string, itemId: string, signal?: AbortSignal) {
+    return call<QuizDraft>({
+      method: 'DELETE',
+      path: `/api/v1/tenants/${tenantId}/quizzes/${quizId}/draft/items/${itemId}`,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+  reorderItems(tenantId: string, quizId: string, payload: ReorderItemsRequest, signal?: AbortSignal) {
+    return call<QuizDraft>({
+      method: 'PUT',
+      path: `/api/v1/tenants/${tenantId}/quizzes/${quizId}/draft/items/order`,
+      body: payload,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+  getPreview(tenantId: string, quizId: string, signal?: AbortSignal) {
+    return call<QuizDraft>({
+      method: 'GET',
+      path: `/api/v1/tenants/${tenantId}/quizzes/${quizId}/preview`,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+  listVersions(tenantId: string, quizId: string, signal?: AbortSignal) {
+    return call<QuizVersionSummary[]>({
+      method: 'GET',
+      path: `/api/v1/tenants/${tenantId}/quizzes/${quizId}/versions`,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+  getVersion(tenantId: string, quizId: string, versionNumber: number, signal?: AbortSignal) {
+    return call<QuizPublishedVersion>({
+      method: 'GET',
+      path: `/api/v1/tenants/${tenantId}/quizzes/${quizId}/versions/${versionNumber}`,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+  publish(tenantId: string, quizId: string, payload: PublishQuizRequest, signal?: AbortSignal) {
+    return call<PublishQuizResponse>({
+      method: 'POST',
+      path: `/api/v1/tenants/${tenantId}/quizzes/${quizId}/publish`,
+      body: payload,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+  getShare(tenantId: string, quizId: string, signal?: AbortSignal) {
+    return call<QuizShare>({
+      method: 'GET',
+      path: `/api/v1/tenants/${tenantId}/quizzes/${quizId}/share`,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+};
+
+/** نقطة عامة مجهولة — لا تحتاج مصادقة ولا Tenant. */
+export const publicQuizApi = {
+  getByCode(publicCode: string, signal?: AbortSignal) {
+    return call<PublicQuizPage>({
+      method: 'GET',
+      path: `/api/v1/public/quizzes/${encodeURIComponent(publicCode)}`,
+      signal,
+    });
+  },
+};

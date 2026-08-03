@@ -66,6 +66,13 @@ export default function DashboardPage() {
         </button>
         <button
           type="button"
+          onClick={() => navigate('/dashboard/quizzes')}
+          className="min-h-24 rounded-lg border border-slate-200 bg-white p-4 text-start hover:border-sky-300 focus-visible:outline-2 focus-visible:outline-sky-600">
+          <p className="text-sm font-semibold text-slate-900">الاختبارات</p>
+          <p className="mt-1 text-xs text-slate-500">بناء اختبارات من بنك الأسئلة ونشرها برابط عام.</p>
+        </button>
+        <button
+          type="button"
           onClick={() => navigate('/dashboard/settings')}
           className="min-h-24 rounded-lg border border-slate-200 bg-white p-4 text-start hover:border-sky-300 focus-visible:outline-2 focus-visible:outline-sky-600">
           <p className="text-sm font-semibold text-slate-900">إعدادات مساحة العمل</p>

@@ -62,6 +62,9 @@ export function RootLayout({ children }: { children: ReactNode }) {
                 <NavLink to="/dashboard/questions" className={navLinkClass}>
                   بنك الأسئلة
                 </NavLink>
+                <NavLink to="/dashboard/quizzes" className={navLinkClass}>
+                  الاختبارات
+                </NavLink>
                 <NavLink to="/dashboard/settings" className={navLinkClass}>
                   الإعدادات
                 </NavLink>

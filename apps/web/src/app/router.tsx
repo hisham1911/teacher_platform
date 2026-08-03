@@ -24,6 +24,12 @@ const QuestionEditPage = lazy(() => import('../routes/dashboard/questions/questi
 const QuestionPreviewPage = lazy(() => import('../routes/dashboard/questions/question-preview-page'));
 const QuestionVersionsPage = lazy(() => import('../routes/dashboard/questions/question-versions-page'));
 
+const QuizzesPage = lazy(() => import('../routes/dashboard/quizzes/quizzes-page'));
+const QuizNewPage = lazy(() => import('../routes/dashboard/quizzes/quiz-new-page'));
+const QuizEditPage = lazy(() => import('../routes/dashboard/quizzes/quiz-edit-page'));
+const QuizPreviewPage = lazy(() => import('../routes/dashboard/quizzes/quiz-preview-page'));
+const QuizPublishPage = lazy(() => import('../routes/dashboard/quizzes/quiz-publish-page'));
+
 const PlayDemoPage = lazy(() => import('../routes/play/play-demo-page'));
 
 export const router = createBrowserRouter([
@@ -54,6 +60,11 @@ export const router = createBrowserRouter([
           { path: '/dashboard/questions/:questionId/edit', element: <QuestionEditPage /> },
           { path: '/dashboard/questions/:questionId/preview', element: <QuestionPreviewPage /> },
           { path: '/dashboard/questions/:questionId/versions', element: <QuestionVersionsPage /> },
+          { path: '/dashboard/quizzes', element: <QuizzesPage /> },
+          { path: '/dashboard/quizzes/new', element: <QuizNewPage /> },
+          { path: '/dashboard/quizzes/:quizId/edit', element: <QuizEditPage /> },
+          { path: '/dashboard/quizzes/:quizId/preview', element: <QuizPreviewPage /> },
+          { path: '/dashboard/quizzes/:quizId/publish', element: <QuizPublishPage /> },
         ],
       },
       { path: '/play/demo', element: <PlayDemoPage /> },
