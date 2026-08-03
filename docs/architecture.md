@@ -65,3 +65,19 @@ ASP.NET Core Web API (Kestrel خلف Nginx)
   وبيانات الاعتماد في Secret دائمًا — لا في المستودع.
 - Question/QuestionVersion: نموذج تعدد نسخ مع إصدارات Immutable، وRowVersion (xmin)
   للحماية من التعديل المتزامن: أي `<baseVersion>` قديمة تعيد 409.
+
+## Phase 3 — Quiz Builder والنشر
+
+- **Quiz** كهوية (Identity) تحمل الحالة العامة والمؤشرات إلى النسخة المسودة الحالية
+  (`CurrentDraftVersionId`) والنسخة المنشورة الحالية (`CurrentPublishedVersionId`)؛
+  المحتوى الفعلي يعيش في **QuizVersion** (Immutable).
+- **QuizVersionItem** يثبّت `QuestionVersionId` داخل النسخة — لا يتغير بعد إنشاء النسخة،
+  مما يضمن أن الطالب يرى نفس الأسئلة التي رآها المعلم عند النشر.
+- **النشر (Publish)** يتطلب `IsValid` على النسخة المسودة: كل سؤال يجب أن يكون `Active`
+  وله `CurrentVersionId` صالح، وكل `QuestionVersionId` يجب أن يكون موجودًا في نفس الـTenant.
+- **Optimistic Concurrency** عبر `xmin` (RowVersion) على `Quiz` و`QuizVersion` — أي
+  `BaseVersion` قديمة تعيد `409 Conflict`.
+- **Public Code** (`PublicCode`) يُولّد تلقائيًا عند الإنشاء (GUID-only، 32 حرفًا)
+  ويُستخدم للوصول العام للاختبار المنشور عبر `GET /api/v1/public/quizzes/{publicCode}`.
+- **Quiz Limit** (`IQuizLimitService`) يفرض حدًا أقصى للاختبارات النشطة لكل Tenant
+  (افتراضي 50، قابل للإعداد عبر `Quiz:MaxActivePerTenant`).

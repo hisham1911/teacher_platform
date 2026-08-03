@@ -67,11 +67,42 @@ GET  /api/v1/tenants/{tenantId}/media/{mediaId}/content    # بث المحتوى
 - الأسماء الداخلية GUID-only: `tenant-assets/{tenantId}/{questions|audio}/{assetId}/original.ext`.
 - التخزين كائنات عبر `IObjectStorage`: محلي للتطوير/الاختبارات (`.media-storage/`)، وتجريد S3-compatible للإنتاج. لا تُعاد مسارات الداخل أبدًا.
 
+## بند Phase 3 — Quiz Builder والنشر
+
+### الاختبارات (Quizzes)
+
+```text
+GET    /api/v1/tenants/{tenantId}/quizzes?search=&status=&page=&pageSize=
+POST   /api/v1/tenants/{tenantId}/quizzes                    # إنشاء مسودة — Owner/Teacher
+GET    /api/v1/tenants/{tenantId}/quizzes/{quizId}
+PATCH  /api/v1/tenants/{tenantId}/quizzes/{quizId}           # تعديل المسودة — BaseVersion مطلوب
+POST   /api/v1/tenants/{tenantId}/quizzes/{quizId}/items     # إضافة سؤال — Owner/Teacher
+DELETE /api/v1/tenants/{tenantId}/quizzes/{quizId}/items/{itemId}  # إزالة سؤال — Owner/Teacher
+PUT    /api/v1/tenants/{tenantId}/quizzes/{quizId}/items/reorder   # إعادة ترتيب — Owner/Teacher
+POST   /api/v1/tenants/{tenantId}/quizzes/{quizId}/publish   # نشر المسودة — Owner/Teacher
+POST   /api/v1/tenants/{tenantId}/quizzes/{quizId}/archive   # أرشفة — Owner/Teacher
+```
+
+قواعد:
+- `BaseVersion` (حقول `xmin` المعروضة في `GET /quizzes/{id}` باسم `version`) مطلوب عند التعديل. اختلافه → `409 Conflict`.
+- `QuizVersionItem` يثبّت `QuestionVersionId` — لا يتغير بعد إنشاء النسخة.
+- النشر يتطلب `IsValid` على المسودة: كل سؤال Active وله `CurrentVersionId` صالح في نفس الـTenant.
+- `PublicCode` يُولّد تلقائيًا عند الإنشاء (GUID-only، 32 حرفًا) ويُستخدم للوصول العام.
+
+### الاختبارات العامة (Public Quizzes)
+
+```text
+GET    /api/v1/public/quizzes/{publicCode}                   # بدون مصادقة — يعرض النسخة المنشورة فقط
+```
+
+- يعيد `404` إذا كان الاختبار `Draft` أو `Archived`.
+- لا يعرض الإجابات الصحيحة — فقط الأسئلة والخيارات.
+
 ## الاستجابات الشائعة
 
 - `400`: مدخلات غير صالحة أو سؤال يفشل بقعة Validation (Codes مثل `QuestionInvalid`, `UnsupportedMediaType`, `EmptyFile`).
 - `401/403`: غير مصادق / ليس عضوًا / دور غير كافٍ.
-- `404`: سؤال/بنك/وسيط غير موجود في هذا Tenant.
+- `404`: سؤال/بنك/وسيط/اختبار غير موجود في هذا Tenant.
 - `409 Conflict`: تعديل بـ`BaseVersion` قديم.
 - `413 Payload Too Large`: ملف يتجاوز `ImageMaxBytes`/`AudioMaxBytes`.
 
