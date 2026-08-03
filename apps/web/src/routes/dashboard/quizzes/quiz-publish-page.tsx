@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams } from 'react-router';
+import QRCode from 'react-qr-code';
 import { Button } from '../../../components/ui/button';
 import { ButtonSpinner } from '../../../components/ui/spinner';
 import { quizzesApi } from '../../../data/api-client/endpoints';
@@ -35,6 +36,16 @@ export default function QuizPublishPage() {
     queryKey: ['quiz-versions', tenantId, quizId],
     queryFn: ({ signal }) => quizzesApi.listVersions(tenantId!, quizId!, signal),
     enabled: Boolean(tenantId && quizId),
+  });
+
+  const hasPublishedVersion = Boolean(
+    versionsQuery.data?.some((v) => v.status === 'Published'),
+  );
+
+  const shareQuery = useQuery({
+    queryKey: ['quiz-share', tenantId, quizId],
+    queryFn: ({ signal }) => quizzesApi.getShare(tenantId!, quizId!, signal),
+    enabled: Boolean(tenantId && quizId) && hasPublishedVersion && !publishResult,
   });
 
   const publishMutation = useMutation({
@@ -217,9 +228,41 @@ export default function QuizPublishPage() {
               </Button>
             </div>
           </dl>
+          <div className="mt-4 flex flex-col items-start gap-2">
+            <span className="text-sm font-medium text-emerald-900">رمز QR للمشاركة:</span>
+            <div dir="ltr" className="rounded-lg bg-white p-3" data-testid="share-qr-code">
+              <QRCode value={publishResult.shareUrl} size={160} />
+            </div>
+          </div>
           <p className="mt-3 rounded-lg border border-sky-200 bg-sky-50 p-3 text-xs text-sky-800">
             ملاحظة: واجهة الطالب (Player) ستتوفر في المرحلة 4. الرابط العام يعرض صفحة تعريفية بالاختبار فقط حاليًا.
           </p>
+        </section>
+      ) : null}
+
+      {/* Share section for already-published quiz (when no fresh publish result) */}
+      {!publishResult && shareQuery.data ? (
+        <section aria-labelledby="share-heading" className="rounded-xl border border-slate-200 bg-white p-4">
+          <h2 id="share-heading" className="mb-3 text-base font-semibold text-slate-900">المشاركة</h2>
+          <dl className="flex flex-col gap-2 text-sm text-slate-800">
+            <div className="flex gap-2">
+              <dt className="font-medium">الرمز العام:</dt>
+              <dd dir="ltr" className="font-mono">{shareQuery.data.publicCode}</dd>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <dt className="font-medium">رابط المشاركة:</dt>
+              <dd dir="ltr" className="font-mono text-xs">{shareQuery.data.shareUrl}</dd>
+              <Button variant="secondary" onClick={() => onCopyShareUrl(shareQuery.data.shareUrl)}>
+                {copied ? 'تم النسخ ✓' : 'نسخ الرابط'}
+              </Button>
+            </div>
+          </dl>
+          <div className="mt-4 flex flex-col items-start gap-2">
+            <span className="text-sm font-medium text-slate-800">رمز QR للمشاركة:</span>
+            <div dir="ltr" className="rounded-lg bg-white p-3" data-testid="share-qr-code">
+              <QRCode value={shareQuery.data.shareUrl} size={160} />
+            </div>
+          </div>
         </section>
       ) : null}
 
