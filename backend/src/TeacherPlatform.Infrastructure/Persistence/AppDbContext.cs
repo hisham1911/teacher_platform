@@ -42,6 +42,11 @@ public class AppDbContext(
     public DbSet<Domain.Questions.QuestionTag> QuestionTags => Set<Domain.Questions.QuestionTag>();
     public DbSet<Domain.Questions.QuestionTagLink> QuestionTagLinks => Set<Domain.Questions.QuestionTagLink>();
 
+    // Phase 3 — Quiz Builder & Publishing (Tenant-owned، Global Filters مطلوبة)
+    public DbSet<Domain.Quizzes.Quiz> Quizzes => Set<Domain.Quizzes.Quiz>();
+    public DbSet<Domain.Quizzes.QuizVersion> QuizVersions => Set<Domain.Quizzes.QuizVersion>();
+    public DbSet<Domain.Quizzes.QuizVersionItem> QuizVersionItems => Set<Domain.Quizzes.QuizVersionItem>();
+
     // Tenancy sets — تُخفى من النموذج عندما تُجمد Tenancy أثناء توليد AddIdentity
     private DbSet<Tenant>? _tenants;
     private DbSet<TenantMembership>? _tenantMemberships;
@@ -88,6 +93,11 @@ public class AppDbContext(
             modelBuilder.ApplyConfiguration(new Configurations.QuestionOptionConfiguration());
             modelBuilder.ApplyConfiguration(new Configurations.QuestionTagConfiguration());
             modelBuilder.ApplyConfiguration(new Configurations.QuestionTagLinkConfiguration());
+
+            // Phase 3 — Quiz Builder & Publishing
+            modelBuilder.ApplyConfiguration(new Configurations.QuizConfiguration());
+            modelBuilder.ApplyConfiguration(new Configurations.QuizVersionConfiguration());
+            modelBuilder.ApplyConfiguration(new Configurations.QuizVersionItemConfiguration());
         }
         else
         {
@@ -101,6 +111,9 @@ public class AppDbContext(
             modelBuilder.Ignore<Domain.Questions.QuestionOption>();
             modelBuilder.Ignore<Domain.Questions.QuestionTag>();
             modelBuilder.Ignore<Domain.Questions.QuestionTagLink>();
+            modelBuilder.Ignore<Domain.Quizzes.Quiz>();
+            modelBuilder.Ignore<Domain.Quizzes.QuizVersion>();
+            modelBuilder.Ignore<Domain.Quizzes.QuizVersionItem>();
         }
 
         ApplyTenantQueryFilters(modelBuilder);

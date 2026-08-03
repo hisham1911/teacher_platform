@@ -265,6 +265,15 @@ else
 builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.MediaService>();
 builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.QuestionService>();
 
+// ---------- Phase 3: Quiz Builder & Publishing ----------
+builder.Services.AddOptions<TeacherPlatform.Application.Options.QuizLimitOptions>()
+    .Bind(configuration.GetSection(TeacherPlatform.Application.Options.QuizLimitOptions.SectionName))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+builder.Services.AddScoped<TeacherPlatform.Application.Abstractions.IQuizLimitService,
+    TeacherPlatform.Infrastructure.Services.QuizLimitService>();
+builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.QuizService>();
+
 // ---------- Health Checks ----------
 builder.Services.AddHealthChecks().AddDbContextCheck<AppDbContext>("database");
 
