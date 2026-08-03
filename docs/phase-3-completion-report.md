@@ -159,9 +159,9 @@ GET    /api/v1/public/quizzes/{publicCode}                   # عرض النسخ
 **Commits جولة المراجعة والإغلاق (Review Round):**
 - `875735b` fix(frontend): add public quiz landing page at /q/:publicCode — إغلاق GAP-A
 - `dbcb50a` feat(frontend): add QR code to quiz publish share panel — إغلاق GAP-B
-- `TBD` docs: Phase 3 review round — ADRs 005/006 + report closure
+- `2198afe` docs: Phase 3 review round closure — ADRs 005/006, gap analysis, doc fixes
 
-**Final SHA:** `TBD`
+**Final SHA:** `2198afe624ea7a70a90ab839decf344309c36c9d`
 
 **Git:** `git status --short` فارغ (تم التحقق 2026-08-03).
 
