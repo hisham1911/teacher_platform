@@ -290,6 +290,37 @@ public sealed class QuizzesController : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>
+    /// GAP-C: تثبيت العنصر على أحدث نسخة من السؤال المصدر (مسودة فقط).
+    /// يتطلب BaseVersion مطابقًا لـxmin المسودة — mismatch ⇒ 409.
+    /// </summary>
+    [HttpPost("{quizId:guid}/draft/items/{itemId:guid}/use-latest-version")]
+    [Authorize(Policy = AuthorizationPolicies.TenantContentManagement)]
+    [ProducesResponseType(typeof(QuizDraftResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> UseLatestQuestionVersion(
+        [FromRoute] Guid tenantId,
+        [FromRoute] Guid quizId,
+        [FromRoute] Guid itemId,
+        [FromBody] UseLatestQuestionVersionRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
+        var (error, result) = await _quizService.UseLatestQuestionVersionAsync(quizId, itemId, request, cancellationToken);
+        if (error is not null)
+        {
+            throw error;
+        }
+
+        return Ok(result);
+    }
+
     // ---------- Preview & Versions ----------
 
     /// <summary>معاينة المعلّم — محتوى المسودة الكامل مع معلومات التصحيح. لا ينشئ أي محاولة.</summary>

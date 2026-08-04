@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using TeacherPlatform.Application.Abstractions;
 using TeacherPlatform.Application.Questions;
 using TeacherPlatform.Application.Quizzes;
+using TeacherPlatform.Application.Tenancy;
 using TeacherPlatform.Domain.Questions;
 using TeacherPlatform.Domain.Questions.Validation;
 using TeacherPlatform.Domain.Quizzes;
@@ -26,11 +27,27 @@ public sealed class QuizService
 {
     private readonly AppDbContext _db;
     private readonly IQuizLimitService _limits;
+    private readonly ITenantContext _tenantContext;
 
-    public QuizService(AppDbContext db, IQuizLimitService limits)
+    public QuizService(AppDbContext db, IQuizLimitService limits, ITenantContext tenantContext)
     {
         _db = db;
         _limits = limits;
+        _tenantContext = tenantContext;
+    }
+
+    /// <summary>
+    /// يعيد معرف المستأجر المحلول للطلب الحالي أو يفشل بأمان.
+    /// ممنوع تمرير Guid.Empty لفحوص الحصص — يجب أن يكون السياق محلولًا من Middleware.
+    /// </summary>
+    private Guid RequireTenantId()
+    {
+        if (!_tenantContext.IsResolved || _tenantContext.TenantId is not Guid tenantId || tenantId == Guid.Empty)
+        {
+            throw new ServiceResultException("TenantContextMissing", "Tenant context is not resolved for this request.");
+        }
+
+        return tenantId;
     }
 
     // ---------- Listing & Detail ----------
@@ -149,7 +166,7 @@ public sealed class QuizService
             return (new ServiceResultException("SlugConflict", "A quiz with this slug already exists."), null);
         }
 
-        var limitError = await _limits.CheckCanCreateQuizAsync(Guid.Empty, cancellationToken);
+        var limitError = await _limits.CheckCanCreateQuizAsync(RequireTenantId(), cancellationToken);
         if (limitError is not null)
         {
             return (limitError, null);
@@ -410,7 +427,7 @@ public sealed class QuizService
             return (new ServiceResultException("DuplicateMember", "This question is already in the quiz."), null);
         }
 
-        var limitError = await _limits.CheckCanAddQuestionAsync(Guid.Empty, draftId, cancellationToken);
+        var limitError = await _limits.CheckCanAddQuestionAsync(RequireTenantId(), draftId, cancellationToken);
         if (limitError is not null)
         {
             return (limitError, null);
@@ -561,6 +578,77 @@ public sealed class QuizService
         return (null, result);
     }
 
+    /// <summary>
+    /// GAP-C: تحديث عنصر مسودة ليثبّت أحدث نسخة من السؤال المصدر.
+    /// - يعمل على المسودة الحالية فقط — لا يمس أي نسخة منشورة (Immutable).
+    /// - يتطلب BaseVersion مطابقًا لـxmin الحالي للمسودة؛ mismatch ⇒ 409 Conflict.
+    /// - Idempotent: إن كان العنصر مثبتًا أصلًا على أحدث نسخة يعيد المسودة دون تغيير.
+    /// - السؤال المصدر يجب أن يكون موجودًا وغير مؤرشف وضمن نفس المستأجر (Global Filters).
+    /// </summary>
+    public async Task<(ServiceResultException? Error, QuizDraftResponse? Result)> UseLatestQuestionVersionAsync(
+        Guid quizId,
+        Guid itemId,
+        UseLatestQuestionVersionRequest request,
+        CancellationToken cancellationToken)
+    {
+        var quiz = await _db.Quizzes.SingleOrDefaultAsync(q => q.Id == quizId, cancellationToken);
+        if (quiz is null || quiz.CurrentDraftVersionId is null)
+        {
+            return (new ServiceResultException("NotFound", "Quiz not found."), null);
+        }
+
+        var draftId = quiz.CurrentDraftVersionId.Value;
+
+        var draft = await _db.QuizVersions
+            .SingleOrDefaultAsync(v => v.Id == draftId, cancellationToken);
+        if (draft is null)
+        {
+            return (new ServiceResultException("NotFound", "Draft version not found."), null);
+        }
+
+        if (request.BaseVersion != draft.Version)
+        {
+            return (new ServiceResultException("Conflict", "The draft was modified by someone else. Reload and try again."), null);
+        }
+
+        var item = await _db.QuizVersionItems
+            .Include(i => i.QuestionVersion)
+            .SingleOrDefaultAsync(i => i.Id == itemId && i.QuizVersionId == draftId, cancellationToken);
+        if (item is null || item.QuestionVersion is null)
+        {
+            return (new ServiceResultException("NotFound", "Quiz item not found."), null);
+        }
+
+        // السؤال المصدر يجب أن يكون نشطًا وضمن المستأجر (Global Filters تفرض العزل).
+        var question = await _db.Questions
+            .AsNoTracking()
+            .SingleOrDefaultAsync(q => q.Id == item.QuestionVersion.QuestionId, cancellationToken);
+
+        if (question is null || question.Status == QuestionStatus.Archived || question.CurrentVersionId is null)
+        {
+            return (new ServiceResultException("NotFound", "Source question not found or is archived."), null);
+        }
+
+        // Idempotency: مثبت أصلًا على أحدث نسخة — لا شيء يتغير.
+        if (item.QuestionVersionId != question.CurrentVersionId.Value)
+        {
+            item.QuestionVersionId = question.CurrentVersionId.Value;
+            draft.UpdatedAt = DateTime.UtcNow;
+
+            try
+            {
+                await _db.SaveChangesAsync(cancellationToken);
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return (new ServiceResultException("Conflict", "The draft was modified by someone else. Reload and try again."), null);
+            }
+        }
+
+        var result = await LoadDraftWithItemsAsync(draftId, cancellationToken);
+        return (null, result);
+    }
+
     // ---------- Preview & Versions ----------
 
     /// <summary>معاينة المعلّم — نفس محتوى المسودة الكامل مع معلومات التصحيح. لا ينشئ أي محاولة.</summary>
@@ -695,7 +783,7 @@ public sealed class QuizService
             return (new ServiceResultException("Conflict", "The draft was modified by someone else. Reload and try again."), null);
         }
 
-        var limitError = await _limits.CheckCanPublishAsync(Guid.Empty, quizId, cancellationToken);
+        var limitError = await _limits.CheckCanPublishAsync(RequireTenantId(), quizId, cancellationToken);
         if (limitError is not null)
         {
             return (limitError, null);

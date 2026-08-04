@@ -216,6 +216,13 @@ export default function QuizEditPage() {
     );
   }
 
+  /** GAP-C: تثبيت أحدث نسخة من السؤال المصدر على عنصر المسودة (409 عند تعارض BaseVersion). */
+  function onUseLatestVersion(itemId: string) {
+    itemMutation.mutate(() =>
+      quizzesApi.useLatestItemVersion(tenantId!, quizId!, itemId, { baseVersion: versionRef.current }),
+    );
+  }
+
   // ---- Question picker state ----
   const [pickerSearchInput, setPickerSearchInput] = useState('');
   const [pickerSearch, setPickerSearch] = useState('');
@@ -426,6 +433,16 @@ export default function QuizEditPage() {
                       className="min-h-11 rounded-md border border-rose-300 px-2 text-xs text-rose-600 hover:bg-rose-50 disabled:opacity-40">
                       إزالة
                     </button>
+                    {item.pinnedVersionNumber < item.latestVersionNumber && !item.sourceQuestionArchived ? (
+                      <button
+                        type="button"
+                        onClick={() => onUseLatestVersion(item.id)}
+                        disabled={itemMutation.isPending}
+                        aria-label={`استخدام أحدث نسخة للسؤال ${index + 1}`}
+                        className="min-h-11 rounded-md border border-amber-300 bg-amber-50 px-2 text-xs font-medium text-amber-800 hover:bg-amber-100 disabled:opacity-40">
+                        استخدام أحدث نسخة
+                      </button>
+                    ) : null}
                   </div>
                 </div>
               </li>

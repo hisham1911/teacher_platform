@@ -152,6 +152,17 @@ public sealed class ReorderItemsRequest
     public IReadOnlyList<Guid> OrderedItemIds { get; set; } = [];
 }
 
+/// <summary>
+/// طلب تحديث عنصر مسودة ليستخدم أحدث نسخة من السؤال المصدر (GAP-C).
+/// يتطلب BaseVersion (xmin للمسودة) لكشف التعديل المتزامن — mismatch ⇒ 409.
+/// </summary>
+public sealed class UseLatestQuestionVersionRequest
+{
+    /// <summary>Optimistic concurrency على المسودة الحاوية للعنصر (xmin).</summary>
+    [Required]
+    public uint BaseVersion { get; set; }
+}
+
 // ---------- Draft / Preview / Versions ----------
 
 public sealed class QuizDraftItemResponse

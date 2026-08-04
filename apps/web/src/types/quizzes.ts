@@ -89,6 +89,11 @@ export interface ReorderItemsRequest {
   orderedItemIds: string[];
 }
 
+/** GAP-C: طلب تثبيت أحدث نسخة من السؤال على عنصر مسودة — BaseVersion للتزامن المتفائل (409 عند عدم التطابق). */
+export interface UseLatestItemVersionRequest {
+  baseVersion: number;
+}
+
 export interface QuizDraftItemOption {
   sortOrder: number;
   optionText: string;

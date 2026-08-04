@@ -511,6 +511,7 @@ import type {
   UpdateDraftRequest,
   UpdateQuizItemRequest,
   UpdateQuizRequest,
+  UseLatestItemVersionRequest,
 } from '../../types/quizzes';
 
 export interface QuizListQuery {
@@ -627,6 +628,16 @@ export const quizzesApi = {
     return call<QuizDraft>({
       method: 'PUT',
       path: `/api/v1/tenants/${tenantId}/quizzes/${quizId}/draft/items/order`,
+      body: payload,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+  useLatestItemVersion(tenantId: string, quizId: string, itemId: string, payload: UseLatestItemVersionRequest, signal?: AbortSignal) {
+    return call<QuizDraft>({
+      method: 'POST',
+      path: `/api/v1/tenants/${tenantId}/quizzes/${quizId}/draft/items/${itemId}/use-latest-version`,
       body: payload,
       signal,
       needsAuth: true,

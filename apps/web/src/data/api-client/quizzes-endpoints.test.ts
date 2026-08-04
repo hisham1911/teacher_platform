@@ -120,6 +120,18 @@ describe('quizzesApi request shapes', () => {
     expect(calls[0]!.url).toBe(`${BASE_URL}/api/v1/tenants/${TENANT}/quizzes/${QUIZ}/draft/items/item-7`);
   });
 
+  it('useLatestItemVersion يرسل POST مع baseVersion إلى مسار العنصر', async () => {
+    const calls = captureFetch({});
+    const { quizzesApi } = await import('../../data/api-client/endpoints');
+
+    await quizzesApi.useLatestItemVersion(TENANT, QUIZ, 'item-3', { baseVersion: 7 });
+
+    expect(calls[0]!.init?.method).toBe('POST');
+    expect(calls[0]!.url).toBe(`${BASE_URL}/api/v1/tenants/${TENANT}/quizzes/${QUIZ}/draft/items/item-3/use-latest-version`);
+    const body = JSON.parse(calls[0]!.init?.body as string);
+    expect(body).toEqual({ baseVersion: 7 });
+  });
+
   it('publish يرسل POST مع baseVersion إلى مسار النشر', async () => {
     const calls = captureFetch({ publishedVersionId: 'v1', versionNumber: 1 });
     const { quizzesApi } = await import('../../data/api-client/endpoints');

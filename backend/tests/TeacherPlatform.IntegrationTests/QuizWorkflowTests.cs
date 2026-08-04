@@ -835,4 +835,203 @@ public class QuizWorkflowTests : IClassFixture<TestWebApplicationFactory>, IAsyn
         Assert.False(publicPage.TryGetProperty("items", out _));
         Assert.False(publicPage.TryGetProperty("questions", out _));
     }
+
+    // ---------- GAP-C: استخدام أحدث نسخة من السؤال ----------
+
+    [Fact]
+    public async Task UseLatestVersion_PinsNewerQuestionVersion()
+    {
+        var client = NewClient();
+        var (_, token, _) = await RegisterConfirmLogin(_factory, client);
+        var tenantId = await CreateTenantFor(client, token);
+        var bankId = await CreateBankFor(client, token, tenantId);
+        var questionId = await CreateQuestionAsync(client, token, tenantId, bankId, "سؤال قديم");
+        var quizId = await CreateQuizAsync(client, token, tenantId, "اختبار", $"quiz-gapc-{Guid.NewGuid():N}"[..20]);
+
+        var draft = await AddItemAsync(client, token, tenantId, quizId, questionId);
+        var itemId = draft.GetProperty("items")[0].GetProperty("id").GetGuid();
+
+        // تعديل السؤال — ينشئ نسخة 2
+        var questionDetail = await client.SendAsync(WithAccessToken(new HttpRequestMessage(HttpMethod.Get,
+            $"/api/v1/tenants/{tenantId}/questions/{questionId}"), token));
+        var qBaseVersion = (await ReadJson<JsonElement>(questionDetail)).GetProperty("version").GetUInt32();
+        await client.SendAsync(WithAccessToken(new HttpRequestMessage(HttpMethod.Post,
+            $"/api/v1/tenants/{tenantId}/questions/{questionId}/versions")
+        {
+            Content = Json(new
+            {
+                prompt = "سؤال محدث",
+                options = new[] { new { text = "X", isCorrect = true }, new { text = "Y", isCorrect = false } },
+                baseVersion = qBaseVersion
+            })
+        }, token));
+
+        // استخدام أحدث نسخة
+        var currentDraft = await GetDraftAsync(client, token, tenantId, quizId);
+        var response = await client.SendAsync(WithAccessToken(new HttpRequestMessage(HttpMethod.Post,
+            $"/api/v1/tenants/{tenantId}/quizzes/{quizId}/draft/items/{itemId}/use-latest-version")
+        {
+            Content = Json(new { baseVersion = currentDraft.GetProperty("version").GetUInt32() })
+        }, token));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var updated = await ReadJson<JsonElement>(response);
+        var item = updated.GetProperty("items")[0];
+        Assert.Equal(2, item.GetProperty("pinnedVersionNumber").GetInt32());
+        Assert.Equal(2, item.GetProperty("latestVersionNumber").GetInt32());
+        Assert.Equal("سؤال محدث", item.GetProperty("prompt").GetString());
+    }
+
+    [Fact]
+    public async Task UseLatestVersion_StaleBaseVersion_Returns409()
+    {
+        var client = NewClient();
+        var (_, token, _) = await RegisterConfirmLogin(_factory, client);
+        var tenantId = await CreateTenantFor(client, token);
+        var bankId = await CreateBankFor(client, token, tenantId);
+        var questionId = await CreateQuestionAsync(client, token, tenantId, bankId, "سؤال");
+        var quizId = await CreateQuizAsync(client, token, tenantId, "اختبار", $"quiz-gapc-{Guid.NewGuid():N}"[..20]);
+
+        var draft = await AddItemAsync(client, token, tenantId, quizId, questionId);
+        var itemId = draft.GetProperty("items")[0].GetProperty("id").GetGuid();
+
+        // BaseVersion خاطئ (قديم)
+        var response = await client.SendAsync(WithAccessToken(new HttpRequestMessage(HttpMethod.Post,
+            $"/api/v1/tenants/{tenantId}/quizzes/{quizId}/draft/items/{itemId}/use-latest-version")
+        {
+            Content = Json(new { baseVersion = 999u })
+        }, token));
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task UseLatestVersion_WrongItem_Returns404()
+    {
+        var client = NewClient();
+        var (_, token, _) = await RegisterConfirmLogin(_factory, client);
+        var tenantId = await CreateTenantFor(client, token);
+        var bankId = await CreateBankFor(client, token, tenantId);
+        var questionId = await CreateQuestionAsync(client, token, tenantId, bankId, "سؤال");
+        var quizId = await CreateQuizAsync(client, token, tenantId, "اختبار", $"quiz-gapc-{Guid.NewGuid():N}"[..20]);
+
+        await AddItemAsync(client, token, tenantId, quizId, questionId);
+        var draft = await GetDraftAsync(client, token, tenantId, quizId);
+
+        var response = await client.SendAsync(WithAccessToken(new HttpRequestMessage(HttpMethod.Post,
+            $"/api/v1/tenants/{tenantId}/quizzes/{quizId}/draft/items/{Guid.NewGuid()}/use-latest-version")
+        {
+            Content = Json(new { baseVersion = draft.GetProperty("version").GetUInt32() })
+        }, token));
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task UseLatestVersion_ArchivedSourceQuestion_Returns404()
+    {
+        var client = NewClient();
+        var (_, token, _) = await RegisterConfirmLogin(_factory, client);
+        var tenantId = await CreateTenantFor(client, token);
+        var bankId = await CreateBankFor(client, token, tenantId);
+        var questionId = await CreateQuestionAsync(client, token, tenantId, bankId, "سؤال للأرشفة");
+        var quizId = await CreateQuizAsync(client, token, tenantId, "اختبار", $"quiz-gapc-{Guid.NewGuid():N}"[..20]);
+
+        var draft = await AddItemAsync(client, token, tenantId, quizId, questionId);
+        var itemId = draft.GetProperty("items")[0].GetProperty("id").GetGuid();
+
+        // أرشفة السؤال المصدر
+        await client.SendAsync(WithAccessToken(new HttpRequestMessage(HttpMethod.Post,
+            $"/api/v1/tenants/{tenantId}/questions/{questionId}/archive"), token));
+
+        var currentDraft = await GetDraftAsync(client, token, tenantId, quizId);
+        var response = await client.SendAsync(WithAccessToken(new HttpRequestMessage(HttpMethod.Post,
+            $"/api/v1/tenants/{tenantId}/quizzes/{quizId}/draft/items/{itemId}/use-latest-version")
+        {
+            Content = Json(new { baseVersion = currentDraft.GetProperty("version").GetUInt32() })
+        }, token));
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task UseLatestVersion_AlreadyLatest_IsIdempotent()
+    {
+        var client = NewClient();
+        var (_, token, _) = await RegisterConfirmLogin(_factory, client);
+        var tenantId = await CreateTenantFor(client, token);
+        var bankId = await CreateBankFor(client, token, tenantId);
+        var questionId = await CreateQuestionAsync(client, token, tenantId, bankId, "سؤال");
+        var quizId = await CreateQuizAsync(client, token, tenantId, "اختبار", $"quiz-gapc-{Guid.NewGuid():N}"[..20]);
+
+        var draft = await AddItemAsync(client, token, tenantId, quizId, questionId);
+        var itemId = draft.GetProperty("items")[0].GetProperty("id").GetGuid();
+
+        // السؤال بالفعل على أحدث نسخة (v1) — يجب أن ينجح بدون تغيير
+        var response = await client.SendAsync(WithAccessToken(new HttpRequestMessage(HttpMethod.Post,
+            $"/api/v1/tenants/{tenantId}/quizzes/{quizId}/draft/items/{itemId}/use-latest-version")
+        {
+            Content = Json(new { baseVersion = draft.GetProperty("version").GetUInt32() })
+        }, token));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var result = await ReadJson<JsonElement>(response);
+        Assert.Equal(1, result.GetProperty("items")[0].GetProperty("pinnedVersionNumber").GetInt32());
+    }
+
+    [Fact]
+    public async Task UseLatestVersion_CrossTenant_Returns404()
+    {
+        var clientA = NewClient();
+        var (_, tokenA, _) = await RegisterConfirmLogin(_factory, clientA);
+        var tenantA = await CreateTenantFor(clientA, tokenA);
+        var bankA = await CreateBankFor(clientA, tokenA, tenantA);
+        var questionA = await CreateQuestionAsync(clientA, tokenA, tenantA, bankA, "سؤال A");
+        var quizA = await CreateQuizAsync(clientA, tokenA, tenantA, "اختبار A", $"quiz-gapc-{Guid.NewGuid():N}"[..20]);
+        var draftA = await AddItemAsync(clientA, tokenA, tenantA, quizA, questionA);
+        var itemA = draftA.GetProperty("items")[0].GetProperty("id").GetGuid();
+
+        var clientB = NewClient();
+        var (_, tokenB, _) = await RegisterConfirmLogin(_factory, clientB);
+        var tenantB = await CreateTenantFor(clientB, tokenB);
+
+        // B يحاول الوصول لعنصر في اختبار A — يجب أن يفشل
+        var response = await clientB.SendAsync(WithAccessToken(new HttpRequestMessage(HttpMethod.Post,
+            $"/api/v1/tenants/{tenantB}/quizzes/{quizA}/draft/items/{itemA}/use-latest-version")
+        {
+            Content = Json(new { baseVersion = 1u })
+        }, tokenB));
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    // ---------- GAP-D: عزل حدود الاستخدام بين المستأجرين ----------
+
+    [Fact]
+    public async Task QuizLimits_AreIsolatedPerTenant()
+    {
+        // MaxQuizzesPerTenant = 2 في بيئة Testing
+        var clientA = NewClient();
+        var (_, tokenA, _) = await RegisterConfirmLogin(_factory, clientA);
+        var tenantA = await CreateTenantFor(clientA, tokenA);
+
+        // المستأجر A يملأ حصته (2 اختبار)
+        await CreateQuizAsync(clientA, tokenA, tenantA, "اختبار 1", $"qa-{Guid.NewGuid():N}"[..20]);
+        await CreateQuizAsync(clientA, tokenA, tenantA, "اختبار 2", $"qa-{Guid.NewGuid():N}"[..20]);
+
+        // الثالث يجب أن يفشل بـ QuotaExceeded
+        var thirdResponse = await clientA.SendAsync(WithAccessToken(new HttpRequestMessage(HttpMethod.Post,
+            $"/api/v1/tenants/{tenantA}/quizzes")
+        {
+            Content = Json(new { title = "اختبار 3", slug = $"qa-{Guid.NewGuid():N}"[..20] })
+        }, tokenA));
+        Assert.Equal(HttpStatusCode.Forbidden, thirdResponse.StatusCode);
+
+        // المستأجر B لا يتأثر — يمكنه الإنشاء
+        var clientB = NewClient();
+        var (_, tokenB, _) = await RegisterConfirmLogin(_factory, clientB);
+        var tenantB = await CreateTenantFor(clientB, tokenB);
+        var bQuiz = await CreateQuizAsync(clientB, tokenB, tenantB, "اختبار B", $"qb-{Guid.NewGuid():N}"[..20]);
+        Assert.NotEqual(Guid.Empty, bQuiz);
+    }
 }
