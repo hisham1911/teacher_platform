@@ -167,6 +167,11 @@ export default function QuizzesPage() {
                     className="min-h-11 rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-sky-600">
                     نشر
                   </Link>
+                  <Link
+                    to={`/dashboard/quizzes/${quiz.id}/sessions`}
+                    className="min-h-11 rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-sky-600">
+                    جلسات
+                  </Link>
                   {quiz.status !== 'Archived' ? (
                     <button
                       type="button"

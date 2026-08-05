@@ -702,3 +702,147 @@ export const publicQuizApi = {
     });
   },
 };
+
+// ---------- Phase 4: Sessions (Teacher) & Player (Anonymous) ----------
+import type {
+  AttemptResult,
+  CreateSessionRequest,
+  FinishAttemptResponse,
+  JoinSessionRequest,
+  JoinSessionResponse,
+  PlayerQuestion,
+  PlayerSession,
+  SessionDetail,
+  SessionListItem,
+  SessionStateChangeRequest,
+  StartAttemptResponse,
+  SubmitAnswerRequest,
+  SubmitAnswerResponse,
+} from '../../types/sessions';
+
+export const sessionsApi = {
+  list(tenantId: string, quizId: string, page?: number, pageSize?: number, signal?: AbortSignal) {
+    const params = new URLSearchParams();
+    if (page) params.set('page', String(page));
+    if (pageSize) params.set('pageSize', String(pageSize));
+    const qs = params.toString();
+    return call<PagedResponse<SessionListItem>>({
+      method: 'GET',
+      path: `/api/v1/tenants/${tenantId}/quizzes/${quizId}/sessions${qs ? `?${qs}` : ''}`,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+  create(tenantId: string, quizId: string, payload: CreateSessionRequest, signal?: AbortSignal) {
+    return call<SessionDetail>({
+      method: 'POST',
+      path: `/api/v1/tenants/${tenantId}/quizzes/${quizId}/sessions`,
+      body: payload,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+  get(tenantId: string, quizId: string, sessionId: string, signal?: AbortSignal) {
+    return call<SessionDetail>({
+      method: 'GET',
+      path: `/api/v1/tenants/${tenantId}/quizzes/${quizId}/sessions/${sessionId}`,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+  activate(tenantId: string, quizId: string, sessionId: string, payload: SessionStateChangeRequest, signal?: AbortSignal) {
+    return call<SessionDetail>({
+      method: 'POST',
+      path: `/api/v1/tenants/${tenantId}/quizzes/${quizId}/sessions/${sessionId}/activate`,
+      body: payload,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+  finish(tenantId: string, quizId: string, sessionId: string, payload: SessionStateChangeRequest, signal?: AbortSignal) {
+    return call<SessionDetail>({
+      method: 'POST',
+      path: `/api/v1/tenants/${tenantId}/quizzes/${quizId}/sessions/${sessionId}/finish`,
+      body: payload,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+  cancel(tenantId: string, quizId: string, sessionId: string, payload: SessionStateChangeRequest, signal?: AbortSignal) {
+    return call<SessionDetail>({
+      method: 'POST',
+      path: `/api/v1/tenants/${tenantId}/quizzes/${quizId}/sessions/${sessionId}/cancel`,
+      body: payload,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+};
+
+/**
+ * Player API — مجهول تمامًا. لا Authorization ولا X-Tenant-Id.
+ * الـGuest Token يعيش في HttpOnly Cookie ويُرسل تلقائيًا عبر credentials:'include'.
+ */
+export const playerApi = {
+  getSession(joinCode: string, signal?: AbortSignal) {
+    return call<PlayerSession>({
+      method: 'GET',
+      path: `/api/v1/player/sessions/${encodeURIComponent(joinCode)}`,
+      signal,
+    });
+  },
+  join(joinCode: string, payload: JoinSessionRequest, signal?: AbortSignal) {
+    return call<JoinSessionResponse>({
+      method: 'POST',
+      path: `/api/v1/player/sessions/${encodeURIComponent(joinCode)}/join`,
+      body: payload,
+      signal,
+    });
+  },
+  startAttempt(joinCode: string, signal?: AbortSignal) {
+    return call<StartAttemptResponse>({
+      method: 'POST',
+      path: `/api/v1/player/sessions/${encodeURIComponent(joinCode)}/attempts`,
+      signal,
+    });
+  },
+  getCurrentQuestion(joinCode: string, attemptId: string, signal?: AbortSignal) {
+    return call<PlayerQuestion>({
+      method: 'GET',
+      path: `/api/v1/player/sessions/${encodeURIComponent(joinCode)}/attempts/${attemptId}/current-question`,
+      signal,
+    });
+  },
+  submitAnswer(joinCode: string, attemptId: string, payload: SubmitAnswerRequest, signal?: AbortSignal) {
+    return call<SubmitAnswerResponse>({
+      method: 'POST',
+      path: `/api/v1/player/sessions/${encodeURIComponent(joinCode)}/attempts/${attemptId}/answers`,
+      body: payload,
+      signal,
+    });
+  },
+  finish(joinCode: string, attemptId: string, signal?: AbortSignal) {
+    return call<FinishAttemptResponse>({
+      method: 'POST',
+      path: `/api/v1/player/sessions/${encodeURIComponent(joinCode)}/attempts/${attemptId}/finish`,
+      signal,
+    });
+  },
+  getResult(joinCode: string, attemptId: string, signal?: AbortSignal) {
+    return call<AttemptResult>({
+      method: 'GET',
+      path: `/api/v1/player/sessions/${encodeURIComponent(joinCode)}/attempts/${attemptId}/result`,
+      signal,
+    });
+  },
+  /** URL مباشر لوسائط السؤال — الـGuest Cookie يُرسل تلقائيًا من المتصفح (لا Bearer). */
+  mediaUrl(joinCode: string, attemptId: string, mediaId: string): string {
+    return `${resolveBaseUrl()}/api/v1/player/sessions/${encodeURIComponent(joinCode)}/attempts/${attemptId}/media/${mediaId}`;
+  },
+};

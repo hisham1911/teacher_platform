@@ -30,8 +30,10 @@ const QuizNewPage = lazy(() => import('../routes/dashboard/quizzes/quiz-new-page
 const QuizEditPage = lazy(() => import('../routes/dashboard/quizzes/quiz-edit-page'));
 const QuizPreviewPage = lazy(() => import('../routes/dashboard/quizzes/quiz-preview-page'));
 const QuizPublishPage = lazy(() => import('../routes/dashboard/quizzes/quiz-publish-page'));
+const QuizSessionsPage = lazy(() => import('../routes/dashboard/quizzes/quiz-sessions-page'));
+const SessionDetailPage = lazy(() => import('../routes/dashboard/sessions/session-detail-page'));
 
-const PlayDemoPage = lazy(() => import('../routes/play/play-demo-page'));
+const PlayPage = lazy(() => import('../routes/play/play-page'));
 
 export const router = createBrowserRouter([
   {
@@ -66,9 +68,11 @@ export const router = createBrowserRouter([
           { path: '/dashboard/quizzes/:quizId/edit', element: <QuizEditPage /> },
           { path: '/dashboard/quizzes/:quizId/preview', element: <QuizPreviewPage /> },
           { path: '/dashboard/quizzes/:quizId/publish', element: <QuizPublishPage /> },
+          { path: '/dashboard/quizzes/:quizId/sessions', element: <QuizSessionsPage /> },
+          { path: '/dashboard/sessions/:sessionId', element: <SessionDetailPage /> },
         ],
       },
-      { path: '/play/demo', element: <PlayDemoPage /> },
+      { path: '/play/:joinCode', element: <PlayPage /> },
       { path: '/q/:publicCode', element: <PublicQuizPage /> },
     ],
   },
