@@ -81,3 +81,21 @@ ASP.NET Core Web API (Kestrel خلف Nginx)
   ويُستخدم للوصول العام للاختبار المنشور عبر `GET /api/v1/public/quizzes/{publicCode}`.
 - **Quiz Limit** (`IQuizLimitService`) يفرض حدًا أقصى للاختبارات النشطة لكل Tenant
   (افتراضي 50، قابل للإعداد عبر `Quiz:MaxActivePerTenant`).
+
+## Phase 4 — الجلسات ومشغل الطالب والتصحيح الخادمي
+
+- **QuizSession** يربط اختبارًا منشورًا بجمهور: `JoinCode` عام (8 أحرف)، `Mode`
+  (SelfPaced فقط في Phase 4 — Live مرفوض بـ`LiveModeNotAvailable`)، `Status`
+  (Scheduled/Active/Finished/Cancelled)، و`QuizVersionId` يُثبَّت عند التفعيل.
+- **SessionParticipant** يمثل طالبًا بلا حساب: رمز ضيف 256-bit يُخزن **هاش SHA-256
+  فقط** ويُقارن بمقارنة ثابتة الزمن، ويُنقل بكوكي HttpOnly (`__Host-tp-guest`) —
+  التفاصيل في ADR 007. `ShuffleSeed` لكل مشارك يقود خلطًا حتميًا للأسئلة
+  (`SeededShuffler`) فيرى الطالب نفس الترتيب عبر الجلسات والاستئناف.
+- **Attempt / AttemptAnswer**: محاولة واحدة نشطة لكل مشارك؛ الإجابات Immutable
+  بعد القبول — إعادة نفس الإجابة Idempotent (200)، وإجابة مختلفة = 409.
+  `AnswerJson` مخزن `jsonb` لذلك تتم المقارنة **دلاليًا** لا نصيًا (ADR 008).
+- **التصحيح خادمي بالكامل** عبر `AnswerScorer` (Domain، دالة نقية بلا استثناءات)
+  لخمسة أنواع أسئلة؛ DTO اللاعب لا يكشف الإجابات الصحيحة قبل الإنهاء.
+- **سلطة الوقت خادمية**: `serverNow` في كل استجابة، و`DeadlineAt` يُفرض بأسلوب
+  settle-on-request — أي طلب بعد انقضاء الوقت يُنهي المحاولة `TimedOut` ثم يُرد.
+- **Rate Limiting** على كل نقاط اللاعب `[AllowAnonymous]` لإبطاء تخمين JoinCode.

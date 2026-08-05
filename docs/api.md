@@ -128,13 +128,57 @@ GET    /api/v1/public/quizzes/{publicCode}                   # بدون مصاد
 
 - صفحة الهبوط العامة في الواجهة: `/q/{publicCode}` (بدون مصادقة) تعرض هذه البيانات فقط.
 
+## بند Phase 4 — الجلسات ومشغل الطالب
+
+### الجلسات (Teacher — مصادق عليها)
+
+```text
+POST   /api/v1/tenants/{tenantId}/quizzes/{quizId}/sessions                 # إنشاء جلسة — 201
+GET    /api/v1/tenants/{tenantId}/quizzes/{quizId}/sessions                 # قائمة الجلسات
+GET    /api/v1/tenants/{tenantId}/quizzes/{quizId}/sessions/{sessionId}     # تفاصيل + إحصاءات
+POST   /api/v1/tenants/{tenantId}/quizzes/{quizId}/sessions/{sessionId}/activate   # تفعيل — body {baseVersion}
+POST   /api/v1/tenants/{tenantId}/quizzes/{quizId}/sessions/{sessionId}/finish     # إنهاء — body {baseVersion}
+POST   /api/v1/tenants/{tenantId}/quizzes/{quizId}/sessions/{sessionId}/cancel     # إلغاء — body {baseVersion}
+```
+
+قواعد:
+- Phase 4 تدعم `SelfPaced` فقط — إنشاء جلسة `Mode=Live` يرفض بـ`400 LiveModeNotAvailable`.
+- `JoinCode` (8 أحرف) يُولّد عند الإنشاء ويظهر في التفاصيل — يوزعه المعلم على الطلاب.
+- `activate` تتطلب اختبارًا منشورًا (`CurrentPublishedVersionId` غير null) وتثبّت `QuizVersionId` على الجلسة.
+- `baseVersion` (xmin) مطلوب لعمليات الحالة — اختلافه → `409 Conflict`.
+
+### واجهة اللاعب (بدون مصادقة — Rate-limited)
+
+```text
+GET    /api/v1/player/sessions/{joinCode}                                   # metadata الجلسة (بدون أسئلة)
+POST   /api/v1/player/sessions/{joinCode}/join                              # انضمام بالاسم — يعيد participantId + كوكي ضيف
+POST   /api/v1/player/sessions/{joinCode}/attempts                          # بدء محاولة — يتطلب كوكي الضيف
+GET    /api/v1/player/sessions/{joinCode}/attempts/{attemptId}/current-question  # السؤال الحالي + serverNow + deadlineAt
+POST   /api/v1/player/sessions/{joinCode}/attempts/{attemptId}/answers      # إرسال إجابة (Idempotent)
+POST   /api/v1/player/sessions/{joinCode}/attempts/{attemptId}/finish       # إنهاء المحاولة
+GET    /api/v1/player/sessions/{joinCode}/attempts/{attemptId}/result       # النتيجة بعد الإنهاء
+GET    /api/v1/player/sessions/{joinCode}/attempts/{attemptId}/media/{mediaId}   # وسائط سؤال داخل المحاولة
+```
+
+قواعد:
+- كل نقاط اللاعب `[AllowAnonymous]` ومحدودة المعدل؛ نقاط المحاولة تتطلب كوكي الضيف (`__Host-tp-guest` في Production، `tp-guest` في Development) — بدونها `401`.
+- رمز الضيف: 256-bit عشوائي، يُخزن **هاش SHA-256 فقط**، ويُقارن بمقارنة ثابتة الزمن (ADR 007).
+- **الأسئلة تُخلط حتميًا** لكل مشارك عبر `ShuffleSeed` — نفس المشارك يرى نفس الترتيب دائمًا (استئناف آمن بعد F5).
+- `PlayerQuestion` DTO آمن: لا `IsCorrect` ولا `acceptedAnswers` — الخيارات بنصها فقط.
+- صيغ الإجابات: MC/TF/Listening `{"optionId":"guid"}`، ShortAnswer `{"text":"..."}`، Ordering `{"orderedOptionIds":[...]}`.
+- **Idempotency:** إعادة إرسال نفس الإجابة = `200`؛ إرسال إجابة **مختلفة** لنفس السؤال = `409 AnswerConflict`. المقارنة دلالية (jsonb يطبّع المخزن — ADR 008).
+- **الوقت خادمي:** `serverNow` في كل استجابة؛ بعد `deadlineAt` يُنهي الخادم المحاولة `TimedOut` عند أول طلب لاحق (settle-on-request).
+- التصحيح خادمي بالكامل عبر `AnswerScorer` (ADR 008) — العميل لا يرى الإجابات الصحيحة إلا في `result` بعد الإنهاء.
+
 ## الاستجابات الشائعة
 
 - `400`: مدخلات غير صالحة أو سؤال يفشل بقعة Validation (Codes مثل `QuestionInvalid`, `UnsupportedMediaType`, `EmptyFile`).
 - `401/403`: غير مصادق / ليس عضوًا / دور غير كافٍ.
 - `404`: سؤال/بنك/وسيط/اختبار غير موجود في هذا Tenant.
-- `409 Conflict`: تعديل بـ`BaseVersion` قديم.
+- `400`: `LiveModeNotAvailable` عند طلب جلسة Live (Phase 4 تدعم SelfPaced فقط).
+- `409 Conflict`: تعديل بـ`BaseVersion` قديم؛ `AnswerConflict` لإجابة مختلفة لنفس السؤال؛ `SessionNotActive`/`AttemptFinished` لعمليات على جلسة/محاولة غير نشطة.
 - `413 Payload Too Large`: ملف يتجاوز `ImageMaxBytes`/`AudioMaxBytes`.
+- `429`: تجاوز معدل الطلبات على نقاط اللاعب.
 
 ## Pagination
 
