@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using TeacherPlatform.Application.Abstractions;
@@ -407,7 +408,8 @@ public sealed class PlayerService
                 cancellationToken);
         if (existingAnswer is not null)
         {
-            if (string.Equals(existingAnswer.AnswerJson, request.AnswerJson, StringComparison.Ordinal))
+            // jsonb يعيد تنسيق JSON المخزَّن (مسافات/ترتيب مفاتيح) — المقارنة دلالية وليست نصية.
+            if (AnswerJsonEquals(existingAnswer.AnswerJson, request.AnswerJson))
             {
                 return (null, new SubmitAnswerResponse
                 {
@@ -471,7 +473,7 @@ public sealed class PlayerService
                 .FirstOrDefaultAsync(
                     a => a.AttemptId == attempt.Id && a.QuizVersionItemId == item.Id && a.TenantId == session.TenantId,
                     cancellationToken);
-            if (raced is not null && string.Equals(raced.AnswerJson, request.AnswerJson, StringComparison.Ordinal))
+            if (raced is not null && AnswerJsonEquals(raced.AnswerJson, request.AnswerJson))
             {
                 return (null, new SubmitAnswerResponse
                 {
@@ -751,6 +753,89 @@ public sealed class PlayerService
     {
         var ordered = version.Items.OrderBy(i => i.SortOrder).ToList();
         return SeededShuffler.MaybeShuffle(ordered, shuffleSeed, version.ShuffleQuestions).ToList();
+    }
+
+    /// <summary>
+    /// مقارنة دلالية لحمولتي إجابة JSON. العمود jsonb يعيد تنسيق النص المخزَّن
+    /// (مسافات، ترتيب مفاتيح، تطبيع أرقام) لذا المقارنة النصية Ordinal غير صالحة
+    /// لتحقق Idempotency. عند تعذر التحليل نسقط إلى مقارنة نصية.
+    /// </summary>
+    private static bool AnswerJsonEquals(string stored, string incoming)
+    {
+        if (string.Equals(stored, incoming, StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        try
+        {
+            using var storedDoc = JsonDocument.Parse(stored);
+            using var incomingDoc = JsonDocument.Parse(incoming);
+            return JsonElementDeepEquals(storedDoc.RootElement, incomingDoc.RootElement);
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+    }
+
+    private static bool JsonElementDeepEquals(JsonElement left, JsonElement right)
+    {
+        if (left.ValueKind != right.ValueKind)
+        {
+            // jsonb قد يطبّع الأرقام (1 مقابل 1.0) — قارن القيمة الرقمية عند اختلاف النوع رقميًا.
+            if (left.ValueKind is JsonValueKind.Number && right.ValueKind is JsonValueKind.Number)
+            {
+                return left.GetDecimal() == right.GetDecimal();
+            }
+
+            return false;
+        }
+
+        switch (left.ValueKind)
+        {
+            case JsonValueKind.Object:
+                var leftProps = left.EnumerateObject().OrderBy(p => p.Name, StringComparer.Ordinal).ToList();
+                var rightProps = right.EnumerateObject().OrderBy(p => p.Name, StringComparer.Ordinal).ToList();
+                if (leftProps.Count != rightProps.Count)
+                {
+                    return false;
+                }
+
+                for (var i = 0; i < leftProps.Count; i++)
+                {
+                    if (!string.Equals(leftProps[i].Name, rightProps[i].Name, StringComparison.Ordinal) ||
+                        !JsonElementDeepEquals(leftProps[i].Value, rightProps[i].Value))
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+
+            case JsonValueKind.Array:
+                if (left.GetArrayLength() != right.GetArrayLength())
+                {
+                    return false;
+                }
+
+                var index = 0;
+                foreach (var item in left.EnumerateArray())
+                {
+                    if (!JsonElementDeepEquals(item, right[index++]))
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+
+            case JsonValueKind.Number:
+                return left.GetDecimal() == right.GetDecimal();
+
+            default:
+                return left.GetRawText() == right.GetRawText();
+        }
     }
 
     private bool IsPastDeadline(DateTime? deadlineAt, DateTime now)
