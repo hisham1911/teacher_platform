@@ -225,6 +225,16 @@ builder.Services.AddRateLimiter(options =>
                 QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                 QueueLimit = 0
             }));
+    options.AddPolicy(RateLimitPolicies.PlayerEndpoints, context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = rateConfig.PermitLimit,
+                Window = TimeSpan.FromSeconds(rateConfig.WindowSeconds),
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0
+            }));
 });
 
 // ---------- Application services ----------
@@ -273,6 +283,15 @@ builder.Services.AddOptions<TeacherPlatform.Application.Options.QuizLimitOptions
 builder.Services.AddScoped<TeacherPlatform.Application.Abstractions.IQuizLimitService,
     TeacherPlatform.Infrastructure.Services.QuizLimitService>();
 builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.QuizService>();
+
+// ---------- Phase 4: Sessions & Player ----------
+builder.Services.AddOptions<TeacherPlatform.Application.Options.SessionOptions>()
+    .Bind(configuration.GetSection(TeacherPlatform.Application.Options.SessionOptions.SectionName))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.GuestTokenService>();
+builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.SessionService>();
+builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.PlayerService>();
 
 // ---------- Health Checks ----------
 builder.Services.AddHealthChecks().AddDbContextCheck<AppDbContext>("database");

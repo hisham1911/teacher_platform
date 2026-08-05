@@ -16,4 +16,7 @@ public static class AuthorizationPolicies
 public static class RateLimitPolicies
 {
     public const string AuthEndpoints = "auth-endpoints";
+
+    /// <summary>مسارات اللاعب المجهول — حد مستقل بنفس إعدادات النافذة.</summary>
+    public const string PlayerEndpoints = "player-endpoints";
 }

@@ -47,6 +47,12 @@ public class AppDbContext(
     public DbSet<Domain.Quizzes.QuizVersion> QuizVersions => Set<Domain.Quizzes.QuizVersion>();
     public DbSet<Domain.Quizzes.QuizVersionItem> QuizVersionItems => Set<Domain.Quizzes.QuizVersionItem>();
 
+    // Phase 4 — Sessions, Participants, Attempts & Answers (Tenant-owned، Global Filters مطلوبة)
+    public DbSet<Domain.Sessions.QuizSession> QuizSessions => Set<Domain.Sessions.QuizSession>();
+    public DbSet<Domain.Sessions.SessionParticipant> SessionParticipants => Set<Domain.Sessions.SessionParticipant>();
+    public DbSet<Domain.Sessions.Attempt> Attempts => Set<Domain.Sessions.Attempt>();
+    public DbSet<Domain.Sessions.AttemptAnswer> AttemptAnswers => Set<Domain.Sessions.AttemptAnswer>();
+
     // Tenancy sets — تُخفى من النموذج عندما تُجمد Tenancy أثناء توليد AddIdentity
     private DbSet<Tenant>? _tenants;
     private DbSet<TenantMembership>? _tenantMemberships;
@@ -98,6 +104,12 @@ public class AppDbContext(
             modelBuilder.ApplyConfiguration(new Configurations.QuizConfiguration());
             modelBuilder.ApplyConfiguration(new Configurations.QuizVersionConfiguration());
             modelBuilder.ApplyConfiguration(new Configurations.QuizVersionItemConfiguration());
+
+            // Phase 4 — Sessions, Participants, Attempts & Answers
+            modelBuilder.ApplyConfiguration(new Configurations.QuizSessionConfiguration());
+            modelBuilder.ApplyConfiguration(new Configurations.SessionParticipantConfiguration());
+            modelBuilder.ApplyConfiguration(new Configurations.AttemptConfiguration());
+            modelBuilder.ApplyConfiguration(new Configurations.AttemptAnswerConfiguration());
         }
         else
         {
@@ -114,6 +126,10 @@ public class AppDbContext(
             modelBuilder.Ignore<Domain.Quizzes.Quiz>();
             modelBuilder.Ignore<Domain.Quizzes.QuizVersion>();
             modelBuilder.Ignore<Domain.Quizzes.QuizVersionItem>();
+            modelBuilder.Ignore<Domain.Sessions.QuizSession>();
+            modelBuilder.Ignore<Domain.Sessions.SessionParticipant>();
+            modelBuilder.Ignore<Domain.Sessions.Attempt>();
+            modelBuilder.Ignore<Domain.Sessions.AttemptAnswer>();
         }
 
         ApplyTenantQueryFilters(modelBuilder);

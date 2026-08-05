@@ -806,6 +806,249 @@ namespace TeacherPlatform.Infrastructure.Persistence.Migrations
                     b.ToTable("QuizVersionItems", (string)null);
                 });
 
+            modelBuilder.Entity("TeacherPlatform.Domain.Sessions.Attempt", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("CurrentQuestionIndex")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("DeadlineAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long?>("DurationMs")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("FinishedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal?>("MaxScore")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)");
+
+                    b.Property<Guid>("ParticipantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool?>("Passed")
+                        .HasColumnType("boolean");
+
+                    b.Property<decimal?>("Percentage")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)");
+
+                    b.Property<int>("Revision")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal?>("Score")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)");
+
+                    b.Property<Guid>("SessionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("ShuffleSeed")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("StartedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId");
+
+                    b.HasIndex("ParticipantId", "TenantId")
+                        .IsUnique();
+
+                    b.HasIndex("SessionId", "ParticipantId")
+                        .IsUnique();
+
+                    b.HasIndex("SessionId", "TenantId");
+
+                    b.ToTable("Attempts", (string)null);
+                });
+
+            modelBuilder.Entity("TeacherPlatform.Domain.Sessions.AttemptAnswer", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AnswerJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<DateTime>("AnsweredAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("AttemptId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool?>("IsCorrect")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("QuizVersionItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal?>("ScoreAwarded")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasAlternateKey("Id", "TenantId");
+
+                    b.HasIndex("TenantId");
+
+                    b.HasIndex("AttemptId", "QuizVersionItemId")
+                        .IsUnique();
+
+                    b.HasIndex("AttemptId", "TenantId");
+
+                    b.HasIndex("QuizVersionItemId", "TenantId");
+
+                    b.ToTable("AttemptAnswers", (string)null);
+                });
+
+            modelBuilder.Entity("TeacherPlatform.Domain.Sessions.QuizSession", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ActivatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("FinishedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("JoinCode")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<string>("Label")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<int>("Mode")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("QuizId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("QuizVersionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("JoinCode")
+                        .IsUnique();
+
+                    b.HasIndex("TenantId");
+
+                    b.HasIndex("QuizId", "TenantId");
+
+                    b.HasIndex("QuizVersionId", "TenantId");
+
+                    b.HasIndex("TenantId", "QuizId");
+
+                    b.HasIndex("TenantId", "Status");
+
+                    b.ToTable("QuizSessions", (string)null);
+                });
+
+            modelBuilder.Entity("TeacherPlatform.Domain.Sessions.SessionParticipant", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime>("GuestTokenExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("GuestTokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTime>("JoinedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("SessionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GuestTokenHash");
+
+                    b.HasIndex("TenantId");
+
+                    b.HasIndex("SessionId", "TenantId");
+
+                    b.ToTable("SessionParticipants", (string)null);
+                });
+
             modelBuilder.Entity("TeacherPlatform.Domain.Tenancy.Tenant", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1107,6 +1350,79 @@ namespace TeacherPlatform.Infrastructure.Persistence.Migrations
                     b.Navigation("QuizVersion");
                 });
 
+            modelBuilder.Entity("TeacherPlatform.Domain.Sessions.Attempt", b =>
+                {
+                    b.HasOne("TeacherPlatform.Domain.Sessions.SessionParticipant", "Participant")
+                        .WithOne("Attempt")
+                        .HasForeignKey("TeacherPlatform.Domain.Sessions.Attempt", "ParticipantId", "TenantId")
+                        .HasPrincipalKey("TeacherPlatform.Domain.Sessions.SessionParticipant", "Id", "TenantId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("TeacherPlatform.Domain.Sessions.QuizSession", "Session")
+                        .WithMany("Attempts")
+                        .HasForeignKey("SessionId", "TenantId")
+                        .HasPrincipalKey("Id", "TenantId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Participant");
+
+                    b.Navigation("Session");
+                });
+
+            modelBuilder.Entity("TeacherPlatform.Domain.Sessions.AttemptAnswer", b =>
+                {
+                    b.HasOne("TeacherPlatform.Domain.Sessions.Attempt", "Attempt")
+                        .WithMany("Answers")
+                        .HasForeignKey("AttemptId", "TenantId")
+                        .HasPrincipalKey("Id", "TenantId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("TeacherPlatform.Domain.Quizzes.QuizVersionItem", null)
+                        .WithMany()
+                        .HasForeignKey("QuizVersionItemId", "TenantId")
+                        .HasPrincipalKey("Id", "TenantId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Attempt");
+                });
+
+            modelBuilder.Entity("TeacherPlatform.Domain.Sessions.QuizSession", b =>
+                {
+                    b.HasOne("TeacherPlatform.Domain.Quizzes.Quiz", "Quiz")
+                        .WithMany()
+                        .HasForeignKey("QuizId", "TenantId")
+                        .HasPrincipalKey("Id", "TenantId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("TeacherPlatform.Domain.Quizzes.QuizVersion", "QuizVersion")
+                        .WithMany()
+                        .HasForeignKey("QuizVersionId", "TenantId")
+                        .HasPrincipalKey("Id", "TenantId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Quiz");
+
+                    b.Navigation("QuizVersion");
+                });
+
+            modelBuilder.Entity("TeacherPlatform.Domain.Sessions.SessionParticipant", b =>
+                {
+                    b.HasOne("TeacherPlatform.Domain.Sessions.QuizSession", "Session")
+                        .WithMany("Participants")
+                        .HasForeignKey("SessionId", "TenantId")
+                        .HasPrincipalKey("Id", "TenantId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Session");
+                });
+
             modelBuilder.Entity("TeacherPlatform.Domain.Tenancy.TenantMembership", b =>
                 {
                     b.HasOne("TeacherPlatform.Domain.Tenancy.Tenant", "Tenant")
@@ -1164,6 +1480,23 @@ namespace TeacherPlatform.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("TeacherPlatform.Domain.Quizzes.QuizVersion", b =>
                 {
                     b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("TeacherPlatform.Domain.Sessions.Attempt", b =>
+                {
+                    b.Navigation("Answers");
+                });
+
+            modelBuilder.Entity("TeacherPlatform.Domain.Sessions.QuizSession", b =>
+                {
+                    b.Navigation("Attempts");
+
+                    b.Navigation("Participants");
+                });
+
+            modelBuilder.Entity("TeacherPlatform.Domain.Sessions.SessionParticipant", b =>
+                {
+                    b.Navigation("Attempt");
                 });
 
             modelBuilder.Entity("TeacherPlatform.Domain.Tenancy.Tenant", b =>

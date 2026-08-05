@@ -37,6 +37,10 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
                     "SlugConflict" => StatusCodes.Status409Conflict,
                     "DuplicateMember" => StatusCodes.Status409Conflict,
                     "Conflict" => StatusCodes.Status409Conflict,
+                    "AnswerConflict" => StatusCodes.Status409Conflict,
+                    "SessionNotActive" => StatusCodes.Status409Conflict,
+                    "AttemptFinished" => StatusCodes.Status409Conflict,
+                    "LiveModeNotAvailable" => StatusCodes.Status400BadRequest,
                     "QuotaExceeded" => StatusCodes.Status403Forbidden,
                     "FileTooLarge" => StatusCodes.Status413PayloadTooLarge,
                     _ => StatusCodes.Status400BadRequest
