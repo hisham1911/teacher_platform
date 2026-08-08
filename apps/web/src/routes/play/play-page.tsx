@@ -27,6 +27,9 @@ type PlayerStage =
   | { kind: 'result'; attemptId: string }
   | { kind: 'unavailable'; message: string };
 
+/** مفتاح تخزين اسم الطالب محليًا لإعادة الربط تلقائيًا بعد إعادة تحميل الصفحة */
+const PLAYER_NAME_KEY = 'tp-player-name';
+
 /** انحراف ساعة الخادم عن ساعة العميل — يُحدَّث مع كل استجابة تحمل serverNow */
 function useServerClock() {
   const offsetRef = useRef(0);
@@ -82,6 +85,13 @@ export default function PlayPage() {
       const s = sessionQuery.data;
       if (s.status === 'Active' && s.canJoin) {
         setStage({ kind: 'join', session: s });
+        const savedName = localStorage.getItem(PLAYER_NAME_KEY)?.trim();
+        if (savedName && savedName.length >= 2 && savedName.length <= 50) {
+          // إعادة ربط تلقائية بعد إعادة تحميل الصفحة: الـjoin يعيد تحديد وجهة المحاولة
+          // (استئناف/نتيجة/بدء) من حالة الخادم الفعلية.
+          setDisplayName(savedName);
+          joinMutation.mutate(savedName);
+        }
       } else if (s.status === 'Scheduled') {
         setStage({ kind: 'unavailable', message: 'الجلسة لم تُفعَّل بعد. انتظر المعلم.' });
       } else if (s.status === 'Finished') {
@@ -99,18 +109,24 @@ export default function PlayPage() {
             : 'تعذر الاتصال. تحقق من الإنترنت ثم أعد تحميل الصفحة.',
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionQuery.isSuccess, sessionQuery.isError, sessionQuery.data, sessionQuery.error, stage.kind]);
 
   const joinMutation = useMutation({
-    mutationFn: () => playerApi.join(joinCode!, { displayName: displayName.trim() }),
+    mutationFn: (name: string) => playerApi.join(joinCode!, { displayName: name }),
     onSuccess: (result) => {
       setActionError(null);
+      localStorage.setItem(PLAYER_NAME_KEY, result.displayName);
       if (result.attemptId && result.attemptStatus === 'InProgress') {
         // استئناف محاولة قائمة (F5 / إعادة فتح)
         startMutation.mutate();
+      } else if (result.attemptId && (result.attemptStatus === 'Finished' || result.attemptStatus === 'TimedOut')) {
+        // محاولة منتهية — نعرض النتيجة مباشرة دون شاشة استعداد
+        void queryClient.invalidateQueries({ queryKey: ['player-result', joinCode, result.attemptId] });
+        setStage({ kind: 'result', attemptId: result.attemptId });
       } else {
         setStage((prev) =>
-          prev.kind === 'join'
+          prev.kind === 'join' || prev.kind === 'ready'
             ? { kind: 'ready', session: prev.session, displayName: result.displayName, attemptId: result.attemptId }
             : prev,
         );
@@ -156,7 +172,7 @@ export default function PlayPage() {
     }
     setNameError(null);
     setActionError(null);
-    joinMutation.mutate();
+    joinMutation.mutate(name);
   }
 
   // ─── شاشات ────────────────────────────────────────────────────────────────
@@ -353,7 +369,14 @@ function PlayingView({
       setActionError(null);
     },
     onError: (error) => {
-      if (error instanceof HttpError && error.status === 409) {
+      if (error instanceof HttpError && error.status === 400) {
+        const body = error.body as { title?: string } | null;
+        setActionError(
+          body?.title === 'InvalidAnswerPayload'
+            ? 'تعذر حفظ الإجابة — البيانات غير صالحة. أعد المحاولة.'
+            : 'تعذر حفظ الإجابة — تأكد من إدخال إجابة صحيحة.',
+        );
+      } else if (error instanceof HttpError && error.status === 409) {
         const body = error.body as { title?: string } | null;
         if (body?.title === 'AttemptFinished' || body?.title === 'SessionNotActive') {
           onFinished(attempt.attemptId);

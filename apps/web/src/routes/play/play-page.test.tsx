@@ -3,7 +3,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { HttpError } from '../../data/api-client/http-error';
-import type { JoinSessionResponse, PlayerSession, StartAttemptResponse } from '../../types/sessions';
+import type { AttemptResult, JoinSessionResponse, PlayerQuestion, PlayerSession, StartAttemptResponse } from '../../types/sessions';
 import PlayPage from './play-page';
 
 vi.mock('../../data/api-client/endpoints', async (importOriginal) => {
@@ -77,6 +77,7 @@ function renderPage(joinCode = 'JOIN123') {
 describe('PlayPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.clear();
   });
 
   it('يعرض نموذج الانضمام عندما تكون الجلسة نشطة', async () => {
@@ -174,5 +175,119 @@ describe('PlayPage', () => {
 
     // يجب أن يبدأ المحاولة مباشرة دون المرور بشاشة الاستعداد
     await waitFor(() => expect(startAttemptMock).toHaveBeenCalledWith('JOIN123'));
+  });
+
+  it('يعرض رسالة 400 InvalidAnswerPayload ويدع البطاقة على نفس السؤال ويعيد تفعيل الزر ثم يسمح بإعادة المحاولة', async () => {
+    const playerQuestion: PlayerQuestion = {
+      quizVersionItemId: 'q-1',
+      index: 0,
+      totalQuestions: 2,
+      questionType: 'MultipleChoice',
+      prompt: 'ما عاصمة مصر؟',
+      points: 5,
+      isRequired: true,
+      mediaAssetId: null,
+      options: [
+        { optionId: 'opt-1', optionText: 'القاهرة' },
+        { optionId: 'opt-2', optionText: 'الإسكندرية' },
+      ],
+      alreadyAnswered: false,
+      deadlineAt: null,
+      serverNow: new Date().toISOString(),
+    };
+
+    getSessionMock.mockResolvedValue(activeSession);
+    joinMock.mockResolvedValue(joinResponse);
+    startAttemptMock.mockResolvedValue(startResponse);
+    vi.mocked(playerApi.getCurrentQuestion).mockResolvedValue(playerQuestion);
+    const submitAnswerMock = vi.mocked(playerApi.submitAnswer);
+    submitAnswerMock
+      .mockRejectedValueOnce(new HttpError(400, { title: 'InvalidAnswerPayload' }))
+      .mockResolvedValueOnce({
+        attemptId: 'a-1',
+        quizVersionItemId: 'q-1',
+        isCorrect: true,
+        scoreAwarded: 5,
+        revision: 1,
+        serverNow: new Date().toISOString(),
+      });
+
+    renderPage();
+
+    await waitFor(() => screen.getByRole('button', { name: 'انضمام' }));
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'لاعب تجريبي' } });
+    fireEvent.click(screen.getByRole('button', { name: 'انضمام' }));
+
+    await waitFor(() => screen.getByRole('button', { name: 'ابدأ الاختبار' }));
+    fireEvent.click(screen.getByRole('button', { name: 'ابدأ الاختبار' }));
+
+    // انتظار ظهور شاشة اللعب قبل التفاعل مع الإجابة
+    await waitFor(() => expect(screen.getByText('ما عاصمة مصر؟')).toBeInTheDocument());
+
+    const submit = async () => {
+      fireEvent.click(screen.getByRole('radio', { name: 'القاهرة' }));
+      fireEvent.click(screen.getByRole('button', { name: 'تثبيت الإجابة' }));
+    };
+
+    // المحاولة الأولى تُرفض بـ InvalidAnswerPayload
+    await submit();
+    await waitFor(() =>
+      expect(screen.getByText('تعذر حفظ الإجابة — البيانات غير صالحة. أعد المحاولة.')).toBeInTheDocument(),
+    );
+
+    // لا انتقال للسؤال التالي ولا انهيار — ما زلنا على السؤال الأول
+    expect(screen.getByText('سؤال 1 من 2')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'السؤال التالي ←' })).toBeInTheDocument();
+    expect(screen.queryByText(/إجابة صحيحة/)).not.toBeInTheDocument();
+
+    // الزر عاد مفعّلًا — إعادة المحاولة بإجابة صالحة تنجح
+    const submitButton = screen.getByRole('button', { name: 'تثبيت الإجابة' });
+    expect(submitButton).toBeEnabled();
+
+    await submit();
+    await waitFor(() => expect(screen.getByText(/إجابة صحيحة ✓/)).toBeInTheDocument());
+    expect(submitAnswerMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('يعيد الربط تلقائيًا بعد إعادة التحميل ويستأنف المحاولة الجارية دون تفاعل', async () => {
+    localStorage.setItem('tp-player-name', 'لاعب عائد');
+    getSessionMock.mockResolvedValue(activeSession);
+    joinMock.mockResolvedValue({ ...joinResponse, attemptId: 'a-1', attemptStatus: 'InProgress' });
+    startAttemptMock.mockResolvedValue(startResponse);
+    vi.mocked(playerApi.getCurrentQuestion).mockReturnValue(new Promise(() => {}));
+    renderPage();
+
+    // لا حاجة لكتابة الاسم أو الضغط على "انضمام" — الربط تلقائي
+    await waitFor(() => expect(startAttemptMock).toHaveBeenCalledWith('JOIN123'));
+    expect(screen.queryByRole('button', { name: 'انضمام' })).not.toBeInTheDocument();
+  });
+
+  it('يعيد الربط تلقائيًا ويعرض النتيجة مباشرة لمحاولة منتهية بعد إعادة التحميل', async () => {
+    localStorage.setItem('tp-player-name', 'لاعب سابق');
+    getSessionMock.mockResolvedValue(activeSession);
+    joinMock.mockResolvedValue({ ...joinResponse, attemptId: 'a-1', attemptStatus: 'Finished' });
+    const result: AttemptResult = {
+      attemptId: 'a-1',
+      status: 'Finished',
+      displayName: 'لاعب سابق',
+      score: 5,
+      maxScore: 10,
+      percentage: 50,
+      passed: false,
+      durationMs: 12_000,
+      answeredCount: 1,
+      totalQuestions: 2,
+      startedAt: new Date().toISOString(),
+      finishedAt: new Date().toISOString(),
+    };
+    vi.mocked(playerApi.getResult).mockResolvedValue(result);
+    renderPage();
+
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'انتهى الاختبار 🎉' })).toBeInTheDocument(),
+    );
+    expect(screen.getByText('5 / 10')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'انضمام' })).not.toBeInTheDocument();
+    expect(joinMock).toHaveBeenCalledWith('JOIN123', { displayName: 'لاعب سابق' });
   });
 });
