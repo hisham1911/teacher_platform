@@ -400,6 +400,18 @@ public sealed class PlayerService
             return (new ServiceResultException("NotFound", "Question not found in this session."), null);
         }
 
+        var questionVersion = item.QuestionVersion;
+
+        // فحص بنيوي صارم قبل أي حفظ/تسجيل — الخيارات الأجنبية أو البنية الخاطئة ⇒ 400
+        if (!AnswerPayloadValidator.TryValidate(
+                questionVersion.QuestionType,
+                questionVersion.Options.OrderBy(o => o.SortOrder).ToList(),
+                request.AnswerJson,
+                out _))
+        {
+            return (new ServiceResultException("InvalidAnswerPayload", "Answer payload does not match the question."), null);
+        }
+
         // Idempotency: إجابة موجودة لنفس السؤال
         var existingAnswer = await _db.AttemptAnswers
             .IgnoreQueryFilters()
@@ -425,7 +437,6 @@ public sealed class PlayerService
             return (new ServiceResultException("AnswerConflict", "A different answer was already submitted for this question."), null);
         }
 
-        var questionVersion = item.QuestionVersion;
         var scoring = AnswerScorer.Score(
             questionVersion.QuestionType,
             questionVersion.ConfigJson,

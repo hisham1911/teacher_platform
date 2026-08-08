@@ -41,6 +41,7 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
                     "SessionNotActive" => StatusCodes.Status409Conflict,
                     "AttemptFinished" => StatusCodes.Status409Conflict,
                     "LiveModeNotAvailable" => StatusCodes.Status400BadRequest,
+                    "InvalidAnswerPayload" => StatusCodes.Status400BadRequest,
                     "QuotaExceeded" => StatusCodes.Status403Forbidden,
                     "FileTooLarge" => StatusCodes.Status413PayloadTooLarge,
                     _ => StatusCodes.Status400BadRequest
