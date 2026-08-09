@@ -13,7 +13,9 @@
 1. **إثبات عقد Guest Cookie في Chromium حقيقي** — HttpOnly + Path=/ + SameSite=Lax + Secure=false + عدم قابلية القراءة من JS، مع استمرار الجلسة عبر F5.
 2. **رفض حمولات الإجابة غير الصالحة** بنيويًا بـ`400 InvalidAnswerPayload` قبل أي حفظ/تسجيل.
 3. **إثبات بقاء المحاولة والنتيجة بعد إعادة تشغيل الـAPI** (PostgreSQL) عبر E2E بالمتصفح.
-4. **تشغيل كل أدوات التحقق** وإصدار تقرير الإغلاق.
+4. **استعادة الجلسة من السيرفر فقط** عبر `GET /me` (لا `localStorage`) مع عقد حذف الكوكي العالق عند `401`.
+5. **جعل E2E قابلة للتشغيل على clean clone** — بيئة `E2E` مدارة في Git + سكربتات في `e2e/`.
+6. **تشغيل كل أدوات التحقق** وإصدار تقرير الإغلاق.
 
 ---
 
@@ -27,8 +29,9 @@
   - `AnswerScorer` يبقى الدفاع الأخير: صفر لغير الصالح، لا يرمي استثناء أبدًا.
 - **Frontend `/play/:joinCode`**:
   - تمييز `400 InvalidAnswerPayload` برسالة واضحة + البقاء على نفس السؤال وإعادة تفعيل الزر (بدون انهيار).
-  - **إصلاح اكتشفه E2E:** بعد إنهاء المحاولة ثم F5 كانت الصفحة تعود لشاشة الانضمام وتفقد النتيجة. الحل: حفظ اسم الطالب في `localStorage` وإعادة ربط تلقائية عند التحميل — الـ`join` يعيد تحديد الوجهة من حالة الخادم الفعلية (استئناف / بدء / نتيجة منتهية). لا تُخزَّن أي Tokens (التزام AGENTS.md).
-- **E2E Playwright في Chromium حقيقي** (Part A + Part B) مع إعادة تشغيل فعلية للـAPI بينهما.
+  - **استعادة الجلسة من السيرفر فقط عبر `GET /api/v1/player/sessions/{joinCode}/me`:** بعد F5/إعادة الفتح يقرّر السيرفر الوجهة (استئناف محاولة / نتيجة منتهية / شاشة بدء) من كوكي الضيف HttpOnly وحده — **بدون تخزين اسم الطالب في `localStorage`** (كان الحل الأولي يخزن الاسم؛ قُدّمت جولة لاحقة وأزلته). الاسم والوجهة مصدرهما نفس `JoinSessionResponse`.
+  - **عقد حذف الكوكي العالق:** عند أي `401` على مسارات `player/sessions` يُحذف كوكي الضيف عديم الفائدة من المتصفح — التنفيذ في `GlobalExceptionHandler` (بعد `Response.Clear()` الذي يمسح Set-Cookie الصادرة من الكنترولر)، بنفس الاسم المُبسط `tp-guest`/`__Host-tp-guest` وسمات `Path=/ HttpOnly Secure SameSite`.
+- **E2E Playwright في Chromium حقيقي** (Part A + Part B) مع إعادة تشغيل فعلية للـAPI بينهما — وتُمل من مستودع `e2e/` (بيئة `E2E` مدارة في Git).
 
 ---
 
@@ -38,18 +41,18 @@
 |-----|---------|
 | `dotnet format --verify-no-changes` | Exit 0 |
 | `dotnet build` | 0 خطأ، 0 تحذير |
-| `dotnet test` (INTEGRATION_TEST_DB) | Domain **62/62** + Api **1/1** + Integration **88/88** = **151/151** |
+| `dotnet test` (INTEGRATION_TEST_DB) | Domain **62/62** + Api **1/1** + Integration **92/92** = **155/155** |
 | `npm run lint` | ناجح |
 | `npm run typecheck` | ناجح |
-| `npm run test` | **76/76** (14 ملفًا) |
+| `npm run test` | **78/78** (14 ملفًا) |
 | `npm run build` | ✓ built |
 | Playwright E2E (Chromium 151) | Part A ✓ + Part B ✓ (مرتان متتاليتان) |
 
 ### اختبارات جديدة في الجولة
 - `AnswerPayloadValidatorTests` (12، Domain) — قواعد الأنواع الخمسة + الحواف (GUID أجنبي/تكراري/ناقص، JSON فاسد، نص فارغ، أنواع مفتاح خاطئة).
 - `PlayerAnswerValidationTests` (3، PostgreSQL حقيقي) — حمولة فاسدة → 400 بلا تقدم؛ صالحة-لكن-خاطئة → 200/صفر؛ Idempotency/409 محفوظان.
-- `GuestCookieTests` (2، PostgreSQL حقيقي) — عقد `Set-Cookie` في Dev (`tp-guest`: Path=/، Lax، Secure=false) والـ Prod (`__Host-tp-guest`: Secure، HttpOnly، SameSite=Lax).
-- `play-page.test.tsx` (11، +3 جديدة) — إعادة ربط تلقائية تستأنف محاولة جارية، استعادة نتيجة منتهية مباشرة بعد F5، وإعادة محاولة بعد `InvalidAnswerPayload`.
+- `GuestCookieTests` (6، PostgreSQL حقيقي) — عقد `Set-Cookie` في Dev (`tp-guest`: Path=/، Lax، Secure=false) والـProd (`__Host-tp-guest`: Secure، HttpOnly، SameSite=Lax)؛ استعادة `/me` لنفس المشارك/اسم العرض؛ استعادة `attemptId`+`InProgress` بعد بدء محاولة؛ وحذف الكوكي العالق عند `401` بنفس الاسم في Dev وProd.
+- `play-page.test.tsx` (13، +5 جديدة) — إعادة ربط عبر `/me` تستأنف محاولة جارية، استعادة نتيجة منتهية مباشرة بعد F5، بقاء شاشة الانضمام عند 401، **ولا كتابة أي شيء في localStorage بعد الانضمام**.
 
 ---
 
@@ -62,7 +65,7 @@
    - `document.cookie` من JS **لا تحتويه**.
    - F5 → إعادة ربط تلقائية → استئناف مباشر عند السؤال الثاني (لا شاشة انضمام).
 2. **إيقاف API وإعادة تشغيله فعليًا** (صفر فقدان — كل شيء في PostgreSQL).
-3. **Part B:** نفس جلسة المتصفح (كوكي + localStorage محفوظان) → استئناف عند السؤال الثاني → إجابة الأخير → إنهاء → **10/10 · 100% · ناجح ✓** → F5 على صفحة النتيجة → **تستعاد النتيجة تلقائيًا** (لا شاشة انضمام/استعداد).
+3. **Part B:** نفس جلسة المتصفح (كوكي الضيف المحفوظ) → استئناف عند السؤال الثاني → إجابة الأخير → إنهاء → **10/10 · 100% · ناجح ✓** → F5 على صفحة النتيجة → **تستعاد النتيجة تلقائيًا عبر `/me`** (لا شاشة انضمام/استعداد).
 
 السيناريو يجمع في جولة واحدة: عقد الكوكي، استمرارية المتصفح عبر F5، واستمرارية الخادم عبر إعادة تشغيله.
 
@@ -70,28 +73,37 @@
 
 ## اكتشافات وأسباب (Bugs/Findings)
 
-1. **F5 بعد الإنهاء يفقد النتيجة (UX bug):** الجلسة تبقى `Active` بعد انتهاء محاولة المشارك، فكانت الصفحة بعد التحديث تعيد شاشة الانضمام وتتطلب إعادة انضمام + استئناف لرؤية النتيجة. أُصلح بإعادة الربط التلقائية (للمحاولة الجارية والمنتهية على حد سواء).
-2. **تقييد المعدل على localhost يكسر E2E (بيئة، لا كود):** `PlayerEndpoints` بـ`RateLimiting: 20/60s` لكل IP؛ كل حركة E2E تتشارك `127.0.0.1` فكان التقييد يعيد `429` بلا جسم على الإجابات ثم على `getSession`. أثبت ذلك من Trace المتصفح (POST answers → 429). **الحل:** رفع حد التطوير فقط إلى `200/60s` في `appsettings.Development.json` (ملف مُستثنى من Git لاحتوائه كلمة سر Dev DB) — الإنتاج يبقى 20/60s كما هو في `appsettings.Example.json`. سلوك «المحاولات كثيرة» في الواجهة يعمل (اللاعب يرى رسالة واضحة ويستطيع إعادة المحاولة لاحقًا).
+1. **F5 بعد الإنهاء يفقد النتيجة (UX bug):** الجلسة تبقى `Active` بعد انتهاء محاولة المشارك، فكانت الصفحة بعد التحديث تعيد شاشة الانضمام وتتطلب إعادة انضمام + استئناف لرؤية النتيجة. أُصلح إصلاحه الأولي بتخزين الاسم و re-join تلقائي ثم **استُبدل بمصدر السيرفر وحده** (`GET /me`): لا بيانات محلية للاعب، والوجهة من حالة الخادم فقط.
+2. **تقييد المعدل على localhost يكسر E2E (بيئة، لا كود):** `PlayerEndpoints` بـ`RateLimiting: 20/60s` لكل IP؛ كل حركة E2E تتشارك `127.0.0.1` فكان التقييد يعيد `429` بلا جسم على الإجابات ثم على `getSession`. أثبت ذلك من Trace المتصفح (POST answers → 429). **الحل:** بيئة `E2E` مدارة في Git (مستقلة عن `appsettings.Development.json`) بحد `200/60s` — الإنتاج يبقى 20/60s كما في `appsettings.Example.json`. سلوك «المحاولات كثيرة» في الواجهة يعمل (اللاعب يرى رسالة واضحة ويستطيع إعادة المحاولة لاحقًا).
+3. **`Response.Clear()` يمسح Set-Cookie:** PUT/delete من الكنترولر قبل `throw` كانا يُفقدان عند `UseExceptionHandler` — لهذا انتقل حذف الكوكي العالق إلى `GlobalExceptionHandler` ليُطبق على الاستجابة الفعلية المكتوبة.
 
 ---
 
-## إعدادات محلية (غير مُلتزَمة)
+## إعدادات وأدوار البيئات
 
-- `backend/src/TeacherPlatform.Api/appsettings.Development.json` — `RateLimiting.PermitLimit: 200` (لتمكين E2E الآلي على localhost). لا يُعرَّف في Git حفاظًا على سرية كلمة سر قاعدة التطوير.
-- سكربتات/حالة E2E في `%TEMP%\opencode\e2e\` خارج المستودع (seed.mjs، part-a/part-b، storage.json، run-api.cmd).
+- `backend/src/TeacherPlatform.Api/appsettings.Development.json` (غير مُلتَزم) — كلمة سر قاعدة تطوير + `RateLimiting.PermitLimit: 200` للعمل اليدوي.
+- `backend/src/TeacherPlatform.Api/appsettings.E2E.json` (مُلتزَم) — قاعدة `teacher_platform_e2e`، `UseSecureCookie=false`، `RateLimiting.PermitLimit: 200`؛ لا حاجة لأي Secret من المستنسخ النظيف.
+- سكربتات E2E في **المستودع** `e2e/` (seed.mjs، part-a/part-b specs، run-api.cmd/run-web.cmd، README) — قابلة للتشغيل على clean clone.
 
 ---
 
 ## Commits و Final SHA
 
+المُلتزَم قبل هذا التقرير:
 - `8bba342` feat(sessions): strict answer payload validation -> 400 InvalidAnswerPayload
 - `7d3e6bd` test(sessions): answer payload validation + guest cookie contract tests
 - `b8a02bf` fix(player): auto-restore attempt/result on refresh + InvalidAnswerPayload UX
-- `d615cdd` docs: Phase 4.1 completion report (commit التوثيق النهائي)
+- `6b3a9ab` docs: Phase 4.1 completion report
+
+مُلحقة هذه الجولة (تأخذ أرقامها الفعلية من `git rev-parse HEAD` عند الالتزام):
+- feat(sessions): GET /me cookie-only resume + stale-cookie delete contract
+- test(sessions): /me + delete-cookie integration tests
+- fix(web): cookie-only restore via /me (no localStorage)
+- test(web): /me restore flows + no-localStorage assertions
+- infra(e2e): tracked E2E env + repo harness (seed/specs/run scripts)
+- docs: Phase 4.1 completion report (توثيق نهائي)
 
 **Final SHA:** يُؤخذ من `git rev-parse HEAD` بعد commit التوثيق.
-
-**Git:** `git status --short` فارغ بعد commit التوثيق.
 
 ---
 

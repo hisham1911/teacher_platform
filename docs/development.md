@@ -234,6 +234,37 @@ curl -X POST http://localhost:5000/api/v1/tenants/{tenantId}/quizzes/{quizId}/pu
 - `vercel.json` يتضمن SPA fallback (rewrite إلى index.html) ولا يمرر `/api` إلى Vercel — عنوان الـ API يأتي من `VITE_API_BASE_URL`.
 - ممنوع استخدام Vercel Functions؛ كل المنطق في ASP.NET Core.
 
+## 8. E2E بالمتصفح (Playwright)
+
+قابلة للتكرار على clean clone عبر بيئة `E2E` مدارة في Git (عكس بيئة `Development` المستبعدة بكلمة سر قاعدة محلية). كل الأدوات في `e2e/` بالمستودع (seed.mjs + specs + run scripts + README).
+
+### التشغيل
+
+1. أنشئ قاعدة `teacher_platform_e2e` وطبّق الـ Migrations مع `ASPNETCORE_ENVIRONMENT=E2E`
+   (ملاحظة: `dotnet ef` يقرأ Connection String من متغير `ConnectionStrings__DefaultConnection` وليس من `appsettings.E2E.json`):
+
+```powershell
+$env:ASPNETCORE_ENVIRONMENT = "E2E"
+$env:ConnectionStrings__DefaultConnection = "Host=localhost;Port=5432;Database=teacher_platform_e2e;Username=postgres;Password=postgres"
+Remove-Item -Recurse -Force backend/src/TeacherPlatform.Api/.dev-mail* -ErrorAction SilentlyContinue
+psql -U postgres -c "CREATE DATABASE teacher_platform_e2e;"
+dotnet ef database update -p backend/src/TeacherPlatform.Infrastructure -s backend/src/TeacherPlatform.Api
+Remove-Item Env:ConnectionStrings__DefaultConnection
+```
+
+2. شغّل المشهد كاملًا بسطر واحد من `e2e/` (يبدأ API ببيئة `E2E` + الواجهة + seed + Part A + إعادة تشغيل حقيقية للـAPI + Part B):
+
+```powershell
+cd e2e
+npm install
+.\run-e2e.ps1
+```
+
+3. البديل اليدوي (لتشخيص/عزل): شغّل `e2e/run-api.cmd` (يثبّت بيئة `E2E` تلقائيًا) ثم `e2e/run-web.cmd`، ثم `node e2e\seed.mjs`، ثم `npx playwright test tests/part-a.spec.mjs`؛ أعِد تشغيل الـAPI ثم `tests/part-b.spec.mjs`.
+
+- بيئة `E2E` مصممة بحيث: `UseSecureCookie=false` (كوكي `tp-guest` على localhost بدون secure)، `RateLimiting.PermitLimit=200` (لا يخل بجريان الأتمتة)، وقاعدة متميزة عن التطوير والاختبار.
+- التشغيل والتنظيف مفصّلان في `e2e/README.md`.
+
 ## حل المشاكل
 
 - فشل الاتصال بقاعدة البيانات: تأكد أن PostgreSQL يعمل وأن الـ Connection String صحيح، وراجع `/health/ready` (يرجع 503 عند الفشل).
