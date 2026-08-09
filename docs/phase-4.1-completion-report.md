@@ -95,15 +95,16 @@
 - `b8a02bf` fix(player): auto-restore attempt/result on refresh + InvalidAnswerPayload UX
 - `6b3a9ab` docs: Phase 4.1 completion report
 
-مُلحقة هذه الجولة (تأخذ أرقامها الفعلية من `git rev-parse HEAD` عند الالتزام):
-- feat(sessions): GET /me cookie-only resume + stale-cookie delete contract
-- test(sessions): /me + delete-cookie integration tests
-- fix(web): cookie-only restore via /me (no localStorage)
-- test(web): /me restore flows + no-localStorage assertions
-- infra(e2e): tracked E2E env + repo harness (seed/specs/run scripts)
-- docs: Phase 4.1 completion report (توثيق نهائي)
+مُلحقة هذه الجولة (مُلتزَمة بأرقامها الفعلية):
+- `577ea4b` feat(sessions): GET /me cookie-only resume + stale-cookie delete contract
+- `d7d3566` test(sessions): /me + delete-cookie integration tests
+- `301c207` fix(web): cookie-only restore via /me (no localStorage)
+- `238b307` test(web): /me restore flows + no-localStorage assertions
+- `660865a` infra(e2e): tracked E2E env + repo harness (seed/specs/run scripts)
+- `1b128cc` docs: Phase 4.1 completion report — cookie-only /me, E2E harness in repo
 
-**Final SHA:** يُؤخذ من `git rev-parse HEAD` بعد commit التوثيق.
+**Final SHA:** `1b128cc`
+**Git:** `git status --short` فارغ بعد commit التوثيق.
 
 ---
 
