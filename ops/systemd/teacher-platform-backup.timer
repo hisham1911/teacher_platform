@@ -1,0 +1,11 @@
+[Unit]
+Description=Nightly Teacher Platform PostgreSQL backup
+
+[Timer]
+OnCalendar=*-*-* 02:15:00
+RandomizedDelaySec=15m
+Persistent=true
+Unit=teacher-platform-backup.service
+
+[Install]
+WantedBy=timers.target

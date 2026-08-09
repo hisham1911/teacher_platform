@@ -1,0 +1,27 @@
+[Unit]
+Description=Teacher Platform ASP.NET Core API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=teacher-platform
+Group=teacher-platform
+WorkingDirectory=/opt/teacher-platform/current/backend
+EnvironmentFile=/etc/teacher-platform/teacher-platform.env
+ExecStart=/usr/bin/dotnet /opt/teacher-platform/current/backend/TeacherPlatform.Api.dll
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+KillSignal=SIGINT
+SyslogIdentifier=teacher-platform
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/teacher-platform
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

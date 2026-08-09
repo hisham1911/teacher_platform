@@ -1,0 +1,143 @@
+name: Deploy backend production
+
+on:
+  workflow_dispatch:
+    inputs:
+      git_ref:
+        description: Commit or tag to deploy
+        required: true
+        default: main
+
+concurrency:
+  group: teacher-platform-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    outputs:
+      release_sha: ${{ steps.release-metadata.outputs.sha }}
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres_ci_password
+          POSTGRES_DB: teacher_platform_deploy_check
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      ASPNETCORE_ENVIRONMENT: Testing
+      ConnectionStrings__DefaultConnection: Host=localhost;Port=5432;Database=teacher_platform_deploy_check;Username=postgres;Password=postgres_ci_password
+      INTEGRATION_TEST_DB: Host=localhost;Port=5432;Database=teacher_platform_deploy_check;Username=postgres;Password=postgres_ci_password
+      DataProtection__KeysDirectory: /tmp/teacher-platform-keys-deploy
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.git_ref }}
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Capture release metadata
+        id: release-metadata
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Frontend quality gate
+        working-directory: apps/web
+        run: |
+          npm ci
+          npm run lint
+          npm run typecheck
+          npm run test
+          npm run build
+
+      - name: Backend quality gate
+        working-directory: backend
+        run: |
+          dotnet restore
+          dotnet format --verify-no-changes --no-restore
+          dotnet build --no-restore
+          dotnet test --no-build
+
+      - name: Install EF tool
+        run: dotnet tool install --global dotnet-ef --version 10.0.10
+
+      - name: Build deployment artifact
+        working-directory: backend
+        run: |
+          release_root="$RUNNER_TEMP/teacher-platform-release"
+          mkdir -p "$release_root/backend" "$release_root/scripts"
+          dotnet publish src/TeacherPlatform.Api/TeacherPlatform.Api.csproj \
+            --configuration Release --no-restore --output "$release_root/backend"
+          rm -f "$release_root/backend/appsettings.E2E.json" \
+            "$release_root/backend/appsettings.Testing.json" \
+            "$release_root/backend/appsettings.Example.json"
+          dotnet ef migrations bundle --target-runtime linux-x64 \
+            --project src/TeacherPlatform.Infrastructure/TeacherPlatform.Infrastructure.csproj \
+            --startup-project src/TeacherPlatform.Api/TeacherPlatform.Api.csproj \
+            --output "$release_root/backend/efbundle"
+          cp ../scripts/backup-postgres.sh "$release_root/scripts/backup-postgres.sh"
+          chmod 0755 "$release_root/backend/efbundle" "$release_root/scripts/backup-postgres.sh"
+          tar -C "$release_root" -czf "$RUNNER_TEMP/teacher-platform-${{ steps.release-metadata.outputs.sha }}.tar.gz" .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: teacher-platform-${{ steps.release-metadata.outputs.sha }}
+          path: ${{ runner.temp }}/teacher-platform-${{ steps.release-metadata.outputs.sha }}.tar.gz
+          if-no-files-found: error
+          retention-days: 7
+
+  deploy:
+    needs: package
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.git_ref }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: teacher-platform-${{ needs.package.outputs.release_sha }}
+          path: ${{ runner.temp }}
+
+      - name: Configure SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/id_ed25519 ~/.ssh/known_hosts
+
+      - name: Upload and activate release
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          RELEASE_SHA: ${{ needs.package.outputs.release_sha }}
+        run: |
+          artifact="$RUNNER_TEMP/teacher-platform-${RELEASE_SHA}.tar.gz"
+          remote_artifact="/tmp/teacher-platform-${RELEASE_SHA}.tar.gz"
+          remote_script="/tmp/teacher-platform-deploy-${RELEASE_SHA}.sh"
+          scp "$artifact" "${DEPLOY_USER}@${DEPLOY_HOST}:${remote_artifact}"
+          scp scripts/deploy-release.sh "${DEPLOY_USER}@${DEPLOY_HOST}:${remote_script}"
+          ssh "${DEPLOY_USER}@${DEPLOY_HOST}" \
+            "sudo bash '${remote_script}' '${remote_artifact}' '${RELEASE_SHA}'"
+
+      - name: Verify public health
+        env:
+          HEALTH_BASE_URL: ${{ secrets.API_BASE_URL }}
+        run: bash scripts/verify-deployment.sh "$HEALTH_BASE_URL"

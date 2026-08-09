@@ -1,0 +1,17 @@
+[Unit]
+Description=Encrypted Teacher Platform PostgreSQL backup
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=teacher-platform
+Group=teacher-platform
+EnvironmentFile=/etc/teacher-platform/backup.env
+ExecStart=/opt/teacher-platform/current/scripts/backup-postgres.sh
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/backups/teacher-platform
+UMask=0077
