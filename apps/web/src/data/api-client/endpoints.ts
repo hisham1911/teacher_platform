@@ -719,6 +719,15 @@ import type {
   SubmitAnswerRequest,
   SubmitAnswerResponse,
 } from '../../types/sessions';
+import type {
+  CreateSurveyRequest,
+  PlayerSurvey,
+  SubmitSurveyRequest,
+  SurveyDetail,
+  SurveyListItem,
+  SurveySubmission,
+  UpdateSurveyRequest,
+} from '../../types/surveys';
 
 export const sessionsApi = {
   list(tenantId: string, quizId: string, page?: number, pageSize?: number, signal?: AbortSignal) {
@@ -849,6 +858,26 @@ export const playerApi = {
       signal,
     });
   },
+  getSurvey(joinCode: string, attemptId: string, signal?: AbortSignal) {
+    return call<PlayerSurvey>({
+      method: 'GET',
+      path: `/api/v1/player/sessions/${encodeURIComponent(joinCode)}/attempts/${attemptId}/survey`,
+      signal,
+    });
+  },
+  submitSurvey(
+    joinCode: string,
+    attemptId: string,
+    payload: SubmitSurveyRequest,
+    signal?: AbortSignal,
+  ) {
+    return call<SurveySubmission>({
+      method: 'POST',
+      path: `/api/v1/player/sessions/${encodeURIComponent(joinCode)}/attempts/${attemptId}/survey`,
+      body: payload,
+      signal,
+    });
+  },
   /** URL مباشر لوسائط السؤال — الـGuest Cookie يُرسل تلقائيًا من المتصفح (لا Bearer). */
   mediaUrl(joinCode: string, attemptId: string, mediaId: string): string {
     return `${resolveBaseUrl()}/api/v1/player/sessions/${encodeURIComponent(joinCode)}/attempts/${attemptId}/media/${mediaId}`;
@@ -899,5 +928,62 @@ export const reportsApi = {
   },
   exportSessionCsv(tenantId: string, sessionId: string, signal?: AbortSignal) {
     return callBlob(`/api/v1/tenants/${tenantId}/sessions/${sessionId}/report/export.csv`, signal);
+  },
+};
+
+export const surveysApi = {
+  list(tenantId: string, quizId?: string, signal?: AbortSignal) {
+    const params = quizId ? `?${new URLSearchParams({ quizId }).toString()}` : '';
+    return call<SurveyListItem[]>({
+      method: 'GET',
+      path: `/api/v1/tenants/${tenantId}/surveys${params}`,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+  get(tenantId: string, surveyId: string, signal?: AbortSignal) {
+    return call<SurveyDetail>({
+      method: 'GET',
+      path: `/api/v1/tenants/${tenantId}/surveys/${surveyId}`,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+  create(tenantId: string, payload: CreateSurveyRequest, signal?: AbortSignal) {
+    return call<SurveyDetail>({
+      method: 'POST',
+      path: `/api/v1/tenants/${tenantId}/surveys`,
+      body: payload,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+  update(
+    tenantId: string,
+    surveyId: string,
+    payload: UpdateSurveyRequest,
+    signal?: AbortSignal,
+  ) {
+    return call<SurveyDetail>({
+      method: 'PUT',
+      path: `/api/v1/tenants/${tenantId}/surveys/${surveyId}`,
+      body: payload,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+  publish(tenantId: string, surveyId: string, baseVersion: number, signal?: AbortSignal) {
+    return call<SurveyDetail>({
+      method: 'POST',
+      path: `/api/v1/tenants/${tenantId}/surveys/${surveyId}/publish`,
+      body: { baseVersion },
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
   },
 };

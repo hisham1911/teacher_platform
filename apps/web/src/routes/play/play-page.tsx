@@ -13,6 +13,7 @@ import type {
   PlayerSession,
   StartAttemptResponse,
 } from '../../types/sessions';
+import { PlayerSurveyPanel } from './player-survey-panel';
 
 /**
  * /play/:joinCode — واجهة الطالب (Phase 4).
@@ -746,7 +747,7 @@ function ResultView({ joinCode, attemptId }: { joinCode: string; attemptId: stri
   const finished = result.status === 'Finished' || result.status === 'TimedOut';
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col justify-center p-4">
+    <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col justify-center gap-4 p-4">
       <div className="rounded-xl border border-slate-200 bg-white p-6 text-center">
         <h1 className="mb-1 text-xl font-bold text-slate-900">
           {finished ? 'انتهى الاختبار 🎉' : 'محاولتك قيد التنفيذ'}
@@ -797,6 +798,7 @@ function ResultView({ joinCode, attemptId }: { joinCode: string; attemptId: stri
           ) : null}
         </dl>
       </div>
+      {finished ? <PlayerSurveyPanel joinCode={joinCode} attemptId={attemptId} /> : null}
     </main>
   );
 }

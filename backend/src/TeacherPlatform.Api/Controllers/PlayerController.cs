@@ -5,6 +5,7 @@ using Microsoft.Extensions.Options;
 using TeacherPlatform.Api.Authorization;
 using TeacherPlatform.Application.Options;
 using TeacherPlatform.Application.Sessions;
+using TeacherPlatform.Application.Surveys;
 using TeacherPlatform.Infrastructure.Services;
 using SessionOptions = TeacherPlatform.Application.Options.SessionOptions;
 
@@ -240,6 +241,56 @@ public sealed class PlayerController : ControllerBase
         }
 
         return Ok(result);
+    }
+
+    [HttpGet("{joinCode}/attempts/{attemptId:guid}/survey")]
+    [ProducesResponseType(typeof(PlayerSurveyResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
+    public async Task<IActionResult> GetSurvey(
+        [FromRoute] string joinCode,
+        [FromRoute] Guid attemptId,
+        CancellationToken cancellationToken)
+    {
+        var rawToken = RequireGuestToken();
+        var (error, survey) = await _playerService.GetSurveyAsync(joinCode, attemptId, rawToken, cancellationToken);
+        if (error is not null)
+        {
+            throw error;
+        }
+
+        return Ok(survey);
+    }
+
+    [HttpPost("{joinCode}/attempts/{attemptId:guid}/survey")]
+    [ProducesResponseType(typeof(SurveySubmissionResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
+    public async Task<IActionResult> SubmitSurvey(
+        [FromRoute] string joinCode,
+        [FromRoute] Guid attemptId,
+        [FromBody] SubmitSurveyRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
+        var rawToken = RequireGuestToken();
+        var (error, submission) = await _playerService.SubmitSurveyAsync(
+            joinCode, attemptId, request, rawToken, cancellationToken);
+        if (error is not null)
+        {
+            throw error;
+        }
+
+        return StatusCode(StatusCodes.Status201Created, submission);
     }
 
     /// <summary>

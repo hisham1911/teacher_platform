@@ -2,14 +2,17 @@ using System.Security.Cryptography;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Npgsql;
 using TeacherPlatform.Application.Abstractions;
 using TeacherPlatform.Application.Options;
 using TeacherPlatform.Application.Sessions;
+using TeacherPlatform.Application.Surveys;
 using TeacherPlatform.Application.Tenancy;
 using TeacherPlatform.Domain.Media;
 using TeacherPlatform.Domain.Questions;
 using TeacherPlatform.Domain.Quizzes;
 using TeacherPlatform.Domain.Sessions;
+using TeacherPlatform.Domain.Surveys;
 using TeacherPlatform.Infrastructure.Persistence;
 
 namespace TeacherPlatform.Infrastructure.Services;
@@ -635,6 +638,122 @@ public sealed class PlayerService
         });
     }
 
+    public async Task<(ServiceResultException? Error, PlayerSurveyResponse? Result)> GetSurveyAsync(
+        string joinCode,
+        Guid attemptId,
+        string rawToken,
+        CancellationToken cancellationToken)
+    {
+        var (error, session, participant) = await ResolveSessionAndParticipantAsync(joinCode, rawToken, cancellationToken);
+        if (error is not null)
+        {
+            return (error, null);
+        }
+
+        var attempt = await LoadAttemptAsync(session!, participant!, attemptId, tracked: false, cancellationToken);
+        if (attempt is null)
+        {
+            return (new ServiceResultException("NotFound", "Attempt not found."), null);
+        }
+
+        if (attempt.Status == AttemptStatus.InProgress)
+        {
+            return (new ServiceResultException("AttemptNotCompleted", "The survey is available after the attempt ends."), null);
+        }
+
+        var survey = await LoadPublishedSurveyAsync(session!, cancellationToken);
+        if (survey is null)
+        {
+            return (new ServiceResultException("NotFound", "No published survey is available for this quiz."), null);
+        }
+
+        var submitted = await _db.SurveyResponses
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .AnyAsync(
+                r => r.SurveyId == survey.Id && r.AttemptId == attempt.Id && r.TenantId == session!.TenantId,
+                cancellationToken);
+
+        return (null, MapPlayerSurvey(survey, submitted));
+    }
+
+    public async Task<(ServiceResultException? Error, SurveySubmissionResponse? Result)> SubmitSurveyAsync(
+        string joinCode,
+        Guid attemptId,
+        SubmitSurveyRequest request,
+        string rawToken,
+        CancellationToken cancellationToken)
+    {
+        var (error, session, participant) = await ResolveSessionAndParticipantAsync(joinCode, rawToken, cancellationToken);
+        if (error is not null)
+        {
+            return (error, null);
+        }
+
+        var attempt = await LoadAttemptAsync(session!, participant!, attemptId, tracked: false, cancellationToken);
+        if (attempt is null)
+        {
+            return (new ServiceResultException("NotFound", "Attempt not found."), null);
+        }
+
+        if (attempt.Status == AttemptStatus.InProgress)
+        {
+            return (new ServiceResultException("AttemptNotCompleted", "The survey is available after the attempt ends."), null);
+        }
+
+        var survey = await LoadPublishedSurveyAsync(session!, cancellationToken);
+        if (survey is null)
+        {
+            return (new ServiceResultException("NotFound", "No published survey is available for this quiz."), null);
+        }
+
+        var alreadySubmitted = await _db.SurveyResponses
+            .IgnoreQueryFilters()
+            .AnyAsync(
+                r => r.SurveyId == survey.Id && r.AttemptId == attempt.Id && r.TenantId == session!.TenantId,
+                cancellationToken);
+        if (alreadySubmitted)
+        {
+            return (new ServiceResultException("SurveyAlreadySubmitted", "This attempt already submitted the survey."), null);
+        }
+
+        var now = _clock.UtcNow;
+        var responseId = Guid.NewGuid();
+        var (answerError, answers) = BuildSurveyAnswers(survey, responseId, request.Answers, now);
+        if (answerError is not null)
+        {
+            return (answerError, null);
+        }
+
+        var response = new SurveyResponse
+        {
+            Id = responseId,
+            SurveyId = survey.Id,
+            AttemptId = attempt.Id,
+            SubmittedAt = now,
+            CreatedAt = now,
+            Answers = answers!
+        };
+
+        using var bootstrap = _tenantContext.BeginBootstrap(session!.TenantId);
+        _db.SurveyResponses.Add(response);
+        try
+        {
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException exception) when (
+            exception.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+        {
+            return (new ServiceResultException("SurveyAlreadySubmitted", "This attempt already submitted the survey."), null);
+        }
+
+        return (null, new SurveySubmissionResponse
+        {
+            ResponseId = response.Id,
+            SubmittedAt = response.SubmittedAt
+        });
+    }
+
     /// <summary>
     /// بث وسيط سؤال للطالب صاحب رمز الضيف. خاص: يتطلب رمزًا صالحًا، ويتحقق أن الوسيط
     /// مرتبط فعلًا بسؤال ضمن نسخة الاختبار المثبتة للجلسة — لا يعمل كـoracle لوسائط المستأجر.
@@ -803,6 +922,144 @@ public sealed class PlayerService
         }
 
         return await query.SingleOrDefaultAsync(cancellationToken);
+    }
+
+    private async Task<Survey?> LoadPublishedSurveyAsync(
+        QuizSession session,
+        CancellationToken cancellationToken)
+    {
+        return await _db.Surveys
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Include(s => s.Questions.OrderBy(q => q.SortOrder))
+                .ThenInclude(q => q.Options.OrderBy(o => o.SortOrder))
+            .SingleOrDefaultAsync(
+                s => s.QuizId == session.QuizId &&
+                     s.TenantId == session.TenantId &&
+                     s.Status == SurveyStatus.Published,
+                cancellationToken);
+    }
+
+    private static PlayerSurveyResponse MapPlayerSurvey(Survey survey, bool submitted)
+    {
+        return new PlayerSurveyResponse
+        {
+            SurveyId = survey.Id,
+            Title = survey.Title,
+            Description = survey.Description,
+            Submitted = submitted,
+            Questions = survey.Questions
+                .OrderBy(q => q.SortOrder)
+                .Select(q => new PlayerSurveyQuestionResponse
+                {
+                    QuestionId = q.Id,
+                    SortOrder = q.SortOrder,
+                    QuestionType = q.QuestionType.ToString(),
+                    Prompt = q.Prompt,
+                    IsRequired = q.IsRequired,
+                    Options = q.Options
+                        .OrderBy(o => o.SortOrder)
+                        .Select(o => new PlayerSurveyOptionResponse
+                        {
+                            OptionId = o.Id,
+                            SortOrder = o.SortOrder,
+                            OptionText = o.OptionText
+                        })
+                        .ToList()
+                })
+                .ToList()
+        };
+    }
+
+    private static (ServiceResultException? Error, List<SurveyAnswer>? Answers) BuildSurveyAnswers(
+        Survey survey,
+        Guid responseId,
+        IReadOnlyList<SurveyAnswerInput> answerInputs,
+        DateTime now)
+    {
+        if (answerInputs.GroupBy(a => a.QuestionId).Any(group => group.Count() > 1))
+        {
+            return (new ServiceResultException("InvalidSurveyAnswers", "Each survey question can be answered once."), null);
+        }
+
+        var questionsById = survey.Questions.ToDictionary(q => q.Id);
+        if (answerInputs.Any(answer => !questionsById.ContainsKey(answer.QuestionId)))
+        {
+            return (new ServiceResultException("InvalidSurveyAnswers", "Survey answer references an unknown question."), null);
+        }
+
+        var inputsByQuestion = answerInputs.ToDictionary(a => a.QuestionId);
+        var answers = new List<SurveyAnswer>();
+        foreach (var question in survey.Questions)
+        {
+            if (!inputsByQuestion.TryGetValue(question.Id, out var answerInput))
+            {
+                if (question.IsRequired)
+                {
+                    return (new ServiceResultException("InvalidSurveyAnswers", "All required survey questions must be answered."), null);
+                }
+
+                continue;
+            }
+
+            var (answerError, answer) = BuildSurveyAnswer(question, responseId, answerInput, now);
+            if (answerError is not null)
+            {
+                return (answerError, null);
+            }
+
+            if (answer is not null)
+            {
+                answers.Add(answer);
+            }
+        }
+
+        return (null, answers);
+    }
+
+    private static (ServiceResultException? Error, SurveyAnswer? Answer) BuildSurveyAnswer(
+        SurveyQuestion question,
+        Guid responseId,
+        SurveyAnswerInput input,
+        DateTime now)
+    {
+        var normalizedText = string.IsNullOrWhiteSpace(input.Text) ? null : input.Text.Trim();
+        var hasUnexpectedRating = input.RatingValue.HasValue && question.QuestionType != SurveyQuestionType.Rating;
+        var hasUnexpectedOption = input.OptionId.HasValue && question.QuestionType != SurveyQuestionType.SingleChoice;
+        var hasUnexpectedText = normalizedText is not null && question.QuestionType != SurveyQuestionType.ShortText;
+        if (hasUnexpectedRating || hasUnexpectedOption || hasUnexpectedText)
+        {
+            return (new ServiceResultException("InvalidSurveyAnswers", "Survey answer payload does not match its question type."), null);
+        }
+
+        if (question.QuestionType == SurveyQuestionType.Rating && input.RatingValue is not (>= 1 and <= 5))
+        {
+            return (new ServiceResultException("InvalidSurveyAnswers", "Rating answers must be between 1 and 5."), null);
+        }
+
+        if (question.QuestionType == SurveyQuestionType.SingleChoice &&
+            (!input.OptionId.HasValue || question.Options.All(o => o.Id != input.OptionId.Value)))
+        {
+            return (new ServiceResultException("InvalidSurveyAnswers", "Selected survey option is invalid."), null);
+        }
+
+        if (question.QuestionType == SurveyQuestionType.ShortText && normalizedText is null)
+        {
+            return question.IsRequired
+                ? (new ServiceResultException("InvalidSurveyAnswers", "Required text answers cannot be empty."), null)
+                : (null, null);
+        }
+
+        return (null, new SurveyAnswer
+        {
+            Id = Guid.NewGuid(),
+            SurveyResponseId = responseId,
+            SurveyQuestionId = question.Id,
+            RatingValue = input.RatingValue,
+            SelectedOptionId = input.OptionId,
+            TextValue = normalizedText,
+            CreatedAt = now
+        });
     }
 
     private static List<QuizVersionItem> OrderItems(QuizVersion version, int shuffleSeed)

@@ -136,6 +136,11 @@ export default function QuizPublishPage() {
         </div>
         <div className="flex gap-2">
           <Link
+            to={`/dashboard/quizzes/${quizId}/survey`}
+            className="min-h-11 rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-sm font-medium text-sky-700 hover:bg-sky-100 focus-visible:outline-2 focus-visible:outline-sky-600">
+            استبيان الطلاب
+          </Link>
+          <Link
             to={`/dashboard/quizzes/${quizId}/edit`}
             className="min-h-11 rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-sky-600">
             تعديل

@@ -31,6 +31,7 @@ const QuizEditPage = lazy(() => import('../routes/dashboard/quizzes/quiz-edit-pa
 const QuizPreviewPage = lazy(() => import('../routes/dashboard/quizzes/quiz-preview-page'));
 const QuizPublishPage = lazy(() => import('../routes/dashboard/quizzes/quiz-publish-page'));
 const QuizSessionsPage = lazy(() => import('../routes/dashboard/quizzes/quiz-sessions-page'));
+const SurveyBuilderPage = lazy(() => import('../routes/dashboard/surveys/survey-builder-page'));
 const SessionDetailPage = lazy(() => import('../routes/dashboard/sessions/session-detail-page'));
 const SessionReportPage = lazy(() => import('../routes/dashboard/reports/session-report-page'));
 const AttemptDetailPage = lazy(() => import('../routes/dashboard/reports/attempt-detail-page'));
@@ -71,6 +72,7 @@ export const router = createBrowserRouter([
           { path: '/dashboard/quizzes/:quizId/preview', element: <QuizPreviewPage /> },
           { path: '/dashboard/quizzes/:quizId/publish', element: <QuizPublishPage /> },
           { path: '/dashboard/quizzes/:quizId/sessions', element: <QuizSessionsPage /> },
+          { path: '/dashboard/quizzes/:quizId/survey', element: <SurveyBuilderPage /> },
           { path: '/dashboard/sessions/:sessionId', element: <SessionDetailPage /> },
           { path: '/dashboard/reports/:sessionId', element: <SessionReportPage /> },
           { path: '/dashboard/attempts/:attemptId', element: <AttemptDetailPage /> },

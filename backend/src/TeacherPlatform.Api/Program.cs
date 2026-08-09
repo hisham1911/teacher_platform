@@ -293,8 +293,9 @@ builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.GuestTokenSer
 builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.SessionService>();
 builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.PlayerService>();
 
-// ---------- Phase 5: Reports ----------
+// ---------- Phase 5: Reports & Surveys ----------
 builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.ReportService>();
+builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.SurveyService>();
 
 // ---------- Health Checks ----------
 builder.Services.AddHealthChecks().AddDbContextCheck<AppDbContext>("database");

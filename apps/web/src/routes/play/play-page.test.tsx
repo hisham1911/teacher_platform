@@ -20,6 +20,8 @@ vi.mock('../../data/api-client/endpoints', async (importOriginal) => {
       submitAnswer: vi.fn(),
       finish: vi.fn(),
       getResult: vi.fn(),
+      getSurvey: vi.fn(),
+      submitSurvey: vi.fn(),
       mediaUrl: vi.fn(() => '/mock-media'),
     },
   };
@@ -82,6 +84,7 @@ describe('PlayPage', () => {
     localStorage.clear();
     // بلا كوكي صالح افتراضيًا ⇒ يُعرض نموذج الانضمام (بدون أي تخزين للاسم)
     getCurrentPlayerMock.mockRejectedValue(new HttpError(401, {}));
+    vi.mocked(playerApi.getSurvey).mockRejectedValue(new HttpError(404, {}));
   });
 
   it('يعرض نموذج الانضمام عندما تكون الجلسة نشطة', async () => {

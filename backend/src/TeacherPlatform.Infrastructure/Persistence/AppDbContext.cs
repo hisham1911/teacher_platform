@@ -53,6 +53,13 @@ public class AppDbContext(
     public DbSet<Domain.Sessions.Attempt> Attempts => Set<Domain.Sessions.Attempt>();
     public DbSet<Domain.Sessions.AttemptAnswer> AttemptAnswers => Set<Domain.Sessions.AttemptAnswer>();
 
+    // Phase 5 — Surveys (Tenant-owned، Global Filters مطلوبة)
+    public DbSet<Domain.Surveys.Survey> Surveys => Set<Domain.Surveys.Survey>();
+    public DbSet<Domain.Surveys.SurveyQuestion> SurveyQuestions => Set<Domain.Surveys.SurveyQuestion>();
+    public DbSet<Domain.Surveys.SurveyOption> SurveyOptions => Set<Domain.Surveys.SurveyOption>();
+    public DbSet<Domain.Surveys.SurveyResponse> SurveyResponses => Set<Domain.Surveys.SurveyResponse>();
+    public DbSet<Domain.Surveys.SurveyAnswer> SurveyAnswers => Set<Domain.Surveys.SurveyAnswer>();
+
     // Tenancy sets — تُخفى من النموذج عندما تُجمد Tenancy أثناء توليد AddIdentity
     private DbSet<Tenant>? _tenants;
     private DbSet<TenantMembership>? _tenantMemberships;
@@ -110,6 +117,13 @@ public class AppDbContext(
             modelBuilder.ApplyConfiguration(new Configurations.SessionParticipantConfiguration());
             modelBuilder.ApplyConfiguration(new Configurations.AttemptConfiguration());
             modelBuilder.ApplyConfiguration(new Configurations.AttemptAnswerConfiguration());
+
+            // Phase 5 — Surveys
+            modelBuilder.ApplyConfiguration(new Configurations.SurveyConfiguration());
+            modelBuilder.ApplyConfiguration(new Configurations.SurveyQuestionConfiguration());
+            modelBuilder.ApplyConfiguration(new Configurations.SurveyOptionConfiguration());
+            modelBuilder.ApplyConfiguration(new Configurations.SurveyResponseConfiguration());
+            modelBuilder.ApplyConfiguration(new Configurations.SurveyAnswerConfiguration());
         }
         else
         {
@@ -130,6 +144,11 @@ public class AppDbContext(
             modelBuilder.Ignore<Domain.Sessions.SessionParticipant>();
             modelBuilder.Ignore<Domain.Sessions.Attempt>();
             modelBuilder.Ignore<Domain.Sessions.AttemptAnswer>();
+            modelBuilder.Ignore<Domain.Surveys.Survey>();
+            modelBuilder.Ignore<Domain.Surveys.SurveyQuestion>();
+            modelBuilder.Ignore<Domain.Surveys.SurveyOption>();
+            modelBuilder.Ignore<Domain.Surveys.SurveyResponse>();
+            modelBuilder.Ignore<Domain.Surveys.SurveyAnswer>();
         }
 
         ApplyTenantQueryFilters(modelBuilder);

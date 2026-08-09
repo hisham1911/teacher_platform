@@ -1049,6 +1049,218 @@ namespace TeacherPlatform.Infrastructure.Persistence.Migrations
                     b.ToTable("SessionParticipants", (string)null);
                 });
 
+            modelBuilder.Entity("TeacherPlatform.Domain.Surveys.Survey", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<DateTime?>("PublishedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("QuizId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("QuizId", "TenantId");
+
+                    b.HasIndex("TenantId", "QuizId")
+                        .IsUnique();
+
+                    b.HasIndex("TenantId", "Status");
+
+                    b.ToTable("Surveys", (string)null);
+                });
+
+            modelBuilder.Entity("TeacherPlatform.Domain.Surveys.SurveyAnswer", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("RatingValue")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("SelectedOptionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("SurveyQuestionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("SurveyResponseId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("TextValue")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId");
+
+                    b.HasIndex("SurveyQuestionId", "TenantId");
+
+                    b.HasIndex("SurveyResponseId", "SurveyQuestionId")
+                        .IsUnique();
+
+                    b.HasIndex("SurveyResponseId", "TenantId");
+
+                    b.HasIndex("SelectedOptionId", "SurveyQuestionId", "TenantId");
+
+                    b.ToTable("SurveyAnswers", (string)null);
+                });
+
+            modelBuilder.Entity("TeacherPlatform.Domain.Surveys.SurveyOption", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("OptionText")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("SurveyQuestionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId");
+
+                    b.HasIndex("SurveyQuestionId", "SortOrder")
+                        .IsUnique();
+
+                    b.HasIndex("SurveyQuestionId", "TenantId");
+
+                    b.ToTable("SurveyOptions", (string)null);
+                });
+
+            modelBuilder.Entity("TeacherPlatform.Domain.Surveys.SurveyQuestion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsRequired")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Prompt")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<int>("QuestionType")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("SurveyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId");
+
+                    b.HasIndex("SurveyId", "SortOrder")
+                        .IsUnique();
+
+                    b.HasIndex("SurveyId", "TenantId");
+
+                    b.ToTable("SurveyQuestions", (string)null);
+                });
+
+            modelBuilder.Entity("TeacherPlatform.Domain.Surveys.SurveyResponse", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AttemptId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("SubmittedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("SurveyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId");
+
+                    b.HasIndex("AttemptId", "TenantId");
+
+                    b.HasIndex("SurveyId", "AttemptId")
+                        .IsUnique();
+
+                    b.HasIndex("SurveyId", "TenantId");
+
+                    b.ToTable("SurveyResponses", (string)null);
+                });
+
             modelBuilder.Entity("TeacherPlatform.Domain.Tenancy.Tenant", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1423,6 +1635,92 @@ namespace TeacherPlatform.Infrastructure.Persistence.Migrations
                     b.Navigation("Session");
                 });
 
+            modelBuilder.Entity("TeacherPlatform.Domain.Surveys.Survey", b =>
+                {
+                    b.HasOne("TeacherPlatform.Domain.Quizzes.Quiz", "Quiz")
+                        .WithMany()
+                        .HasForeignKey("QuizId", "TenantId")
+                        .HasPrincipalKey("Id", "TenantId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Quiz");
+                });
+
+            modelBuilder.Entity("TeacherPlatform.Domain.Surveys.SurveyAnswer", b =>
+                {
+                    b.HasOne("TeacherPlatform.Domain.Surveys.SurveyQuestion", "Question")
+                        .WithMany("Answers")
+                        .HasForeignKey("SurveyQuestionId", "TenantId")
+                        .HasPrincipalKey("Id", "TenantId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("TeacherPlatform.Domain.Surveys.SurveyResponse", "Response")
+                        .WithMany("Answers")
+                        .HasForeignKey("SurveyResponseId", "TenantId")
+                        .HasPrincipalKey("Id", "TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("TeacherPlatform.Domain.Surveys.SurveyOption", "SelectedOption")
+                        .WithMany()
+                        .HasForeignKey("SelectedOptionId", "SurveyQuestionId", "TenantId")
+                        .HasPrincipalKey("Id", "SurveyQuestionId", "TenantId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.Navigation("Question");
+
+                    b.Navigation("Response");
+
+                    b.Navigation("SelectedOption");
+                });
+
+            modelBuilder.Entity("TeacherPlatform.Domain.Surveys.SurveyOption", b =>
+                {
+                    b.HasOne("TeacherPlatform.Domain.Surveys.SurveyQuestion", "Question")
+                        .WithMany("Options")
+                        .HasForeignKey("SurveyQuestionId", "TenantId")
+                        .HasPrincipalKey("Id", "TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Question");
+                });
+
+            modelBuilder.Entity("TeacherPlatform.Domain.Surveys.SurveyQuestion", b =>
+                {
+                    b.HasOne("TeacherPlatform.Domain.Surveys.Survey", "Survey")
+                        .WithMany("Questions")
+                        .HasForeignKey("SurveyId", "TenantId")
+                        .HasPrincipalKey("Id", "TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Survey");
+                });
+
+            modelBuilder.Entity("TeacherPlatform.Domain.Surveys.SurveyResponse", b =>
+                {
+                    b.HasOne("TeacherPlatform.Domain.Sessions.Attempt", "Attempt")
+                        .WithMany()
+                        .HasForeignKey("AttemptId", "TenantId")
+                        .HasPrincipalKey("Id", "TenantId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("TeacherPlatform.Domain.Surveys.Survey", "Survey")
+                        .WithMany("Responses")
+                        .HasForeignKey("SurveyId", "TenantId")
+                        .HasPrincipalKey("Id", "TenantId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Attempt");
+
+                    b.Navigation("Survey");
+                });
+
             modelBuilder.Entity("TeacherPlatform.Domain.Tenancy.TenantMembership", b =>
                 {
                     b.HasOne("TeacherPlatform.Domain.Tenancy.Tenant", "Tenant")
@@ -1497,6 +1795,25 @@ namespace TeacherPlatform.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("TeacherPlatform.Domain.Sessions.SessionParticipant", b =>
                 {
                     b.Navigation("Attempt");
+                });
+
+            modelBuilder.Entity("TeacherPlatform.Domain.Surveys.Survey", b =>
+                {
+                    b.Navigation("Questions");
+
+                    b.Navigation("Responses");
+                });
+
+            modelBuilder.Entity("TeacherPlatform.Domain.Surveys.SurveyQuestion", b =>
+                {
+                    b.Navigation("Answers");
+
+                    b.Navigation("Options");
+                });
+
+            modelBuilder.Entity("TeacherPlatform.Domain.Surveys.SurveyResponse", b =>
+                {
+                    b.Navigation("Answers");
                 });
 
             modelBuilder.Entity("TeacherPlatform.Domain.Tenancy.Tenant", b =>
