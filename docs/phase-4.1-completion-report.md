@@ -103,7 +103,7 @@
 - `660865a` infra(e2e): tracked E2E env + repo harness (seed/specs/run scripts)
 - `1b128cc` docs: Phase 4.1 completion report — cookie-only /me, E2E harness in repo
 
-**Final SHA:** `37243771d09b34f798cb4194da7c58753f5412e1`
+**Final SHA:** `git rev-parse HEAD` = `409f57f` (رأس فرع الإغلاق)
 **Git:** `git status --short` فارغ بعد commit التوثيق.
 
 ---
