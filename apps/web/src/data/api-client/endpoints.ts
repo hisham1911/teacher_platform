@@ -878,6 +878,23 @@ export const playerApi = {
       signal,
     });
   },
+  issueCertificate(joinCode: string, attemptId: string, signal?: AbortSignal) {
+    return call<PlayerCertificate>({
+      method: 'POST',
+      path: `/api/v1/player/sessions/${encodeURIComponent(joinCode)}/attempts/${attemptId}/certificate`,
+      signal,
+    });
+  },
+  createParentShare(joinCode: string, attemptId: string, signal?: AbortSignal) {
+    return call<ParentShare>({
+      method: 'POST',
+      path: `/api/v1/player/sessions/${encodeURIComponent(joinCode)}/attempts/${attemptId}/parent-share`,
+      signal,
+    });
+  },
+  certificateDownloadUrl(joinCode: string, attemptId: string): string {
+    return `${resolveBaseUrl()}/api/v1/player/sessions/${encodeURIComponent(joinCode)}/attempts/${attemptId}/certificate/file`;
+  },
   /** URL مباشر لوسائط السؤال — الـGuest Cookie يُرسل تلقائيًا من المتصفح (لا Bearer). */
   mediaUrl(joinCode: string, attemptId: string, mediaId: string): string {
     return `${resolveBaseUrl()}/api/v1/player/sessions/${encodeURIComponent(joinCode)}/attempts/${attemptId}/media/${mediaId}`;
@@ -890,6 +907,14 @@ import type {
   ReportAttemptListItem,
   SessionReport,
 } from '../../types/reports';
+import type {
+  CertificateListItem,
+  CertificateTemplate,
+  ParentShare,
+  PlayerCertificate,
+  PublicResult,
+  SaveCertificateTemplateRequest,
+} from '../../types/certificates';
 
 export const reportsApi = {
   getSessionReport(tenantId: string, sessionId: string, signal?: AbortSignal) {
@@ -985,5 +1010,79 @@ export const surveysApi = {
       needsAuth: true,
       needsTenant: true,
     });
+  },
+};
+
+export const certificateTemplatesApi = {
+  list(tenantId: string, signal?: AbortSignal) {
+    return call<CertificateTemplate[]>({
+      method: 'GET',
+      path: `/api/v1/tenants/${tenantId}/certificate-templates`,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+  create(tenantId: string, payload: SaveCertificateTemplateRequest, signal?: AbortSignal) {
+    return call<CertificateTemplate>({
+      method: 'POST',
+      path: `/api/v1/tenants/${tenantId}/certificate-templates`,
+      body: payload,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+  update(
+    tenantId: string,
+    templateId: string,
+    payload: SaveCertificateTemplateRequest,
+    signal?: AbortSignal,
+  ) {
+    return call<CertificateTemplate>({
+      method: 'PUT',
+      path: `/api/v1/tenants/${tenantId}/certificate-templates/${templateId}`,
+      body: payload,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+};
+
+export const certificatesApi = {
+  list(tenantId: string, signal?: AbortSignal) {
+    return call<CertificateListItem[]>({
+      method: 'GET',
+      path: `/api/v1/tenants/${tenantId}/certificates`,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+  retry(tenantId: string, certificateId: string, signal?: AbortSignal) {
+    return call<CertificateListItem>({
+      method: 'POST',
+      path: `/api/v1/tenants/${tenantId}/certificates/${certificateId}/retry`,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+  download(tenantId: string, certificateId: string, signal?: AbortSignal) {
+    return callBlob(`/api/v1/tenants/${tenantId}/certificates/${certificateId}/file`, signal);
+  },
+};
+
+export const publicResultsApi = {
+  get(publicToken: string, signal?: AbortSignal) {
+    return call<PublicResult>({
+      method: 'GET',
+      path: `/api/v1/public/results/${encodeURIComponent(publicToken)}`,
+      signal,
+    });
+  },
+  certificateUrl(publicToken: string): string {
+    return `${resolveBaseUrl()}/api/v1/player/certificates/${encodeURIComponent(publicToken)}`;
   },
 };

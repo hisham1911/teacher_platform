@@ -36,12 +36,12 @@ export function RootLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col" dir="rtl">
       <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex h-14 w-full max-w-5xl items-center justify-between gap-4 px-4">
+        <div className="mx-auto flex min-h-14 w-full max-w-5xl flex-col items-stretch justify-between gap-1 px-4 py-2 sm:h-14 sm:flex-row sm:items-center sm:gap-4 sm:py-0">
           <Link to="/" className="text-base font-bold text-slate-900 shrink-0">
             منصة المعلم
           </Link>
 
-          <nav className="flex items-center gap-1" aria-label="التنقل الرئيسي">
+          <nav className="flex w-full items-center gap-1 overflow-x-auto sm:w-auto" aria-label="التنقل الرئيسي">
             {!session.user ? (
               <>
                 <NavLink to="/" end className={navLinkClass}>
@@ -64,6 +64,9 @@ export function RootLayout({ children }: { children: ReactNode }) {
                 </NavLink>
                 <NavLink to="/dashboard/quizzes" className={navLinkClass}>
                   الاختبارات
+                </NavLink>
+                <NavLink to="/dashboard/certificates" className={navLinkClass}>
+                  الشهادات
                 </NavLink>
                 <NavLink to="/dashboard/settings" className={navLinkClass}>
                   الإعدادات
@@ -120,7 +123,7 @@ export function RootLayout({ children }: { children: ReactNode }) {
 
       <footer className="border-t border-slate-200 bg-white">
         <div className="mx-auto w-full max-w-5xl px-4 py-4 text-center text-xs text-slate-500">
-          منصة المعلم — المرحلة 1 (Identity &amp; Multi-tenancy)
+          منصة المعلم — إدارة الاختبارات والنتائج
         </div>
       </footer>
     </div>

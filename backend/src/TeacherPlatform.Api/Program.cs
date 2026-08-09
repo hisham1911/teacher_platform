@@ -293,9 +293,48 @@ builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.GuestTokenSer
 builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.SessionService>();
 builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.PlayerService>();
 
-// ---------- Phase 5: Reports & Surveys ----------
+// ---------- Phase 5: Reports, Surveys & Certificates ----------
 builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.ReportService>();
 builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.SurveyService>();
+builder.Services.AddOptions<TeacherPlatform.Application.Options.CertificateOptions>()
+    .Bind(configuration.GetSection(TeacherPlatform.Application.Options.CertificateOptions.SectionName))
+    .ValidateDataAnnotations()
+    .Validate(options => string.IsNullOrWhiteSpace(options.QuestPdfLicense)
+        || options.QuestPdfLicense is "Community" or "Professional" or "Enterprise",
+        "Certificates:QuestPdfLicense must be Community, Professional, or Enterprise.")
+    .ValidateOnStart();
+
+var certificateOptions = configuration
+    .GetSection(TeacherPlatform.Application.Options.CertificateOptions.SectionName)
+    .Get<TeacherPlatform.Application.Options.CertificateOptions>()
+    ?? new TeacherPlatform.Application.Options.CertificateOptions();
+var questPdfLicense = certificateOptions.QuestPdfLicense;
+if (string.IsNullOrWhiteSpace(questPdfLicense))
+{
+    if (builder.Environment.IsProduction())
+    {
+        throw new InvalidOperationException(
+            "Certificates:QuestPdfLicense must be selected explicitly for Production after verifying license eligibility.");
+    }
+
+    questPdfLicense = "Community";
+}
+
+QuestPDF.Settings.License = questPdfLicense switch
+{
+    "Professional" => QuestPDF.Infrastructure.LicenseType.Professional,
+    "Enterprise" => QuestPDF.Infrastructure.LicenseType.Enterprise,
+    _ => QuestPDF.Infrastructure.LicenseType.Community
+};
+builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.PlayerAttemptAccessService>();
+builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.CertificateTemplateService>();
+builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.CertificateService>();
+builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.ParentShareService>();
+builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.CertificateGenerationService>();
+builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.OutboxProcessor>();
+builder.Services.AddSingleton<TeacherPlatform.Application.Abstractions.ICertificatePdfRenderer,
+    TeacherPlatform.Infrastructure.Services.CertificatePdfRenderer>();
+builder.Services.AddHostedService<TeacherPlatform.Infrastructure.Services.OutboxWorker>();
 
 // ---------- Health Checks ----------
 builder.Services.AddHealthChecks().AddDbContextCheck<AppDbContext>("database");

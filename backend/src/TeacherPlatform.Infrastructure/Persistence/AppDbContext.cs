@@ -60,6 +60,12 @@ public class AppDbContext(
     public DbSet<Domain.Surveys.SurveyResponse> SurveyResponses => Set<Domain.Surveys.SurveyResponse>();
     public DbSet<Domain.Surveys.SurveyAnswer> SurveyAnswers => Set<Domain.Surveys.SurveyAnswer>();
 
+    // Phase 5 — Certificates, parent sharing & Outbox
+    public DbSet<Domain.Certificates.CertificateTemplate> CertificateTemplates => Set<Domain.Certificates.CertificateTemplate>();
+    public DbSet<Domain.Certificates.Certificate> Certificates => Set<Domain.Certificates.Certificate>();
+    public DbSet<Domain.Certificates.ParentResultShare> ParentResultShares => Set<Domain.Certificates.ParentResultShare>();
+    public DbSet<Domain.Operations.OutboxMessage> OutboxMessages => Set<Domain.Operations.OutboxMessage>();
+
     // Tenancy sets — تُخفى من النموذج عندما تُجمد Tenancy أثناء توليد AddIdentity
     private DbSet<Tenant>? _tenants;
     private DbSet<TenantMembership>? _tenantMemberships;
@@ -124,6 +130,12 @@ public class AppDbContext(
             modelBuilder.ApplyConfiguration(new Configurations.SurveyOptionConfiguration());
             modelBuilder.ApplyConfiguration(new Configurations.SurveyResponseConfiguration());
             modelBuilder.ApplyConfiguration(new Configurations.SurveyAnswerConfiguration());
+
+            // Phase 5 — Certificates, parent sharing & Outbox
+            modelBuilder.ApplyConfiguration(new Configurations.CertificateTemplateConfiguration());
+            modelBuilder.ApplyConfiguration(new Configurations.CertificateConfiguration());
+            modelBuilder.ApplyConfiguration(new Configurations.ParentResultShareConfiguration());
+            modelBuilder.ApplyConfiguration(new Configurations.OutboxMessageConfiguration());
         }
         else
         {
@@ -149,6 +161,10 @@ public class AppDbContext(
             modelBuilder.Ignore<Domain.Surveys.SurveyOption>();
             modelBuilder.Ignore<Domain.Surveys.SurveyResponse>();
             modelBuilder.Ignore<Domain.Surveys.SurveyAnswer>();
+            modelBuilder.Ignore<Domain.Certificates.CertificateTemplate>();
+            modelBuilder.Ignore<Domain.Certificates.Certificate>();
+            modelBuilder.Ignore<Domain.Certificates.ParentResultShare>();
+            modelBuilder.Ignore<Domain.Operations.OutboxMessage>();
         }
 
         ApplyTenantQueryFilters(modelBuilder);

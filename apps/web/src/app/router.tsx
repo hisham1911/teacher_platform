@@ -6,6 +6,8 @@ import { RequireAuth } from '../features/auth/require-auth';
 
 const HomePage = lazy(() => import('../routes/public/home-page'));
 const PublicQuizPage = lazy(() => import('../routes/public/public-quiz-page'));
+const PublicResultPage = lazy(() => import('../routes/public/public-result-page'));
+const PublicCertificatePage = lazy(() => import('../routes/public/public-certificate-page'));
 
 const LoginPage = lazy(() => import('../routes/auth/login-page'));
 const SignupPage = lazy(() => import('../routes/auth/signup-page'));
@@ -35,6 +37,7 @@ const SurveyBuilderPage = lazy(() => import('../routes/dashboard/surveys/survey-
 const SessionDetailPage = lazy(() => import('../routes/dashboard/sessions/session-detail-page'));
 const SessionReportPage = lazy(() => import('../routes/dashboard/reports/session-report-page'));
 const AttemptDetailPage = lazy(() => import('../routes/dashboard/reports/attempt-detail-page'));
+const CertificatesPage = lazy(() => import('../routes/dashboard/certificates/certificates-page'));
 
 const PlayPage = lazy(() => import('../routes/play/play-page'));
 
@@ -76,10 +79,13 @@ export const router = createBrowserRouter([
           { path: '/dashboard/sessions/:sessionId', element: <SessionDetailPage /> },
           { path: '/dashboard/reports/:sessionId', element: <SessionReportPage /> },
           { path: '/dashboard/attempts/:attemptId', element: <AttemptDetailPage /> },
+          { path: '/dashboard/certificates', element: <CertificatesPage /> },
         ],
       },
       { path: '/play/:joinCode', element: <PlayPage /> },
       { path: '/q/:publicCode', element: <PublicQuizPage /> },
+      { path: '/result/:publicToken', element: <PublicResultPage /> },
+      { path: '/certificate/:publicToken', element: <PublicCertificatePage /> },
     ],
   },
 ]);

@@ -14,6 +14,7 @@ import type {
   StartAttemptResponse,
 } from '../../types/sessions';
 import { PlayerSurveyPanel } from './player-survey-panel';
+import { PlayerDeliveryPanel } from './player-delivery-panel';
 
 /**
  * /play/:joinCode — واجهة الطالب (Phase 4).
@@ -798,6 +799,9 @@ function ResultView({ joinCode, attemptId }: { joinCode: string; attemptId: stri
           ) : null}
         </dl>
       </div>
+      {finished && result.passed != null ? (
+        <PlayerDeliveryPanel joinCode={joinCode} attemptId={attemptId} passed={result.passed} />
+      ) : null}
       {finished ? <PlayerSurveyPanel joinCode={joinCode} attemptId={attemptId} /> : null}
     </main>
   );
