@@ -31,7 +31,7 @@ scripts/           سكربتات مساعدة
 - حدود الاستخدام: `QuizLimits` (`MaxQuizzesPerTenant` افتراضيًا 100، `MaxQuestionsPerQuiz` افتراضيًا 200، و`MaxPublishedQuizzesPerTenant` افتراضيًا 50) عبر IQuizLimitService؛ التجاوز → 403 `QuotaExceeded`.
 - المشاركة: `GET .../quizzes/{id}/share` يعيد PublicCode + ShareUrl؛ صفحة النشر تعرض الرابط + QR Code (react-qr-code).
 
-## الحالة الحالية (بعد Phase 5)
+## الحالة الحالية (بعد Phase 6)
 
 - **Phase 4:** Student Player / Sessions / Server-side scoring.
 - **Phase 4.1:** Answer payload validation + real-browser hardening.
@@ -41,7 +41,9 @@ scripts/           سكربتات مساعدة
 - إصدار الشهادة Idempotent ويجري عبر `OutboxMessages` و`OutboxWorker`؛ الفشل قابل لإعادة المحاولة من شاشة `/dashboard/certificates`.
 - مشاركة ولي الأمر تستخدم رابط نتيجة محدودًا ومؤقتًا؛ الشهادة العامة تستخدم رمزًا عشوائيًا ولا تكشف إجابات طالب آخر.
 - Playwright E2E harness داخل `e2e/` يغطي الاستعادة بعد F5، التقرير/CSV، الاستبانة، شهادة النجاح، وعدم إصدارها عند الرسوب.
-- Phase 6 (Live Competition / SignalR) لم تبدأ.
+- **Phase 6:** مسابقات Live بحالة خادمية في PostgreSQL، Host controls وtimer ولوحة ترتيب، وإشعارات SignalR عبر `/hubs/quiz` مع polling fallback.
+- إجابات Live تبقى REST وتُصحح خادميًا؛ لا يرى اللاعب الصحة أو الدرجة قبل إغلاق السؤال، ولا يختار العميل SignalR groups.
+- Playwright يغطي Host + Player في سياقين، إخفاء التصحيح حتى الإغلاق، والنتيجة بعد F5. Phase 7 لم تبدأ.
 
 ## قواعد إلزامية
 

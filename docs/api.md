@@ -142,7 +142,7 @@ POST   /api/v1/tenants/{tenantId}/quizzes/{quizId}/sessions/{sessionId}/cancel  
 ```
 
 قواعد:
-- Phase 4 تدعم `SelfPaced` فقط — إنشاء جلسة `Mode=Live` يرفض بـ`400 LiveModeNotAvailable`.
+- إنشاء الجلسة يقبل `mode: SelfPaced | Live`. جلسة Live تنشئ `LiveSessionState` في `Lobby` داخل نفس الحفظ.
 - `JoinCode` (8 أحرف) يُولّد عند الإنشاء ويظهر في التفاصيل — يوزعه المعلم على الطلاب.
 - إنشاء الجلسة يتطلب اختبارًا منشورًا (`CurrentPublishedVersionId` غير null) ويثبّت `QuizVersionId` عليها؛ `activate` يغيّر حالة الجلسة دون تبديل النسخة.
 - `baseVersion` (xmin) مطلوب لعمليات الحالة — اختلافه → `409 Conflict`.
@@ -190,6 +190,34 @@ GET    /api/v1/player/sessions/{joinCode}/attempts/{attemptId}/media/{mediaId}  
 - **Idempotency:** إعادة إرسال نفس الإجابة = `200`؛ إرسال إجابة **مختلفة** لنفس السؤال = `409 AnswerConflict`. المقارنة دلالية (jsonb يطبّع المخزن — ADR 008).
 - **الوقت خادمي:** `serverNow` في كل استجابة؛ بعد `deadlineAt` يُنهي الخادم المحاولة `TimedOut` عند أول طلب لاحق (settle-on-request).
 - التصحيح خادمي بالكامل عبر `AnswerScorer` (ADR 008) — العميل لا يرى الإجابات الصحيحة إلا في `result` بعد الإنهاء.
+
+### المسابقة المباشرة (Phase 6)
+
+Teacher endpoints التالية مصادق عليها وتتطلب سياسة إدارة محتوى المستأجر:
+
+```text
+GET  /api/v1/tenants/{tenantId}/quizzes/{quizId}/sessions/{sessionId}/live
+POST /api/v1/tenants/{tenantId}/quizzes/{quizId}/sessions/{sessionId}/live/token
+POST /api/v1/tenants/{tenantId}/quizzes/{quizId}/sessions/{sessionId}/live/questions/open-next
+POST /api/v1/tenants/{tenantId}/quizzes/{quizId}/sessions/{sessionId}/live/questions/close
+POST /api/v1/tenants/{tenantId}/quizzes/{quizId}/sessions/{sessionId}/live/finish
+```
+
+- أوامر `open-next`, `close`, و`finish` تقبل `{ "baseRevision": number, "durationSeconds": number? }`. `durationSeconds` مستخدم عند الفتح فقط ومداه 5..300؛ Revision قديم أو انتقال غير صالح يعيد `409`.
+- `token` يعيد `{ accessToken, expiresAt }` لاتصال SignalR قصير العمر ومقيّد بالمستأجر والجلسة ودور المعلم.
+
+Player endpoints تتطلب Guest Cookie الصالح وملكية المشارك للجلسة:
+
+```text
+GET  /api/v1/player/sessions/{joinCode}/live
+POST /api/v1/player/sessions/{joinCode}/live/token
+```
+
+`LiveSessionStateResponse` هو `{ sessionId, sessionStatus, phase, currentQuestionIndex, totalQuestions, questionStartedAt, questionClosesAt, serverNow, revision, participantCount, attemptCount, answeredCount, currentQuestion, leaderboard }`. `currentQuestion` عند وجوده هو `{ quizVersionItemId, index, totalQuestions, questionType, prompt, points, mediaAssetId, options[] }`، والخيار `{ optionId, optionText }`. لا توجد أعلام صحة أو إعدادات تصحيح في هذا العقد. عنصر `leaderboard` هو `{ rank, displayName, score, answeredCount }`.
+
+- Hub الإشعارات: `/hubs/quiz`. الأحداث الحالية: `LobbyUpdated`, `SessionStarted`, `QuestionOpened`, `QuestionClosed`, `LeaderboardUpdated`, `SessionFinished`, و`LiveStateChanged` عند الاتصال.
+- لا توجد Hub methods للإجابات أو التحكم ولا يمرر العميل اسم group؛ الخادم يشتق group بعد إعادة تحقق الهوية. الإجابات تظل عبر endpoint Phase 4.
+- أثناء `QuestionOpen` يعيد `SubmitAnswerResponse` الحقلين `isCorrect` و`scoreAwarded` كـ`null`، ولا تشمل لوحة الترتيب السؤال المفتوح. بعد الإغلاق يدخل السؤال في الترتيب، وعند `finish` يثبت الخادم النتائج النهائية ثم يستطيع اللاعب جلب `result`.
 
 ## بند Phase 5 — التقارير والاستبانة والشهادات
 
@@ -256,7 +284,6 @@ GET  /api/v1/public/results/{publicToken}
 - `400`: مدخلات غير صالحة أو سؤال يفشل بقعة Validation (Codes مثل `QuestionInvalid`, `UnsupportedMediaType`, `EmptyFile`).
 - `401/403`: غير مصادق / ليس عضوًا / دور غير كافٍ.
 - `404`: سؤال/بنك/وسيط/اختبار غير موجود في هذا Tenant.
-- `400`: `LiveModeNotAvailable` عند طلب جلسة Live (Phase 4 تدعم SelfPaced فقط).
 - `409 Conflict`: تعديل بـ`BaseVersion` قديم؛ `AnswerConflict` لإجابة مختلفة لنفس السؤال؛ `SessionNotActive`/`AttemptFinished` لعمليات على جلسة/محاولة غير نشطة.
 - `413 Payload Too Large`: ملف يتجاوز `ImageMaxBytes`/`AudioMaxBytes`.
 - `429`: تجاوز معدل الطلبات على نقاط اللاعب.

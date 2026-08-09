@@ -252,7 +252,7 @@ dotnet ef database update -p backend/src/TeacherPlatform.Infrastructure -s backe
 Remove-Item Env:ConnectionStrings__DefaultConnection
 ```
 
-2. شغّل المشهد كاملًا بسطر واحد من `e2e/` (يبدأ API ببيئة `E2E` + الواجهة + seed + Part A + إعادة تشغيل حقيقية للـAPI + Part B):
+2. شغّل المشهد كاملًا بسطر واحد من `e2e/` (يبدأ API ببيئة `E2E` + الواجهة + seed + Part A + إعادة تشغيل حقيقية للـAPI + Part B + Live Part C):
 
 ```powershell
 cd e2e
@@ -266,11 +266,16 @@ npm ci
 .\run-e2e.ps1 -ApiPort 5100 -WebPort 5273
 ```
 
-3. البديل اليدوي (لتشخيص/عزل): شغّل `e2e/run-api.cmd` (يثبّت بيئة `E2E` تلقائيًا) ثم `e2e/run-web.cmd`، ثم `node e2e\seed.mjs`، ثم `npx playwright test tests/part-a.spec.mjs`؛ أعِد تشغيل الـAPI ثم `tests/part-b.spec.mjs`.
+3. البديل اليدوي (لتشخيص/عزل): شغّل `e2e/run-api.cmd` (يثبّت بيئة `E2E` تلقائيًا) ثم `e2e/run-web.cmd`، ثم `node e2e\seed.mjs`، ثم specs بالترتيب `part-a`, `part-b`, `part-c-live`. بعد seed سابق يمكن عزل Live فقط عبر `.\run-e2e.ps1 -Stage live`.
 
 - بيئة `E2E` مصممة بحيث: `UseSecureCookie=false` (كوكي `tp-guest` على localhost بدون secure)، `RateLimiting.PermitLimit=200` (لا يخل بجريان الأتمتة)، وقاعدة متميزة عن التطوير والاختبار.
 - Part A يغطي الاستعادة server-side بعد F5. Part B يغطي النجاح والشهادة وPDF والاستبانة ومشاركة ولي الأمر وتقرير المعلم وCSV، إضافة إلى رسوب معزول بلا شهادة.
+- Part C يفتح Host ولاعبًا في سياقين منفصلين، ويتحقق من الانتقالات والـLeaderboard وإخفاء الصحة/الدرجة حتى إغلاق السؤال واستعادة نتيجة Live بعد F5.
 - التشغيل والتنظيف مفصّلان في `e2e/README.md`.
+
+### إعدادات Live المحلية
+
+قسم `Session` يضبط `LiveDefaultQuestionSeconds` (5..300)، و`LiveTokenMinutes` (1..30)، و`LiveMonitorIntervalSeconds` (1..10)، إلى جانب `GraceWindowSeconds`. القيم المتتبعة في `appsettings.Example.json` و`appsettings.E2E.json` أمثلة غير سرية. اتصال SignalR يستخدم `${VITE_API_BASE_URL}/hubs/quiz` ويحتاج WebSocket proxy في Production؛ polling الدوري يبقى fallback في الواجهة.
 
 ## 9. متطلبات تشغيل الشهادات
 

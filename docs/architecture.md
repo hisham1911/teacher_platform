@@ -9,7 +9,7 @@ Browser
   │ HTTPS
   ▼
 React SPA (Vite → dist → Vercel CDN)
-  │ HTTPS REST (/api/v1) — لاحقًا SignalR
+  │ HTTPS REST (/api/v1) + SignalR (/hubs/quiz)
   ▼
 ASP.NET Core Web API (Kestrel خلف Nginx)
   │
@@ -53,7 +53,7 @@ ASP.NET Core Web API (Kestrel خلف Nginx)
 
 - الواجهة: Vercel (Static SPA مع rewrite إلى index.html).
 - الـ API: Linux VPS + Nginx + systemd، مع `ForwardedHeaders` مهيأة مسبقًا.
-- SignalR سيُضاف للمسابقات المباشرة (Phase 6) بنفس الـ API.
+- SignalR للمسابقات المباشرة يعمل من نفس Kestrel عبر `/hubs/quiz`؛ النشر الحالي single-node ولا يحتاج Redis backplane.
 
 ## Phase 2 — Media و Object Storage
 
@@ -85,7 +85,7 @@ ASP.NET Core Web API (Kestrel خلف Nginx)
 ## Phase 4 — الجلسات ومشغل الطالب والتصحيح الخادمي
 
 - **QuizSession** يربط اختبارًا منشورًا بجمهور: `JoinCode` عام (8 أحرف)، `Mode`
-  (SelfPaced فقط في Phase 4 — Live مرفوض بـ`LiveModeNotAvailable`)، `Status`
+  (`SelfPaced` أو `Live`)، `Status`
   (Scheduled/Active/Finished/Cancelled)، و`QuizVersionId` يُثبَّت عند إنشاء الجلسة.
 - **SessionParticipant** يمثل طالبًا بلا حساب: رمز ضيف 256-bit يُخزن **هاش SHA-256
   فقط** ويُقارن بمقارنة ثابتة الزمن، ويُنقل بكوكي HttpOnly يعتمد اسمه على
@@ -115,3 +115,11 @@ ASP.NET Core Web API (Kestrel خلف Nginx)
 - **Outbox** داخل نفس PostgreSQL: claim ذري، قفل مؤقت، عداد محاولات، Backoff، وحالة فشل نهائية يمكن للمعلم إعادة تشغيلها. مفتاح الملف حتمي `certificates/{tenantId}/{certificateId}.pdf`، لذلك إعادة المعالجة لا تنشئ نسخة ثانية.
 - **الروابط العامة** لا تستخدم معرّفات قاعدة البيانات كأسرار. هاش رمز الشهادة فقط هو المفتاح القابل للبحث، بينما تُحمى نسخته القابلة لإعادة العرض عبر ASP.NET Core Data Protection. رابط ولي الأمر له رمز مستقل مخزن كهاش وينتهي افتراضيًا بعد 7 أيام، وDTO العام محدود بملخص النتيجة ومجالات المراجعة ورابط الشهادة الجاهزة.
 - خيارات التشغيل تحت `Certificates`. الإنتاج يفشل عند غياب اختيار `QuestPdfLicense`، ويتطلب مفاتيح Data Protection دائمة وخطًا متوافقًا (`DejaVu Sans` افتراضيًا على Linux). التفاصيل في ADR 009.
+
+## Phase 6 — المسابقات المباشرة
+
+- `LiveSessionStates` في PostgreSQL هو مصدر الحقيقة للحالة (`Lobby`, `QuestionOpen`, `QuestionClosed`, `Finished`) وللسؤال الحالي والموعد و`Revision`. SignalR ينقل snapshots ولا يحتفظ بحالة مستقلة.
+- أوامر المعلم والإجابات تمر عبر REST. Hub `/hubs/quiz` للإشعارات فقط ولا يعرض methods لاختيار group أو إرسال إجابة.
+- المعلم يحصل على JWT Live قصير العمر بعد فحص Owner/Teacher، واللاعب بعد التحقق من Guest Cookie وملكية المشارك. Hub يعيد التحقق من العضوية أو المشارك ثم يضيف الاتصال إلى group ثابت يبنيه الخادم.
+- أثناء `QuestionOpen` لا تحتوي DTOs على صحة الخيارات، ونتيجة `submitAnswer` تحجب `isCorrect` و`scoreAwarded`. بعد الإغلاق تُحسب لوحة الترتيب من الإجابات المخزنة للأسئلة المغلقة فقط؛ الإنهاء يثبت النتائج النهائية خادميًا لكل المحاولات الجارية.
+- Worker يغلق السؤال بعد `QuestionClosesAt + GraceWindowSeconds`. الواجهة تستخدم SignalR مع إعادة اتصال تلقائية وpolling fallback؛ لا يوجد Redis في نطاق النشر single-node الحالي. التفاصيل في ADR 010.

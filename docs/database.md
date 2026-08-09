@@ -1,4 +1,4 @@
-# قاعدة البيانات — حتى Phase 5
+# قاعدة البيانات — حتى Phase 6
 
 التعريفات الإضافية فوق Phase 0/1/2:
 
@@ -75,7 +75,7 @@
 | QuizId | uuid | FK مركب → `Quizzes (Id, TenantId)` NoAction |
 | QuizVersionId | uuid | يُثبَّت عند الإنشاء → `QuizVersions (Id, TenantId)` NoAction |
 | JoinCode | varchar(32) | unique عالميًا — يولّد حاليًا في الخدمة بطول 8 أحرف |
-| Mode | int | SelfPaced=1, Live=2 (Live مرفوض في Phase 4) |
+| Mode | int | SelfPaced=1, Live=2 |
 | Status | int | Scheduled=1, Active=2, Finished=3, Cancelled=4 |
 | Label | varchar(200) nullable | عنوان وصفي اختياري للجلسة |
 | ActivatedAt/FinishedAt | timestamptz nullable | |
@@ -159,6 +159,23 @@ unique per `(AttemptId, QuizVersionItemId)` — إجابة واحدة لكل س�
 
 كل الكيانات السابقة Tenant-scoped. علاقات المحاولات/الشهادات/المشاركة `NoAction`، بينما حذف سؤال استبانة مسودة أو استجابتها يزيل العناصر التابعة المناسبة فقط.
 
+## Phase 6 — LiveSessionStates
+
+| Column | Type | Notes |
+|--------|------|-------|
+| Id | uuid PK + `AK (Id, TenantId)` | |
+| TenantId | uuid | ITenantEntity + Global Filter |
+| SessionId | uuid | FK مركب → `QuizSessions (Id, TenantId)`، واحد لواحد وفريد |
+| Phase | int | Lobby=1, QuestionOpen=2, QuestionClosed=3, Finished=4 |
+| CurrentQuestionIndex | int | يبدأ عند -1 في Lobby |
+| CurrentQuizVersionItemId | uuid nullable | FK مركب → `QuizVersionItems (Id, TenantId)` |
+| QuestionStartedAt/QuestionClosesAt | timestamptz nullable | سلطة الوقت الخادمية |
+| Revision | int | Optimistic control لعقود Host |
+| xmin | xid | RowVersion لحماية السباقات الفعلية عند الحفظ |
+| CreatedAt/UpdatedAt | timestamptz | |
+
+لا تخزن SignalR أي state موازية، ولا توجد إجابات أو Leaderboard snapshots في هذا الجدول؛ تُشتق counts والترتيب من `SessionParticipants` و`Attempts` و`AttemptAnswers` عند القراءة.
+
 ## Migrations
 
 ترتيب التطبيق على قاعدة فارغة (tested in CI):
@@ -170,5 +187,6 @@ unique per `(AttemptId, QuizVersionItemId)` — إجابة واحدة لكل س�
 6. `20260804014225_CreateSessionsAndAttempts` (Phase 4 — QuizSessions, SessionParticipants, Attempts, AttemptAnswers)
 7. `20260809175242_CreateSurveys` (Phase 5 — Surveys, SurveyQuestions, SurveyOptions, SurveyResponses, SurveyAnswers)
 8. `20260809185405_CreateCertificatesAndOutbox` (Phase 5 — CertificateTemplates, Certificates, ParentResultShares, OutboxMessages)
+9. `20260809201234_CreateLiveCompetition` (Phase 6 — LiveSessionStates)
 
 كلها تُولّد Idempotent SQL عبر `dotnet ef migrations script --idempotent` وتُطبق يدويًا بعد Backup في أي بيئة إنتاجية.
