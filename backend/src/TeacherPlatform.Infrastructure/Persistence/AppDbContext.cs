@@ -52,6 +52,7 @@ public class AppDbContext(
     public DbSet<Domain.Sessions.SessionParticipant> SessionParticipants => Set<Domain.Sessions.SessionParticipant>();
     public DbSet<Domain.Sessions.Attempt> Attempts => Set<Domain.Sessions.Attempt>();
     public DbSet<Domain.Sessions.AttemptAnswer> AttemptAnswers => Set<Domain.Sessions.AttemptAnswer>();
+    public DbSet<Domain.Sessions.LiveSessionState> LiveSessionStates => Set<Domain.Sessions.LiveSessionState>();
 
     // Phase 5 — Surveys (Tenant-owned، Global Filters مطلوبة)
     public DbSet<Domain.Surveys.Survey> Surveys => Set<Domain.Surveys.Survey>();
@@ -123,6 +124,7 @@ public class AppDbContext(
             modelBuilder.ApplyConfiguration(new Configurations.SessionParticipantConfiguration());
             modelBuilder.ApplyConfiguration(new Configurations.AttemptConfiguration());
             modelBuilder.ApplyConfiguration(new Configurations.AttemptAnswerConfiguration());
+            modelBuilder.ApplyConfiguration(new Configurations.LiveSessionStateConfiguration());
 
             // Phase 5 — Surveys
             modelBuilder.ApplyConfiguration(new Configurations.SurveyConfiguration());
@@ -156,6 +158,7 @@ public class AppDbContext(
             modelBuilder.Ignore<Domain.Sessions.SessionParticipant>();
             modelBuilder.Ignore<Domain.Sessions.Attempt>();
             modelBuilder.Ignore<Domain.Sessions.AttemptAnswer>();
+            modelBuilder.Ignore<Domain.Sessions.LiveSessionState>();
             modelBuilder.Ignore<Domain.Surveys.Survey>();
             modelBuilder.Ignore<Domain.Surveys.SurveyQuestion>();
             modelBuilder.Ignore<Domain.Surveys.SurveyOption>();

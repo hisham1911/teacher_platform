@@ -8,7 +8,7 @@ namespace TeacherPlatform.IntegrationTests;
 
 /// <summary>
 /// اختبارات Phase 4 الشاملة على PostgreSQL حقيقية:
-/// دورة حياة الجلسة (إنشاء/تفعيل/إنهاء/إلغاء)، رفض Live، انضمام اللاعب وأمان رمز الضيف،
+/// دورة حياة الجلسة (إنشاء/تفعيل/إنهاء/إلغاء)، انضمام اللاعب وأمان رمز الضيف،
 /// بدء المحاولة والاستئناف، DTO آمن بلا تسريب إجابات، تسجيل الإجابات مع Idempotency،
 /// الإنهاء والنتيجة، والعزل بين المستأجرين.
 /// </summary>
@@ -296,7 +296,7 @@ public class SessionPlayerFlowTests : IClassFixture<TestWebApplicationFactory>, 
     }
 
     [Fact]
-    public async Task CreateSession_LiveMode_Returns400_LiveModeNotAvailable()
+    public async Task CreateSession_LiveMode_CreatesServerSideLiveState()
     {
         var client = NewClient();
         var token = await RegisterConfirmLogin(_factory, client);
@@ -309,10 +309,10 @@ public class SessionPlayerFlowTests : IClassFixture<TestWebApplicationFactory>, 
             Content = Json(new { mode = "Live" })
         }, token));
 
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        var error = await ReadJson<JsonElement>(response);
-        // GlobalExceptionHandler يُعيد problem+json وحقل title يحمل ErrorCode التقني.
-        Assert.Equal("LiveModeNotAvailable", error.GetProperty("title").GetString());
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var session = await ReadJson<JsonElement>(response);
+        Assert.Equal("Live", session.GetProperty("mode").GetString());
+        Assert.Equal("Scheduled", session.GetProperty("status").GetString());
     }
 
     [Fact]

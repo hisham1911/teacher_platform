@@ -15,7 +15,7 @@ namespace TeacherPlatform.Infrastructure.Services;
 /// Use cases إدارة الجلسات من جهة المعلم: إنشاء، قائمة، تفاصيل، تفعيل، إنهاء، إلغاء.
 /// كل القراءات تمر بـGlobal Filters (TenantId == CurrentTenantId) وكل الكتابات تمر بحارس
 /// TenantSaveGuardInterceptor. التزامن عبر BaseVersion (xmin) — mismatch ⇒ 409 Conflict.
-/// Mode=Live محجوز مستقبلاً — يُرفض حالياً بـ LiveModeNotAvailable.
+/// جلسات Live تحصل على LiveSessionState خادمية مستقلة، بينما تبقى دورة SelfPaced كما هي.
 /// </summary>
 public sealed class SessionService
 {
@@ -61,16 +61,11 @@ public sealed class SessionService
         CreateSessionRequest request,
         CancellationToken cancellationToken)
     {
-        RequireTenantId();
+        var tenantId = RequireTenantId();
 
         if (!Enum.TryParse<SessionMode>(request.Mode, ignoreCase: true, out var mode))
         {
             return (new ServiceResultException("Validation", "Mode must be SelfPaced or Live."), null);
-        }
-
-        if (mode == SessionMode.Live)
-        {
-            return (new ServiceResultException("LiveModeNotAvailable", "Live mode is reserved for a future phase and is not available yet."), null);
         }
 
         var quiz = await _db.Quizzes
@@ -106,15 +101,31 @@ public sealed class SessionService
         var session = new QuizSession
         {
             Id = Guid.NewGuid(),
+            TenantId = tenantId,
             QuizId = quizId,
             QuizVersionId = publishedVersionId,
             JoinCode = joinCode,
-            Mode = SessionMode.SelfPaced,
+            Mode = mode,
             Status = SessionStatus.Scheduled,
             Label = request.Label?.Trim(),
             CreatedAt = now,
             UpdatedAt = now
         };
+
+        if (mode == SessionMode.Live)
+        {
+            session.LiveState = new LiveSessionState
+            {
+                Id = Guid.NewGuid(),
+                TenantId = tenantId,
+                SessionId = session.Id,
+                Phase = LiveSessionPhase.Lobby,
+                CurrentQuestionIndex = -1,
+                Revision = 0,
+                CreatedAt = now,
+                UpdatedAt = now
+            };
+        }
 
         _db.QuizSessions.Add(session);
         await _db.SaveChangesAsync(cancellationToken);
@@ -209,6 +220,7 @@ public sealed class SessionService
         RequireTenantId();
 
         var session = await _db.QuizSessions
+            .Include(s => s.LiveState)
             .SingleOrDefaultAsync(s => s.Id == sessionId, cancellationToken);
 
         if (session is null)
@@ -230,6 +242,14 @@ public sealed class SessionService
         session.Status = SessionStatus.Cancelled;
         session.FinishedAt = now;
         session.UpdatedAt = now;
+
+        if (session.LiveState is not null)
+        {
+            session.LiveState.Phase = LiveSessionPhase.Finished;
+            session.LiveState.QuestionClosesAt ??= now;
+            session.LiveState.Revision++;
+            session.LiveState.UpdatedAt = now;
+        }
 
         try
         {
@@ -268,6 +288,12 @@ public sealed class SessionService
         if (session.Status != from)
         {
             return (new ServiceResultException("Conflict", $"Cannot transition from {session.Status} to {to}."), null);
+        }
+
+        if (to == SessionStatus.Finished && session.Mode == SessionMode.Live)
+        {
+            return (new ServiceResultException(
+                "Conflict", "Live sessions must be finished from the live host controls."), null);
         }
 
         var now = _clock.UtcNow;

@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using TeacherPlatform.Api.Authorization;
+using TeacherPlatform.Api.Hubs;
 using TeacherPlatform.Api.Middleware;
 using TeacherPlatform.Application.Abstractions;
 using TeacherPlatform.Application.Options;
@@ -126,6 +127,17 @@ builder.Services.AddAuthentication(options =>
     };
     options.Events = new JwtBearerEvents
     {
+        OnMessageReceived = context =>
+        {
+            // المتصفح لا يستطيع ضبط Authorization header على WebSocket؛ نقبل query token للـHub فقط.
+            var accessToken = context.Request.Query["access_token"];
+            if (!string.IsNullOrEmpty(accessToken) &&
+                context.HttpContext.Request.Path.StartsWithSegments("/hubs/quiz"))
+            {
+                context.Token = accessToken;
+            }
+            return Task.CompletedTask;
+        },
         OnAuthenticationFailed = context =>
         {
             // لا نسجل التوكن المرفوض — فقط نتائج التحقق العامة
@@ -168,6 +180,7 @@ builder.Services.AddAuthorization(options =>
     });
 });
 builder.Services.AddScoped<IAuthorizationHandler, TenantRoleHandler>();
+builder.Services.AddSignalR();
 
 // ---------- Data Protection ----------
 // تُقرأ الإعدادات هنا من builder.Configuration بعد تحميل appsettings.البيئة.
@@ -293,6 +306,11 @@ builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.GuestTokenSer
 builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.SessionService>();
 builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.PlayerService>();
 
+// ---------- Phase 6: Live Competition ----------
+builder.Services.AddSingleton<TeacherPlatform.Infrastructure.Services.LiveTokenService>();
+builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.LiveSessionService>();
+builder.Services.AddHostedService<LiveSessionMonitor>();
+
 // ---------- Phase 5: Reports, Surveys & Certificates ----------
 builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.ReportService>();
 builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.SurveyService>();
@@ -390,5 +408,6 @@ app.UseMiddleware<TenantResolutionMiddleware>();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<QuizHub>("/hubs/quiz", options => options.CloseOnAuthenticationExpiration = true);
 
 app.Run();

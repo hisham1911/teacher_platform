@@ -6,6 +6,7 @@ using TeacherPlatform.Infrastructure.Persistence;
 namespace TeacherPlatform.Infrastructure.Services;
 
 public sealed record PlayerAttemptAccess(QuizSession Session, SessionParticipant Participant, Attempt Attempt);
+public sealed record PlayerSessionAccess(QuizSession Session, SessionParticipant Participant);
 
 public sealed class PlayerAttemptAccessService
 {
@@ -52,6 +53,26 @@ public sealed class PlayerAttemptAccessService
         return attempt is null
             ? (new ServiceResultException("NotFound", "Attempt not found."), null)
             : (null, new PlayerAttemptAccess(session, participant, attempt));
+    }
+
+    public async Task<(ServiceResultException? Error, PlayerSessionAccess? Access)> ResolveSessionAsync(
+        string joinCode,
+        string rawToken,
+        CancellationToken cancellationToken)
+    {
+        var session = await _db.QuizSessions
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .SingleOrDefaultAsync(current => current.JoinCode == joinCode, cancellationToken);
+        if (session is null)
+        {
+            return (new ServiceResultException("NotFound", "Session not found."), null);
+        }
+
+        var participant = await ResolveParticipantAsync(session, rawToken, cancellationToken);
+        return participant is null
+            ? (new ServiceResultException("Unauthorized", "Guest token is invalid or expired."), null)
+            : (null, new PlayerSessionAccess(session, participant));
     }
 
     public async Task<(ServiceResultException? Error, PlayerAttemptAccess? Access)> ResolveCompletedAsync(

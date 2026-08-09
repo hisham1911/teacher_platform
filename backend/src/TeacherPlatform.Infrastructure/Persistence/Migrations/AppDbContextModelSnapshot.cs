@@ -1214,6 +1214,67 @@ namespace TeacherPlatform.Infrastructure.Persistence.Migrations
                     b.ToTable("AttemptAnswers", (string)null);
                 });
 
+            modelBuilder.Entity("TeacherPlatform.Domain.Sessions.LiveSessionState", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("CurrentQuestionIndex")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("CurrentQuizVersionItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Phase")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("QuestionClosesAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("QuestionStartedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Revision")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("SessionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasAlternateKey("Id", "TenantId");
+
+                    b.HasIndex("SessionId")
+                        .IsUnique();
+
+                    b.HasIndex("CurrentQuizVersionItemId", "TenantId");
+
+                    b.HasIndex("Phase", "QuestionClosesAt");
+
+                    b.HasIndex("SessionId", "TenantId")
+                        .IsUnique();
+
+                    b.HasIndex("TenantId", "Phase");
+
+                    b.ToTable("LiveSessionStates", (string)null);
+                });
+
             modelBuilder.Entity("TeacherPlatform.Domain.Sessions.QuizSession", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1911,6 +1972,26 @@ namespace TeacherPlatform.Infrastructure.Persistence.Migrations
                     b.Navigation("Attempt");
                 });
 
+            modelBuilder.Entity("TeacherPlatform.Domain.Sessions.LiveSessionState", b =>
+                {
+                    b.HasOne("TeacherPlatform.Domain.Quizzes.QuizVersionItem", "CurrentQuizVersionItem")
+                        .WithMany()
+                        .HasForeignKey("CurrentQuizVersionItemId", "TenantId")
+                        .HasPrincipalKey("Id", "TenantId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("TeacherPlatform.Domain.Sessions.QuizSession", "Session")
+                        .WithOne("LiveState")
+                        .HasForeignKey("TeacherPlatform.Domain.Sessions.LiveSessionState", "SessionId", "TenantId")
+                        .HasPrincipalKey("TeacherPlatform.Domain.Sessions.QuizSession", "Id", "TenantId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("CurrentQuizVersionItem");
+
+                    b.Navigation("Session");
+                });
+
             modelBuilder.Entity("TeacherPlatform.Domain.Sessions.QuizSession", b =>
                 {
                     b.HasOne("TeacherPlatform.Domain.Quizzes.Quiz", "Quiz")
@@ -2102,6 +2183,8 @@ namespace TeacherPlatform.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("TeacherPlatform.Domain.Sessions.QuizSession", b =>
                 {
                     b.Navigation("Attempts");
+
+                    b.Navigation("LiveState");
 
                     b.Navigation("Participants");
                 });

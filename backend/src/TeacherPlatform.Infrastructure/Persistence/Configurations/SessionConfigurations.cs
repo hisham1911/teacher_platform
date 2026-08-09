@@ -131,3 +131,31 @@ public sealed class AttemptAnswerConfiguration : IEntityTypeConfiguration<Attemp
             .OnDelete(DeleteBehavior.NoAction);
     }
 }
+
+public sealed class LiveSessionStateConfiguration : IEntityTypeConfiguration<LiveSessionState>
+{
+    public void Configure(EntityTypeBuilder<LiveSessionState> builder)
+    {
+        builder.ToTable("LiveSessionStates");
+        builder.HasKey(state => state.Id);
+        builder.HasAlternateKey(state => new { state.Id, state.TenantId });
+        builder.Property(state => state.Phase).HasConversion<int>();
+        builder.Property(state => state.Version).IsRowVersion();
+
+        builder.HasIndex(state => state.SessionId).IsUnique();
+        builder.HasIndex(state => new { state.TenantId, state.Phase });
+        builder.HasIndex(state => new { state.Phase, state.QuestionClosesAt });
+
+        builder.HasOne(state => state.Session)
+            .WithOne(session => session.LiveState)
+            .HasForeignKey<LiveSessionState>(state => new { state.SessionId, state.TenantId })
+            .HasPrincipalKey<QuizSession>(session => new { session.Id, session.TenantId })
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.HasOne(state => state.CurrentQuizVersionItem)
+            .WithMany()
+            .HasForeignKey(state => new { state.CurrentQuizVersionItemId, state.TenantId })
+            .HasPrincipalKey(item => new { item.Id, item.TenantId })
+            .OnDelete(DeleteBehavior.NoAction);
+    }
+}

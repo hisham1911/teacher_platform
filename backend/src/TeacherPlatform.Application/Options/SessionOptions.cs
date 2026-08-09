@@ -28,4 +28,16 @@ public sealed class SessionOptions
     /// <summary>أقصى عدد مشاركين في جلسة واحدة — حد إساءة على مستوى السيرفر.</summary>
     [Range(1, 10000)]
     public int MaxParticipantsPerSession { get; set; } = 500;
+
+    /// <summary>مدة السؤال الافتراضية في المسابقة المباشرة.</summary>
+    [Range(5, 300)]
+    public int LiveDefaultQuestionSeconds { get; set; } = 30;
+
+    /// <summary>عمر JWT المخصص لاتصال SignalR؛ يُعاد إصداره من هوية HTTP الحالية.</summary>
+    [Range(1, 30)]
+    public int LiveTokenMinutes { get; set; } = 5;
+
+    /// <summary>دورية إغلاق الأسئلة المنتهية في العامل الخادمي.</summary>
+    [Range(1, 10)]
+    public int LiveMonitorIntervalSeconds { get; set; } = 1;
 }

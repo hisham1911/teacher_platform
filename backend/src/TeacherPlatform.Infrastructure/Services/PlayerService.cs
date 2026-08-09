@@ -83,6 +83,7 @@ public sealed class PlayerService
             QuestionCount = version.Items.Count,
             TotalPoints = version.Items.Sum(i => i.Points),
             Status = session.Status.ToString(),
+            Mode = session.Mode.ToString(),
             CanJoin = session.Status == SessionStatus.Active
         });
     }
@@ -262,7 +263,8 @@ public sealed class PlayerService
             Status = AttemptStatus.InProgress,
             CurrentQuestionIndex = 0,
             StartedAt = now,
-            DeadlineAt = version.TimeMode == QuizTimeMode.TotalTime && version.TimeLimitSeconds.HasValue
+            DeadlineAt = session.Mode == SessionMode.SelfPaced &&
+                         version.TimeMode == QuizTimeMode.TotalTime && version.TimeLimitSeconds.HasValue
                 ? now.AddSeconds(version.TimeLimitSeconds.Value)
                 : null,
             CreatedAt = now,
@@ -323,8 +325,9 @@ public sealed class PlayerService
 
         var now = _clock.UtcNow;
 
-        // تسوية عند الطلب: انتهاء الوقت الكلي
-        if (attempt.Status == AttemptStatus.InProgress && IsPastDeadline(attempt.DeadlineAt, now))
+        // تسوية عند الطلب: انتهاء الوقت الكلي في SelfPaced فقط.
+        if (session!.Mode == SessionMode.SelfPaced &&
+            attempt.Status == AttemptStatus.InProgress && IsPastDeadline(attempt.DeadlineAt, now))
         {
             await FinalizeAttemptAsync(session!, attempt, version, now, timedOut: true, cancellationToken);
             return (new ServiceResultException("AttemptFinished", "Attempt time has expired."), null);
@@ -335,14 +338,28 @@ public sealed class PlayerService
             return (new ServiceResultException("AttemptFinished", "Attempt is already finished."), null);
         }
 
-        var orderedItems = OrderItems(version, attempt.ShuffleSeed);
+        var liveState = session.Mode == SessionMode.Live
+            ? await LoadLiveStateAsync(session, cancellationToken)
+            : null;
+        if (session.Mode == SessionMode.Live &&
+            (liveState?.Phase != LiveSessionPhase.QuestionOpen ||
+             liveState.CurrentQuizVersionItemId is null ||
+             IsPastDeadline(liveState.QuestionClosesAt, now)))
+        {
+            return (new ServiceResultException("Conflict", "No live question is accepting answers."), null);
+        }
+
+        var orderedItems = session.Mode == SessionMode.Live
+            ? version.Items.OrderBy(item => item.SortOrder).ToList()
+            : OrderItems(version, attempt.ShuffleSeed);
         if (orderedItems.Count == 0)
         {
             return (new ServiceResultException("NotFound", "Quiz version has no questions."), null);
         }
 
         // تسوية Per-Question: إن تجاوز الطالب نافذة السؤال الحالي + السماح نُنهي المحاولة TimedOut
-        if (version.TimeMode == QuizTimeMode.PerQuestion && version.TimeLimitSeconds.HasValue)
+        if (session.Mode == SessionMode.SelfPaced &&
+            version.TimeMode == QuizTimeMode.PerQuestion && version.TimeLimitSeconds.HasValue)
         {
             var questionDeadline = attempt.StartedAt.AddSeconds((attempt.CurrentQuestionIndex + 1) * (double)version.TimeLimitSeconds.Value);
             if (IsPastDeadline(questionDeadline, now))
@@ -352,8 +369,12 @@ public sealed class PlayerService
             }
         }
 
-        var index = Math.Clamp(attempt.CurrentQuestionIndex, 0, orderedItems.Count - 1);
-        var item = orderedItems[index];
+        var index = session.Mode == SessionMode.Live
+            ? liveState!.CurrentQuestionIndex
+            : Math.Clamp(attempt.CurrentQuestionIndex, 0, orderedItems.Count - 1);
+        var item = session.Mode == SessionMode.Live
+            ? orderedItems.Single(current => current.Id == liveState!.CurrentQuizVersionItemId)
+            : orderedItems[index];
         var questionVersion = item.QuestionVersion;
         if (questionVersion is null)
         {
@@ -371,13 +392,15 @@ public sealed class PlayerService
                 a => a.AttemptId == attempt.Id && a.QuizVersionItemId == item.Id && a.TenantId == session!.TenantId,
                 cancellationToken);
 
-        DateTime? deadlineAt = version.TimeMode switch
-        {
-            QuizTimeMode.TotalTime => attempt.DeadlineAt,
-            QuizTimeMode.PerQuestion when version.TimeLimitSeconds.HasValue =>
-                attempt.StartedAt.AddSeconds((index + 1) * (double)version.TimeLimitSeconds.Value),
-            _ => null
-        };
+        DateTime? deadlineAt = session.Mode == SessionMode.Live
+            ? liveState!.QuestionClosesAt
+            : version.TimeMode switch
+            {
+                QuizTimeMode.TotalTime => attempt.DeadlineAt,
+                QuizTimeMode.PerQuestion when version.TimeLimitSeconds.HasValue =>
+                    attempt.StartedAt.AddSeconds((index + 1) * (double)version.TimeLimitSeconds.Value),
+                _ => null
+            };
 
         return (null, new PlayerQuestionResponse
         {
@@ -431,7 +454,8 @@ public sealed class PlayerService
 
         var now = _clock.UtcNow;
 
-        if (attempt.Status == AttemptStatus.InProgress && IsPastDeadline(attempt.DeadlineAt, now))
+        if (session!.Mode == SessionMode.SelfPaced &&
+            attempt.Status == AttemptStatus.InProgress && IsPastDeadline(attempt.DeadlineAt, now))
         {
             await FinalizeAttemptAsync(session!, attempt, version, now, timedOut: true, cancellationToken);
             return (new ServiceResultException("AttemptFinished", "Attempt time has expired."), null);
@@ -475,14 +499,26 @@ public sealed class PlayerService
                 {
                     AttemptId = attempt.Id,
                     QuizVersionItemId = item.Id,
-                    IsCorrect = existingAnswer.IsCorrect ?? false,
-                    ScoreAwarded = existingAnswer.ScoreAwarded ?? 0m,
+                    IsCorrect = session.Mode == SessionMode.Live ? null : existingAnswer.IsCorrect ?? false,
+                    ScoreAwarded = session.Mode == SessionMode.Live ? null : existingAnswer.ScoreAwarded ?? 0m,
                     Revision = attempt.Revision,
                     ServerNow = now
                 });
             }
 
             return (new ServiceResultException("AnswerConflict", "A different answer was already submitted for this question."), null);
+        }
+
+        LiveSessionState? liveState = null;
+        if (session.Mode == SessionMode.Live)
+        {
+            liveState = await LoadLiveStateAsync(session, cancellationToken);
+            if (liveState?.Phase != LiveSessionPhase.QuestionOpen ||
+                liveState.CurrentQuizVersionItemId != item.Id ||
+                IsPastDeadline(liveState.QuestionClosesAt, now))
+            {
+                return (new ServiceResultException("Conflict", "This live question is not accepting answers."), null);
+            }
         }
 
         var scoring = AnswerScorer.Score(
@@ -506,7 +542,9 @@ public sealed class PlayerService
             UpdatedAt = now
         };
 
-        var orderedItems = OrderItems(version, attempt.ShuffleSeed);
+        var orderedItems = session.Mode == SessionMode.Live
+            ? version.Items.OrderBy(current => current.SortOrder).ToList()
+            : OrderItems(version, attempt.ShuffleSeed);
         var answeredIndex = orderedItems.FindIndex(i => i.Id == item.Id);
 
         try
@@ -538,8 +576,8 @@ public sealed class PlayerService
                 {
                     AttemptId = attempt.Id,
                     QuizVersionItemId = item.Id,
-                    IsCorrect = raced.IsCorrect ?? false,
-                    ScoreAwarded = raced.ScoreAwarded ?? 0m,
+                    IsCorrect = session.Mode == SessionMode.Live ? null : raced.IsCorrect ?? false,
+                    ScoreAwarded = session.Mode == SessionMode.Live ? null : raced.ScoreAwarded ?? 0m,
                     Revision = attempt.Revision,
                     ServerNow = _clock.UtcNow
                 });
@@ -552,8 +590,8 @@ public sealed class PlayerService
         {
             AttemptId = attempt.Id,
             QuizVersionItemId = item.Id,
-            IsCorrect = scoring.IsCorrect,
-            ScoreAwarded = scoring.ScoreAwarded,
+            IsCorrect = session.Mode == SessionMode.Live ? null : scoring.IsCorrect,
+            ScoreAwarded = session.Mode == SessionMode.Live ? null : scoring.ScoreAwarded,
             Revision = attempt.Revision,
             ServerNow = now
         });
@@ -589,6 +627,11 @@ public sealed class PlayerService
         if (attempt.Status != AttemptStatus.InProgress)
         {
             return (null, BuildFinishResponse(attempt));
+        }
+
+        if (session!.Mode == SessionMode.Live)
+        {
+            return (new ServiceResultException("Conflict", "The live host finishes all attempts."), null);
         }
 
         var timedOut = IsPastDeadline(attempt.DeadlineAt, now);
@@ -785,12 +828,24 @@ public sealed class PlayerService
             return (new ServiceResultException("NotFound", "Attempt not found."), null);
         }
 
-        // الوسيط يجب أن يكون مرتبطًا بسؤال ضمن النسخة المثبتة لهذه الجلسة.
+        Guid? liveCurrentItemId = null;
+        if (session!.Mode == SessionMode.Live)
+        {
+            var liveState = await LoadLiveStateAsync(session, cancellationToken);
+            if (liveState?.Phase != LiveSessionPhase.QuestionOpen || IsPastDeadline(liveState.QuestionClosesAt, _clock.UtcNow))
+            {
+                return (new ServiceResultException("NotFound", "Media not found."), null);
+            }
+            liveCurrentItemId = liveState.CurrentQuizVersionItemId;
+        }
+
+        // الوسيط يجب أن يكون مرتبطًا بسؤال مسموح ضمن النسخة؛ Live يقصره على السؤال المفتوح.
         var isReferenced = await _db.QuizVersionItems
             .IgnoreQueryFilters()
             .AnyAsync(
                 i => i.QuizVersionId == session!.QuizVersionId &&
                      i.TenantId == session.TenantId &&
+                     (liveCurrentItemId == null || i.Id == liveCurrentItemId) &&
                      i.QuestionVersion != null &&
                      i.QuestionVersion.MediaAssetId == mediaId,
                 cancellationToken);
@@ -898,6 +953,18 @@ public sealed class PlayerService
                 .ThenInclude(i => i.QuestionVersion!)
                     .ThenInclude(q => q.Options)
             .SingleOrDefaultAsync(v => v.Id == session.QuizVersionId && v.TenantId == session.TenantId, cancellationToken);
+    }
+
+    private async Task<LiveSessionState?> LoadLiveStateAsync(
+        QuizSession session,
+        CancellationToken cancellationToken)
+    {
+        return await _db.LiveSessionStates
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .SingleOrDefaultAsync(
+                state => state.SessionId == session.Id && state.TenantId == session.TenantId,
+                cancellationToken);
     }
 
     private async Task<Attempt?> LoadAttemptAsync(

@@ -6,7 +6,7 @@ namespace TeacherPlatform.Application.Sessions;
 
 public sealed class CreateSessionRequest
 {
-    /// <summary>SelfPaced فقط حاليًا — Live يُرفض بـ LiveModeNotAvailable.</summary>
+    /// <summary>SelfPaced أو Live.</summary>
     [Required, RegularExpression("SelfPaced|Live")]
     public string Mode { get; set; } = "SelfPaced";
 
@@ -88,6 +88,7 @@ public sealed class PlayerSessionResponse
     public int QuestionCount { get; set; }
     public int TotalPoints { get; set; }
     public string Status { get; set; } = string.Empty;
+    public string Mode { get; set; } = string.Empty;
 
     /// <summary>هل يمكن الانضمام الآن (الجلسة Active).</summary>
     public bool CanJoin { get; set; }
@@ -169,8 +170,10 @@ public sealed class SubmitAnswerResponse
 {
     public Guid AttemptId { get; set; }
     public Guid QuizVersionItemId { get; set; }
-    public bool IsCorrect { get; set; }
-    public decimal ScoreAwarded { get; set; }
+    /// <summary>null في Live حتى لا تُكشف صحة الإجابة قبل إغلاق السؤال.</summary>
+    public bool? IsCorrect { get; set; }
+    /// <summary>null في Live حتى لا تُكشف الدرجة قبل إغلاق السؤال.</summary>
+    public decimal? ScoreAwarded { get; set; }
     public int Revision { get; set; }
     public DateTime ServerNow { get; set; }
 }

@@ -11,7 +11,7 @@ namespace TeacherPlatform.Api.Controllers;
 /// <summary>
 /// إدارة جلسات الاختبار (Teacher): إنشاء، قائمة، تفعيل، إنهاء، إلغاء.
 /// كل العمليات تتطلب TenantContentManagement (Owner/Teacher).
-/// Mode=Live يُرفض بـ LiveModeNotAvailable — Self-paced فقط في هذه المرحلة.
+/// جلسات Live تُدار بعد فتح Lobby من نقاط /live المخصصة.
 /// </summary>
 [ApiController]
 [Route("api/v1/tenants/{tenantId:guid}/quizzes/{quizId:guid}/sessions")]

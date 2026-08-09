@@ -6,7 +6,7 @@ namespace TeacherPlatform.Domain.Sessions;
 /// <summary>
 /// جلسة اختبار — تمثل إتاحة اختبار منشور للطلاب عبر رمز انضمام.
 /// تثبّت QuizVersionId المنشورة لحظة الإنشاء فلا يتأثر المحتوى بتعديلات لاحقة.
-/// Mode=Live محجوز مستقبلاً — يُرفض حالياً بـ LiveModeNotAvailable.
+/// يدعم SelfPaced وLive؛ حالة Live التفصيلية محفوظة في LiveSessionState.
 /// </summary>
 public sealed class QuizSession : ITenantEntity
 {
@@ -50,12 +50,13 @@ public sealed class QuizSession : ITenantEntity
     public ICollection<SessionParticipant> Participants { get; set; } = new List<SessionParticipant>();
 
     public ICollection<Attempt> Attempts { get; set; } = new List<Attempt>();
+
+    public LiveSessionState? LiveState { get; set; }
 }
 
 public enum SessionMode
 {
     SelfPaced = 1,
-    /// <summary>محجوز للمستقبل — يُرفض حالياً بـ LiveModeNotAvailable.</summary>
     Live = 2
 }
 
