@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { HttpError } from '../../data/api-client/http-error';
+import type { LiveSessionState } from '../../types/live';
 import type { AttemptResult, JoinSessionResponse, PlayerQuestion, PlayerSession, StartAttemptResponse } from '../../types/sessions';
 import PlayPage from './play-page';
 
@@ -20,12 +21,18 @@ vi.mock('../../data/api-client/endpoints', async (importOriginal) => {
       submitAnswer: vi.fn(),
       finish: vi.fn(),
       getResult: vi.fn(),
+      getLiveState: vi.fn(),
+      getLiveToken: vi.fn(),
       getSurvey: vi.fn(),
       submitSurvey: vi.fn(),
       mediaUrl: vi.fn(() => '/mock-media'),
     },
   };
 });
+
+vi.mock('../../features/live/use-live-connection', () => ({
+  useLiveConnection: () => 'connected',
+}));
 
 const { playerApi } = await import('../../data/api-client/endpoints');
 const getSessionMock = vi.mocked(playerApi.getSession);
@@ -42,6 +49,7 @@ const activeSession: PlayerSession = {
   timeLimitSeconds: null,
   questionCount: 2,
   totalPoints: 10,
+  mode: 'SelfPaced',
   status: 'Active',
   canJoin: true,
 };
@@ -322,6 +330,41 @@ describe('PlayPage', () => {
       expect(screen.getByRole('heading', { name: /لاعب تجريبي/ })).toBeInTheDocument(),
     );
     expect(localStorage.getItem('tp-player-name')).toBeNull();
+    expect(localStorage.length).toBe(0);
+  });
+
+  it('يستعيد اللاعب المباشر من الكوكي ويعرض قاعة الانتظار بلا نتيجة مبكرة', async () => {
+    const liveSession: PlayerSession = { ...activeSession, mode: 'Live' };
+    const liveState: LiveSessionState = {
+      sessionId: 'session-live',
+      sessionStatus: 'Active',
+      phase: 'Lobby',
+      currentQuestionIndex: -1,
+      totalQuestions: 2,
+      questionStartedAt: null,
+      questionClosesAt: null,
+      serverNow: '2026-08-09T12:00:00Z',
+      revision: 0,
+      participantCount: 3,
+      attemptCount: 2,
+      answeredCount: 0,
+      currentQuestion: null,
+      leaderboard: [],
+    };
+    getSessionMock.mockResolvedValue(liveSession);
+    getCurrentPlayerMock.mockResolvedValue({
+      ...joinResponse,
+      attemptId: 'attempt-live',
+      attemptStatus: 'InProgress',
+    });
+    vi.mocked(playerApi.getLiveState).mockResolvedValue(liveState);
+
+    renderPage();
+
+    expect(await screen.findByRole('heading', { name: 'أنت داخل قاعة الانتظار' })).toBeInTheDocument();
+    expect(screen.getByText('انضم 3 مشارك')).toBeInTheDocument();
+    expect(screen.queryByText(/إجابة صحيحة/)).not.toBeInTheDocument();
+    expect(startAttemptMock).not.toHaveBeenCalled();
     expect(localStorage.length).toBe(0);
   });
 });

@@ -35,6 +35,7 @@ const QuizPublishPage = lazy(() => import('../routes/dashboard/quizzes/quiz-publ
 const QuizSessionsPage = lazy(() => import('../routes/dashboard/quizzes/quiz-sessions-page'));
 const SurveyBuilderPage = lazy(() => import('../routes/dashboard/surveys/survey-builder-page'));
 const SessionDetailPage = lazy(() => import('../routes/dashboard/sessions/session-detail-page'));
+const LiveHostPage = lazy(() => import('../routes/dashboard/sessions/live-host-page'));
 const SessionReportPage = lazy(() => import('../routes/dashboard/reports/session-report-page'));
 const AttemptDetailPage = lazy(() => import('../routes/dashboard/reports/attempt-detail-page'));
 const CertificatesPage = lazy(() => import('../routes/dashboard/certificates/certificates-page'));
@@ -77,6 +78,7 @@ export const router = createBrowserRouter([
           { path: '/dashboard/quizzes/:quizId/sessions', element: <QuizSessionsPage /> },
           { path: '/dashboard/quizzes/:quizId/survey', element: <SurveyBuilderPage /> },
           { path: '/dashboard/sessions/:sessionId', element: <SessionDetailPage /> },
+          { path: '/dashboard/sessions/:sessionId/live', element: <LiveHostPage /> },
           { path: '/dashboard/reports/:sessionId', element: <SessionReportPage /> },
           { path: '/dashboard/attempts/:attemptId', element: <AttemptDetailPage /> },
           { path: '/dashboard/certificates', element: <CertificatesPage /> },

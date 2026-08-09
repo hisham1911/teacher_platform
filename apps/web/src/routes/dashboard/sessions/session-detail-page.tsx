@@ -9,6 +9,7 @@ import { HttpError } from '../../../data/api-client/http-error';
 import { getActiveTenantId } from '../../../lib/auth/session';
 import {
   ATTEMPT_STATUS_LABELS,
+  SESSION_MODE_LABELS,
   SESSION_STATUS_LABELS,
   type SessionDetail,
 } from '../../../types/sessions';
@@ -125,7 +126,7 @@ export default function SessionDetailPage() {
           </h1>
           <p className="text-sm text-slate-600">
             {session.quizTitle} · الإصدار v{session.quizVersionNumber} ·{' '}
-            {SESSION_STATUS_LABELS[session.status] ?? session.status}
+            {SESSION_MODE_LABELS[session.mode]} · {SESSION_STATUS_LABELS[session.status] ?? session.status}
           </p>
         </div>
         <Link
@@ -136,6 +137,13 @@ export default function SessionDetailPage() {
       </div>
 
       <div className="flex flex-wrap justify-end gap-2">
+        {session.mode === 'Live' ? (
+          <Link
+            to={`/dashboard/sessions/${session.id}/live?quizId=${quizId}`}
+            className="inline-flex min-h-11 items-center rounded-md bg-indigo-700 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+            فتح لوحة البث المباشر
+          </Link>
+        ) : null}
         <Link
           to={`/dashboard/reports/${session.id}?quizId=${quizId}`}
           className="inline-flex min-h-11 items-center rounded-md bg-sky-700 px-4 py-2 text-sm font-medium text-white hover:bg-sky-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600">
@@ -196,7 +204,7 @@ export default function SessionDetailPage() {
               تفعيل الجلسة
             </Button>
           ) : null}
-          {session.status === 'Active' ? (
+          {session.status === 'Active' && session.mode === 'SelfPaced' ? (
             <Button
               variant="secondary"
               onClick={() => stateMutation.mutate('finish')}

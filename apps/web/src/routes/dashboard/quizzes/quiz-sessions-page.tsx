@@ -9,7 +9,9 @@ import { sessionsApi } from '../../../data/api-client/endpoints';
 import { HttpError } from '../../../data/api-client/http-error';
 import { getActiveTenantId } from '../../../lib/auth/session';
 import {
+  SESSION_MODE_LABELS,
   SESSION_STATUS_LABELS,
+  type SessionMode,
   type SessionDetail,
 } from '../../../types/sessions';
 
@@ -21,6 +23,7 @@ export default function QuizSessionsPage() {
   const tenantId = getActiveTenantId();
 
   const [label, setLabel] = useState('');
+  const [mode, setMode] = useState<SessionMode>('SelfPaced');
   const [createError, setCreateError] = useState<string | null>(null);
   const [created, setCreated] = useState<SessionDetail | null>(null);
   const [copied, setCopied] = useState(false);
@@ -34,7 +37,7 @@ export default function QuizSessionsPage() {
   const createMutation = useMutation({
     mutationFn: () =>
       sessionsApi.create(tenantId!, quizId!, {
-        mode: 'SelfPaced',
+        mode,
         label: label.trim() || null,
       }),
     onSuccess: async (result) => {
@@ -46,11 +49,7 @@ export default function QuizSessionsPage() {
     onError: (error) => {
       if (error instanceof HttpError && error.status === 400) {
         const body = error.body as { title?: string; detail?: string } | null;
-        if (body?.title === 'LiveModeNotAvailable') {
-          setCreateError('الوضع المباشر غير متاح حاليًا. استخدم الوضع الذاتي.');
-        } else {
-          setCreateError(body?.detail ?? 'تعذر إنشاء الجلسة. تأكد من نشر الاختبار أولًا.');
-        }
+        setCreateError(body?.detail ?? 'تعذر إنشاء الجلسة. تأكد من نشر الاختبار أولًا.');
       } else if (error instanceof HttpError && error.status === 403) {
         setCreateError('ليس لديك صلاحية إدارة جلسات هذا الاختبار.');
       } else if (error instanceof HttpError && error.status === 404) {
@@ -86,7 +85,7 @@ export default function QuizSessionsPage() {
         <div>
           <h1 className="text-xl font-bold text-slate-900">جلسات الاختبار</h1>
           <p className="text-sm text-slate-600">
-            أنشئ جلسات ذاتية الإيقاع وشارك رمز الانضمام مع الطلاب.
+            أنشئ جلسة ذاتية الإيقاع أو مسابقة مباشرة وشارك رمز الانضمام مع الطلاب.
           </p>
         </div>
         <div className="flex gap-2">
@@ -124,6 +123,18 @@ export default function QuizSessionsPage() {
                 maxLength={200}
                 placeholder="مثال: حصة الأحد — الصف الثالث"
               />
+            )}
+          </FormField>
+          <FormField id="session-mode" label="نمط الجلسة">
+            {({ id }) => (
+              <select
+                id={id}
+                value={mode}
+                onChange={(event) => setMode(event.target.value as SessionMode)}
+                className="min-h-11 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-sky-600 focus:outline-none focus:ring-2 focus:ring-sky-200">
+                <option value="SelfPaced">ذاتي الإيقاع — كل طالب يتقدم منفردًا</option>
+                <option value="Live">مباشر — المعلم يفتح الأسئلة للجميع</option>
+              </select>
             )}
           </FormField>
           {createError ? (
@@ -207,6 +218,8 @@ export default function QuizSessionsPage() {
                   </p>
                   <p className="mt-1 text-xs text-slate-500">
                     {SESSION_STATUS_LABELS[s.status] ?? s.status}
+                    {' · '}
+                    {SESSION_MODE_LABELS[s.mode] ?? s.mode}
                     {' · '}
                     {s.participantCount} مشارك
                     {' · '}

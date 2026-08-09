@@ -4,7 +4,7 @@ param(
     [int]$WebPort = 5173
 )
 
-# تشغيل E2E كامل من سطر واحد: API (بيئة E2E) + Web + seed + Part A + إعادة تشغيل API + Part B.
+# تشغيل E2E كامل من سطر واحد: API + Web + seed + الاستعادة بعد restart + المسابقة المباشرة.
 # المتطلبات: PostgreSQL محلية، قاعدة teacher_platform_e2e مُنشأة ومهاجرة، و dotnet + node متاحان.
 $ErrorActionPreference = "Stop"
 
@@ -93,6 +93,8 @@ if ($Stage -eq "all") {
         Start-Api
         npx playwright test tests/part-b.spec.mjs --reporter=line
         if ($LASTEXITCODE -ne 0) { throw "Playwright Part B failed with exit code $LASTEXITCODE" }
+        npx playwright test tests/part-c-live.spec.mjs --reporter=line
+        if ($LASTEXITCODE -ne 0) { throw "Playwright Part C failed with exit code $LASTEXITCODE" }
     }
     finally {
         if ($locationPushed) { Pop-Location }
@@ -105,6 +107,21 @@ elseif ($Stage -eq "api") {
 elseif ($Stage -eq "web") {
     Start-Web
 }
+elseif ($Stage -eq "live") {
+    $locationPushed = $false
+    try {
+        Start-Api
+        Start-Web
+        Push-Location $e2eDir
+        $locationPushed = $true
+        npx playwright test tests/part-c-live.spec.mjs --reporter=line
+        if ($LASTEXITCODE -ne 0) { throw "Playwright Part C failed with exit code $LASTEXITCODE" }
+    }
+    finally {
+        if ($locationPushed) { Pop-Location }
+        Stop-All
+    }
+}
 else {
-    throw "Stage must be all, api, or web."
+    throw "Stage must be all, api, web, or live."
 }

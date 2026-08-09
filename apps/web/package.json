@@ -12,6 +12,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@microsoft/signalr": "^10.0.11",
     "@tanstack/react-query": "^5.81.5",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",

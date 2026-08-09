@@ -31,7 +31,7 @@ function tenantHeader(): Record<string, string> {
   return tenantId ? { 'X-Tenant-Id': tenantId } : {};
 }
 
-function resolveBaseUrl(): string {
+export function resolveBaseUrl(): string {
   const baseUrl = import.meta.env.VITE_API_BASE_URL as string | undefined;
   if (!baseUrl) {
     throw new Error('VITE_API_BASE_URL is not set. الاتصال بالـAPI غير ممكن بدونها.');
@@ -728,6 +728,11 @@ import type {
   SurveySubmission,
   UpdateSurveyRequest,
 } from '../../types/surveys';
+import type {
+  LiveControlRequest,
+  LiveSessionState,
+  LiveTokenResponse,
+} from '../../types/live';
 
 export const sessionsApi = {
   list(tenantId: string, quizId: string, page?: number, pageSize?: number, signal?: AbortSignal) {
@@ -794,6 +799,53 @@ export const sessionsApi = {
   },
 };
 
+export const liveApi = {
+  getState(tenantId: string, quizId: string, sessionId: string, signal?: AbortSignal) {
+    return call<LiveSessionState>({
+      method: 'GET',
+      path: `/api/v1/tenants/${tenantId}/quizzes/${quizId}/sessions/${sessionId}/live`,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+  getTeacherToken(tenantId: string, quizId: string, sessionId: string) {
+    return call<LiveTokenResponse>({
+      method: 'POST',
+      path: `/api/v1/tenants/${tenantId}/quizzes/${quizId}/sessions/${sessionId}/live/token`,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+  openNext(tenantId: string, quizId: string, sessionId: string, payload: LiveControlRequest) {
+    return call<LiveSessionState>({
+      method: 'POST',
+      path: `/api/v1/tenants/${tenantId}/quizzes/${quizId}/sessions/${sessionId}/live/questions/open-next`,
+      body: payload,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+  closeQuestion(tenantId: string, quizId: string, sessionId: string, payload: LiveControlRequest) {
+    return call<LiveSessionState>({
+      method: 'POST',
+      path: `/api/v1/tenants/${tenantId}/quizzes/${quizId}/sessions/${sessionId}/live/questions/close`,
+      body: payload,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+  finish(tenantId: string, quizId: string, sessionId: string, payload: LiveControlRequest) {
+    return call<LiveSessionState>({
+      method: 'POST',
+      path: `/api/v1/tenants/${tenantId}/quizzes/${quizId}/sessions/${sessionId}/live/finish`,
+      body: payload,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+};
+
 /**
  * Player API — مجهول تمامًا. لا Authorization ولا X-Tenant-Id.
  * الـGuest Token يعيش في HttpOnly Cookie ويُرسل تلقائيًا عبر credentials:'include'.
@@ -812,6 +864,19 @@ export const playerApi = {
       method: 'GET',
       path: `/api/v1/player/sessions/${encodeURIComponent(joinCode)}/me`,
       signal,
+    });
+  },
+  getLiveState(joinCode: string, signal?: AbortSignal) {
+    return call<LiveSessionState>({
+      method: 'GET',
+      path: `/api/v1/player/sessions/${encodeURIComponent(joinCode)}/live`,
+      signal,
+    });
+  },
+  getLiveToken(joinCode: string) {
+    return call<LiveTokenResponse>({
+      method: 'POST',
+      path: `/api/v1/player/sessions/${encodeURIComponent(joinCode)}/live/token`,
     });
   },
   join(joinCode: string, payload: JoinSessionRequest, signal?: AbortSignal) {

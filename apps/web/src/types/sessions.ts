@@ -78,6 +78,7 @@ export interface PlayerSession {
   timeLimitSeconds: number | null;
   questionCount: number;
   totalPoints: number;
+  mode: SessionMode;
   status: SessionStatus;
   canJoin: boolean;
 }
@@ -131,8 +132,8 @@ export interface SubmitAnswerRequest {
 export interface SubmitAnswerResponse {
   attemptId: string;
   quizVersionItemId: string;
-  isCorrect: boolean;
-  scoreAwarded: number;
+  isCorrect: boolean | null;
+  scoreAwarded: number | null;
   revision: number;
   serverNow: string;
 }

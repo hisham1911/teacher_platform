@@ -148,6 +148,20 @@ const joinCode = session.joinCode;
 await post(`/api/v1/tenants/${tenantId}/quizzes/${quizId}/sessions/${sessionId}/activate`,
   { baseVersion: session.version }, token);
 
-const state = { api: API, joinCode, email, tenantId, quizId, sessionId };
+const liveSession = await post(`/api/v1/tenants/${tenantId}/quizzes/${quizId}/sessions`,
+  { mode: 'Live', label: 'مسابقة E2E مباشرة' }, token);
+await post(`/api/v1/tenants/${tenantId}/quizzes/${quizId}/sessions/${liveSession.id}/activate`,
+  { baseVersion: liveSession.version }, token);
+
+const state = {
+  api: API,
+  joinCode,
+  email,
+  tenantId,
+  quizId,
+  sessionId,
+  liveSessionId: liveSession.id,
+  liveJoinCode: liveSession.joinCode,
+};
 writeFileSync(join(E2E_DIR, 'state.json'), JSON.stringify(state, null, 2));
 console.log('[seed] done. joinCode =', joinCode);
