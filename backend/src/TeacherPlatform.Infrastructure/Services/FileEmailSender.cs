@@ -30,7 +30,9 @@ public sealed class FileEmailSender : IEmailSender
             ? configured
             : Path.Combine(env.ContentRootPath, configured);
 
-        if (!_env.IsDevelopment())
+        // Development و E2E (بيئة الاختبار الآلي المحلية) هما فقط المقبولان لهذا المصرف —
+        // أي حماية ضد تسرّب استخدامه إلى بيئة قد تكون إنتاجية (Testing/AOP أو ما دون ذلك).
+        if (!_env.IsDevelopment() && !_env.IsEnvironment("E2E"))
         {
             throw new InvalidOperationException(
                 "FileEmailSender is a development-only email sink. Configure a real SMTP provider outside Development.");
