@@ -1,13 +1,13 @@
-# E2E — Playwright (Phase 4/4.1: جلسات اللاعبين وتحسين المتصفح)
+# E2E — Playwright (Phase 4/4.1 + مسار تسليم Phase 5)
 
-اختبار متصفح حقيقي (Chromium) لجلسة اللاعب عبر كوكي الضيف `tp-guest`.
+اختبار متصفح حقيقي (Chromium) لجلسة اللاعب عبر كوكي الضيف `tp-guest`، ثم التقارير والاستبانة والشهادة ومشاركة نتيجة ولي الأمر.
 
 **البيئة:** الـ API يُشغَّل بـ`ASPNETCORE_ENVIRONMENT=E2E` — مدارة في Git عبر
 `backend/src/TeacherPlatform.Api/appsettings.E2E.json` (لا Secret). قاعدة مخصصة `teacher_platform_e2e`.
 
 ## التشغيل
 
-متطلب مسبق: قاعدة `teacher_platform_e2e` مُنشأة ومهاجرة (انظر أدناه) وواجهة `npm ci` جاهزة.
+المتطلب المسبق الوحيد للمستودع: قاعدة `teacher_platform_e2e` مُنشأة ومهاجرة (انظر أدناه). السكربت يشغّل `npm ci` للواجهة ولمجلد `e2e/`.
 
 ### سطر واحد (يبدأ API + ويب، seed، Part A، يعيد تشغيل API، Part B)
 
@@ -15,7 +15,13 @@
 .\run-e2e.ps1
 ```
 
-> هذا هو المسار الموثّق للتحقق التكراري. البديل اليدوي أدناه للعزل/التفكير.
+إذا كانت المنافذ الافتراضية مستخدمة، مرّر منافذ معزولة:
+
+```powershell
+.\run-e2e.ps1 -ApiPort 5100 -WebPort 5273
+```
+
+> هذا هو المسار الموثّق للتحقق التكراري. لا يوقف السكربت عمليات `dotnet` أو `node` الأخرى؛ ينظف فقط process trees التي بدأها بنفسه. البديل اليدوي أدناه للعزل والتشخيص.
 
 ### خطوة بخطوة (بديل يدوي)
 
@@ -27,9 +33,9 @@ $env:ConnectionStrings__DefaultConnection = "Host=localhost;Port=5432;Database=t
 dotnet ef database update -p ..\backend\src\TeacherPlatform.Infrastructure -s ..\backend\src\TeacherPlatform.Api
 Remove-Item Env:ConnectionStrings__DefaultConnection
 
-# متطلب أساسي (مرة واحدة):
-npm install                     # تثبيت Playwright في هذا المجلد
-cd ..\apps\web && npm install && cd ..\..\e2e
+# تثبيت حتمي من ملفات lock:
+npm ci
+cd ..\apps\web && npm ci && cd ..\..\e2e
 
 # السطر الواحد:
 .\run-e2e.ps1
@@ -40,7 +46,7 @@ cd ..\apps\web && npm install && cd ..\..\e2e
 > — لذا يُمرَّر المتغير صراحةً أعلاه.
 
 - `part-a.spec.mjs`: يثبت كوكي `tp-guest` (HttpOnly + Path=/ + Lax + غير قابل للقراءة من JS)، إجابة + تنقل بين الأسئلة، ثم F5 يستعيد الجلسة عبر `GET /me` عند السؤال الثاني دون شاشة انضمام.
-- `part-b.spec.mjs`: يثبت الصمود عبر إعادة تشغيل الـAPI، وإكمال المحاولة، واستعادة النتيجة عبر F5.
+- `part-b.spec.mjs`: يثبت الصمود عبر إعادة تشغيل الـAPI، ثم يغطي مسار النجاح (10/10، PDF، استبانة من ستة أسئلة، رابط ولي الأمر، استعادة النتيجة بعد F5، تقرير المعلم وتصدير CSV) ومسار الرسوب المعزول (0/10 ولا شهادة).
 
 ## التنظيف
 

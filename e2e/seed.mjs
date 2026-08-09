@@ -22,7 +22,7 @@ async function post(path, body, token) {
     },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
-  if (!res.ok && res.status !== 400) {
+  if (!res.ok) {
     throw new Error(`POST ${path} -> ${res.status}: ${await res.text()}`);
   }
   const text = await res.text();
@@ -111,11 +111,34 @@ for (const questionId of [q1, q2]) {
 }
 
 const draft = await get(`/api/v1/tenants/${tenantId}/quizzes/${quizId}/draft`, token);
-const publish = await post(`/api/v1/tenants/${tenantId}/quizzes/${quizId}/publish`,
+await post(`/api/v1/tenants/${tenantId}/quizzes/${quizId}/publish`,
   { baseVersion: draft.version }, token);
-if (publish.status && publish.status === 409) {
-  throw new Error(`publish conflict: ${JSON.stringify(publish)}`);
-}
+
+const survey = await post(`/api/v1/tenants/${tenantId}/surveys`, {
+  quizId,
+  title: 'استبانة تجربة الاختبار',
+  description: 'ستة أسئلة قصيرة لتحسين تجربة الطلاب.',
+  questions: [
+    { questionType: 'Rating', prompt: 'ما تقييمك للاختبار؟', isRequired: true, options: [] },
+    {
+      questionType: 'SingleChoice',
+      prompt: 'هل كانت التعليمات واضحة؟',
+      isRequired: true,
+      options: [{ optionText: 'نعم' }, { optionText: 'لا' }],
+    },
+    { questionType: 'ShortText', prompt: 'ما أكثر شيء أعجبك؟', isRequired: true, options: [] },
+    { questionType: 'Rating', prompt: 'كيف تقيّم سهولة الاستخدام؟', isRequired: false, options: [] },
+    {
+      questionType: 'SingleChoice',
+      prompt: 'هل تنصح بإعادة التجربة؟',
+      isRequired: false,
+      options: [{ optionText: 'نعم' }, { optionText: 'ربما' }, { optionText: 'لا' }],
+    },
+    { questionType: 'ShortText', prompt: 'ملاحظة إضافية', isRequired: false, options: [] },
+  ],
+}, token);
+await post(`/api/v1/tenants/${tenantId}/surveys/${survey.id}/publish`,
+  { baseVersion: survey.version }, token);
 
 const session = await post(`/api/v1/tenants/${tenantId}/quizzes/${quizId}/sessions`,
   { mode: 'SelfPaced', label: 'حصة E2E' }, token);
@@ -125,6 +148,6 @@ const joinCode = session.joinCode;
 await post(`/api/v1/tenants/${tenantId}/quizzes/${quizId}/sessions/${sessionId}/activate`,
   { baseVersion: session.version }, token);
 
-const state = { api: API, joinCode, email };
+const state = { api: API, joinCode, email, tenantId, quizId, sessionId };
 writeFileSync(join(E2E_DIR, 'state.json'), JSON.stringify(state, null, 2));
 console.log('[seed] done. joinCode =', joinCode);

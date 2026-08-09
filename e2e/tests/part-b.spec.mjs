@@ -5,7 +5,7 @@ import { test, expect } from '@playwright/test';
 
 const e2eDir = fileURLToPath(new URL('..', import.meta.url));
 const state = JSON.parse(readFileSync(join(e2eDir, 'state.json'), 'utf8'));
-const JOIN_CODE = state.joinCode;
+const { joinCode: JOIN_CODE, email, quizId, sessionId } = state;
 
 // تحميل كوكي الضيف المحفوظ من Part A — يحاكي استمرار جلسة المتصفح عبر إعادة تشغيل الـAPI
 test.use({ storageState: join(e2eDir, 'storage.json') });
@@ -26,6 +26,8 @@ test('survives API restart + finish + result + F5 (Part B)', async ({ page }) =>
   await page.getByText('سبعة', { exact: true }).click();
   await page.getByRole('button', { name: 'تثبيت الإجابة' }).click();
   await expect(page.getByText(/إجابة صحيحة ✓/)).toBeVisible();
+  const certificateResponsePromise = page.waitForResponse((response) =>
+    response.request().method() === 'POST' && response.url().endsWith('/certificate'));
   await page.getByRole('button', { name: 'إنهاء الاختبار' }).click();
 
   // النتيجة: 10/10، 100%، ناجح
@@ -34,10 +36,80 @@ test('survives API restart + finish + result + F5 (Part B)', async ({ page }) =>
   await expect(page.getByText('100%')).toBeVisible();
   await expect(page.getByText(/ناجح ✓/)).toBeVisible();
 
+  // شهادة النجاح تُنشأ عبر Outbox ثم تصبح PDF قابلة للتنزيل من نفس Guest Cookie.
+  await certificateResponsePromise;
+  const certificateLink = page.getByRole('link', { name: 'تنزيل الشهادة PDF' });
+  await expect(certificateLink).toBeVisible({ timeout: 30_000 });
+  const certificateHref = await certificateLink.getAttribute('href');
+  if (!certificateHref) throw new Error('Certificate download URL is missing.');
+  const certificateFile = await page.request.get(certificateHref);
+  expect(certificateFile.ok()).toBe(true);
+  expect(certificateFile.headers()['content-type']).toContain('application/pdf');
+  expect((await certificateFile.body()).subarray(0, 4).toString()).toBe('%PDF');
+
+  // الاستبانة المنشورة تحتوي ستة أسئلة، ونرسل الأنواع الثلاثة من الواجهة الحقيقية.
+  await expect(page.getByRole('heading', { name: 'استبانة تجربة الاختبار' })).toBeVisible();
+  await expect(page.getByRole('group')).toHaveCount(6);
+  await page.getByRole('group', { name: /ما تقييمك للاختبار/ }).getByText('5', { exact: true }).click();
+  await page.getByRole('group', { name: /هل كانت التعليمات واضحة/ }).getByText('نعم', { exact: true }).click();
+  await page.getByLabel('ما أكثر شيء أعجبك؟').fill('وضوح الأسئلة');
+  await page.getByRole('button', { name: 'إرسال الاستبيان' }).click();
+  await expect(page.getByText('شكرًا لمشاركتك')).toBeVisible();
+
+  // رابط ولي الأمر يعرض ملخص النتيجة فقط في صفحة عامة.
+  const parentSharePromise = page.waitForResponse((response) =>
+    response.request().method() === 'POST' && response.url().endsWith('/parent-share'));
+  await page.getByRole('button', { name: 'إنشاء رابط المشاركة' }).click();
+  const parentShare = await (await parentSharePromise).json();
+  const parentPage = await page.context().newPage();
+  await parentPage.goto(parentShare.shareUrl);
+  await expect(parentPage.getByRole('heading', { name: 'طالب E2E' })).toBeVisible();
+  await expect(parentPage.getByText('100%')).toBeVisible();
+  await parentPage.close();
+
   // F5 على صفحة النتيجة — تُستعاد النتيجة تلقائيًا (لا شاشة انضمام/استعداد)
   await page.reload();
   await expect(page.getByText('10 / 10')).toBeVisible();
   await expect(page.getByText(/ناجح ✓/)).toBeVisible();
   await expect(page.getByPlaceholder('اكتب اسمك هنا')).not.toBeVisible();
+
+  // المعلم يسجل الدخول ويرى النتيجة الفعلية ويصدر CSV من شاشة التقرير.
+  await page.goto('/auth/login');
+  await page.getByLabel('البريد الإلكتروني').fill(email);
+  await page.getByLabel('كلمة المرور').fill('SecurePassword123!');
+  await page.getByRole('button', { name: 'تسجيل الدخول' }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await page.goto(`/dashboard/reports/${sessionId}?quizId=${quizId}`);
+  await expect(page.getByRole('heading', { name: 'تقرير اختبار E2E' })).toBeVisible();
+  await expect(page.getByText('طالب E2E')).toBeVisible();
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'تصدير CSV' }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toBe('session-results.csv');
+  const csvPath = await download.path();
+  if (!csvPath) throw new Error('CSV download path is missing.');
+  expect(readFileSync(csvPath, 'utf8')).toContain('طالب E2E');
   console.log('[part-b] PASS — survived API restart + auto-restore result across F5');
+});
+
+test('failed attempt does not receive a certificate', async ({ browser }) => {
+  const context = await browser.newContext({ storageState: { cookies: [], origins: [] } });
+  const page = await context.newPage();
+  await page.goto(`/play/${JOIN_CODE}`);
+  await page.getByPlaceholder('اكتب اسمك هنا').fill('طالب لم يجتز');
+  await page.getByRole('button', { name: 'انضمام' }).click();
+  await page.getByRole('button', { name: 'ابدأ الاختبار' }).click();
+
+  await page.getByText('الإسكندرية', { exact: true }).click();
+  await page.getByRole('button', { name: 'تثبيت الإجابة' }).click();
+  await page.getByRole('button', { name: /السؤال التالي/ }).click();
+  await page.getByText('خمسة', { exact: true }).click();
+  await page.getByRole('button', { name: 'تثبيت الإجابة' }).click();
+  await page.getByRole('button', { name: 'إنهاء الاختبار' }).click();
+
+  await expect(page.getByText('0 / 10')).toBeVisible();
+  await expect(page.getByText('لم تتجاوز درجة النجاح')).toBeVisible();
+  await expect(page.getByRole('link', { name: 'تنزيل الشهادة PDF' })).toHaveCount(0);
+  await expect(page.getByText('تُصدر الشهادة تلقائيًا عند تجاوز درجة النجاح.')).toBeVisible();
+  await context.close();
 });
