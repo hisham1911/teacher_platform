@@ -1,0 +1,365 @@
+using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
+using Npgsql;
+using TeacherPlatform.Application.Abstractions;
+using TeacherPlatform.Application.Saas;
+using TeacherPlatform.Domain.Certificates;
+using TeacherPlatform.Domain.Quizzes;
+using TeacherPlatform.Domain.Saas;
+using TeacherPlatform.Infrastructure.Persistence;
+
+namespace TeacherPlatform.Infrastructure.Services;
+
+public sealed class PlatformAdminService
+{
+    private readonly AppDbContext _db;
+    private readonly TenantContext _tenantContext;
+    private readonly IClock _clock;
+    private readonly PlanLimitResolver _limits;
+
+    public PlatformAdminService(
+        AppDbContext db,
+        TeacherPlatform.Application.Tenancy.ITenantContext tenantContext,
+        IClock clock,
+        PlanLimitResolver limits)
+    {
+        _db = db;
+        _tenantContext = (TenantContext)tenantContext;
+        _clock = clock;
+        _limits = limits;
+    }
+
+    public async Task<IReadOnlyList<PlanResponse>> ListPlansAsync(CancellationToken cancellationToken) =>
+        (await _db.Plans.AsNoTracking().OrderBy(plan => plan.Name).ToListAsync(cancellationToken))
+            .Select(ToPlanResponse)
+            .ToList();
+
+    public async Task<(ServiceResultException? Error, PlanResponse? Result)> CreatePlanAsync(
+        CreatePlanRequest request,
+        Guid actorUserId,
+        string? requestId,
+        CancellationToken cancellationToken)
+    {
+        var code = request.Code.Trim().ToLowerInvariant();
+        if (await _db.Plans.AnyAsync(plan => plan.Code == code, cancellationToken))
+        {
+            return (new ServiceResultException("Conflict", "Plan code already exists."), null);
+        }
+
+        var now = _clock.UtcNow;
+        var plan = new Plan
+        {
+            Id = Guid.NewGuid(),
+            Code = code,
+            Name = request.Name.Trim(),
+            IsActive = request.IsActive,
+            LimitsJson = PlanLimitResolver.Serialize(request.Limits),
+            CreatedAt = now,
+            UpdatedAt = now
+        };
+        _db.Plans.Add(plan);
+        AddAudit(actorUserId, null, "PlanCreated", "Plan", plan.Id.ToString(), new { plan.Code }, requestId);
+        await _db.SaveChangesAsync(cancellationToken);
+        return (null, ToPlanResponse(plan));
+    }
+
+    public async Task<(ServiceResultException? Error, PlanResponse? Result)> UpdatePlanAsync(
+        Guid planId,
+        UpdatePlanRequest request,
+        Guid actorUserId,
+        string? requestId,
+        CancellationToken cancellationToken)
+    {
+        var plan = await _db.Plans.SingleOrDefaultAsync(current => current.Id == planId, cancellationToken);
+        if (plan is null) return (new ServiceResultException("NotFound", "Plan not found."), null);
+        if (plan.Version != request.BaseVersion)
+        {
+            return (new ServiceResultException("Conflict", "Plan changed. Reload and try again."), null);
+        }
+
+        var code = request.Code.Trim().ToLowerInvariant();
+        if (await _db.Plans.AnyAsync(current => current.Id != planId && current.Code == code, cancellationToken))
+        {
+            return (new ServiceResultException("Conflict", "Plan code already exists."), null);
+        }
+
+        plan.Code = code;
+        plan.Name = request.Name.Trim();
+        plan.IsActive = request.IsActive;
+        plan.LimitsJson = PlanLimitResolver.Serialize(request.Limits);
+        plan.UpdatedAt = _clock.UtcNow;
+        AddAudit(actorUserId, null, "PlanUpdated", "Plan", plan.Id.ToString(), new { plan.Code }, requestId);
+        try
+        {
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return (new ServiceResultException("Conflict", "Plan changed. Reload and try again."), null);
+        }
+        return (null, ToPlanResponse(plan));
+    }
+
+    public async Task<IReadOnlyList<PlatformTenantResponse>> ListTenantsAsync(CancellationToken cancellationToken)
+    {
+        var tenants = await _db.Tenants.AsNoTracking().OrderByDescending(tenant => tenant.CreatedAt).ToListAsync(cancellationToken);
+        var tenantIds = tenants.Select(tenant => tenant.Id).ToList();
+        var subscriptions = await _db.Subscriptions
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Include(subscription => subscription.Plan)
+            .Where(subscription => tenantIds.Contains(subscription.TenantId) && subscription.Status == SubscriptionStatus.Active)
+            .ToListAsync(cancellationToken);
+        var byTenant = subscriptions
+            .GroupBy(subscription => subscription.TenantId)
+            .ToDictionary(group => group.Key, group => group.OrderByDescending(item => item.StartsAt).First());
+
+        return tenants.Select(tenant => new PlatformTenantResponse
+        {
+            Id = tenant.Id,
+            Name = tenant.Name,
+            Slug = tenant.Slug,
+            Status = tenant.Status.ToString(),
+            CreatedAt = tenant.CreatedAt,
+            Subscription = byTenant.TryGetValue(tenant.Id, out var subscription)
+                ? ToSubscriptionResponse(subscription)
+                : null
+        }).ToList();
+    }
+
+    public async Task<IReadOnlyList<PlatformUserResponse>> ListUsersAsync(CancellationToken cancellationToken)
+    {
+        var users = await (
+            from user in _db.Users.AsNoTracking()
+            join profile in _db.UserProfiles.AsNoTracking() on user.Id equals profile.UserId
+            orderby profile.CreatedAt descending
+            select new PlatformUserResponse
+            {
+                Id = user.Id,
+                Email = user.Email ?? string.Empty,
+                FullName = profile.FullName,
+                Status = profile.Status.ToString(),
+                EmailConfirmed = user.EmailConfirmed,
+                LockoutEnd = user.LockoutEnd,
+                CreatedAt = profile.CreatedAt
+            }).ToListAsync(cancellationToken);
+        var userIds = users.Select(user => user.Id).ToList();
+        var tenantCounts = await _db.TenantMemberships.IgnoreQueryFilters().AsNoTracking()
+            .Where(membership => userIds.Contains(membership.UserId) && membership.Status == Domain.Tenancy.TenantMembershipStatus.Active)
+            .GroupBy(membership => membership.UserId)
+            .Select(group => new { UserId = group.Key, Count = group.Count() })
+            .ToDictionaryAsync(item => item.UserId, item => item.Count, cancellationToken);
+        var roles = await (
+            from userRole in _db.UserRoles.AsNoTracking()
+            join role in _db.Roles.AsNoTracking() on userRole.RoleId equals role.Id
+            where userIds.Contains(userRole.UserId)
+            select new { userRole.UserId, Role = role.Name! })
+            .ToListAsync(cancellationToken);
+        var rolesByUser = roles.GroupBy(item => item.UserId)
+            .ToDictionary(group => group.Key, group => (IReadOnlyList<string>)group.Select(item => item.Role).Order().ToList());
+
+        foreach (var user in users)
+        {
+            user.TenantCount = tenantCounts.GetValueOrDefault(user.Id);
+            user.PlatformRoles = rolesByUser.GetValueOrDefault(user.Id) ?? [];
+        }
+        return users;
+    }
+
+    public async Task<(ServiceResultException? Error, SubscriptionResponse? Result)> ActivateSubscriptionAsync(
+        Guid tenantId,
+        ActivateSubscriptionRequest request,
+        Guid actorUserId,
+        string? requestId,
+        CancellationToken cancellationToken)
+    {
+        if (!await _db.Tenants.AnyAsync(tenant => tenant.Id == tenantId, cancellationToken))
+        {
+            return (new ServiceResultException("NotFound", "Tenant not found."), null);
+        }
+        var plan = await _db.Plans.SingleOrDefaultAsync(current => current.Id == request.PlanId, cancellationToken);
+        if (plan is null || !plan.IsActive)
+        {
+            return (new ServiceResultException("NotFound", "Active plan not found."), null);
+        }
+
+        var startsAt = request.StartsAt ?? _clock.UtcNow;
+        if (request.EndsAt is DateTime endsAt && endsAt <= startsAt)
+        {
+            return (new ServiceResultException("ValidationError", "EndsAt must be after StartsAt."), null);
+        }
+
+        await using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
+        using var bootstrap = _tenantContext.BeginBootstrap(tenantId);
+        var active = await _db.Subscriptions
+            .IgnoreQueryFilters()
+            .Where(subscription => subscription.TenantId == tenantId && subscription.Status == SubscriptionStatus.Active)
+            .ToListAsync(cancellationToken);
+        foreach (var current in active)
+        {
+            current.Status = SubscriptionStatus.Cancelled;
+            current.EndsAt ??= startsAt;
+            current.UpdatedAt = _clock.UtcNow;
+        }
+
+        var subscription = new Subscription
+        {
+            Id = Guid.NewGuid(),
+            TenantId = tenantId,
+            PlanId = plan.Id,
+            Status = SubscriptionStatus.Active,
+            StartsAt = startsAt,
+            EndsAt = request.EndsAt,
+            CreatedAt = _clock.UtcNow,
+            UpdatedAt = _clock.UtcNow,
+            Plan = plan
+        };
+        _db.Subscriptions.Add(subscription);
+        AddAudit(actorUserId, tenantId, "SubscriptionActivated", "Subscription", subscription.Id.ToString(), new { plan.Code }, requestId);
+        try
+        {
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException exception)
+            when (exception.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+        {
+            return (new ServiceResultException("Conflict", "The tenant subscription changed. Reload and try again."), null);
+        }
+        await transaction.CommitAsync(cancellationToken);
+        return (null, ToSubscriptionResponse(subscription));
+    }
+
+    public async Task<TenantUsageResponse?> RefreshUsageAsync(Guid tenantId, CancellationToken cancellationToken)
+    {
+        if (!await _db.Tenants.AsNoTracking().AnyAsync(tenant => tenant.Id == tenantId, cancellationToken)) return null;
+
+        var now = _clock.UtcNow;
+        var periodStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        var periodEnd = periodStart.AddMonths(1);
+        var values = new Dictionary<string, long>
+        {
+            [UsageMetrics.PublishedQuizzes] = await _db.Quizzes.IgnoreQueryFilters().LongCountAsync(
+                quiz => quiz.TenantId == tenantId && quiz.Status == QuizStatus.Published, cancellationToken),
+            [UsageMetrics.Attempts] = await _db.Attempts.IgnoreQueryFilters().LongCountAsync(
+                attempt => attempt.TenantId == tenantId && attempt.StartedAt >= periodStart && attempt.StartedAt < periodEnd,
+                cancellationToken),
+            [UsageMetrics.StorageBytes] = await _db.MediaAssets.IgnoreQueryFilters()
+                .Where(asset => asset.TenantId == tenantId)
+                .SumAsync(asset => (long?)asset.SizeBytes, cancellationToken) ?? 0,
+            [UsageMetrics.CertificatesIssued] = await _db.Certificates.IgnoreQueryFilters().LongCountAsync(
+                certificate => certificate.TenantId == tenantId && certificate.Status == CertificateStatus.Ready
+                    && certificate.IssuedAt >= periodStart && certificate.IssuedAt < periodEnd,
+                cancellationToken)
+        };
+
+        using var bootstrap = _tenantContext.BeginBootstrap(tenantId);
+        var counters = await _db.UsageCounters.IgnoreQueryFilters()
+            .Where(counter => counter.TenantId == tenantId && counter.PeriodStart == periodStart)
+            .ToListAsync(cancellationToken);
+        foreach (var (metric, value) in values)
+        {
+            var counter = counters.SingleOrDefault(item => item.Metric == metric);
+            if (counter is null)
+            {
+                counter = new UsageCounter
+                {
+                    Id = Guid.NewGuid(),
+                    TenantId = tenantId,
+                    PeriodStart = periodStart,
+                    PeriodEnd = periodEnd,
+                    Metric = metric
+                };
+                _db.UsageCounters.Add(counter);
+            }
+            counter.Value = value;
+            counter.UpdatedAt = now;
+        }
+        await _db.SaveChangesAsync(cancellationToken);
+
+        var limits = await _limits.GetAsync(tenantId, cancellationToken);
+        var limitByMetric = new Dictionary<string, long>
+        {
+            [UsageMetrics.PublishedQuizzes] = limits.MaxPublishedQuizzesPerTenant,
+            [UsageMetrics.Attempts] = limits.MaxAttemptsPerMonth,
+            [UsageMetrics.StorageBytes] = limits.MaxStorageBytes,
+            [UsageMetrics.CertificatesIssued] = limits.MaxCertificatesPerMonth
+        };
+        return new TenantUsageResponse
+        {
+            TenantId = tenantId,
+            PeriodStart = periodStart,
+            PeriodEnd = periodEnd,
+            Metrics = values.Select(pair => new UsageMetricResponse
+            {
+                Metric = pair.Key,
+                Value = pair.Value,
+                Limit = limitByMetric[pair.Key]
+            }).ToList()
+        };
+    }
+
+    public async Task<IReadOnlyList<AuditLogResponse>> ListAuditAsync(
+        Guid? tenantId,
+        int take,
+        CancellationToken cancellationToken) =>
+        await _db.AuditLogs.AsNoTracking()
+            .Where(log => tenantId == null || log.TenantId == tenantId)
+            .OrderByDescending(log => log.CreatedAt)
+            .Take(Math.Clamp(take, 1, 200))
+            .Select(log => new AuditLogResponse
+            {
+                Id = log.Id,
+                TenantId = log.TenantId,
+                ActorUserId = log.ActorUserId,
+                Action = log.Action,
+                EntityType = log.EntityType,
+                EntityId = log.EntityId,
+                MetadataJson = log.MetadataJson,
+                RequestId = log.RequestId,
+                CreatedAt = log.CreatedAt
+            })
+            .ToListAsync(cancellationToken);
+
+    private void AddAudit(
+        Guid actorUserId,
+        Guid? tenantId,
+        string action,
+        string entityType,
+        string? entityId,
+        object metadata,
+        string? requestId) =>
+        _db.AuditLogs.Add(new AuditLog
+        {
+            Id = Guid.NewGuid(),
+            TenantId = tenantId,
+            ActorUserId = actorUserId,
+            Action = action,
+            EntityType = entityType,
+            EntityId = entityId,
+            MetadataJson = JsonSerializer.Serialize(metadata),
+            RequestId = requestId,
+            CreatedAt = _clock.UtcNow
+        });
+
+    private static PlanResponse ToPlanResponse(Plan plan) => new()
+    {
+        Id = plan.Id,
+        Code = plan.Code,
+        Name = plan.Name,
+        IsActive = plan.IsActive,
+        Limits = PlanLimitResolver.Deserialize(plan.LimitsJson),
+        Version = plan.Version
+    };
+
+    private static SubscriptionResponse ToSubscriptionResponse(Subscription subscription) => new()
+    {
+        Id = subscription.Id,
+        TenantId = subscription.TenantId,
+        PlanId = subscription.PlanId,
+        PlanCode = subscription.Plan?.Code ?? string.Empty,
+        PlanName = subscription.Plan?.Name ?? string.Empty,
+        Status = subscription.Status.ToString(),
+        StartsAt = subscription.StartsAt,
+        EndsAt = subscription.EndsAt
+    };
+}

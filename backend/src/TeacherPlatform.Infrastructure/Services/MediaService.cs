@@ -20,13 +20,19 @@ public sealed class MediaService
     private readonly AppDbContext _db;
     private readonly IObjectStorage _storage;
     private readonly StorageOptions _options;
+    private readonly PlanLimitResolver _planLimits;
     private static readonly string[] AllowedMimePrefixes = ["image/", "audio/"];
 
-    public MediaService(AppDbContext db, IObjectStorage storage, IOptions<StorageOptions> options)
+    public MediaService(
+        AppDbContext db,
+        IObjectStorage storage,
+        IOptions<StorageOptions> options,
+        PlanLimitResolver planLimits)
     {
         _db = db;
         _storage = storage;
         _options = options.Value;
+        _planLimits = planLimits;
     }
 
     /// <summary>
@@ -96,6 +102,15 @@ public sealed class MediaService
         if (mime.Length > 0 && !AllowedMimePrefixes.Any(p => mime.StartsWith(p, StringComparison.Ordinal)))
         {
             return (new ServiceResultException("UnsupportedMediaType", "Only image and audio files are allowed."), null);
+        }
+
+        var planLimits = await _planLimits.GetAsync(tenantId, cancellationToken);
+        var currentStorageBytes = await _db.MediaAssets
+            .Where(asset => asset.TenantId == tenantId)
+            .SumAsync(asset => (long?)asset.SizeBytes, cancellationToken) ?? 0;
+        if (currentStorageBytes + buffered.Length > planLimits.MaxStorageBytes)
+        {
+            return (new ServiceResultException("QuotaExceeded", "This workspace reached its storage limit."), null);
         }
 
         // طبيعة الوسيط للمسار: image -> questions, audio -> audio

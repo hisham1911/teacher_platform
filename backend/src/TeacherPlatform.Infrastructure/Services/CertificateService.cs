@@ -25,6 +25,7 @@ public sealed class CertificateService
     private readonly IObjectStorage _storage;
     private readonly IDataProtector _tokenProtector;
     private readonly IOptions<AuthOptions> _authOptions;
+    private readonly PlanLimitResolver _planLimits;
 
     public CertificateService(
         AppDbContext db,
@@ -34,7 +35,8 @@ public sealed class CertificateService
         CertificateTemplateService templateService,
         IObjectStorage storage,
         IDataProtectionProvider dataProtectionProvider,
-        IOptions<AuthOptions> authOptions)
+        IOptions<AuthOptions> authOptions,
+        PlanLimitResolver planLimits)
     {
         _db = db;
         _clock = clock;
@@ -44,6 +46,7 @@ public sealed class CertificateService
         _storage = storage;
         _tokenProtector = dataProtectionProvider.CreateProtector("TeacherPlatform.CertificatePublicToken.v1");
         _authOptions = authOptions;
+        _planLimits = planLimits;
     }
 
     public async Task<(ServiceResultException? Error, PlayerCertificateResponse? Result)> GetOrCreateForPlayerAsync(
@@ -57,6 +60,21 @@ public sealed class CertificateService
         if (resolved.Access.Attempt.Passed != true)
         {
             return (new ServiceResultException("CertificateNotEligible", "Certificates are issued only for passed attempts."), null);
+        }
+
+        var tenantId = resolved.Access.Session.TenantId;
+        var existingCertificate = await FindByAttemptAsync(tenantId, attemptId, cancellationToken);
+        if (existingCertificate is not null) return (null, MapPlayer(existingCertificate, joinCode, attemptId));
+
+        var limits = await _planLimits.GetAsync(tenantId, cancellationToken);
+        var now = _clock.UtcNow;
+        var periodStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        var issuedCount = await _db.Certificates.IgnoreQueryFilters().CountAsync(
+            certificate => certificate.TenantId == tenantId && certificate.IssuedAt >= periodStart,
+            cancellationToken);
+        if (issuedCount >= limits.MaxCertificatesPerMonth)
+        {
+            return (new ServiceResultException("QuotaExceeded", "This workspace reached its monthly certificate limit."), null);
         }
 
         for (var tryNumber = 0; tryNumber < 2; tryNumber++)

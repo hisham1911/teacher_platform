@@ -17,7 +17,7 @@ describe('authApi (single-flight refresh)', () => {
     const mePayload = {
       accessToken: 'new-access-token',
       accessTokenExpiresAt: new Date(Date.now() + 900_000).toISOString(),
-      user: { id: 'u1', email: 'x@example.test', fullName: 'X', emailConfirmed: true },
+      user: { id: 'u1', email: 'x@example.test', fullName: 'X', emailConfirmed: true, platformRoles: [] },
       activeWorkspace: null,
     };
 
@@ -85,7 +85,7 @@ describe('authApi (single-flight refresh)', () => {
     const payload = {
       accessToken: 'access-token-secret-123',
       accessTokenExpiresAt: new Date(Date.now() + 900_000).toISOString(),
-      user: { id: 'u1', email: 'x@example.test', fullName: 'X', emailConfirmed: true },
+      user: { id: 'u1', email: 'x@example.test', fullName: 'X', emailConfirmed: true, platformRoles: [] },
       activeWorkspace: null,
     };
 
@@ -125,7 +125,7 @@ describe('bootstrapSession (Phase 1 — refresh persistence)', () => {
     const sessionPayload = {
       accessToken: 'boot-token',
       accessTokenExpiresAt: new Date(Date.now() + 900_000).toISOString(),
-      user: { id: 'u1', email: 'x@example.test', fullName: 'X', emailConfirmed: true },
+      user: { id: 'u1', email: 'x@example.test', fullName: 'X', emailConfirmed: true, platformRoles: [] },
       activeWorkspace: null,
     };
 
@@ -165,7 +165,7 @@ describe('bootstrapSession (Phase 1 — refresh persistence)', () => {
     const payload = {
       accessToken: 'rotated-token',
       accessTokenExpiresAt: new Date(Date.now() + 900_000).toISOString(),
-      user: { id: 'u2', email: 'u2@example.test', fullName: 'U2', emailConfirmed: true },
+      user: { id: 'u2', email: 'u2@example.test', fullName: 'U2', emailConfirmed: true, platformRoles: [] },
       activeWorkspace: { id: 'ws-9', name: 'W', slug: 'w', role: 'Owner', status: 'Active' },
     };
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify(payload), {
@@ -199,7 +199,7 @@ describe('bootstrapSession (Phase 1 — refresh persistence)', () => {
     const payload = {
       accessToken: secretToken,
       accessTokenExpiresAt: new Date(Date.now() + 900_000).toISOString(),
-      user: { id: 'u3', email: 'u3@example.test', fullName: 'U3', emailConfirmed: true },
+      user: { id: 'u3', email: 'u3@example.test', fullName: 'U3', emailConfirmed: true, platformRoles: [] },
       activeWorkspace: null,
     };
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify(payload), {
@@ -225,7 +225,7 @@ describe('session local persistence', () => {
     sessionModule.establishSession({
       accessToken: 'tok-abc',
       accessTokenExpiresAtMs: Date.now() + 1000,
-      user: { id: 'u1', email: 'x@example.test', fullName: 'X', emailConfirmed: true },
+      user: { id: 'u1', email: 'x@example.test', fullName: 'X', emailConfirmed: true, platformRoles: [] },
       activeWorkspace: { id: 'ws-1', name: 'WS', slug: 'ws', role: 'Owner', status: 'Active' },
     });
 

@@ -3,6 +3,7 @@ import { createBrowserRouter, Outlet } from 'react-router';
 import { RootLayout } from '../components/layout/root-layout';
 import { RouteLoadingFallback } from './route-loading-fallback';
 import { RequireAuth } from '../features/auth/require-auth';
+import { RequirePlatformAdmin } from '../features/auth/require-platform-admin';
 
 const HomePage = lazy(() => import('../routes/public/home-page'));
 const PublicQuizPage = lazy(() => import('../routes/public/public-quiz-page'));
@@ -39,6 +40,7 @@ const LiveHostPage = lazy(() => import('../routes/dashboard/sessions/live-host-p
 const SessionReportPage = lazy(() => import('../routes/dashboard/reports/session-report-page'));
 const AttemptDetailPage = lazy(() => import('../routes/dashboard/reports/attempt-detail-page'));
 const CertificatesPage = lazy(() => import('../routes/dashboard/certificates/certificates-page'));
+const PlatformAdminPage = lazy(() => import('../routes/platform/platform-admin-page'));
 
 const PlayPage = lazy(() => import('../routes/play/play-page'));
 
@@ -82,6 +84,10 @@ export const router = createBrowserRouter([
           { path: '/dashboard/reports/:sessionId', element: <SessionReportPage /> },
           { path: '/dashboard/attempts/:attemptId', element: <AttemptDetailPage /> },
           { path: '/dashboard/certificates', element: <CertificatesPage /> },
+          {
+            element: <RequirePlatformAdmin />,
+            children: [{ path: '/platform', element: <PlatformAdminPage /> }],
+          },
         ],
       },
       { path: '/play/:joinCode', element: <PlayPage /> },

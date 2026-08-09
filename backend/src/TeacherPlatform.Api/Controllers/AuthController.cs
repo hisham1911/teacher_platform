@@ -152,7 +152,8 @@ public sealed class AuthController : ControllerBase
                 Id = user.Id,
                 Email = user.Email ?? string.Empty,
                 FullName = profile.FullName,
-                EmailConfirmed = user.EmailConfirmed
+                EmailConfirmed = user.EmailConfirmed,
+                PlatformRoles = platformRoles.ToArray()
             }
             // ActiveWorkspace تُحسم في الواجهة من /tenants/mine
         };
@@ -209,7 +210,8 @@ public sealed class AuthController : ControllerBase
                 Id = user.Id,
                 Email = user.Email ?? string.Empty,
                 FullName = profile.FullName,
-                EmailConfirmed = user.EmailConfirmed
+                EmailConfirmed = user.EmailConfirmed,
+                PlatformRoles = platformRoles.ToArray()
             }
         };
 
@@ -302,6 +304,7 @@ public sealed class AuthController : ControllerBase
         }
 
         var profile = await _db.UserProfiles.SingleOrDefaultAsync(p => p.UserId == userId, cancellationToken);
+        var platformRoles = await _signInManager.UserManager.GetRolesAsync(user);
 
         WorkspaceDto? activeWorkspace = null;
         if (HttpContext.Items.TryGetValue(Middleware.TenantResolutionMiddleware.TenantIdItemKey, out var tenantIdObj)
@@ -330,7 +333,8 @@ public sealed class AuthController : ControllerBase
                 Id = user.Id,
                 Email = user.Email ?? string.Empty,
                 FullName = profile?.FullName ?? string.Empty,
-                EmailConfirmed = user.EmailConfirmed
+                EmailConfirmed = user.EmailConfirmed,
+                PlatformRoles = platformRoles.ToArray()
             },
             ActiveWorkspace = activeWorkspace
         };

@@ -44,7 +44,7 @@ describe('DashboardPage — Phase 1', () => {
     establishSession({
       accessToken: 'tok',
       accessTokenExpiresAtMs: Date.now() + 100_000,
-      user: { id: 'u1', email: 't@example.com', fullName: 'معلمة تجريبية', emailConfirmed: true },
+      user: { id: 'u1', email: 't@example.com', fullName: 'معلمة تجريبية', emailConfirmed: true, platformRoles: [] },
       activeWorkspace: { id: 't1', name: 'مساحة أحمد', slug: 'ahmed-ws', role: 'Owner', status: 'Active' },
     });
 

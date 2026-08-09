@@ -38,6 +38,7 @@ public sealed class PlayerService
     private readonly GuestTokenService _guestTokens;
     private readonly TenantContext _tenantContext;
     private readonly IObjectStorage _storage;
+    private readonly PlanLimitResolver _planLimits;
 
     public PlayerService(
         AppDbContext db,
@@ -45,7 +46,8 @@ public sealed class PlayerService
         IOptions<SessionOptions> sessionOptions,
         GuestTokenService guestTokens,
         ITenantContext tenantContext,
-        IObjectStorage storage)
+        IObjectStorage storage,
+        PlanLimitResolver planLimits)
     {
         _db = db;
         _clock = clock;
@@ -53,6 +55,7 @@ public sealed class PlayerService
         _guestTokens = guestTokens;
         _tenantContext = (TenantContext)tenantContext;
         _storage = storage;
+        _planLimits = planLimits;
     }
 
     /// <summary>عرض معلومات الجلسة للطالب قبل الانضمام (بدون أي محتوى أسئلة).</summary>
@@ -250,6 +253,16 @@ public sealed class PlayerService
         if (existing is not null)
         {
             return (null, BuildStartAttemptResponse(existing, version));
+        }
+
+        var planLimits = await _planLimits.GetAsync(session.TenantId, cancellationToken);
+        var periodStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        var attemptCount = await _db.Attempts.IgnoreQueryFilters().CountAsync(
+            attempt => attempt.TenantId == session.TenantId && attempt.StartedAt >= periodStart,
+            cancellationToken);
+        if (attemptCount >= planLimits.MaxAttemptsPerMonth)
+        {
+            return (new ServiceResultException("QuotaExceeded", "This workspace reached its monthly attempt limit."), null);
         }
 
         var attempt = new Attempt

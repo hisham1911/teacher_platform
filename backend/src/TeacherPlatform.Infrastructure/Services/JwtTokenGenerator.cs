@@ -45,7 +45,7 @@ public sealed class JwtTokenGenerator
 
         foreach (var role in platformRoles)
         {
-            claims.Add(new Claim(ClaimTypes.Role, role));
+            claims.Add(new Claim("role", role));
         }
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.SigningKey));

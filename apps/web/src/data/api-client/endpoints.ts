@@ -14,6 +14,16 @@ import {
   singleFlightRefresh,
   type SessionSnapshot,
 } from '../../lib/auth/session';
+import type {
+  CreatePlanRequest,
+  PlatformAuditLog,
+  PlatformTenant,
+  PlatformUser,
+  SaasPlan,
+  SaasSubscription,
+  TenantUsage,
+  TenantTransferSummary,
+} from '../../types/saas';
 
 /**
  * نقطة الوصول الوحيدة للـAPI لمصادقة Workspace.
@@ -77,9 +87,14 @@ async function callBlob(path: string, signal?: AbortSignal, retriedAfterRefresh 
 }
 
 /** طلب متعدد الوسائط — لا نضبط Content-Type يدويًا: المتصفح يضعه مع boundary تلقائيًا */
-async function callMultipart<T>(path: string, file: File, signal?: AbortSignal): Promise<T> {
+async function callMultipart<T>(
+  path: string,
+  file: File,
+  signal?: AbortSignal,
+  fieldName = 'file',
+): Promise<T> {
   const formData = new FormData();
-  formData.append('file', file);
+  formData.append(fieldName, file);
 
   const response = await fetch(`${resolveBaseUrl()}${path}`, {
     method: 'POST',
@@ -796,6 +811,68 @@ export const sessionsApi = {
       needsAuth: true,
       needsTenant: true,
     });
+  },
+};
+
+// ---------- Phase 7: Platform administration ----------
+
+export const platformApi = {
+  listPlans(signal?: AbortSignal) {
+    return call<SaasPlan[]>({
+      method: 'GET', path: '/api/v1/platform/plans', signal, needsAuth: true,
+    });
+  },
+  createPlan(payload: CreatePlanRequest, signal?: AbortSignal) {
+    return call<SaasPlan>({
+      method: 'POST', path: '/api/v1/platform/plans', body: payload, signal, needsAuth: true,
+    });
+  },
+  listTenants(signal?: AbortSignal) {
+    return call<PlatformTenant[]>({
+      method: 'GET', path: '/api/v1/platform/tenants', signal, needsAuth: true,
+    });
+  },
+  listUsers(signal?: AbortSignal) {
+    return call<PlatformUser[]>({
+      method: 'GET', path: '/api/v1/platform/users', signal, needsAuth: true,
+    });
+  },
+  activateSubscription(tenantId: string, planId: string, signal?: AbortSignal) {
+    return call<SaasSubscription>({
+      method: 'POST',
+      path: `/api/v1/platform/tenants/${tenantId}/subscriptions/activate`,
+      body: { planId },
+      signal,
+      needsAuth: true,
+    });
+  },
+  getUsage(tenantId: string, signal?: AbortSignal) {
+    return call<TenantUsage>({
+      method: 'GET',
+      path: `/api/v1/platform/tenants/${tenantId}/usage`,
+      signal,
+      needsAuth: true,
+    });
+  },
+  listAudit(signal?: AbortSignal) {
+    return call<PlatformAuditLog[]>({
+      method: 'GET', path: '/api/v1/platform/audit?take=50', signal, needsAuth: true,
+    });
+  },
+};
+
+export const tenantTransferApi = {
+  exportArchive(tenantId: string, signal?: AbortSignal) {
+    return callBlob(`/api/v1/tenants/${tenantId}/transfer/export`, signal);
+  },
+  importArchive(tenantId: string, file: File, dryRun: boolean, signal?: AbortSignal) {
+    const params = new URLSearchParams({ dryRun: String(dryRun) });
+    return callMultipart<TenantTransferSummary>(
+      `/api/v1/tenants/${tenantId}/transfer/import?${params.toString()}`,
+      file,
+      signal,
+      'archive',
+    );
   },
 };
 

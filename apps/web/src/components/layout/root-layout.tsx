@@ -71,6 +71,11 @@ export function RootLayout({ children }: { children: ReactNode }) {
                 <NavLink to="/dashboard/settings" className={navLinkClass}>
                   الإعدادات
                 </NavLink>
+                {session.user.platformRoles.includes('PlatformAdmin') ? (
+                  <NavLink to="/platform" className={navLinkClass}>
+                    إدارة المنصة
+                  </NavLink>
+                ) : null}
                 <button
                   type="button"
                   onClick={() => void onLogout()}

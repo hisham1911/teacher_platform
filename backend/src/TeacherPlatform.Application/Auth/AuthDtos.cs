@@ -69,6 +69,7 @@ public sealed class AuthUserDto
     public string Email { get; set; } = string.Empty;
     public string FullName { get; set; } = string.Empty;
     public bool EmailConfirmed { get; set; }
+    public IReadOnlyList<string> PlatformRoles { get; set; } = [];
 }
 
 public sealed class WorkspaceDto

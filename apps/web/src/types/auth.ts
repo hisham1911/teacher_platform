@@ -5,6 +5,7 @@ export interface AuthUser {
   email: string;
   fullName: string;
   emailConfirmed: boolean;
+  platformRoles: string[];
 }
 
 export interface Workspace {

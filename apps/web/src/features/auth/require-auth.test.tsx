@@ -40,7 +40,7 @@ describe('RequireAuth', () => {
     establishSession({
       accessToken: 'tok',
       accessTokenExpiresAtMs: Date.now() + 60_000,
-      user: { id: 'u1', email: 'x@example.test', fullName: 'X', emailConfirmed: true },
+      user: { id: 'u1', email: 'x@example.test', fullName: 'X', emailConfirmed: true, platformRoles: [] },
       activeWorkspace: null,
     });
     renderGuard('/dashboard');

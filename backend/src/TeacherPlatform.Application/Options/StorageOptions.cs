@@ -23,6 +23,10 @@ public sealed class StorageOptions
 
     public string? SecretKey { get; set; }
 
+    public string Region { get; set; } = "us-east-1";
+
+    public bool ForcePathStyle { get; set; } = true;
+
     [Range(1, 60)]
     public int DownloadUrlExpiryMinutes { get; set; } = 5;
 

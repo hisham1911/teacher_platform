@@ -19,13 +19,13 @@ namespace TeacherPlatform.Infrastructure.Services;
 public sealed class QuizLimitService : IQuizLimitService
 {
     private readonly AppDbContext _db;
-    private readonly QuizLimitOptions _options;
+    private readonly PlanLimitResolver _limits;
     private readonly ITenantContext _tenantContext;
 
-    public QuizLimitService(AppDbContext db, IOptions<QuizLimitOptions> options, ITenantContext tenantContext)
+    public QuizLimitService(AppDbContext db, PlanLimitResolver limits, ITenantContext tenantContext)
     {
         _db = db;
-        _options = options.Value;
+        _limits = limits;
         _tenantContext = tenantContext;
     }
 
@@ -48,15 +48,16 @@ public sealed class QuizLimitService : IQuizLimitService
     public async Task<ServiceResultException?> CheckCanCreateQuizAsync(Guid tenantId, CancellationToken ct)
     {
         RequireMatchingTenant(tenantId);
+        var limits = await _limits.GetAsync(tenantId, ct);
 
         var count = await _db.Quizzes
             .CountAsync(q => q.TenantId == tenantId && q.Status != QuizStatus.Archived, ct);
 
-        if (count >= _options.MaxQuizzesPerTenant)
+        if (count >= limits.MaxQuizzesPerTenant)
         {
             return new ServiceResultException(
                 "QuotaExceeded",
-                $"This workspace reached the maximum number of quizzes ({_options.MaxQuizzesPerTenant}). Archive an existing quiz to free space.");
+                $"This workspace reached the maximum number of quizzes ({limits.MaxQuizzesPerTenant}). Archive an existing quiz to free space.");
         }
 
         return null;
@@ -65,15 +66,16 @@ public sealed class QuizLimitService : IQuizLimitService
     public async Task<ServiceResultException?> CheckCanAddQuestionAsync(Guid tenantId, Guid quizVersionId, CancellationToken ct)
     {
         RequireMatchingTenant(tenantId);
+        var limits = await _limits.GetAsync(tenantId, ct);
 
         var count = await _db.QuizVersionItems
             .CountAsync(i => i.QuizVersionId == quizVersionId, ct);
 
-        if (count >= _options.MaxQuestionsPerQuiz)
+        if (count >= limits.MaxQuestionsPerQuiz)
         {
             return new ServiceResultException(
                 "QuotaExceeded",
-                $"This quiz reached the maximum number of questions ({_options.MaxQuestionsPerQuiz}).");
+                $"This quiz reached the maximum number of questions ({limits.MaxQuestionsPerQuiz}).");
         }
 
         return null;
@@ -82,6 +84,7 @@ public sealed class QuizLimitService : IQuizLimitService
     public async Task<ServiceResultException?> CheckCanPublishAsync(Guid tenantId, Guid quizId, CancellationToken ct)
     {
         RequireMatchingTenant(tenantId);
+        var limits = await _limits.GetAsync(tenantId, ct);
 
         // إن كان الاختبار منشورًا مسبقًا فإعادة النشر لا تستهلك حصة جديدة.
         var quiz = await _db.Quizzes
@@ -101,11 +104,11 @@ public sealed class QuizLimitService : IQuizLimitService
         var publishedCount = await _db.Quizzes
             .CountAsync(q => q.TenantId == tenantId && q.Status == QuizStatus.Published, ct);
 
-        if (publishedCount >= _options.MaxPublishedQuizzesPerTenant)
+        if (publishedCount >= limits.MaxPublishedQuizzesPerTenant)
         {
             return new ServiceResultException(
                 "QuotaExceeded",
-                $"This workspace reached the maximum number of published quizzes ({_options.MaxPublishedQuizzesPerTenant}). Archive a published quiz to free space.");
+                $"This workspace reached the maximum number of published quizzes ({limits.MaxPublishedQuizzesPerTenant}). Archive a published quiz to free space.");
         }
 
         return null;

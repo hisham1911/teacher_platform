@@ -54,6 +54,14 @@ public class AppDbContext(
     public DbSet<Domain.Sessions.AttemptAnswer> AttemptAnswers => Set<Domain.Sessions.AttemptAnswer>();
     public DbSet<Domain.Sessions.LiveSessionState> LiveSessionStates => Set<Domain.Sessions.LiveSessionState>();
 
+    // Phase 7 — SaaS administration and operations
+    public DbSet<Domain.Saas.Plan> Plans => Set<Domain.Saas.Plan>();
+    public DbSet<Domain.Saas.Subscription> Subscriptions => Set<Domain.Saas.Subscription>();
+    public DbSet<Domain.Saas.UsageCounter> UsageCounters => Set<Domain.Saas.UsageCounter>();
+    public DbSet<Domain.Saas.AuditLog> AuditLogs => Set<Domain.Saas.AuditLog>();
+    public DbSet<Domain.Saas.ReferralCode> ReferralCodes => Set<Domain.Saas.ReferralCode>();
+    public DbSet<Domain.Saas.ReferralEvent> ReferralEvents => Set<Domain.Saas.ReferralEvent>();
+
     // Phase 5 — Surveys (Tenant-owned، Global Filters مطلوبة)
     public DbSet<Domain.Surveys.Survey> Surveys => Set<Domain.Surveys.Survey>();
     public DbSet<Domain.Surveys.SurveyQuestion> SurveyQuestions => Set<Domain.Surveys.SurveyQuestion>();
@@ -125,6 +133,12 @@ public class AppDbContext(
             modelBuilder.ApplyConfiguration(new Configurations.AttemptConfiguration());
             modelBuilder.ApplyConfiguration(new Configurations.AttemptAnswerConfiguration());
             modelBuilder.ApplyConfiguration(new Configurations.LiveSessionStateConfiguration());
+            modelBuilder.ApplyConfiguration(new Configurations.PlanConfiguration());
+            modelBuilder.ApplyConfiguration(new Configurations.SubscriptionConfiguration());
+            modelBuilder.ApplyConfiguration(new Configurations.UsageCounterConfiguration());
+            modelBuilder.ApplyConfiguration(new Configurations.AuditLogConfiguration());
+            modelBuilder.ApplyConfiguration(new Configurations.ReferralCodeConfiguration());
+            modelBuilder.ApplyConfiguration(new Configurations.ReferralEventConfiguration());
 
             // Phase 5 — Surveys
             modelBuilder.ApplyConfiguration(new Configurations.SurveyConfiguration());
@@ -159,6 +173,12 @@ public class AppDbContext(
             modelBuilder.Ignore<Domain.Sessions.Attempt>();
             modelBuilder.Ignore<Domain.Sessions.AttemptAnswer>();
             modelBuilder.Ignore<Domain.Sessions.LiveSessionState>();
+            modelBuilder.Ignore<Domain.Saas.Plan>();
+            modelBuilder.Ignore<Domain.Saas.Subscription>();
+            modelBuilder.Ignore<Domain.Saas.UsageCounter>();
+            modelBuilder.Ignore<Domain.Saas.AuditLog>();
+            modelBuilder.Ignore<Domain.Saas.ReferralCode>();
+            modelBuilder.Ignore<Domain.Saas.ReferralEvent>();
             modelBuilder.Ignore<Domain.Surveys.Survey>();
             modelBuilder.Ignore<Domain.Surveys.SurveyQuestion>();
             modelBuilder.Ignore<Domain.Surveys.SurveyOption>();

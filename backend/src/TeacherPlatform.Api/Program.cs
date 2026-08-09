@@ -8,6 +8,8 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Amazon.Runtime;
+using Amazon.S3;
 using TeacherPlatform.Api.Authorization;
 using TeacherPlatform.Api.Hubs;
 using TeacherPlatform.Api.Middleware;
@@ -43,6 +45,15 @@ builder.Services.AddOptions<IdentityLockoutOptions>()
 builder.Services.AddOptions<MailOptions>()
     .Bind(configuration.GetSection(MailOptions.SectionName))
     .ValidateDataAnnotations()
+    .Validate(options => options.Provider is "File" or "Smtp", "Mail:Provider must be File or Smtp.")
+    .Validate(options => options.Security is "StartTls" or "None", "Mail:Security must be StartTls or None.")
+    .Validate(options => options.Provider != "Smtp"
+        || (!string.IsNullOrWhiteSpace(options.Host) && !string.IsNullOrWhiteSpace(options.FromAddress)),
+        "SMTP requires Mail:Host and Mail:FromAddress.")
+    .Validate(options => !builder.Environment.IsProduction() || options.Provider == "Smtp",
+        "Production requires Mail:Provider=Smtp.")
+    .Validate(options => !builder.Environment.IsProduction() || options.Security != "None",
+        "Production SMTP must use TLS.")
     .ValidateOnStart();
 builder.Services.AddOptions<DataProtectionSettings>()
     .Bind(configuration.GetSection(DataProtectionSettings.SectionName))
@@ -112,6 +123,7 @@ builder.Services.AddAuthentication(options =>
 })
 .AddJwtBearer(options =>
 {
+    options.MapInboundClaims = false;
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuer = true,
@@ -251,7 +263,15 @@ builder.Services.AddRateLimiter(options =>
 });
 
 // ---------- Application services ----------
-builder.Services.AddScoped<IEmailSender, FileEmailSender>();
+var mailOptions = configuration.GetSection(MailOptions.SectionName).Get<MailOptions>() ?? new MailOptions();
+if (string.Equals(mailOptions.Provider, "Smtp", StringComparison.OrdinalIgnoreCase))
+{
+    builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
+}
+else
+{
+    builder.Services.AddScoped<IEmailSender, FileEmailSender>();
+}
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<TenantService>();
 builder.Services.AddScoped<TenantBypassService>();
@@ -265,16 +285,34 @@ builder.Services.AddOptions<TeacherPlatform.Application.Options.StorageOptions>(
     .Validate(o => o.Provider is "Local" or "S3", "Storage Provider must be Local or S3.")
     .Validate(o => o.Provider != "S3"
         || (!string.IsNullOrWhiteSpace(o.Endpoint) && !string.IsNullOrWhiteSpace(o.Bucket)
-            && !string.IsNullOrWhiteSpace(o.AccessKey) && !string.IsNullOrWhiteSpace(o.SecretKey)),
+            && !string.IsNullOrWhiteSpace(o.AccessKey) && !string.IsNullOrWhiteSpace(o.SecretKey)
+            && !string.IsNullOrWhiteSpace(o.Region)),
         "S3 storage requires Endpoint/Bucket/AccessKey/SecretKey.")
+    .Validate(o => !builder.Environment.IsProduction() || o.Provider != "S3"
+        || Uri.TryCreate(o.Endpoint, UriKind.Absolute, out var endpoint) && endpoint.Scheme == Uri.UriSchemeHttps,
+        "Production S3 endpoint must use HTTPS.")
     .ValidateOnStart();
 
 var storageOptions = configuration.GetSection(TeacherPlatform.Application.Options.StorageOptions.SectionName)
     .Get<TeacherPlatform.Application.Options.StorageOptions>() ?? new TeacherPlatform.Application.Options.StorageOptions();
 if (string.Equals(storageOptions.Provider, "S3", StringComparison.OrdinalIgnoreCase))
 {
-    builder.Services.AddSingleton<TeacherPlatform.Application.Abstractions.IObjectStorage>(
-        _ => new TeacherPlatform.Infrastructure.Services.S3ObjectStorage(storageOptions));
+    builder.Services.AddSingleton<IAmazonS3>(_ =>
+    {
+        var config = new AmazonS3Config
+        {
+            ServiceURL = storageOptions.Endpoint,
+            AuthenticationRegion = storageOptions.Region,
+            ForcePathStyle = storageOptions.ForcePathStyle
+        };
+        return new AmazonS3Client(
+            new BasicAWSCredentials(storageOptions.AccessKey, storageOptions.SecretKey),
+            config);
+    });
+    builder.Services.AddSingleton<TeacherPlatform.Application.Abstractions.IObjectStorage>(sp =>
+        new TeacherPlatform.Infrastructure.Services.S3ObjectStorage(
+            sp.GetRequiredService<IAmazonS3>(),
+            storageOptions));
 }
 else
 {
@@ -296,6 +334,12 @@ builder.Services.AddOptions<TeacherPlatform.Application.Options.QuizLimitOptions
 builder.Services.AddScoped<TeacherPlatform.Application.Abstractions.IQuizLimitService,
     TeacherPlatform.Infrastructure.Services.QuizLimitService>();
 builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.QuizService>();
+
+// ---------- Phase 7: SaaS administration ----------
+builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.PlanLimitResolver>();
+builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.PlatformAdminService>();
+builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.ReferralService>();
+builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.TenantTransferService>();
 
 // ---------- Phase 4: Sessions & Player ----------
 builder.Services.AddOptions<TeacherPlatform.Application.Options.SessionOptions>()

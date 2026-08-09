@@ -60,14 +60,35 @@ public sealed class IdentityLockoutOptions
     public int DefaultLockoutMinutes { get; set; } = 15;
 }
 
-/// <summary>خيارات بريد التطوير القائم على ملف محلي مستبعد من Git.</summary>
+/// <summary>خيارات البريد: File للتطوير/E2E، وSMTP للإنتاج.</summary>
 public sealed class MailOptions
 {
     public const string SectionName = "Mail";
 
+    [Required]
+    public string Provider { get; set; } = "File";
+
     /// <summary>مجلد تحميل رسائل Development. يجب أن يكون خارج المستودع.</summary>
     [Required]
     public string DevDropDirectory { get; set; } = ".dev-mail";
+
+    public string? Host { get; set; }
+
+    [Range(1, 65535)]
+    public int Port { get; set; } = 587;
+
+    public string? Username { get; set; }
+
+    public string? Password { get; set; }
+
+    [Required]
+    public string Security { get; set; } = "StartTls";
+
+    [EmailAddress]
+    public string? FromAddress { get; set; }
+
+    [StringLength(120)]
+    public string FromName { get; set; } = "Teacher Platform";
 }
 
 /// <summary>خيارات مفاتيح Data Protection.</summary>
