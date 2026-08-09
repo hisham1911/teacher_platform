@@ -29,10 +29,7 @@ namespace TeacherPlatform.Api.Controllers;
 public sealed class PlayerController : ControllerBase
 {
     // __Host- prefix يفرض Secure=true عند المتصفحات — نستخدمه فقط مع كوكي Secure (Production).
-    private static string ResolveCookieName(AuthOptions options) =>
-        options.UseSecureCookie
-            ? GuestTokenService.CookieNameSecure
-            : GuestTokenService.CookieNameDev;
+    private static string ResolveCookieName(AuthOptions options) => GuestTokenService.ResolveCookieName(options.UseSecureCookie);
 
     private readonly PlayerService _playerService;
     private readonly IOptions<AuthOptions> _authOptions;
@@ -58,6 +55,29 @@ public sealed class PlayerController : ControllerBase
         CancellationToken cancellationToken)
     {
         var (error, result) = await _playerService.GetByJoinCodeAsync(joinCode, cancellationToken);
+        if (error is not null)
+        {
+            throw error;
+        }
+
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// استعادة حالة اللاعب من الكوكي فقط — للاستئناف بعد إعادة التحميل بدون localStorage.
+    /// الاسم والوجهة (استئناف/نتيجة/بدء) مصدرهما السيرفر فقط عبر نفس شكل JoinSessionResponse.
+    /// </summary>
+    [HttpGet("{joinCode}/me")]
+    [ProducesResponseType(typeof(JoinSessionResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
+    public async Task<IActionResult> GetCurrentPlayer(
+        [FromRoute] string joinCode,
+        CancellationToken cancellationToken)
+    {
+        var rawToken = RequireGuestToken();
+        var (error, result) = await _playerService.GetCurrentPlayerAsync(joinCode, rawToken, cancellationToken);
         if (error is not null)
         {
             throw error;
@@ -275,22 +295,26 @@ public sealed class PlayerController : ControllerBase
     private void SetGuestCookie(string rawToken)
     {
         var options = _authOptions.Value;
-        var sameSite = options.CookieSameSite switch
-        {
-            "Lax" => SameSiteMode.Lax,
-            "None" => SameSiteMode.None,
-            _ => SameSiteMode.Strict
-        };
-
         Response.Cookies.Append(ResolveCookieName(options), rawToken, new CookieOptions
         {
             HttpOnly = true,
             Secure = options.UseSecureCookie,
-            SameSite = sameSite,
+            SameSite = ResolveSameSite(options),
             // Path=/ حتى تُرفق الكوكي بكل مسارات player API ضمن نفس Host.
             Path = "/",
             Expires = DateTimeOffset.UtcNow.AddDays(_sessionOptions.Value.GuestTokenDays),
             IsEssential = true
         });
     }
+
+    /// <summary>
+    /// حذف كوكي الضيف العالق يكون مسؤولية GlobalExceptionHandler (بعد كتابة الاستجابة الفعلية) —
+    /// عند Unauthorized على مسارات player يُحذف الكوكي بنفس الاسم والسمات.
+    /// </summary>
+    private static SameSiteMode ResolveSameSite(AuthOptions options) => options.CookieSameSite switch
+    {
+        "Lax" => SameSiteMode.Lax,
+        "None" => SameSiteMode.None,
+        _ => SameSiteMode.Strict
+    };
 }

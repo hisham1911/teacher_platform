@@ -1,6 +1,9 @@
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.Extensions.Options;
 using TeacherPlatform.Application.Abstractions;
+using TeacherPlatform.Application.Options;
 using TeacherPlatform.Infrastructure.Persistence;
+using TeacherPlatform.Infrastructure.Services;
 
 namespace TeacherPlatform.Api.Middleware;
 
@@ -10,12 +13,22 @@ namespace TeacherPlatform.Api.Middleware;
 /// - CrossTenantWriteRejectedException => 403.
 /// - الباقي => 500 عام بدون تفاصيل داخلية.
 /// لا يسرّب Tokens أو Passwords أو Stack traces للعميل.
+/// عند 401 على مسارات اللاعب (player) مع رمز ضيف منتهي/بُطّل، يُحذف كوكي الضيف العالق
+/// حتى لا يتكرر 401 بلا نهاية — حذف الكوكي هنا بعد Response.Clear() الذي يُنفَّذ قبل انع��ال
+/// هذا المعالج (Set-Cookie من الكنترولر كان سيُمْسَح).
 /// </summary>
 public sealed class GlobalExceptionHandler : IExceptionHandler
 {
     private readonly ILogger<GlobalExceptionHandler> _logger;
+    private readonly IOptions<AuthOptions> _authOptions;
 
-    public GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) => _logger = logger;
+    public GlobalExceptionHandler(
+        ILogger<GlobalExceptionHandler> logger,
+        IOptions<AuthOptions> authOptions)
+    {
+        _logger = logger;
+        _authOptions = authOptions;
+    }
 
     public async ValueTask<bool> TryHandleAsync(
         HttpContext httpContext,
@@ -47,6 +60,13 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
                     _ => StatusCodes.Status400BadRequest
                 };
                 title = serviceError.ErrorCode;
+
+                if (statusCode == StatusCodes.Status401Unauthorized &&
+                    httpContext.Request.Path.StartsWithSegments("/api/v1/player/sessions"))
+                {
+                    DeleteStaleGuestCookie(httpContext.Response);
+                }
+
                 _logger.LogWarning(
                     "Request failed. Code={ErrorCode} TraceId={TraceId}",
                     serviceError.ErrorCode, httpContext.TraceIdentifier);
@@ -89,6 +109,29 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
         }, cancellationToken);
 
         return true;
+    }
+
+    /// <summary>
+    /// يحذف كوكي ضيف اللاعب العالق (رمز منتهي/بُطّل) بنفس الاسم والسمات الأصلية —
+    /// Path=/, HttpOnly، Secure حسب الإعدادات وSameSite من الإعدادات. أي كوكي فاسد
+    /// عند أي 401 على مسارات اللاعب (ولا يوجد كوكي صالح) ⇒ المتصفح يتخلّص منه.
+    /// </summary>
+    private void DeleteStaleGuestCookie(HttpResponse response)
+    {
+        var options = _authOptions.Value;
+        response.Cookies.Delete(GuestTokenService.ResolveCookieName(options.UseSecureCookie), new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = options.UseSecureCookie,
+            SameSite = options.CookieSameSite switch
+            {
+                "Lax" => SameSiteMode.Lax,
+                "None" => SameSiteMode.None,
+                _ => SameSiteMode.Strict
+            },
+            Path = "/",
+            IsEssential = true
+        });
     }
 }
 

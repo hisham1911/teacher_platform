@@ -85,6 +85,51 @@ public sealed class PlayerService
     }
 
     /// <summary>
+    /// استعادة/تحقق من حالة اللاعب الحالي من الكوكي فقط (بدون اسم) — لإعادة الربط بعد
+    /// إعادة التحميل/الفشل من جهة السيرفر بدل localStorage في الواجهة.
+    /// يعيد نفسه كـJoinSessionResponse (participantId + displayName + attemptId + attemptStatus).
+    /// لا يكتب شيئًا ولا يعيد RawToken جديدًا.
+    /// </summary>
+    public async Task<(ServiceResultException? Error, JoinSessionResponse? Result)> GetCurrentPlayerAsync(
+        string joinCode,
+        string rawToken,
+        CancellationToken cancellationToken)
+    {
+        var session = await LoadSessionByJoinCodeAsync(joinCode, cancellationToken);
+        if (session is null)
+        {
+            return (new ServiceResultException("NotFound", "Session not found."), null);
+        }
+
+        if (string.IsNullOrEmpty(rawToken))
+        {
+            return (new ServiceResultException(
+                "Unauthorized", "Guest token is required."), null);
+        }
+
+        var participant = await ResolveParticipantAsync(session, rawToken, cancellationToken);
+        if (participant is null)
+        {
+            return (new ServiceResultException("Unauthorized", "Guest token is invalid or expired."), null);
+        }
+
+        var attempt = await _db.Attempts
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .FirstOrDefaultAsync(
+                a => a.SessionId == session.Id && a.ParticipantId == participant.Id && a.TenantId == session.TenantId,
+                cancellationToken);
+
+        return (null, new JoinSessionResponse
+        {
+            ParticipantId = participant.Id,
+            DisplayName = participant.DisplayName,
+            AttemptId = attempt?.Id,
+            AttemptStatus = attempt?.Status.ToString()
+        });
+    }
+
+    /// <summary>
     /// انضمام طالب. Idempotent: نفس رمز الضيف الصالح يعيد نفس المشارك.
     /// يعيد الرمز الخام مرة واحدة فقط ليخزنه الكنترولر في كوكي HttpOnly.
     /// </summary>

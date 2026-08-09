@@ -18,6 +18,10 @@ public sealed class GuestTokenService
     public const string CookieNameSecure = "__Host-tp-guest";
     public const string CookieNameDev = "tp-guest";
 
+    /// <summary>اختزال اسم كوكي الضيف الحقيقي من إعدادات الأمان — المركز الوحيد لهذا القرار.</summary>
+    public static string ResolveCookieName(bool useSecureCookie) =>
+        useSecureCookie ? CookieNameSecure : CookieNameDev;
+
     private readonly IClock _clock;
 
     public GuestTokenService(IClock clock)
