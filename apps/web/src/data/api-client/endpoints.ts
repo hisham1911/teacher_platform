@@ -1,4 +1,4 @@
-﻿import { HttpError } from './http-error';
+import { HttpError } from './http-error';
 import type {
   AuthUser,
   MessageResponse,
@@ -852,5 +852,52 @@ export const playerApi = {
   /** URL مباشر لوسائط السؤال — الـGuest Cookie يُرسل تلقائيًا من المتصفح (لا Bearer). */
   mediaUrl(joinCode: string, attemptId: string, mediaId: string): string {
     return `${resolveBaseUrl()}/api/v1/player/sessions/${encodeURIComponent(joinCode)}/attempts/${attemptId}/media/${mediaId}`;
+  },
+};
+
+// ---------- Phase 5: Reports ----------
+import type {
+  AttemptDetail,
+  ReportAttemptListItem,
+  SessionReport,
+} from '../../types/reports';
+
+export const reportsApi = {
+  getSessionReport(tenantId: string, sessionId: string, signal?: AbortSignal) {
+    return call<SessionReport>({
+      method: 'GET',
+      path: `/api/v1/tenants/${tenantId}/sessions/${sessionId}/report`,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+  listAttempts(
+    tenantId: string,
+    sessionId: string,
+    page = 1,
+    pageSize = 20,
+    signal?: AbortSignal,
+  ) {
+    const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+    return call<PagedResponse<ReportAttemptListItem>>({
+      method: 'GET',
+      path: `/api/v1/tenants/${tenantId}/sessions/${sessionId}/attempts?${params.toString()}`,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+  getAttempt(tenantId: string, attemptId: string, signal?: AbortSignal) {
+    return call<AttemptDetail>({
+      method: 'GET',
+      path: `/api/v1/tenants/${tenantId}/attempts/${attemptId}`,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+  exportSessionCsv(tenantId: string, sessionId: string, signal?: AbortSignal) {
+    return callBlob(`/api/v1/tenants/${tenantId}/sessions/${sessionId}/report/export.csv`, signal);
   },
 };

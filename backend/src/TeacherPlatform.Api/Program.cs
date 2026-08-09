@@ -212,29 +212,29 @@ builder.Services.AddCors(options =>
 
 // ---------- Rate Limiting ----------
 var rateConfig = configuration.GetSection(RateLimitOptions.SectionName).Get<RateLimitOptions>() ?? new RateLimitOptions();
+static FixedWindowRateLimiterOptions CreateFixedWindowOptions(RateLimitOptions config) => new()
+{
+    PermitLimit = config.PermitLimit,
+    Window = TimeSpan.FromSeconds(config.WindowSeconds),
+    QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+    QueueLimit = 0
+};
+
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
     options.AddPolicy(RateLimitPolicies.AuthEndpoints, context =>
         RateLimitPartition.GetFixedWindowLimiter(
             context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-            _ => new FixedWindowRateLimiterOptions
-            {
-                PermitLimit = rateConfig.PermitLimit,
-                Window = TimeSpan.FromSeconds(rateConfig.WindowSeconds),
-                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-                QueueLimit = 0
-            }));
+            _ => CreateFixedWindowOptions(rateConfig)));
     options.AddPolicy(RateLimitPolicies.PlayerEndpoints, context =>
         RateLimitPartition.GetFixedWindowLimiter(
             context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-            _ => new FixedWindowRateLimiterOptions
-            {
-                PermitLimit = rateConfig.PermitLimit,
-                Window = TimeSpan.FromSeconds(rateConfig.WindowSeconds),
-                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-                QueueLimit = 0
-            }));
+            _ => CreateFixedWindowOptions(rateConfig)));
+    options.AddPolicy(RateLimitPolicies.ReportExports, context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => CreateFixedWindowOptions(rateConfig)));
 });
 
 // ---------- Application services ----------
@@ -292,6 +292,9 @@ builder.Services.AddOptions<TeacherPlatform.Application.Options.SessionOptions>(
 builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.GuestTokenService>();
 builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.SessionService>();
 builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.PlayerService>();
+
+// ---------- Phase 5: Reports ----------
+builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.ReportService>();
 
 // ---------- Health Checks ----------
 builder.Services.AddHealthChecks().AddDbContextCheck<AppDbContext>("database");

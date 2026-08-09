@@ -19,4 +19,7 @@ public static class RateLimitPolicies
 
     /// <summary>مسارات اللاعب المجهول — حد مستقل بنفس إعدادات النافذة.</summary>
     public const string PlayerEndpoints = "player-endpoints";
+
+    /// <summary>تصدير التقارير — يمنع تكرار توليد ملفات كبيرة بصورة مسيئة.</summary>
+    public const string ReportExports = "report-exports";
 }

@@ -135,6 +135,14 @@ export default function SessionDetailPage() {
         </Link>
       </div>
 
+      <div className="flex flex-wrap justify-end gap-2">
+        <Link
+          to={`/dashboard/reports/${session.id}?quizId=${quizId}`}
+          className="inline-flex min-h-11 items-center rounded-md bg-sky-700 px-4 py-2 text-sm font-medium text-white hover:bg-sky-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600">
+          فتح التقرير
+        </Link>
+      </div>
+
       {/* رمز الانضمام والمشاركة */}
       <section aria-labelledby="join-heading" className="rounded-xl border border-slate-200 bg-white p-4">
         <h2 id="join-heading" className="mb-3 text-base font-semibold text-slate-900">
@@ -239,7 +247,15 @@ export default function SessionDetailPage() {
               <tbody>
                 {session.participants.map((p) => (
                   <tr key={p.id} className="border-b border-slate-100">
-                    <td className="py-2 pe-3 font-medium text-slate-900">{p.displayName}</td>
+                    <td className="py-2 pe-3 font-medium text-slate-900">
+                      {p.attemptId ? (
+                        <Link
+                          to={`/dashboard/attempts/${p.attemptId}?sessionId=${session.id}&quizId=${quizId}`}
+                          className="text-sky-700 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600">
+                          {p.displayName}
+                        </Link>
+                      ) : p.displayName}
+                    </td>
                     <td className="py-2 pe-3 text-slate-600">
                       {p.attemptStatus ? ATTEMPT_STATUS_LABELS[p.attemptStatus] : 'لم يبدأ'}
                     </td>

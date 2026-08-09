@@ -1,0 +1,81 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { render, screen } from '@testing-library/react';
+import { MemoryRouter, Route, Routes } from 'react-router';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import AttemptDetailPage from './attempt-detail-page';
+
+vi.mock('../../../data/api-client/endpoints', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../data/api-client/endpoints')>();
+  return {
+    ...actual,
+    reportsApi: {
+      ...actual.reportsApi,
+      getAttempt: vi.fn(),
+    },
+  };
+});
+
+const { reportsApi } = await import('../../../data/api-client/endpoints');
+const getAttemptMock = vi.mocked(reportsApi.getAttempt);
+
+function renderPage() {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter initialEntries={['/dashboard/attempts/attempt-1']}>
+        <Routes>
+          <Route path="/dashboard/attempts/:attemptId" element={<AttemptDetailPage />} />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>,
+  );
+}
+
+describe('AttemptDetailPage', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    window.localStorage.setItem('teacher-platform:active-tenant-id', 'tenant-1');
+    getAttemptMock.mockResolvedValue({
+      attemptId: 'attempt-1',
+      sessionId: 'session-1',
+      quizId: 'quiz-1',
+      quizTitle: 'اختبار اللغة',
+      sessionLabel: 'المجموعة الأولى',
+      participantId: 'participant-1',
+      displayName: 'مريم',
+      status: 'Finished',
+      score: 8,
+      maxScore: 10,
+      percentage: 80,
+      passed: true,
+      durationMs: 90_000,
+      startedAt: '2026-08-09T08:00:00Z',
+      finishedAt: '2026-08-09T08:01:30Z',
+      questions: [
+        {
+          quizVersionItemId: 'item-1',
+          questionVersionId: 'version-1',
+          sortOrder: 0,
+          prompt: 'Complete the sentence',
+          questionType: 'ShortAnswer',
+          pointsPossible: 5,
+          answered: true,
+          answerSummary: 'went',
+          isCorrect: true,
+          scoreAwarded: 5,
+          answeredAt: '2026-08-09T08:01:00Z',
+        },
+      ],
+    });
+  });
+
+  it('يعرض النتيجة وإجابة كل سؤال كما صححها الخادم', async () => {
+    renderPage();
+
+    expect(await screen.findByRole('heading', { name: 'محاولة مريم' })).toBeInTheDocument();
+    expect(screen.getByText('80%')).toBeInTheDocument();
+    expect(screen.getByText('Complete the sentence')).toBeInTheDocument();
+    expect(screen.getByText('went')).toBeInTheDocument();
+    expect(screen.getByText('صحيحة')).toBeInTheDocument();
+  });
+});
