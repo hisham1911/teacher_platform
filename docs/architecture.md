@@ -14,8 +14,8 @@ React SPA (Vite → dist → Vercel CDN)
 ASP.NET Core Web API (Kestrel خلف Nginx)
   │
   ├── PostgreSQL (EF Core 10 + Npgsql) — مصدر الحقيقة الوحيد
-  ├── Object Storage متوافق مع S3 (لاحقًا)
-  └── SMTP / Email Provider (لاحقًا)
+  ├── Object Storage محلي أو متوافق مع S3
+  └── File mail drop للتطوير أو SMTP للإنتاج
 ```
 
 ## المكوّنات
@@ -23,7 +23,7 @@ ASP.NET Core Web API (Kestrel خلف Nginx)
 - **Frontend (`apps/web`)**: React 19 + Vite + TypeScript strict. يُبنى كملفات Static وتُنشر على Vercel. يتواصل مع الخادم عبر `src/data/api-client/` فقط — لا استدعاءات `fetch` خارج هذه الحدود، ولا أي Database/Supabase SDK.
 - **Backend (`backend`)**: ASP.NET Core Web API على .NET 10 LTS بنظام مشاريع:
   - `Domain`: كيانات المجال الصافي بلا اعتماديات تقنية.
-  - **Application:** Use Cases والـAbstractions (`IClock`، مستقبلًا `ICurrentUser`, `ITenantContext`, `IObjectStorage`, `IEmailSender`). بدون MediatR/AutoMapper.
+  - **Application:** Use Cases والـAbstractions (`IClock`, `ITenantContext`, `IObjectStorage`, `IEmailSender`). بدون MediatR/AutoMapper.
   - **Infrastructure:** `AppDbContext` وإعدادات EF Core والـMigrations وتنفيذات PostgreSQL.
   - **Api:** Controllers، إعداد OpenAPI، ProblemDetails، Health Checks، CORS، Forwarded Headers، Middleware.
 - **قاعدة البيانات:** PostgreSQL 15+ (محلية في التطوير، Managed أو VPS في الإنتاج).
@@ -46,10 +46,10 @@ ASP.NET Core Web API (Kestrel خلف Nginx)
 
 1. المتصفح يحمّل SPA من CDN.
 2. الواجهة تستدعي `apiClient` → `VITE_API_BASE_URL` → Nginx → Kestrel.
-3. الـ API يتحقق (لاحقًا من JWT والـ Tenant Membership) ثم ينفذ المنطق عبر Application services.
+3. الـ API يتحقق من JWT والـTenant Membership أو Guest Cookie حسب المسار، ثم ينفذ المنطق عبر Application services.
 4. EF Core يقرأ/يكتب PostgreSQL؛ النتيجة تُعاد كـ DTO وليس كـ Entity.
 
-## استضافة مستقبلية
+## نموذج الاستضافة
 
 - الواجهة: Vercel (Static SPA مع rewrite إلى index.html).
 - الـ API: Linux VPS + Nginx + systemd، مع `ForwardedHeaders` مهيأة مسبقًا.
@@ -61,8 +61,8 @@ ASP.NET Core Web API (Kestrel خلف Nginx)
 - تجريد `IObjectStorage` مع تنفيذ Local (`Provider=Local`) للتطوير/الاختبارات:
   يحفظ تحت `.media-storage/` ولا يكشف المسار؛ كل القراءة تمر عبر
   `GET /api/v1/tenants/{tenantId}/media/{id}/content` بعد تحقق العضوية والمستأجر.
-- تنفيذ S3-compatible موجودكعلاج للإنتاج، لكن لا يُفعّل إلا بعد اختيار SDK،
-  وبيانات الاعتماد في Secret دائمًا — لا في المستودع.
+- تنفيذ S3-compatible يستخدم AWS SDK مع endpoint وregion وpath-style قابلة للإعداد،
+  ويُفعّل عبر `Storage:Provider=S3`. بيانات الاعتماد من Secret store فقط، وProduction يرفض endpoint غير HTTPS.
 - Question/QuestionVersion: نموذج تعدد نسخ مع إصدارات Immutable، وRowVersion (xmin)
   للحماية من التعديل المتزامن: أي `<baseVersion>` قديمة تعيد 409.
 
@@ -79,8 +79,8 @@ ASP.NET Core Web API (Kestrel خلف Nginx)
   `BaseVersion` قديمة تعيد `409 Conflict`.
 - **Public Code** (`PublicCode`) يُولّد تلقائيًا عند الإنشاء (GUID-only، 32 حرفًا)
   ويُستخدم للوصول العام للاختبار المنشور عبر `GET /api/v1/public/quizzes/{publicCode}`.
-- **Quiz Limits** (`IQuizLimitService`) تفرض حدودًا مستأجر-scoped عبر قسم `QuizLimits`:
-  `MaxQuizzesPerTenant` (100)، و`MaxQuestionsPerQuiz` (200)، و`MaxPublishedQuizzesPerTenant` (50).
+- **Quiz Limits** (`IQuizLimitService`) تفرض حدودًا مستأجر-scoped من الخطة النشطة؛
+  عند غياب اشتراك نشط تستخدم قيم قسم `QuizLimits` كـfallback.
 
 ## Phase 4 — الجلسات ومشغل الطالب والتصحيح الخادمي
 
@@ -123,3 +123,12 @@ ASP.NET Core Web API (Kestrel خلف Nginx)
 - المعلم يحصل على JWT Live قصير العمر بعد فحص Owner/Teacher، واللاعب بعد التحقق من Guest Cookie وملكية المشارك. Hub يعيد التحقق من العضوية أو المشارك ثم يضيف الاتصال إلى group ثابت يبنيه الخادم.
 - أثناء `QuestionOpen` لا تحتوي DTOs على صحة الخيارات، ونتيجة `submitAnswer` تحجب `isCorrect` و`scoreAwarded`. بعد الإغلاق تُحسب لوحة الترتيب من الإجابات المخزنة للأسئلة المغلقة فقط؛ الإنهاء يثبت النتائج النهائية خادميًا لكل المحاولات الجارية.
 - Worker يغلق السؤال بعد `QuestionClosesAt + GraceWindowSeconds`. الواجهة تستخدم SignalR مع إعادة اتصال تلقائية وpolling fallback؛ لا يوجد Redis في نطاق النشر single-node الحالي. التفاصيل في ADR 010.
+
+## Phase 7 — إدارة SaaS والتشغيل
+
+- `PlatformAdmin` دور عالمي داخل ASP.NET Identity، منفصل عن عضوية المستأجر. JWT يحمل claim باسم `role`، والسياسة الخادمية هي الحاجز الحاكم؛ الحارس في الواجهة يخفي `/platform` فقط ولا يمنح صلاحية.
+- `Plans` تخزن الحدود، و`Subscriptions` تربط خطة نشطة واحدة بالمستأجر. `PlanLimitResolver` يطبق حدود الاختبارات والمنشور والأسئلة والمحاولات الشهرية والتخزين والشهادات على الخادم.
+- `UsageCounters` لقطة شهرية تُحدّث عند قراءة الإدارة، بينما قرار quota يقرأ الجداول الفعلية. `AuditLogs` يسجل إنشاء/تعديل الخطط والتفعيل ونقل المحتوى دون كلمات مرور أو tokens.
+- نقل المحتوى Owner-only ينتج ZIP بصيغة versioned وSHA-256 لكل entry. الاستيراد يفحص البنية والمراجع والوسائط والحدود، يدعم dry-run، يعيد تعيين المعرّفات، ويعوض ملفات التخزين إذا فشل transaction قاعدة البيانات.
+- البريد يستخدم `FileEmailSender` خارج الإنتاج أو `SmtpEmailSender` عند `Mail:Provider=Smtp`. الإنتاج يفرض SMTP مع TLS. التخزين يستخدم Local أو S3-compatible حسب `Storage:Provider`.
+- نموذج النشر single-node موثق في `docs/deployment.md`: Nginx مع WebSocket upgrade، systemd، migration bundle بلا `Database.Migrate()`، backup مشفر قبل الترحيل، health checks، وrollback للـapplication symlink. التفاصيل في ADR 011.

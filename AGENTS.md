@@ -31,7 +31,7 @@ scripts/           سكربتات مساعدة
 - حدود الاستخدام: `QuizLimits` (`MaxQuizzesPerTenant` افتراضيًا 100، `MaxQuestionsPerQuiz` افتراضيًا 200، و`MaxPublishedQuizzesPerTenant` افتراضيًا 50) عبر IQuizLimitService؛ التجاوز → 403 `QuotaExceeded`.
 - المشاركة: `GET .../quizzes/{id}/share` يعيد PublicCode + ShareUrl؛ صفحة النشر تعرض الرابط + QR Code (react-qr-code).
 
-## الحالة الحالية (بعد Phase 6)
+## الحالة الحالية (بعد Phase 7)
 
 - **Phase 4:** Student Player / Sessions / Server-side scoring.
 - **Phase 4.1:** Answer payload validation + real-browser hardening.
@@ -43,7 +43,11 @@ scripts/           سكربتات مساعدة
 - Playwright E2E harness داخل `e2e/` يغطي الاستعادة بعد F5، التقرير/CSV، الاستبانة، شهادة النجاح، وعدم إصدارها عند الرسوب.
 - **Phase 6:** مسابقات Live بحالة خادمية في PostgreSQL، Host controls وtimer ولوحة ترتيب، وإشعارات SignalR عبر `/hubs/quiz` مع polling fallback.
 - إجابات Live تبقى REST وتُصحح خادميًا؛ لا يرى اللاعب الصحة أو الدرجة قبل إغلاق السؤال، ولا يختار العميل SignalR groups.
-- Playwright يغطي Host + Player في سياقين، إخفاء التصحيح حتى الإغلاق، والنتيجة بعد F5. Phase 7 لم تبدأ.
+- Playwright يغطي Host + Player في سياقين، إخفاء التصحيح حتى الإغلاق، والنتيجة بعد F5.
+- **Phase 7:** خطط واشتراكات وتفعيل يدوي واستخدام وتدقيق عبر دور عالمي `PlatformAdmin` وصفحة `/platform`؛ الحدود الفعلية تُفرض خادميًا من الخطة النشطة مع fallback للإعدادات.
+- تصدير/استيراد محتوى المستأجر متاح للـOwner فقط كـZIP بإصدار format وفحوص checksums وdry-run؛ لا ينقل الحسابات أو المحاولات أو الاشتراكات أو الأسرار.
+- محولا S3-compatible وSMTP منفذان ويُفعّلان من Configuration؛ أمثلة Nginx/systemd وPipeline النشر والنسخ الاحتياطي المشفر والاستعادة تحت `ops/` و`scripts/`.
+- Phase 8 لم تبدأ.
 
 ## قواعد إلزامية
 

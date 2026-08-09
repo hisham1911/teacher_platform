@@ -279,6 +279,53 @@ GET  /api/v1/public/results/{publicToken}
 - `parent-share` يعيد `201` مع `{ shareUrl, expiresAt }`. النتيجة العامة تقتصر على `{ studentName, quizTitle, score, maxScore, percentage, passed, finishedAt, reviewAreas, certificateUrl }`; الرمز المنتهي أو غير الصحيح يعيد `404`.
 - ملف الشهادة العام والنتيجة العامة لا يحتاجان JWT. كل نقاط الإصدار/التنزيل الخاصة بالطالب تتحقق من Guest Cookie وملكية المحاولة، ولا تعتمد على `attemptId` وحده.
 
+## بند Phase 7 — إدارة SaaS ونقل المحتوى
+
+### Platform Admin
+
+كل المسارات التالية تتطلب JWT يحمل الدور العالمي `PlatformAdmin`؛ عضوية Owner داخل مستأجر لا تكفي:
+
+```text
+GET  /api/v1/platform/plans
+POST /api/v1/platform/plans
+PUT  /api/v1/platform/plans/{planId}
+GET  /api/v1/platform/tenants
+GET  /api/v1/platform/users
+POST /api/v1/platform/tenants/{tenantId}/subscriptions/activate
+GET  /api/v1/platform/tenants/{tenantId}/usage
+GET  /api/v1/platform/audit?tenantId=&take=
+```
+
+- إنشاء الخطة يقبل `code`, `name`, `isActive`, و`limits`. التحديث يقبل الحقول نفسها مع `baseVersion`; تعارض `xmin` أو تكرار `code` يعيد `409 Conflict`.
+- `limits` هو `{ maxQuizzesPerTenant, maxQuestionsPerQuiz, maxPublishedQuizzesPerTenant, maxAttemptsPerMonth, maxStorageBytes, maxCertificatesPerMonth }`، وكلها أعداد موجبة.
+- تفعيل الاشتراك يقبل `{ planId, startsAt?, endsAt? }` ويلغي الاشتراك النشط السابق داخل transaction. الخطة يجب أن تكون نشطة، و`endsAt` إن وُجد يجب أن يكون بعد البداية.
+- استجابة الاستخدام هي `{ tenantId, periodStart, periodEnd, metrics[] }`؛ عنصر metric هو `{ metric, value, limit }`. القيم الحالية هي `PublishedQuizzes`, `Attempts`, `StorageBytes`, و`CertificatesIssued`.
+- `audit` يعيد حتى 200 سجل بعد ضبط `take` إلى المجال 1..200، مرتبة من الأحدث. عنصر السجل هو `{ id, tenantId, actorUserId, action, entityType, entityId, metadataJson, requestId, createdAt }`.
+
+تُفرض الحدود خادميًا عند إنشاء/نشر الاختبارات، إضافة سؤال، بدء محاولة جديدة، رفع وسيط، وإصدار شهادة. التجاوز يعيد `403 QuotaExceeded`. عند غياب اشتراك نشط تستخدم الخدمة fallback إعدادات `QuizLimits` للحدود الثلاثة القديمة والقيم الافتراضية في `PlanLimitsDto` لبقية الحدود.
+
+### Referral foundation
+
+```text
+POST /api/v1/tenants/{tenantId}/referrals/code
+```
+
+المسار Owner-only وIdempotent لكل مستأجر، ويعيد `{ id, code, isActive, createdAt }`. لا توجد مكافآت أو دفع أو إحالات عامة في هذه المرحلة.
+
+### تصدير واستيراد محتوى المستأجر
+
+```text
+GET  /api/v1/tenants/{tenantId}/transfer/export
+POST /api/v1/tenants/{tenantId}/transfer/import?dryRun=true
+```
+
+- المساران Owner-only. التصدير يعيد `application/zip`. الاستيراد `multipart/form-data` بحقل ملف اسمه `archive`، و`dryRun` افتراضيًا `true`.
+- ZIP format version 1 يحتوي `manifest.json`, `questions.json`, `quizzes.json`, `surveys.json`, `certificate-templates.json` وملفات `media/`. الـmanifest يحمل counts وSHA-256 checksums لكل entry غير الـmanifest.
+- يشمل النقل بنوك الأسئلة والوسائط والأسئلة ونسخها وخياراتها ووسومها، الاختبارات ونسخها وعناصرها، الاستبانات، وقوالب الشهادات. لا يشمل المستخدمين أو بيانات المصادقة أو المشاركين أو المحاولات والنتائج أو الاشتراكات أو سجل التدقيق أو الأسرار. روابط Subject/Grade الاختيارية لا تُعاد ربطها عند الاستيراد.
+- الاستيراد يعيد تعيين كل المعرّفات العامة، يولد PublicCode جديدًا، ويجعل slugs وأسماء القوالب فريدة داخل الهدف. لا يثق في `TenantId` المصدر.
+- `dryRun=true` يفحص الإصدار والبنية والأسماء والمراجع والعدادات والـchecksums وMagic bytes وحدود الخطة دون كتابة قاعدة البيانات أو Object Storage.
+- نجاح الفحص أو الاستيراد يعيد `{ dryRun, sourceTenantId, targetTenantId, counts }`. ملف تالف أو مرجع غير صالح يعيد `400 InvalidImport` بلا كتابة جزئية؛ تجاوز 250MB يعيد `413 FileTooLarge`؛ تجاوز الخطة يعيد `403 QuotaExceeded`.
+
 ## الاستجابات الشائعة
 
 - `400`: مدخلات غير صالحة أو سؤال يفشل بقعة Validation (Codes مثل `QuestionInvalid`, `UnsupportedMediaType`, `EmptyFile`).

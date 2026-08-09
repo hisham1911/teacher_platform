@@ -1,4 +1,4 @@
-# قاعدة البيانات — حتى Phase 6
+# قاعدة البيانات — حتى Phase 7
 
 التعريفات الإضافية فوق Phase 0/1/2:
 
@@ -176,6 +176,16 @@ unique per `(AttemptId, QuizVersionItemId)` — إجابة واحدة لكل س�
 
 لا تخزن SignalR أي state موازية، ولا توجد إجابات أو Leaderboard snapshots في هذا الجدول؛ تُشتق counts والترتيب من `SessionParticipants` و`Attempts` و`AttemptAnswers` عند القراءة.
 
+## Phase 7 — SaaS administration
+
+- `Plans`: جدول عالمي بكود فريد، اسم، حالة، `LimitsJson` من نوع `jsonb`، و`xmin` للتزامن.
+- `Subscriptions`: Tenant-scoped، FK إلى `Plans`، وحالة `Active | Suspended | Expired | Cancelled`. فهرس PostgreSQL جزئي يضمن اشتراكًا نشطًا واحدًا فقط لكل `TenantId`.
+- `UsageCounters`: Tenant-scoped، فريد على `(TenantId, PeriodStart, Metric)`، ويخزن قيمة اللقطة الشهرية ونهاية الفترة ووقت التحديث.
+- `AuditLogs`: سجل عالمي ذو `TenantId` اختياري و`ActorUserId` و`Action` و`EntityType` و`EntityId` و`MetadataJson` و`RequestId`. ليس `ITenantEntity` لأن Platform Admin يحتاج قراءة السجل عبر المستأجرين.
+- `ReferralCodes`: Tenant-scoped، كود فريد عالميًا وسجل واحد لكل مستأجر. `ReferralEvents` Tenant-scoped ويرتبط بالكود عبر FK مركب `(ReferralCodeId, TenantId)`.
+
+الحدود داخل `LimitsJson`: `MaxQuizzesPerTenant`, `MaxQuestionsPerQuiz`, `MaxPublishedQuizzesPerTenant`, `MaxAttemptsPerMonth`, `MaxStorageBytes`, `MaxCertificatesPerMonth`.
+
 ## Migrations
 
 ترتيب التطبيق على قاعدة فارغة (tested in CI):
@@ -188,5 +198,6 @@ unique per `(AttemptId, QuizVersionItemId)` — إجابة واحدة لكل س�
 7. `20260809175242_CreateSurveys` (Phase 5 — Surveys, SurveyQuestions, SurveyOptions, SurveyResponses, SurveyAnswers)
 8. `20260809185405_CreateCertificatesAndOutbox` (Phase 5 — CertificateTemplates, Certificates, ParentResultShares, OutboxMessages)
 9. `20260809201234_CreateLiveCompetition` (Phase 6 — LiveSessionStates)
+10. `20260809214618_CreateSaasAdministration` (Phase 7 — Plans, Subscriptions, UsageCounters, AuditLogs, Referrals)
 
 كلها تُولّد Idempotent SQL عبر `dotnet ef migrations script --idempotent` وتُطبق يدويًا بعد Backup في أي بيئة إنتاجية.

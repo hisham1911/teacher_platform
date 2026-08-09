@@ -5,7 +5,7 @@
 - Node.js 24+ و npm.
 - .NET SDK 10.0.x.
 - PostgreSQL 15 أو أحدث (خدمة محلية أو أي قاعدة تطوير متاحة). لا يشترط Docker.
-- أداة `dotnet-ef` عالمية: `dotnet tool install -g dotnet-ef`.
+- أداة `dotnet-ef` عالمية: `dotnet tool install -g dotnet-ef --version 10.0.10`.
 
 ## البنية
 
@@ -90,7 +90,7 @@ dotnet test
   - ثم `dotnet test tests/TeacherPlatform.IntegrationTests`
 - عند أول تشغيل محلي: قاعدة الاختبار تُنشأ تلقائيًا عبر الاختبار نفسه (لا حاجة لإنشائها يدويًا).
 
-##         4. Migrations
+## 4. Migrations
 
 ```bash
 # إنشاء Migration جديدة
@@ -282,10 +282,19 @@ npm ci
 - يجب اختيار `Certificates:QuestPdfLicense` صراحةً في Production (`Community` أو `Professional` أو `Enterprise`) بعد التحقق القانوني من أهلية الترخيص؛ التطبيق يفشل عند غياب الاختيار.
 - الخط الافتراضي على Windows هو `Arial` وعلى Linux هو `DejaVu Sans`. ثبّت حزمة الخط المناسبة (مثل `fonts-dejavu-core`) أو اضبط اسم عائلة متاحة عبر `Certificates:LinuxFontFamily`.
 - لأن `PublicTokenProtected` يعتمد ASP.NET Core Data Protection، استخدم `DataProtection:KeysDirectory` دائمًا خارج release directory وعلى تخزين دائم في Production.
-- `Storage:Provider=Local` مناسب للتطوير/E2E فقط. محول S3 الحالي fail-fast وغير منفذ؛ لا تضبط `Provider=S3` في Production قبل توصيل SDK وSecret store واختبار القراءة/الكتابة. هذا قيد تسليم مسجل للمرحلة اللاحقة.
+- `Storage:Provider=Local` مناسب للتطوير/E2E. محول S3-compatible منفذ عبر AWS SDK؛ اضبط `Endpoint`, `Bucket`, `AccessKey`, `SecretKey`, `Region`, و`ForcePathStyle` من Configuration، واختبر القراءة/الكتابة ضد المزود المختار قبل الإنتاج. Production يرفض endpoint غير HTTPS.
+
+## 10. Phase 7 محليًا
+
+- البريد يبقى `Mail:Provider=File` في Development/E2E ويكتب في `Mail:DevDropDirectory`. Production يتطلب `Mail:Provider=Smtp` و`Host` و`FromAddress` و`Security=StartTls`؛ بيانات الاعتماد لا توضع في ملف متتبع.
+- دور `PlatformAdmin` لا يُمنح عبر التسجيل العام. بعد إنشاء مستخدم حقيقي وتأكيد بريده، يستطيع مشغل قاعدة البيانات استخدام `scripts/grant-platform-admin.sql` بالطريقة الموثقة في `docs/deployment.md`، ثم يجب تسجيل الدخول مجددًا لإصدار JWT يحمل الدور.
+- صفحة `/platform` تعرض الخطط والعملاء والمستخدمين والاستخدام وسجل التدقيق. نقاط الإدارة نفسها محمية بسياسة `PlatformAdmin` حتى لو استُدعيت خارج الواجهة.
+- نقل المحتوى موجود في `/dashboard/settings` للـOwner: تنزيل ZIP، ثم dry-run إلزامي في الواجهة قبل الاستيراد الفعلي. الـAPI يقبل حتى 250MB ويعيد `413 FileTooLarge` لما يتجاوز ذلك.
+
+تشغيل الإنتاج والنسخ الاحتياطي والاستعادة والـrollback موثق في `docs/deployment.md`؛ القوالب تحت `ops/` والسكربتات تحت `scripts/`.
 
 ## حل المشاكل
 
 - فشل الاتصال بقاعدة البيانات: تأكد أن PostgreSQL يعمل وأن الـ Connection String صحيح، وراجع `/health/ready` (يرجع 503 عند الفشل).
-- الترحيل `dotnet-ef` older than runtime: حدث الأداة `dotnet tool update -g dotnet-ef`.
+- الترحيل `dotnet-ef` older than runtime: حدّث الأداة إلى النسخة المطابقة: `dotnet tool update -g dotnet-ef --version 10.0.10`.
 - تجنّب طباعة أي Secret في الطرفية أو السجلات.
