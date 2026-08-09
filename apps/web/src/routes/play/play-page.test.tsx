@@ -13,6 +13,7 @@ vi.mock('../../data/api-client/endpoints', async (importOriginal) => {
     playerApi: {
       ...actual.playerApi,
       getSession: vi.fn(),
+      getCurrentPlayer: vi.fn(),
       join: vi.fn(),
       startAttempt: vi.fn(),
       getCurrentQuestion: vi.fn(),
@@ -26,6 +27,7 @@ vi.mock('../../data/api-client/endpoints', async (importOriginal) => {
 
 const { playerApi } = await import('../../data/api-client/endpoints');
 const getSessionMock = vi.mocked(playerApi.getSession);
+const getCurrentPlayerMock = vi.mocked(playerApi.getCurrentPlayer);
 const joinMock = vi.mocked(playerApi.join);
 const startAttemptMock = vi.mocked(playerApi.startAttempt);
 
@@ -78,6 +80,8 @@ describe('PlayPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
+    // بلا كوكي صالح افتراضيًا ⇒ يُعرض نموذج الانضمام (بدون أي تخزين للاسم)
+    getCurrentPlayerMock.mockRejectedValue(new HttpError(401, {}));
   });
 
   it('يعرض نموذج الانضمام عندما تكون الجلسة نشطة', async () => {
@@ -249,23 +253,23 @@ describe('PlayPage', () => {
     expect(submitAnswerMock).toHaveBeenCalledTimes(2);
   });
 
-  it('يعيد الربط تلقائيًا بعد إعادة التحميل ويستأنف المحاولة الجارية دون تفاعل', async () => {
-    localStorage.setItem('tp-player-name', 'لاعب عائد');
+  it('يستعيد الجلسة من السيرفر عبر الكوكي ويستأنف المحاولة الجارية دون تفاعل', async () => {
     getSessionMock.mockResolvedValue(activeSession);
-    joinMock.mockResolvedValue({ ...joinResponse, attemptId: 'a-1', attemptStatus: 'InProgress' });
+    getCurrentPlayerMock.mockResolvedValue({ ...joinResponse, attemptId: 'a-1', attemptStatus: 'InProgress' });
     startAttemptMock.mockResolvedValue(startResponse);
     vi.mocked(playerApi.getCurrentQuestion).mockReturnValue(new Promise(() => {}));
     renderPage();
 
-    // لا حاجة لكتابة الاسم أو الضغط على "انضمام" — الربط تلقائي
+    // لا حاجة لكتابة الاسم — /me يقرّر الوجهة من الكوكي فقط، و std::localStorage غير مستخدم
     await waitFor(() => expect(startAttemptMock).toHaveBeenCalledWith('JOIN123'));
     expect(screen.queryByRole('button', { name: 'انضمام' })).not.toBeInTheDocument();
+    expect(getCurrentPlayerMock).toHaveBeenCalledWith('JOIN123');
+    expect(localStorage.getItem('tp-player-name')).toBeNull();
   });
 
-  it('يعيد الربط تلقائيًا ويعرض النتيجة مباشرة لمحاولة منتهية بعد إعادة التحميل', async () => {
-    localStorage.setItem('tp-player-name', 'لاعب سابق');
+  it('يستعيد ويعرض النتيجة مباشرة لمحاولة منتهية بعد إعادة التحميل', async () => {
     getSessionMock.mockResolvedValue(activeSession);
-    joinMock.mockResolvedValue({ ...joinResponse, attemptId: 'a-1', attemptStatus: 'Finished' });
+    getCurrentPlayerMock.mockResolvedValue({ ...joinResponse, attemptId: 'a-1', attemptStatus: 'Finished' });
     const result: AttemptResult = {
       attemptId: 'a-1',
       status: 'Finished',
@@ -288,6 +292,33 @@ describe('PlayPage', () => {
     );
     expect(screen.getByText('5 / 10')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'انضمام' })).not.toBeInTheDocument();
-    expect(joinMock).toHaveBeenCalledWith('JOIN123', { displayName: 'لاعب سابق' });
+    expect(joinMock).not.toHaveBeenCalled();
+    expect(getCurrentPlayerMock).toHaveBeenCalledWith('JOIN123');
+  });
+
+  it('يعرض نموذج الانضمام والاسم منتهي محليًا عند 401 (لا كوكي صالح)', async () => {
+    getSessionMock.mockResolvedValue(activeSession);
+    getCurrentPlayerMock.mockRejectedValue(new HttpError(401, {}));
+    renderPage();
+
+    await waitFor(() => screen.getByRole('button', { name: 'انضمام' }));
+    expect(getCurrentPlayerMock).toHaveBeenCalledWith('JOIN123');
+    expect(localStorage.getItem('tp-player-name')).toBeNull();
+  });
+
+  it('لا يكتب أي شيء في localStorage بعد انضمام ناجح', async () => {
+    getSessionMock.mockResolvedValue(activeSession);
+    joinMock.mockResolvedValue(joinResponse);
+    renderPage();
+
+    await waitFor(() => screen.getByRole('button', { name: 'انضمام' }));
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'لاعب تجريبي' } });
+    fireEvent.click(screen.getByRole('button', { name: 'انضمام' }));
+
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: /لاعب تجريبي/ })).toBeInTheDocument(),
+    );
+    expect(localStorage.getItem('tp-player-name')).toBeNull();
+    expect(localStorage.length).toBe(0);
   });
 });
