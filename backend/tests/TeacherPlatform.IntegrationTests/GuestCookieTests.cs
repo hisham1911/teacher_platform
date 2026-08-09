@@ -12,6 +12,7 @@ namespace TeacherPlatform.IntegrationTests;
 /// Phase 4.1 — إثبات عقد كوكي الضيف في المتصفح الفعلي على مستوى الـHeader:
 /// - Dev/Testing (UseSecureCookie=false): اسم `tp-guest`، HttpOnly، Path=/, Expires، بلا Secure.
 /// - Production (UseSecureCookie=true): اسم `__Host-tp-guest` مع Secure إلزامي.
+/// - الاستعادة عبر `GET /me` من الكوكي فقط (بدون localStorage) وحذف الكوكي العالق عند رمز منتهي.
 /// الـRaw Header هو ما سيتعامل معه المتصفح فعليًا (يُفرض الـ__Host-prefix من المتصفح).
 /// </summary>
 [Trait("Category", "Integration")]
@@ -214,5 +215,116 @@ public class GuestCookieTests : IClassFixture<TestWebApplicationFactory>, IAsync
         Assert.Contains("secure", cookie, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("httponly", cookie, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("path=/", cookie, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task GetCurrentPlayer_WithValidCookie_ReturnsStoredName_AndSameParticipant()
+    {
+        var client = NewClient();
+        var joinCode = await CreateActiveSessionJoinCodeAsync(_factory, client);
+
+        var (participantId, cookieValue) = await JoinAndCaptureAsync(client, joinCode, "لاعب مستأنف");
+
+        var meResponse = await client.SendAsync(GetMeRequest(joinCode, cookieValue));
+        Assert.Equal(HttpStatusCode.OK, meResponse.StatusCode);
+
+        var me = await ReadJson<JsonElement>(meResponse);
+        Assert.Equal("لاعب مستأنف", me.GetProperty("displayName").GetString());
+        Assert.Equal(participantId, me.GetProperty("participantId").GetGuid());
+        Assert.Equal(JsonValueKind.Null, me.GetProperty("attemptId").ValueKind);
+    }
+
+    [Fact]
+    public async Task GetCurrentPlayer_WithStaleCookie_Returns401_AndDeletesCookie()
+    {
+        var client = NewClient();
+        var joinCode = await CreateActiveSessionJoinCodeAsync(_factory, client);
+
+        var staleValue = Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N");
+        var response = await client.SendAsync(GetMeRequest(joinCode, staleValue));
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+
+        var deleteCookie = Assert.Single(
+            response.Headers.GetValues("Set-Cookie"),
+            c => c.StartsWith($"{DevCookieName}=", StringComparison.OrdinalIgnoreCase));
+        Assert.StartsWith($"{DevCookieName}=;", deleteCookie, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("expires=", deleteCookie, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("httponly", deleteCookie, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("path=/", deleteCookie, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("secure", deleteCookie, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task GetCurrentPlayer_WithStaleCookie_DeletesHostPrefixedSecureCookie_Production()
+    {
+        await using var secureFactory = new SecureCookieFactory();
+        await secureFactory.EnsureDatabaseCreatedAsync();
+        var client = secureFactory.CreateClient(
+            new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions { HandleCookies = false });
+
+        var joinCode = await CreateActiveSessionJoinCodeAsync(secureFactory, client);
+
+        var staleValue = Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N");
+        var response = await client.SendAsync(GetMeRequest(joinCode, staleValue, SecureCookieName));
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+
+        var deleteCookie = Assert.Single(
+            response.Headers.GetValues("Set-Cookie"),
+            c => c.StartsWith($"{SecureCookieName}=", StringComparison.OrdinalIgnoreCase));
+        Assert.StartsWith($"{SecureCookieName}=;", deleteCookie, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("expires=", deleteCookie, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("httponly", deleteCookie, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("path=/", deleteCookie, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("secure", deleteCookie, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task GetCurrentPlayer_AfterStartingAttempt_ReturnsAttemptIdAndStatus()
+    {
+        var client = NewClient();
+        var joinCode = await CreateActiveSessionJoinCodeAsync(_factory, client);
+
+        var (_, cookieValue) = await JoinAndCaptureAsync(client, joinCode, "لاعب جارٍ");
+
+        var startRequest = new HttpRequestMessage(HttpMethod.Post,
+            $"/api/v1/player/sessions/{joinCode}/attempts");
+        startRequest.Headers.TryAddWithoutValidation("Cookie", $"{DevCookieName}={cookieValue}");
+        var startResponse = await client.SendAsync(startRequest);
+        Assert.Equal(HttpStatusCode.OK, startResponse.StatusCode);
+        var start = await ReadJson<JsonElement>(startResponse);
+        var attemptId = start.GetProperty("attemptId").GetGuid();
+
+        var meResponse = await client.SendAsync(GetMeRequest(joinCode, cookieValue));
+        Assert.Equal(HttpStatusCode.OK, meResponse.StatusCode);
+        var me = await ReadJson<JsonElement>(meResponse);
+        Assert.Equal(attemptId, me.GetProperty("attemptId").GetGuid());
+        Assert.Equal("InProgress", me.GetProperty("attemptStatus").GetString());
+    }
+
+    // ---------- helpers ----------
+
+    private static HttpRequestMessage GetMeRequest(string joinCode, string cookieValue, string cookieName)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/player/sessions/{joinCode}/me");
+        request.Headers.TryAddWithoutValidation("Cookie", $"{cookieName}={cookieValue}");
+        return request;
+    }
+
+    private static HttpRequestMessage GetMeRequest(string joinCode, string cookieValue) =>
+        GetMeRequest(joinCode, cookieValue, DevCookieName);
+
+    private static async Task<(Guid ParticipantId, string CookieValue)> JoinAndCaptureAsync(
+        HttpClient client, string joinCode, string displayName)
+    {
+        var response = await client.PostAsync($"/api/v1/player/sessions/{joinCode}/join",
+            Json(new { displayName }));
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var payload = await ReadJson<JsonElement>(response);
+        var participantId = payload.GetProperty("participantId").GetGuid();
+
+        var cookie = response.Headers.GetValues("Set-Cookie").First(v => v.StartsWith($"{DevCookieName}="));
+        var cookieValue = cookie.Split(';')[0].Split('=')[1];
+        return (participantId, cookieValue);
     }
 }
