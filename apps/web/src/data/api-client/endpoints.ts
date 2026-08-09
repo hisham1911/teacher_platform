@@ -797,6 +797,14 @@ export const playerApi = {
       signal,
     });
   },
+  /** استعادة اللاعب من الكوكي فقط (بدون localStorage) — يعيد participantId+displayName+attemptState. */
+  getCurrentPlayer(joinCode: string, signal?: AbortSignal) {
+    return call<JoinSessionResponse>({
+      method: 'GET',
+      path: `/api/v1/player/sessions/${encodeURIComponent(joinCode)}/me`,
+      signal,
+    });
+  },
   join(joinCode: string, payload: JoinSessionRequest, signal?: AbortSignal) {
     return call<JoinSessionResponse>({
       method: 'POST',

@@ -8,6 +8,7 @@ import { playerApi } from '../../data/api-client/endpoints';
 import { HttpError } from '../../data/api-client/http-error';
 import type {
   AttemptResult,
+  JoinSessionResponse,
   PlayerQuestion,
   PlayerSession,
   StartAttemptResponse,
@@ -16,6 +17,7 @@ import type {
 /**
  * /play/:joinCode — واجهة الطالب (Phase 4).
  * مجهولة تمامًا: الـGuest Token في HttpOnly Cookie يُرسل تلقائيًا.
+ * الاستعادة بعد إعادة التحميل من السيرفر فقط عبر GET /me (لا localStorage).
  * mobile-first · RTL · أهداف لمس ≥44px · الاسم 2-50 حرفًا.
  */
 
@@ -26,9 +28,6 @@ type PlayerStage =
   | { kind: 'playing'; attempt: StartAttemptResponse }
   | { kind: 'result'; attemptId: string }
   | { kind: 'unavailable'; message: string };
-
-/** مفتاح تخزين اسم الطالب محليًا لإعادة الربط تلقائيًا بعد إعادة تحميل الصفحة */
-const PLAYER_NAME_KEY = 'tp-player-name';
 
 /** انحراف ساعة الخادم عن ساعة العميل — يُحدَّث مع كل استجابة تحمل serverNow */
 function useServerClock() {
@@ -85,13 +84,8 @@ export default function PlayPage() {
       const s = sessionQuery.data;
       if (s.status === 'Active' && s.canJoin) {
         setStage({ kind: 'join', session: s });
-        const savedName = localStorage.getItem(PLAYER_NAME_KEY)?.trim();
-        if (savedName && savedName.length >= 2 && savedName.length <= 50) {
-          // إعادة ربط تلقائية بعد إعادة تحميل الصفحة: الـjoin يعيد تحديد وجهة المحاولة
-          // (استئناف/نتيجة/بدء) من حالة الخادم الفعلية.
-          setDisplayName(savedName);
-          joinMutation.mutate(savedName);
-        }
+        // الاستعادة بعد F5 من السيرفر عبر الكوكي فقط — بدون حفظ الاسم في localStorage
+        restoreMutation.mutate();
       } else if (s.status === 'Scheduled') {
         setStage({ kind: 'unavailable', message: 'الجلسة لم تُفعَّل بعد. انتظر المعلم.' });
       } else if (s.status === 'Finished') {
@@ -112,25 +106,44 @@ export default function PlayPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionQuery.isSuccess, sessionQuery.isError, sessionQuery.data, sessionQuery.error, stage.kind]);
 
+  // يوجه اللاعب حسب حالة الخادم الفعلية (منسّق مشترك بين /me و /join)
+  function dispatchResult(joinCode: string, result: JoinSessionResponse) {
+    if (result.attemptId && result.attemptStatus === 'InProgress') {
+      // استئناف محاولة قائمة (F5 / إعادة فتح)
+      startMutation.mutate();
+    } else if (result.attemptId && (result.attemptStatus === 'Finished' || result.attemptStatus === 'TimedOut')) {
+      // محاولة منتهية — نعرض النتيجة مباشرة دون شاشة استعداد
+      void queryClient.invalidateQueries({ queryKey: ['player-result', joinCode, result.attemptId] });
+      setStage({ kind: 'result', attemptId: result.attemptId });
+    } else {
+      setStage((prev) =>
+        prev.kind === 'join' || prev.kind === 'ready'
+          ? { kind: 'ready', session: prev.session, displayName: result.displayName, attemptId: result.attemptId }
+          : prev,
+      );
+    }
+  }
+
+  // استعادة تلقائية بعد إعادة تحميل الصفحة: السيرفر يقرّر الوجهة من الكوكي فقط
+  const restoreMutation = useMutation({
+    mutationFn: () => playerApi.getCurrentPlayer(joinCode!),
+    onSuccess: (result) => {
+      setActionError(null);
+      dispatchResult(joinCode!, result);
+    },
+    onError: (error) => {
+      // 401 = لا كوكي صالح ⇒ نترك شاشة الانضمام. بقية الأخطاء غير مؤذية للعرض.
+      if (!(error instanceof HttpError && error.status === 401)) {
+        setActionError('تعذر استعادة جلستك. أدخل اسمك للانضمام من جديد.');
+      }
+    },
+  });
+
   const joinMutation = useMutation({
     mutationFn: (name: string) => playerApi.join(joinCode!, { displayName: name }),
     onSuccess: (result) => {
       setActionError(null);
-      localStorage.setItem(PLAYER_NAME_KEY, result.displayName);
-      if (result.attemptId && result.attemptStatus === 'InProgress') {
-        // استئناف محاولة قائمة (F5 / إعادة فتح)
-        startMutation.mutate();
-      } else if (result.attemptId && (result.attemptStatus === 'Finished' || result.attemptStatus === 'TimedOut')) {
-        // محاولة منتهية — نعرض النتيجة مباشرة دون شاشة استعداد
-        void queryClient.invalidateQueries({ queryKey: ['player-result', joinCode, result.attemptId] });
-        setStage({ kind: 'result', attemptId: result.attemptId });
-      } else {
-        setStage((prev) =>
-          prev.kind === 'join' || prev.kind === 'ready'
-            ? { kind: 'ready', session: prev.session, displayName: result.displayName, attemptId: result.attemptId }
-            : prev,
-        );
-      }
+      dispatchResult(joinCode!, result);
     },
     onError: (error) => {
       if (error instanceof HttpError && error.status === 409) {
