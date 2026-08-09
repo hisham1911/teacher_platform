@@ -79,8 +79,8 @@ ASP.NET Core Web API (Kestrel خلف Nginx)
   `BaseVersion` قديمة تعيد `409 Conflict`.
 - **Public Code** (`PublicCode`) يُولّد تلقائيًا عند الإنشاء (GUID-only، 32 حرفًا)
   ويُستخدم للوصول العام للاختبار المنشور عبر `GET /api/v1/public/quizzes/{publicCode}`.
-- **Quiz Limit** (`IQuizLimitService`) يفرض حدًا أقصى للاختبارات النشطة لكل Tenant
-  (افتراضي 50، قابل للإعداد عبر `Quiz:MaxActivePerTenant`).
+- **Quiz Limits** (`IQuizLimitService`) تفرض حدودًا مستأجر-scoped عبر قسم `QuizLimits`:
+  `MaxQuizzesPerTenant` (100)، و`MaxQuestionsPerQuiz` (200)، و`MaxPublishedQuizzesPerTenant` (50).
 
 ## Phase 4 — الجلسات ومشغل الطالب والتصحيح الخادمي
 
@@ -88,7 +88,8 @@ ASP.NET Core Web API (Kestrel خلف Nginx)
   (SelfPaced فقط في Phase 4 — Live مرفوض بـ`LiveModeNotAvailable`)، `Status`
   (Scheduled/Active/Finished/Cancelled)، و`QuizVersionId` يُثبَّت عند التفعيل.
 - **SessionParticipant** يمثل طالبًا بلا حساب: رمز ضيف 256-bit يُخزن **هاش SHA-256
-  فقط** ويُقارن بمقارنة ثابتة الزمن، ويُنقل بكوكي HttpOnly (`__Host-tp-guest`) —
+  فقط** ويُقارن بمقارنة ثابتة الزمن، ويُنقل بكوكي HttpOnly يعتمد اسمه على
+  `Auth:UseSecureCookie` (`__Host-tp-guest` في الوضع الآمن، و`tp-guest` عند `false`) —
   التفاصيل في ADR 007. `ShuffleSeed` لكل مشارك يقود خلطًا حتميًا للأسئلة
   (`SeededShuffler`) فيرى الطالب نفس الترتيب عبر الجلسات والاستئناف.
 - **Attempt / AttemptAnswer**: محاولة واحدة نشطة لكل مشارك؛ الإجابات Immutable
@@ -99,3 +100,9 @@ ASP.NET Core Web API (Kestrel خلف Nginx)
 - **سلطة الوقت خادمية**: `serverNow` في كل استجابة، و`DeadlineAt` يُفرض بأسلوب
   settle-on-request — أي طلب بعد انقضاء الوقت يُنهي المحاولة `TimedOut` ثم يُرد.
 - **Rate Limiting** على كل نقاط اللاعب `[AllowAnonymous]` لإبطاء تخمين JoinCode.
+
+## Phase 4.1 — تحصين المتصفح والتحقق من حمولات الإجابة
+
+- استعادة اللاعب بعد F5 من الخادم فقط عبر `GET /api/v1/player/sessions/{joinCode}/me`؛ لا يعتمد Player على `localStorage` لاستعادة الاسم أو الجلسة.
+- `InvalidAnswerPayload` يُرفض بـ`400` قبل حفظ الإجابة أو حساب الدرجة أو الانتقال للسؤال التالي.
+- يوجد Playwright E2E harness داخل `e2e/`، مع Cookie ضيف HttpOnly وإعدادات بيئة E2E قابلة للتشغيل.

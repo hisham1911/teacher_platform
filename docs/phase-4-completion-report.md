@@ -108,6 +108,8 @@ GET    /player/sessions/{joinCode}/attempts/{attemptId}/media/{mediaId}
 
 ## نقص حقيقي (غير مُجمل)
 
+> هذا القسم يصف حالة إغلاق Phase 4 الأساسية قبل Phase 4.1. عالجت Phase 4.1 غياب harness المتصفح الحقيقي وأضافت أدوات Playwright داخل `e2e/`؛ لذلك فالبند التالي تاريخي وليس وصفًا للحالة الحالية.
+
 1. **لا يوجد Live Mode** — مؤجل لـPhase 6 (SignalR)؛ الطلب يرفض صراحة بـ`LiveModeNotAvailable`.
 2. **لا يوجد E2E Playwright** — التغطية Integration + Frontend unit؛ E2E مؤجل لـPhase 8.
 3. **settle-on-request** يعني أن محاولة منتهية الوقت بلا تفاعل تبقى `InProgress` حتى أول طلب لاحق — لا أثر وظيفي (ADR 008).

@@ -152,6 +152,7 @@ POST   /api/v1/tenants/{tenantId}/quizzes/{quizId}/sessions/{sessionId}/cancel  
 ```text
 GET    /api/v1/player/sessions/{joinCode}                                   # metadata الجلسة (بدون أسئلة)
 POST   /api/v1/player/sessions/{joinCode}/join                              # انضمام بالاسم — يعيد participantId + كوكي ضيف
+GET    /api/v1/player/sessions/{joinCode}/me                                # استعادة اللاعب من كوكي الضيف فقط
 POST   /api/v1/player/sessions/{joinCode}/attempts                          # بدء محاولة — يتطلب كوكي الضيف
 GET    /api/v1/player/sessions/{joinCode}/attempts/{attemptId}/current-question  # السؤال الحالي + serverNow + deadlineAt
 POST   /api/v1/player/sessions/{joinCode}/attempts/{attemptId}/answers      # إرسال إجابة (Idempotent)
@@ -159,6 +160,26 @@ POST   /api/v1/player/sessions/{joinCode}/attempts/{attemptId}/finish       # إ
 GET    /api/v1/player/sessions/{joinCode}/attempts/{attemptId}/result       # النتيجة بعد الإنهاء
 GET    /api/v1/player/sessions/{joinCode}/attempts/{attemptId}/media/{mediaId}   # وسائط سؤال داخل المحاولة
 ```
+
+`GET /api/v1/player/sessions/{joinCode}/me` يعيد `JoinSessionResponse` بنفس الحقول
+المستخدمة بعد `join`:
+
+```json
+{
+  "participantId": "guid",
+  "displayName": "اسم الطالب",
+  "attemptId": "guid أو null",
+  "attemptStatus": "InProgress أو Finished أو TimedOut أو null"
+}
+```
+
+يُستخدم الرد لتحديد شاشة الاستعادة دون تخزين الاسم أو حالة الجلسة محليًا:
+
+- **start:** `attemptId: null` و`attemptStatus: null` — يبقى الطالب في شاشة الاستعداد ويبدأ محاولة جديدة عند الطلب.
+- **resume:** `attemptId` موجود و`attemptStatus: InProgress` — يستدعي العميل بدء المحاولة idempotently لاستعادة المحاولة الحالية.
+- **result:** `attemptId` موجود و`attemptStatus: Finished` أو `TimedOut` — ينتقل العميل إلى جلب النتيجة عبر مسار `result`.
+
+يتطلب المسار كوكي الضيف؛ غيابه أو عدم صلاحيته يعيد `401`، وعدم وجود الجلسة يعيد `404`.
 
 قواعد:
 - كل نقاط اللاعب `[AllowAnonymous]` ومحدودة المعدل؛ نقاط المحاولة تتطلب كوكي الضيف (`__Host-tp-guest` في Production، `tp-guest` في Development) — بدونها `401`.
@@ -179,6 +200,11 @@ GET    /api/v1/player/sessions/{joinCode}/attempts/{attemptId}/media/{mediaId}  
 - `409 Conflict`: تعديل بـ`BaseVersion` قديم؛ `AnswerConflict` لإجابة مختلفة لنفس السؤال؛ `SessionNotActive`/`AttemptFinished` لعمليات على جلسة/محاولة غير نشطة.
 - `413 Payload Too Large`: ملف يتجاوز `ImageMaxBytes`/`AudioMaxBytes`.
 - `429`: تجاوز معدل الطلبات على نقاط اللاعب.
+
+### رفض حمولة الإجابة
+
+- **`InvalidAnswerPayload`:** إذا كانت `AnswerJson` غير صالحة بنيويًا للسؤال المثبت، يعيد الخادم `400` بعنوان الخطأ `InvalidAnswerPayload`.
+- يحدث الرفض قبل حفظ `AttemptAnswer` أو حساب الدرجة؛ لذلك لا تُحفظ الإجابة، ولا تحصل على Score، ولا يتقدم الطالب إلى السؤال التالي.
 
 ## Pagination
 

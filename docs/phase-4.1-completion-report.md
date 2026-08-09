@@ -2,7 +2,7 @@
 
 **التاريخ:** 2026-08-08
 **الفرع:** `fix/phase-4-player-browser-hardening`
-**القاعدة:** `bc9042e` (نهاية Phase 4)
+**Implementation/base SHA (تاريخي):** `bc9042e3804127564868fa855a279b8e722c42fe` — حالة نهاية Phase 4 وقبل تغييرات Phase 4.1.
 
 ---
 
@@ -102,9 +102,11 @@
 - `238b307` test(web): /me restore flows + no-localStorage assertions
 - `660865a` infra(e2e): tracked E2E env + repo harness (seed/specs/run scripts)
 - `1b128cc` docs: Phase 4.1 completion report — cookie-only /me, E2E harness in repo
+- `3724377` docs: recorded the previous completion-report SHA
+- `409f57f` docs: recorded the previous completion-report SHA
+- `9f68bc5` docs: Phase 4.1 close — final SHA 409f57f
 
-**Final SHA:** `git rev-parse HEAD` = `409f57f` (رأس فرع الإغلاق)
-**Git:** `git status --short` فارغ بعد commit التوثيق.
+هذه هي **closing documentation commits** التاريخية. لا يسجل هذا التقرير `Current HEAD`، لأن Commit التوثيق نفسه يغيّر الرأس وقد يجعل قيمة ثابتة قديمة أو self-referential. للحصول على الحالة الحالية استخدم مباشرة `git rev-parse HEAD` و`git status --short`.
 
 ---
 

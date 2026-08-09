@@ -73,7 +73,7 @@ npm run dev        # http://localhost:5173
 npm run lint && npm run typecheck && npm run test && npm run build
 ```
 
-- `npm run preview` لتشغيل ناتج `dist` محليًا والتحقق أن `/dashboard` و`/play/demo` يعملان عند الفتح المباشر والتحديث.
+- `npm run preview` لتشغيل ناتج `dist` محليًا والتحقق أن `/dashboard` و`/play/{joinCode}` يعملان عند الفتح المباشر والتحديث؛ استخدم `JoinCode` من جلسة فعالة.
 
 ### الباك إند (من backend)
 
@@ -216,7 +216,7 @@ curl -X POST http://localhost:5000/api/v1/tenants/{tenantId}/quizzes/{quizId}/pu
 ```
 
 - الوصول العام (بدون مصادقة): `GET /api/v1/public/quizzes/{publicCode}` — metadata فقط (لا أسئلة/خيارات/إجابات). صفحة الهبوط في الواجهة: `http://localhost:5173/q/{publicCode}`.
-- حد الاختبارات النشطة: `Quiz:MaxActivePerTenant` (افتراضي 50) — تجاوزه عند الإنشاء يعيد `403 QuizLimitExceeded`. الأرشفة تحرر السعة.
+- حدود الاستخدام: `QuizLimits:MaxQuizzesPerTenant` (افتراضي 100) للاختبارات غير المؤرشفة، و`MaxQuestionsPerQuiz` (افتراضي 200)، و`MaxPublishedQuizzesPerTenant` (افتراضي 50). التجاوز يعيد `403 QuotaExceeded`، والأرشفة تحرر السعة المناسبة.
 - تعديل المسودة يتطلب `baseVersion` (xmin) من آخر قراءة؛ الاختلاف يعيد `409 Conflict`.
 - صفحة النشر في الواجهة تعرض رابط المشاركة + QR Code بعد النشر (وللمنشور سابقًا عبر `GET .../share`).
 

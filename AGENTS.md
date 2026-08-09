@@ -28,8 +28,16 @@ scripts/           سكربتات مساعدة
 - جداول جديدة: Quizzes, QuizVersions, QuizVersionItems. الاختبار = هوية + مؤشرات (CurrentDraft/CurrentPublished)؛ المحتوى في QuizVersion Immutable، وQuizVersionItem يثبّت QuestionVersionId.
 - النشر يتطلب IsValid على المسودة وينقل المؤشر ذرّيًا؛ BaseVersion (xmin) mismatch → 409.
 - الوصول العام: `GET /api/v1/public/quizzes/{publicCode}` بدون مصادقة — metadata فقط (لا أسئلة/خيارات/إجابات). صفحة الهبوط: `/q/:publicCode` خارج RequireAuth.
-- حد الاختبارات النشطة: `Quiz:MaxActivePerTenant` (افتراضي 50) عبر IQuizLimitService؛ التجاوز → 403 QuizLimitExceeded.
+- حدود الاستخدام: `QuizLimits` (`MaxQuizzesPerTenant` افتراضيًا 100، `MaxQuestionsPerQuiz` افتراضيًا 200، و`MaxPublishedQuizzesPerTenant` افتراضيًا 50) عبر IQuizLimitService؛ التجاوز → 403 `QuotaExceeded`.
 - المشاركة: `GET .../quizzes/{id}/share` يعيد PublicCode + ShareUrl؛ صفحة النشر تعرض الرابط + QR Code (react-qr-code).
+
+## الحالة الحالية (بعد Phase 4.1)
+
+- **Phase 4:** Student Player / Sessions / Server-side scoring.
+- **Phase 4.1:** Answer payload validation + real-browser hardening.
+- استعادة اللاعب بعد F5 أصبحت Server-side عبر `GET /api/v1/player/sessions/{joinCode}/me`.
+- Player لا يعتمد على `localStorage` لاستعادة `DisplayName` أو حالة الجلسة؛ Guest session تعتمد على HttpOnly Guest Cookie.
+- Playwright E2E harness موجود داخل `e2e/`، وPhase 5 لم تبدأ.
 
 ## قواعد إلزامية
 
