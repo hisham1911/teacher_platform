@@ -31,13 +31,17 @@ scripts/           سكربتات مساعدة
 - حدود الاستخدام: `QuizLimits` (`MaxQuizzesPerTenant` افتراضيًا 100، `MaxQuestionsPerQuiz` افتراضيًا 200، و`MaxPublishedQuizzesPerTenant` افتراضيًا 50) عبر IQuizLimitService؛ التجاوز → 403 `QuotaExceeded`.
 - المشاركة: `GET .../quizzes/{id}/share` يعيد PublicCode + ShareUrl؛ صفحة النشر تعرض الرابط + QR Code (react-qr-code).
 
-## الحالة الحالية (بعد Phase 4.1)
+## الحالة الحالية (بعد Phase 5)
 
 - **Phase 4:** Student Player / Sessions / Server-side scoring.
 - **Phase 4.1:** Answer payload validation + real-browser hardening.
 - استعادة اللاعب بعد F5 أصبحت Server-side عبر `GET /api/v1/player/sessions/{joinCode}/me`.
 - Player لا يعتمد على `localStorage` لاستعادة `DisplayName` أو حالة الجلسة؛ Guest session تعتمد على HttpOnly Guest Cookie.
-- Playwright E2E harness موجود داخل `e2e/`، وPhase 5 لم تبدأ.
+- **Phase 5:** تقارير الجلسات والمحاولات وتحليلات الأسئلة وتصدير CSV، منشئ استبانة وإرسالها، وشهادات PDF للناجحين فقط.
+- إصدار الشهادة Idempotent ويجري عبر `OutboxMessages` و`OutboxWorker`؛ الفشل قابل لإعادة المحاولة من شاشة `/dashboard/certificates`.
+- مشاركة ولي الأمر تستخدم رابط نتيجة محدودًا ومؤقتًا؛ الشهادة العامة تستخدم رمزًا عشوائيًا ولا تكشف إجابات طالب آخر.
+- Playwright E2E harness داخل `e2e/` يغطي الاستعادة بعد F5، التقرير/CSV، الاستبانة، شهادة النجاح، وعدم إصدارها عند الرسوب.
+- Phase 6 (Live Competition / SignalR) لم تبدأ.
 
 ## قواعد إلزامية
 

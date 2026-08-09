@@ -86,7 +86,7 @@ ASP.NET Core Web API (Kestrel خلف Nginx)
 
 - **QuizSession** يربط اختبارًا منشورًا بجمهور: `JoinCode` عام (8 أحرف)، `Mode`
   (SelfPaced فقط في Phase 4 — Live مرفوض بـ`LiveModeNotAvailable`)، `Status`
-  (Scheduled/Active/Finished/Cancelled)، و`QuizVersionId` يُثبَّت عند التفعيل.
+  (Scheduled/Active/Finished/Cancelled)، و`QuizVersionId` يُثبَّت عند إنشاء الجلسة.
 - **SessionParticipant** يمثل طالبًا بلا حساب: رمز ضيف 256-bit يُخزن **هاش SHA-256
   فقط** ويُقارن بمقارنة ثابتة الزمن، ويُنقل بكوكي HttpOnly يعتمد اسمه على
   `Auth:UseSecureCookie` (`__Host-tp-guest` في الوضع الآمن، و`tp-guest` عند `false`) —
@@ -106,3 +106,12 @@ ASP.NET Core Web API (Kestrel خلف Nginx)
 - استعادة اللاعب بعد F5 من الخادم فقط عبر `GET /api/v1/player/sessions/{joinCode}/me`؛ لا يعتمد Player على `localStorage` لاستعادة الاسم أو الجلسة.
 - `InvalidAnswerPayload` يُرفض بـ`400` قبل حفظ الإجابة أو حساب الدرجة أو الانتقال للسؤال التالي.
 - يوجد Playwright E2E harness داخل `e2e/`، مع Cookie ضيف HttpOnly وإعدادات بيئة E2E قابلة للتشغيل.
+
+## Phase 5 — التقارير والاستبانة والشهادات
+
+- **التقارير** مشتقة عند الطلب من `Attempts` و`AttemptAnswers`؛ لا توجد أرقام تجريبية أو Cache إحصائي. الاستعلامات خاضعة لمرشح المستأجر، وتصدير CSV يمر بسياسة Rate Limit مستقلة ويعالج Spreadsheet Formula Injection.
+- **الاستبانة** واحدة لكل Quiz. تبقى قابلة للتعديل في `Draft` مع `xmin`، ثم تصبح Immutable بعد `Published`. يستطيع صاحب المحاولة المكتملة إرسال رد واحد فقط من الأنواع `Rating` و`SingleChoice` و`ShortText`.
+- **الشهادة** تُصدر Idempotently لمحاولة ناجحة فقط. يسجل Transaction واحد Snapshot بيانات الشهادة ورسالة `CertificateGenerationRequested`؛ ثم يعالج `OutboxWorker` الرسالة خارج الطلب، يولد PDF عربيًا عبر QuestPDF، ويخزنه من خلال `IObjectStorage`.
+- **Outbox** داخل نفس PostgreSQL: claim ذري، قفل مؤقت، عداد محاولات، Backoff، وحالة فشل نهائية يمكن للمعلم إعادة تشغيلها. مفتاح الملف حتمي `certificates/{tenantId}/{certificateId}.pdf`، لذلك إعادة المعالجة لا تنشئ نسخة ثانية.
+- **الروابط العامة** لا تستخدم معرّفات قاعدة البيانات كأسرار. هاش رمز الشهادة فقط هو المفتاح القابل للبحث، بينما تُحمى نسخته القابلة لإعادة العرض عبر ASP.NET Core Data Protection. رابط ولي الأمر له رمز مستقل مخزن كهاش وينتهي افتراضيًا بعد 7 أيام، وDTO العام محدود بملخص النتيجة ومجالات المراجعة ورابط الشهادة الجاهزة.
+- خيارات التشغيل تحت `Certificates`. الإنتاج يفشل عند غياب اختيار `QuestPdfLicense`، ويتطلب مفاتيح Data Protection دائمة وخطًا متوافقًا (`DejaVu Sans` افتراضيًا على Linux). التفاصيل في ADR 009.

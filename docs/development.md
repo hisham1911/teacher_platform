@@ -256,14 +256,28 @@ Remove-Item Env:ConnectionStrings__DefaultConnection
 
 ```powershell
 cd e2e
-npm install
+npm ci
 .\run-e2e.ps1
+```
+
+السكربت يشغّل `npm ci` أيضًا داخل `apps/web`، ولا يوقف إلا process trees التي بدأها. عند انشغال المنافذ الافتراضية استخدم مثلًا:
+
+```powershell
+.\run-e2e.ps1 -ApiPort 5100 -WebPort 5273
 ```
 
 3. البديل اليدوي (لتشخيص/عزل): شغّل `e2e/run-api.cmd` (يثبّت بيئة `E2E` تلقائيًا) ثم `e2e/run-web.cmd`، ثم `node e2e\seed.mjs`، ثم `npx playwright test tests/part-a.spec.mjs`؛ أعِد تشغيل الـAPI ثم `tests/part-b.spec.mjs`.
 
 - بيئة `E2E` مصممة بحيث: `UseSecureCookie=false` (كوكي `tp-guest` على localhost بدون secure)، `RateLimiting.PermitLimit=200` (لا يخل بجريان الأتمتة)، وقاعدة متميزة عن التطوير والاختبار.
+- Part A يغطي الاستعادة server-side بعد F5. Part B يغطي النجاح والشهادة وPDF والاستبانة ومشاركة ولي الأمر وتقرير المعلم وCSV، إضافة إلى رسوب معزول بلا شهادة.
 - التشغيل والتنظيف مفصّلان في `e2e/README.md`.
+
+## 9. متطلبات تشغيل الشهادات
+
+- يجب اختيار `Certificates:QuestPdfLicense` صراحةً في Production (`Community` أو `Professional` أو `Enterprise`) بعد التحقق القانوني من أهلية الترخيص؛ التطبيق يفشل عند غياب الاختيار.
+- الخط الافتراضي على Windows هو `Arial` وعلى Linux هو `DejaVu Sans`. ثبّت حزمة الخط المناسبة (مثل `fonts-dejavu-core`) أو اضبط اسم عائلة متاحة عبر `Certificates:LinuxFontFamily`.
+- لأن `PublicTokenProtected` يعتمد ASP.NET Core Data Protection، استخدم `DataProtection:KeysDirectory` دائمًا خارج release directory وعلى تخزين دائم في Production.
+- `Storage:Provider=Local` مناسب للتطوير/E2E فقط. محول S3 الحالي fail-fast وغير منفذ؛ لا تضبط `Provider=S3` في Production قبل توصيل SDK وSecret store واختبار القراءة/الكتابة. هذا قيد تسليم مسجل للمرحلة اللاحقة.
 
 ## حل المشاكل
 

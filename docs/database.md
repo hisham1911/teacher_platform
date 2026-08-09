@@ -1,4 +1,4 @@
-# قاعدة البيانات — Phase 3 (Quiz Builder & Publishing)
+# قاعدة البيانات — حتى Phase 5
 
 التعريفات الإضافية فوق Phase 0/1/2:
 
@@ -73,12 +73,11 @@
 | Id | uuid PK + `AK (Id, TenantId)` | |
 | TenantId | uuid | ITenantEntity |
 | QuizId | uuid | FK مركب → `Quizzes (Id, TenantId)` NoAction |
-| QuizVersionId | uuid nullable | يُثبَّت عند التفعيل → `QuizVersions (Id, TenantId)` NoAction |
-| Title | varchar(200) | |
-| JoinCode | varchar(8) | unique per Tenant — يوزعه المعلم |
+| QuizVersionId | uuid | يُثبَّت عند الإنشاء → `QuizVersions (Id, TenantId)` NoAction |
+| JoinCode | varchar(32) | unique عالميًا — يولّد حاليًا في الخدمة بطول 8 أحرف |
 | Mode | int | SelfPaced=1, Live=2 (Live مرفوض في Phase 4) |
 | Status | int | Scheduled=1, Active=2, Finished=3, Cancelled=4 |
-| ScheduledStartAt/ScheduledEndAt | timestamptz nullable | |
+| Label | varchar(200) nullable | عنوان وصفي اختياري للجلسة |
 | ActivatedAt/FinishedAt | timestamptz nullable | |
 | xmin | xid | RowVersion (`BaseVersion` لعمليات الحالة) |
 | CreatedAt/UpdatedAt | timestamptz | |
@@ -89,12 +88,12 @@
 |--------|------|-------|
 | Id | uuid PK + `AK (Id, TenantId)` | |
 | TenantId | uuid | |
-| QuizSessionId | uuid | FK مركب → `QuizSessions (Id, TenantId)` NoAction |
+| SessionId | uuid | FK مركب → `QuizSessions (Id, TenantId)` NoAction |
 | DisplayName | varchar(50) | 2..50 حرفًا |
 | GuestTokenHash | varchar(64) | SHA-256 hex — الرمز الخام لا يُخزن أبدًا |
-| ShuffleSeed | int | خلط حتمي للأسئلة لكل مشارك |
+| GuestTokenExpiresAt | timestamptz | انتهاء صلاحية هوية الضيف |
 | JoinedAt | timestamptz | |
-| CreatedAt | timestamptz | |
+| CreatedAt/UpdatedAt | timestamptz | |
 
 ### Attempts
 
@@ -102,14 +101,20 @@
 |--------|------|-------|
 | Id | uuid PK + `AK (Id, TenantId)` | |
 | TenantId | uuid | |
-| QuizSessionId | uuid | FK مركب NoAction |
-| SessionParticipantId | uuid | FK مركب → `SessionParticipants (Id, TenantId)` NoAction |
+| SessionId | uuid | FK مركب → `QuizSessions (Id, TenantId)` NoAction |
+| ParticipantId | uuid | FK مركب → `SessionParticipants (Id, TenantId)` NoAction |
+| ShuffleSeed | int | خلط حتمي للأسئلة لكل محاولة |
+| Revision | int | يتزايد مع كل إجابة للتحكم في التزامن |
 | Status | int | InProgress=1, Finished=2, TimedOut=3 |
 | StartedAt | timestamptz | خادمي |
 | DeadlineAt | timestamptz nullable | خادمي — settle-on-request |
 | FinishedAt | timestamptz nullable | |
 | CurrentQuestionIndex | int | للاستئناف بعد F5 |
-| TotalScore | decimal nullable | يُحسب عند الإنهاء |
+| DurationMs | bigint nullable | المدة الفعلية بالمللي ثانية |
+| Score/MaxScore | decimal(10,2) nullable | تُحسب عند الإنهاء |
+| Percentage | decimal(5,2) nullable | النسبة النهائية |
+| Passed | bool nullable | قرار النجاح الخادمي |
+| xmin | xid | RowVersion للتزامن |
 | CreatedAt/UpdatedAt | timestamptz | |
 
 ### AttemptAnswers
@@ -122,7 +127,7 @@
 | QuizVersionItemId | uuid | FK مركب → `QuizVersionItems (Id, TenantId)` NoAction |
 | AnswerJson | **jsonb** | يطبّعه PostgreSQL — المقارنة دلالية (ADR 008) |
 | IsCorrect | bool nullable | يُحسب خادميًا عند الإرسال |
-| ScoreAwarded | decimal | |
+| ScoreAwarded | decimal(10,2) nullable | |
 | AnsweredAt | timestamptz | |
 
 unique per `(AttemptId, QuizVersionItemId)` — إجابة واحدة لكل سؤال (Idempotency).
@@ -135,6 +140,25 @@ unique per `(AttemptId, QuizVersionItemId)` — إجابة واحدة لكل س�
 - لا Cascade Delete: كل علاقات Phase 4 `DeleteBehavior.NoAction`.
 - الوقت خادمي: `StartedAt`/`DeadlineAt`/`FinishedAt` تُضبط على الخادم فقط.
 
+## Phase 5 — الاستبانة والشهادات والتوليد غير المتزامن
+
+### Surveys
+
+- `Surveys`: استبانة واحدة لكل `(TenantId, QuizId)`، بحالة Draft/Published و`xmin` للتزامن.
+- `SurveyQuestions`: ترتيب فريد داخل الاستبانة، ونوع `Rating` أو `SingleChoice` أو `ShortText`، ونص حتى 500 حرف.
+- `SurveyOptions`: ترتيب فريد داخل السؤال ونص حتى 200 حرف؛ حذف سؤال المسودة يحذف خياراته فقط.
+- `SurveyResponses`: استجابة واحدة لكل `(SurveyId, AttemptId)`، وترتبط بمحاولة مكتملة داخل المستأجر.
+- `SurveyAnswers`: إجابة واحدة لكل سؤال في الاستجابة؛ تخزن واحدًا من `RatingValue` أو `SelectedOptionId` أو `TextValue` (حتى 1000 حرف) حسب النوع.
+
+### Certificates وParentResultShares
+
+- `CertificateTemplates`: قوالب Tenant-scoped مع اسم فريد، وقالب افتراضي واحد كحد أقصى لكل مستأجر، و`xmin` للتزامن.
+- `Certificates`: شهادة واحدة لكل محاولة؛ تحفظ لقطة اسم الطالب والاختبار والنسبة ونصوص/ألوان القالب. رقم الشهادة فريد داخل المستأجر، و`PublicTokenHash` فريد عالميًا، بينما الرمز القابل لإعادة عرضه محفوظ مشفرًا عبر Data Protection في `PublicTokenProtected`.
+- `ParentResultShares`: رابط نتيجة مستقل ذو `TokenHash` فريد عالميًا و`ExpiresAt`؛ لا يُخزن الرمز الخام.
+- `OutboxMessages`: رسالة توليد الشهادة في نفس transaction، مع `NextAttemptAt` وعداد المحاولات وحقول القفل والمعالجة والخطأ. `PayloadJson` من نوع `jsonb`.
+
+كل الكيانات السابقة Tenant-scoped. علاقات المحاولات/الشهادات/المشاركة `NoAction`، بينما حذف سؤال استبانة مسودة أو استجابتها يزيل العناصر التابعة المناسبة فقط.
+
 ## Migrations
 
 ترتيب التطبيق على قاعدة فارغة (tested in CI):
@@ -144,5 +168,7 @@ unique per `(AttemptId, QuizVersionItemId)` — إجابة واحدة لكل س�
 4. `20260802040730_CreateMediaAssetsAndQuestionBank` (Phase 2)
 5. `20260802223105_CreateQuizBuilderAndPublishing` (Phase 3)
 6. `20260804014225_CreateSessionsAndAttempts` (Phase 4 — QuizSessions, SessionParticipants, Attempts, AttemptAnswers)
+7. `20260809175242_CreateSurveys` (Phase 5 — Surveys, SurveyQuestions, SurveyOptions, SurveyResponses, SurveyAnswers)
+8. `20260809185405_CreateCertificatesAndOutbox` (Phase 5 — CertificateTemplates, Certificates, ParentResultShares, OutboxMessages)
 
-كلها تُولّد Idempotent SQL عبر `dotnet ef migrations script --idempotent` وتُطبق يدويًا بعد Backup في أي بيئةإنتاجية. سكربت Phase 4 Idempotent طُبّق مرتين على قاعدة CI بنجاح.
+كلها تُولّد Idempotent SQL عبر `dotnet ef migrations script --idempotent` وتُطبق يدويًا بعد Backup في أي بيئة إنتاجية.

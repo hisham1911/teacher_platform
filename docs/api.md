@@ -144,7 +144,7 @@ POST   /api/v1/tenants/{tenantId}/quizzes/{quizId}/sessions/{sessionId}/cancel  
 قواعد:
 - Phase 4 تدعم `SelfPaced` فقط — إنشاء جلسة `Mode=Live` يرفض بـ`400 LiveModeNotAvailable`.
 - `JoinCode` (8 أحرف) يُولّد عند الإنشاء ويظهر في التفاصيل — يوزعه المعلم على الطلاب.
-- `activate` تتطلب اختبارًا منشورًا (`CurrentPublishedVersionId` غير null) وتثبّت `QuizVersionId` على الجلسة.
+- إنشاء الجلسة يتطلب اختبارًا منشورًا (`CurrentPublishedVersionId` غير null) ويثبّت `QuizVersionId` عليها؛ `activate` يغيّر حالة الجلسة دون تبديل النسخة.
 - `baseVersion` (xmin) مطلوب لعمليات الحالة — اختلافه → `409 Conflict`.
 
 ### واجهة اللاعب (بدون مصادقة — Rate-limited)
@@ -190,6 +190,66 @@ GET    /api/v1/player/sessions/{joinCode}/attempts/{attemptId}/media/{mediaId}  
 - **Idempotency:** إعادة إرسال نفس الإجابة = `200`؛ إرسال إجابة **مختلفة** لنفس السؤال = `409 AnswerConflict`. المقارنة دلالية (jsonb يطبّع المخزن — ADR 008).
 - **الوقت خادمي:** `serverNow` في كل استجابة؛ بعد `deadlineAt` يُنهي الخادم المحاولة `TimedOut` عند أول طلب لاحق (settle-on-request).
 - التصحيح خادمي بالكامل عبر `AnswerScorer` (ADR 008) — العميل لا يرى الإجابات الصحيحة إلا في `result` بعد الإنهاء.
+
+## بند Phase 5 — التقارير والاستبانة والشهادات
+
+### التقارير (Teacher — مصادق عليها)
+
+```text
+GET /api/v1/tenants/{tenantId}/sessions/{sessionId}/report
+GET /api/v1/tenants/{tenantId}/sessions/{sessionId}/attempts?page=&pageSize=
+GET /api/v1/tenants/{tenantId}/attempts/{attemptId}
+GET /api/v1/tenants/{tenantId}/sessions/{sessionId}/report/export.csv
+```
+
+- تقرير الجلسة يعيد `sessionId`, `quizId`, `quizTitle`, `sessionLabel`, `sessionStatus`, `activatedAt`, `finishedAt`، ثم `summary` و`questions`.
+- `summary` يحتوي `participantCount`, `attemptCount`, `completedCount`, `inProgressCount`, `timedOutCount`, `passedCount`, `failedCount`, `averagePercentage`, `averageDurationMs`.
+- تحليل كل سؤال يحتوي المعرّفات والترتيب والنص والنوع والنقاط، وأعداد الإجابات الصحيحة/الخاطئة، ونسبتي النجاح ومتوسط الدرجة، و`difficultySignal` (`InsufficientData | LowDifficulty | ModerateDifficulty | HighDifficulty`).
+- قائمة المحاولات تستخدم `PagedResponse`; تفاصيل المحاولة تضيف `questions[]` بالحقول `answered`, `answerSummary`, `isCorrect`, `scoreAwarded`, `answeredAt`.
+- CSV مشتق من المحاولات الفعلية، UTF-8 مع BOM، ومحدود المعدل. الخادم يحيد القيم التي قد تبدأ Spreadsheet Formula بدل تمريرها كصيغة قابلة للتنفيذ.
+
+### الاستبانات
+
+```text
+GET  /api/v1/tenants/{tenantId}/surveys?quizId=
+POST /api/v1/tenants/{tenantId}/surveys
+GET  /api/v1/tenants/{tenantId}/surveys/{surveyId}
+PUT  /api/v1/tenants/{tenantId}/surveys/{surveyId}
+POST /api/v1/tenants/{tenantId}/surveys/{surveyId}/publish
+
+GET  /api/v1/player/sessions/{joinCode}/attempts/{attemptId}/survey
+POST /api/v1/player/sessions/{joinCode}/attempts/{attemptId}/survey
+```
+
+- يوجد Survey واحد كحد أقصى لكل Quiz. الإنشاء يقبل `quizId`, `title`, `description`, و`questions` من 1 إلى 50.
+- نوع السؤال واحد من `Rating`, `SingleChoice`, `ShortText`. سؤال `SingleChoice` يحتاج 2..20 خيارات مميزة، والأنواع الأخرى لا تقبل خيارات.
+- تعديل المسودة يتطلب `baseVersion`; اختلاف `xmin` يعيد `409 Conflict`. النشر Idempotent، وبعده يعيد التعديل `409 SurveyPublished`.
+- نقطتا اللاعب تتطلبان Guest Cookie ومحاولة مكتملة يملكها الطالب. لا يظهر إلا Survey منشور للاختبار نفسه.
+- جسم الإرسال: `answers[]` بعناصر `{ questionId, ratingValue, optionId, text }`; يجب أن يطابق كل عنصر نوع السؤال وتُجاب كل الأسئلة المطلوبة. الإرسال الناجح `201` ويعيد `{ responseId, submittedAt }`، والتكرار يعيد `409 SurveyAlreadySubmitted`.
+
+### الشهادات ومشاركة ولي الأمر
+
+```text
+GET  /api/v1/tenants/{tenantId}/certificate-templates
+POST /api/v1/tenants/{tenantId}/certificate-templates
+PUT  /api/v1/tenants/{tenantId}/certificate-templates/{templateId}
+
+GET  /api/v1/tenants/{tenantId}/certificates
+GET  /api/v1/tenants/{tenantId}/certificates/{certificateId}/file
+POST /api/v1/tenants/{tenantId}/certificates/{certificateId}/retry
+
+POST /api/v1/player/sessions/{joinCode}/attempts/{attemptId}/certificate
+GET  /api/v1/player/sessions/{joinCode}/attempts/{attemptId}/certificate/file
+POST /api/v1/player/sessions/{joinCode}/attempts/{attemptId}/parent-share
+GET  /api/v1/player/certificates/{publicToken}
+GET  /api/v1/public/results/{publicToken}
+```
+
+- قالب الشهادة يقبل `name`, `titleText`, `bodyText`, `issuerName`, لوني Hex بصيغة `#RRGGBB`, و`isDefault`. تحديثه يتطلب `baseVersion`; يوجد قالب افتراضي واحد لكل Tenant.
+- إصدار اللاعب Idempotent ومتاح فقط لمحاولة مكتملة ناجحة؛ الرسوب يعيد `403 CertificateNotEligible`. الرد `PlayerCertificateResponse` هو `{ certificateId, certificateNumber, status, issuedAt, downloadUrl, publicUrl }`؛ الحالة `Pending | Ready | Failed`. يعيد الإصدار `200` عندما تكون جاهزة و`202` فيما عدا ذلك.
+- تنزيل ملف غير جاهز يعيد `409 CertificateNotReady`. يستطيع المعلم إعادة الشهادة الفاشلة إلى `Pending` عبر `retry`.
+- `parent-share` يعيد `201` مع `{ shareUrl, expiresAt }`. النتيجة العامة تقتصر على `{ studentName, quizTitle, score, maxScore, percentage, passed, finishedAt, reviewAreas, certificateUrl }`; الرمز المنتهي أو غير الصحيح يعيد `404`.
+- ملف الشهادة العام والنتيجة العامة لا يحتاجان JWT. كل نقاط الإصدار/التنزيل الخاصة بالطالب تتحقق من Guest Cookie وملكية المحاولة، ولا تعتمد على `attemptId` وحده.
 
 ## الاستجابات الشائعة
 
