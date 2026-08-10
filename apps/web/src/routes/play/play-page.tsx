@@ -726,7 +726,7 @@ function PlayingView({
         {isLast ? (
           <Button
             onClick={() => finishMutation.mutate()}
-            disabled={finishMutation.isPending}
+            disabled={answerMutation.isPending || finishMutation.isPending}
             >
             {finishMutation.isPending ? <ButtonSpinner /> : null}
             إنهاء الاختبار

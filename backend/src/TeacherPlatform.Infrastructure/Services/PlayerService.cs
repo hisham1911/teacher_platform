@@ -647,9 +647,35 @@ public sealed class PlayerService
             return (new ServiceResultException("Conflict", "The live host finishes all attempts."), null);
         }
 
-        var timedOut = IsPastDeadline(attempt.DeadlineAt, now);
-        await FinalizeAttemptAsync(session!, attempt, version, now, timedOut, cancellationToken);
-        return (null, BuildFinishResponse(attempt));
+        for (var finalizeAttempt = 0; finalizeAttempt < 2; finalizeAttempt++)
+        {
+            var timedOut = IsPastDeadline(attempt.DeadlineAt, now);
+            try
+            {
+                await FinalizeAttemptAsync(session!, attempt, version, now, timedOut, cancellationToken);
+                return (null, BuildFinishResponse(attempt));
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                // The final answer and finish requests can overlap. Reload once so scoring
+                // includes the committed answer, or return the result finalized by the race.
+                _db.ChangeTracker.Clear();
+                attempt = await LoadAttemptAsync(session!, participant!, attemptId, tracked: true, cancellationToken);
+                if (attempt is null)
+                {
+                    return (new ServiceResultException("NotFound", "Attempt not found."), null);
+                }
+
+                if (attempt.Status != AttemptStatus.InProgress)
+                {
+                    return (null, BuildFinishResponse(attempt));
+                }
+
+                now = _clock.UtcNow;
+            }
+        }
+
+        return (new ServiceResultException("Conflict", "Attempt changed while it was being finalized. Retry."), null);
     }
 
     /// <summary>نتيجة المحاولة للطالب صاحب الرمز فقط.</summary>

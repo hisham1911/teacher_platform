@@ -4,7 +4,14 @@ import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { HttpError } from '../../data/api-client/http-error';
 import type { LiveSessionState } from '../../types/live';
-import type { AttemptResult, JoinSessionResponse, PlayerQuestion, PlayerSession, StartAttemptResponse } from '../../types/sessions';
+import type {
+  AttemptResult,
+  JoinSessionResponse,
+  PlayerQuestion,
+  PlayerSession,
+  StartAttemptResponse,
+  SubmitAnswerResponse,
+} from '../../types/sessions';
 import PlayPage from './play-page';
 
 vi.mock('../../data/api-client/endpoints', async (importOriginal) => {
@@ -262,6 +269,61 @@ describe('PlayPage', () => {
     await submit();
     await waitFor(() => expect(screen.getByText(/إجابة صحيحة ✓/)).toBeInTheDocument());
     expect(submitAnswerMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('prevents finishing the final question while its answer is still being saved', async () => {
+    const playerQuestion: PlayerQuestion = {
+      quizVersionItemId: 'q-final',
+      index: 0,
+      totalQuestions: 1,
+      questionType: 'MultipleChoice',
+      prompt: 'السؤال الأخير',
+      points: 5,
+      isRequired: true,
+      mediaAssetId: null,
+      options: [
+        { optionId: 'opt-1', optionText: 'الإجابة الأولى' },
+        { optionId: 'opt-2', optionText: 'الإجابة الثانية' },
+      ],
+      alreadyAnswered: false,
+      deadlineAt: null,
+      serverNow: new Date().toISOString(),
+    };
+    let completeAnswer: ((response: SubmitAnswerResponse) => void) | undefined;
+
+    getSessionMock.mockResolvedValue({ ...activeSession, questionCount: 1 });
+    joinMock.mockResolvedValue(joinResponse);
+    startAttemptMock.mockResolvedValue({ ...startResponse, totalQuestions: 1 });
+    vi.mocked(playerApi.getCurrentQuestion).mockResolvedValue(playerQuestion);
+    vi.mocked(playerApi.submitAnswer).mockReturnValue(
+      new Promise<SubmitAnswerResponse>((resolve) => {
+        completeAnswer = resolve;
+      }),
+    );
+
+    renderPage();
+    await waitFor(() => screen.getByRole('button', { name: 'انضمام' }));
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'لاعب تجريبي' } });
+    fireEvent.click(screen.getByRole('button', { name: 'انضمام' }));
+    await waitFor(() => screen.getByRole('button', { name: 'ابدأ الاختبار' }));
+    fireEvent.click(screen.getByRole('button', { name: 'ابدأ الاختبار' }));
+    await waitFor(() => expect(screen.getByText('السؤال الأخير')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('radio', { name: 'الإجابة الأولى' }));
+    fireEvent.click(screen.getByRole('button', { name: 'تثبيت الإجابة' }));
+
+    await waitFor(() => expect(screen.getByRole('button', { name: 'إنهاء الاختبار' })).toBeDisabled());
+    expect(playerApi.finish).not.toHaveBeenCalled();
+
+    completeAnswer?.({
+      attemptId: 'a-1',
+      quizVersionItemId: 'q-final',
+      isCorrect: true,
+      scoreAwarded: 5,
+      revision: 1,
+      serverNow: new Date().toISOString(),
+    });
+    await waitFor(() => expect(screen.getByRole('button', { name: 'إنهاء الاختبار' })).toBeEnabled());
   });
 
   it('يستعيد الجلسة من السيرفر عبر الكوكي ويستأنف المحاولة الجارية دون تفاعل', async () => {
