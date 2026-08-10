@@ -9,6 +9,9 @@ const HomePage = lazy(() => import('../routes/public/home-page'));
 const PublicQuizPage = lazy(() => import('../routes/public/public-quiz-page'));
 const PublicResultPage = lazy(() => import('../routes/public/public-result-page'));
 const PublicCertificatePage = lazy(() => import('../routes/public/public-certificate-page'));
+const PrivacyPage = lazy(() => import('../routes/public/privacy-page'));
+const TermsPage = lazy(() => import('../routes/public/terms-page'));
+const RouteErrorPage = lazy(() => import('../routes/public/route-error-page'));
 
 const LoginPage = lazy(() => import('../routes/auth/login-page'));
 const SignupPage = lazy(() => import('../routes/auth/signup-page'));
@@ -46,6 +49,7 @@ const PlayPage = lazy(() => import('../routes/play/play-page'));
 
 export const router = createBrowserRouter([
   {
+    errorElement: <RouteErrorPage />,
     element: (
       <RootLayout>
         <Suspense fallback={<RouteLoadingFallback />}>
@@ -55,6 +59,8 @@ export const router = createBrowserRouter([
     ),
     children: [
       { path: '/', element: <HomePage /> },
+      { path: '/privacy', element: <PrivacyPage /> },
+      { path: '/terms', element: <TermsPage /> },
       { path: '/auth/login', element: <LoginPage /> },
       { path: '/auth/signup', element: <SignupPage /> },
       { path: '/auth/forgot-password', element: <ForgotPasswordPage /> },

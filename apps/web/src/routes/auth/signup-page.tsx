@@ -137,6 +137,13 @@ export default function SignupPage() {
             'إنشاء الحساب'
           )}
         </Button>
+
+        <p className="text-center text-xs leading-6 text-slate-500">
+          بإنشاء الحساب أنت توافق على{' '}
+          <Link className="font-medium text-sky-700 underline underline-offset-4" to="/terms">شروط الاستخدام</Link>
+          {' '}وتقر بقراءة{' '}
+          <Link className="font-medium text-sky-700 underline underline-offset-4" to="/privacy">سياسة الخصوصية</Link>.
+        </p>
       </form>
 
       <p className="mt-6 text-center text-sm text-slate-600">

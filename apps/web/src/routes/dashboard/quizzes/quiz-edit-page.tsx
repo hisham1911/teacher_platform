@@ -307,7 +307,7 @@ export default function QuizEditPage() {
           </Link>
           <Link
             to={`/dashboard/quizzes/${quizId}/publish`}
-            className="min-h-11 rounded-md bg-sky-600 px-3 py-2 text-sm font-semibold text-white hover:bg-sky-700 focus-visible:outline-2 focus-visible:outline-sky-600">
+            className="min-h-11 rounded-md bg-sky-700 px-3 py-2 text-sm font-semibold text-white hover:bg-sky-800 focus-visible:outline-2 focus-visible:outline-sky-600">
             نشر
           </Link>
           <Link

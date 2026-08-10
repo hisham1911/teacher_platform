@@ -6,7 +6,7 @@ import { authApi, tenantsApi } from '../../data/api-client/endpoints';
 import { useQuery } from '@tanstack/react-query';
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-  `rounded-md px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600 ${
+  `inline-flex min-h-11 shrink-0 items-center rounded-md px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600 ${
     isActive ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
   }`;
 
@@ -37,7 +37,7 @@ export function RootLayout({ children }: { children: ReactNode }) {
     <div className="flex min-h-screen flex-col" dir="rtl">
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex min-h-14 w-full max-w-5xl flex-col items-stretch justify-between gap-1 px-4 py-2 sm:h-14 sm:flex-row sm:items-center sm:gap-4 sm:py-0">
-          <Link to="/" className="text-base font-bold text-slate-900 shrink-0">
+          <Link to="/" className="inline-flex min-h-11 shrink-0 items-center text-base font-bold text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600">
             منصة المعلم
           </Link>
 
@@ -106,7 +106,7 @@ export function RootLayout({ children }: { children: ReactNode }) {
                       aria-pressed={isActive}
                       className={`min-h-11 rounded-md px-3 py-1.5 text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600 ${
                         isActive
-                          ? 'bg-sky-600 text-white'
+                          ? 'bg-sky-700 text-white'
                           : 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
                       }`}>
                       {workspace.name}
@@ -127,8 +127,16 @@ export function RootLayout({ children }: { children: ReactNode }) {
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">{children}</main>
 
       <footer className="border-t border-slate-200 bg-white">
-        <div className="mx-auto w-full max-w-5xl px-4 py-4 text-center text-xs text-slate-500">
-          منصة المعلم — إدارة الاختبارات والنتائج
+        <div className="mx-auto flex w-full max-w-5xl flex-col items-center justify-between gap-3 px-4 py-4 text-xs text-slate-500 sm:flex-row">
+          <span>منصة المعلم — إدارة الاختبارات والنتائج</span>
+          <nav aria-label="روابط السياسات" className="flex items-center gap-4">
+            <Link className="min-h-11 content-center hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600" to="/privacy">
+              الخصوصية
+            </Link>
+            <Link className="min-h-11 content-center hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600" to="/terms">
+              الشروط
+            </Link>
+          </nav>
         </div>
       </footer>
     </div>

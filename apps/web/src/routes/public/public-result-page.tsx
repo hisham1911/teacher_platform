@@ -49,7 +49,7 @@ export default function PublicResultPage() {
 
           <div className="flex flex-col gap-3 border-t border-slate-100 pt-6 sm:flex-row">
             {result.certificateUrl ? (
-              <a href={result.certificateUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center justify-center rounded-lg bg-sky-600 px-4 py-2 text-sm font-bold text-white hover:bg-sky-700">فتح الشهادة</a>
+              <a href={result.certificateUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center justify-center rounded-lg bg-sky-700 px-4 py-2 text-sm font-bold text-white hover:bg-sky-800">فتح الشهادة</a>
             ) : null}
             <a href={whatsappUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">مشاركة عبر واتساب</a>
           </div>

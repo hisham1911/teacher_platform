@@ -66,6 +66,19 @@ describe('router — Phase 1', () => {
     await expectHeading('إنشاء حساب جديد');
   });
 
+  it('يعرض صفحات الخصوصية والشروط العامة', async () => {
+    await renderRoute('/privacy');
+    await expectHeading('سياسة الخصوصية');
+
+    await renderRoute('/terms');
+    await expectHeading('شروط الاستخدام');
+  });
+
+  it('يعرض صفحة خطأ مفهومة للمسار غير الموجود', async () => {
+    await renderRoute('/missing-page');
+    await expectHeading('الصفحة غير موجودة');
+  });
+
   it('يعرض صفحة تأكيد البريد على /auth/confirm-email', async () => {
     await renderRoute('/auth/confirm-email');
     await expectHeading(/تأكيد البريد|رابط تأكيد/);

@@ -1,9 +1,11 @@
-import { render, screen } from '@testing-library/react';
+import { cleanup, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import DashboardPage from './dashboard-page';
 import { establishSession, clearSession } from '../../lib/auth/session';
+
+const listMineMock = vi.hoisted(() => vi.fn());
 
 vi.mock('../../data/api-client/endpoints', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../data/api-client/endpoints')>();
@@ -11,19 +13,7 @@ vi.mock('../../data/api-client/endpoints', async (importOriginal) => {
     ...actual,
     tenantsApi: {
       ...actual.tenantsApi,
-      listMine: vi.fn().mockResolvedValue([
-        {
-          id: 't1',
-          name: 'مساحة أحمد',
-          slug: 'ahmed-ws',
-          countryCode: 'SA',
-          timezone: 'Asia/Riyadh',
-          defaultLocale: 'ar',
-          status: 'Active',
-          myRole: 'Owner',
-          settings: { settingsJson: '{}' },
-        },
-      ]),
+      listMine: listMineMock,
     },
   };
 });
@@ -39,7 +29,29 @@ function renderDashboard() {
   );
 }
 
-describe('DashboardPage — Phase 1', () => {
+beforeEach(() => {
+  listMineMock.mockResolvedValue([
+    {
+      id: 't1',
+      name: 'مساحة أحمد',
+      slug: 'ahmed-ws',
+      countryCode: 'SA',
+      timezone: 'Asia/Riyadh',
+      defaultLocale: 'ar',
+      status: 'Active',
+      myRole: 'Owner',
+      settings: { settingsJson: '{}' },
+    },
+  ]);
+});
+
+afterEach(() => {
+  cleanup();
+  clearSession();
+  vi.clearAllMocks();
+});
+
+describe('DashboardPage', () => {
   it('يعرض بيانات المستخدم والـWorkspace بدون إحصائيات أو بيانات زائفة', async () => {
     establishSession({
       accessToken: 'tok',
@@ -57,6 +69,15 @@ describe('DashboardPage — Phase 1', () => {
 
     // لا توجد أرقام إحصائية مؤقتة أو قوائم وهمية
     expect(screen.queryByText(/عدد الاختبارات|الطلاب النشطون|معدل النجاح/)).not.toBeInTheDocument();
-    clearSession();
+    expect(screen.queryByText(/المرحلة القادمة/)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /الشهادات/ })).toBeInTheDocument();
+  });
+
+  it('يعرض خطأ قابلًا لإعادة المحاولة عند فشل تحميل مساحات العمل', async () => {
+    listMineMock.mockRejectedValueOnce(new Error('offline'));
+    renderDashboard();
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('تعذر تحميل مساحات العمل');
+    expect(screen.getByRole('button', { name: 'إعادة المحاولة' })).toBeInTheDocument();
   });
 });
