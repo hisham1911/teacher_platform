@@ -1,0 +1,12 @@
+[Unit]
+Description=Run Teacher Platform operational health monitor
+
+[Timer]
+OnBootSec=5m
+OnUnitActiveSec=5m
+RandomizedDelaySec=30s
+Persistent=true
+Unit=teacher-platform-monitor.service
+
+[Install]
+WantedBy=timers.target

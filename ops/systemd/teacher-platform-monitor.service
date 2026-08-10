@@ -1,0 +1,16 @@
+[Unit]
+Description=Teacher Platform operational health monitor
+After=network-online.target teacher-platform.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=teacher-platform
+Group=teacher-platform
+EnvironmentFile=/etc/teacher-platform/backup.env
+EnvironmentFile=/etc/teacher-platform/monitor.env
+ExecStart=/opt/teacher-platform/current/scripts/check-operational-health.sh
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
