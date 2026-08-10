@@ -471,7 +471,7 @@ public class QuizWorkflowTests : IClassFixture<TestWebApplicationFactory>, IAsyn
     // ---------- الصلاحيات ----------
 
     [Fact]
-    public async Task Assistant_CannotWriteQuizzes_ViewerCannotWrite()
+    public async Task Assistant_AndViewer_CannotWriteTeacherContent()
     {
         var ownerClient = NewClient();
         var (_, tokenOwner, _) = await RegisterConfirmLogin(_factory, ownerClient);
@@ -520,6 +520,42 @@ public class QuizWorkflowTests : IClassFixture<TestWebApplicationFactory>, IAsyn
             Content = Json(new { questionId, points = 1, isRequired = true })
         }, tokenAssistant));
         Assert.Equal(HttpStatusCode.Forbidden, assistantAddItem.StatusCode);
+
+        using var mediaContent = new MultipartFormDataContent();
+        mediaContent.Add(new ByteArrayContent([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]), "file", "image.png");
+        var assistantMediaUpload = await assistantClient.SendAsync(WithAccessToken(new HttpRequestMessage(HttpMethod.Post,
+            $"/api/v1/tenants/{tenantId}/media")
+        {
+            Content = mediaContent
+        }, tokenAssistant));
+        Assert.Equal(HttpStatusCode.Forbidden, assistantMediaUpload.StatusCode);
+
+        var assistantSurveyCreate = await assistantClient.SendAsync(WithAccessToken(new HttpRequestMessage(HttpMethod.Post,
+            $"/api/v1/tenants/{tenantId}/surveys")
+        {
+            Content = Json(new { quizId, title = "x", questions = Array.Empty<object>() })
+        }, tokenAssistant));
+        Assert.Equal(HttpStatusCode.Forbidden, assistantSurveyCreate.StatusCode);
+
+        var assistantTemplateCreate = await assistantClient.SendAsync(WithAccessToken(new HttpRequestMessage(HttpMethod.Post,
+            $"/api/v1/tenants/{tenantId}/certificate-templates")
+        {
+            Content = Json(new
+            {
+                name = "x",
+                titleText = "x",
+                bodyText = "x",
+                issuerName = "x",
+                primaryColor = "#0F766E",
+                secondaryColor = "#D97706",
+                isDefault = false
+            })
+        }, tokenAssistant));
+        Assert.Equal(HttpStatusCode.Forbidden, assistantTemplateCreate.StatusCode);
+
+        var assistantCertificateRetry = await assistantClient.SendAsync(WithAccessToken(new HttpRequestMessage(HttpMethod.Post,
+            $"/api/v1/tenants/{tenantId}/certificates/{Guid.NewGuid()}/retry"), tokenAssistant));
+        Assert.Equal(HttpStatusCode.Forbidden, assistantCertificateRetry.StatusCode);
 
         // Viewer لا يكتب
         var viewerCreate = await viewerClient.SendAsync(WithAccessToken(new HttpRequestMessage(HttpMethod.Post,

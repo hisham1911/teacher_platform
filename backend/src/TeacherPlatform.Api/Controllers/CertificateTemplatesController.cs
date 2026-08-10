@@ -27,6 +27,7 @@ public sealed class CertificateTemplatesController : ControllerBase
         Ok(await _templateService.ListAsync(cancellationToken));
 
     [HttpPost]
+    [Authorize(Policy = AuthorizationPolicies.TenantContentManagement)]
     [ProducesResponseType(typeof(CertificateTemplateResponse), StatusCodes.Status201Created)]
     public async Task<IActionResult> Create(
         [FromRoute] Guid tenantId,
@@ -39,6 +40,7 @@ public sealed class CertificateTemplatesController : ControllerBase
     }
 
     [HttpPut("{templateId:guid}")]
+    [Authorize(Policy = AuthorizationPolicies.TenantContentManagement)]
     [ProducesResponseType(typeof(CertificateTemplateResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> Update(
         [FromRoute] Guid tenantId,

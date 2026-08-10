@@ -36,6 +36,7 @@ public sealed class TenantMediaController : ControllerBase
 
     /// <summary>رفع صورة أو ملف صوتي. الاستجابة تحتوي معرفًا فقط — ليس مسار تخزين.</summary>
     [HttpPost]
+    [Authorize(Policy = AuthorizationPolicies.TenantContentManagement)]
     [ProducesResponseType(typeof(MediaAssetResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status413PayloadTooLarge)]

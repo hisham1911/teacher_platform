@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using TeacherPlatform.Api.Authorization;
 using TeacherPlatform.Application.Abstractions;
 using TeacherPlatform.Infrastructure.Services;
@@ -18,6 +19,7 @@ public sealed class TenantTransfersController : ControllerBase
 
     [HttpGet("export")]
     [Produces("application/zip")]
+    [EnableRateLimiting(RateLimitPolicies.ReportExports)]
     public async Task<IActionResult> Export(Guid tenantId, CancellationToken cancellationToken)
     {
         var export = await _service.ExportAsync(tenantId, RequireActorId(), cancellationToken);

@@ -49,6 +49,7 @@ public sealed class SurveysController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Policy = AuthorizationPolicies.TenantContentManagement)]
     [ProducesResponseType(typeof(SurveyDetailResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -73,6 +74,7 @@ public sealed class SurveysController : ControllerBase
     }
 
     [HttpPut("{surveyId:guid}")]
+    [Authorize(Policy = AuthorizationPolicies.TenantContentManagement)]
     [ProducesResponseType(typeof(SurveyDetailResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -98,6 +100,7 @@ public sealed class SurveysController : ControllerBase
     }
 
     [HttpPost("{surveyId:guid}/publish")]
+    [Authorize(Policy = AuthorizationPolicies.TenantContentManagement)]
     [ProducesResponseType(typeof(SurveyDetailResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

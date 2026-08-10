@@ -38,6 +38,7 @@ public sealed class CertificatesController : ControllerBase
     }
 
     [HttpPost("{certificateId:guid}/retry")]
+    [Authorize(Policy = AuthorizationPolicies.TenantContentManagement)]
     [ProducesResponseType(typeof(CertificateListItemResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> Retry(
         [FromRoute] Guid tenantId,
