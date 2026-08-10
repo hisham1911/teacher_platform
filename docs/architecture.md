@@ -132,3 +132,11 @@ ASP.NET Core Web API (Kestrel خلف Nginx)
 - نقل المحتوى Owner-only ينتج ZIP بصيغة versioned وSHA-256 لكل entry. الاستيراد يفحص البنية والمراجع والوسائط والحدود، يدعم dry-run، يعيد تعيين المعرّفات، ويعوض ملفات التخزين إذا فشل transaction قاعدة البيانات.
 - البريد يستخدم `FileEmailSender` خارج الإنتاج أو `SmtpEmailSender` عند `Mail:Provider=Smtp`. الإنتاج يفرض SMTP مع TLS. التخزين يستخدم Local أو S3-compatible حسب `Storage:Provider`.
 - نموذج النشر single-node موثق في `docs/deployment.md`: Nginx مع WebSocket upgrade، systemd، migration bundle بلا `Database.Migrate()`، backup مشفر قبل الترحيل، health checks، وrollback للـapplication symlink. التفاصيل في ADR 011.
+
+## Phase 8 — Hardening وجاهزية التسليم
+
+- سياسة `TenantContentManagement` (Owner/Teacher) تحكم كل كتابات المحتوى، بما فيها رفع الوسائط، الاستبانات، قوالب الشهادات، وإعادة محاولة الشهادة؛ Assistant وViewer يظلان للقراءة.
+- إنهاء محاولة Self-paced يتحمل تزامن حفظ الإجابة الأخيرة: عند تعارض `xmin` يعاد تحميل المحاولة مرة واحدة قبل تجميع الدرجات، مع بقاء التصحيح والنتيجة خادميين.
+- Vercel وNginx يضيفان Security Headers ملائمة؛ الواجهة توفر مسارات قانونية و404 ولا تعرض إحصاءات أو ادعاءات تجريبية زائفة.
+- `teacher-platform-monitor.timer` يشغّل فحصًا fail-closed كل خمس دقائق للـAPI وPostgreSQL وحداثة backup المشفر ورسائل Outbox المتأخرة. تفاصيل الاستجابة في `docs/runbooks/monitoring.md`.
+- لا توجد Migration في Phase 8؛ نموذج البيانات بقي كما أُغلق في Phase 7.

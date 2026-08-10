@@ -6,6 +6,7 @@ Base path: `/api/v1` — كل الطلبات ترجع `ProblemDetails` للأخ�
 - `POST /api/v1/auth/register`, `login`, `refresh`, `logout`, `confirm-email`, `forgot-password`, `reset-password` (موجودة من Phase 1).
 - `Access Token` Bearer يحفظ في ذاكرة المتصفح فقط. `Refresh Token` في `__Host-tp-refresh` HttpOnly (أو `tp-refresh` في Development عندما UseSecureCookie=false).
 - متغيرات Workspace: ترسل `X-Tenant-Id` بنفس معرف الـRoute `{tenantId}` — الغرض اختيار العضوية وليس إثباتها.
+- في محتوى المستأجر، القراءة متاحة لكل عضو نشط، بينما الإنشاء والتعديل والنشر وإعادة المحاولة تتطلب `TenantContentManagement`، أي Owner أو Teacher فقط؛ دورا Assistant وViewer للقراءة ولا يمنحان صلاحية كتابة.
 
 ## بند Phase 2 — بنوك الأسئلة والوسائط
 
@@ -57,7 +58,7 @@ POST   /api/v1/tenants/{tenantId}/questions/{questionId}/archive    # إخفاء
 ### الوسائط
 
 ```text
-POST /api/v1/tenants/{tenantId}/media                      # multipart/form-data: file — Owner/Teacher/Assistant
+POST /api/v1/tenants/{tenantId}/media                      # multipart/form-data: file — Owner/Teacher
 GET  /api/v1/tenants/{tenantId}/media/{mediaId}            # بيانات الوصف فقط
 GET  /api/v1/tenants/{tenantId}/media/{mediaId}/content    # بث المحتوى
 ```
@@ -190,6 +191,7 @@ GET    /api/v1/player/sessions/{joinCode}/attempts/{attemptId}/media/{mediaId}  
 - **Idempotency:** إعادة إرسال نفس الإجابة = `200`؛ إرسال إجابة **مختلفة** لنفس السؤال = `409 AnswerConflict`. المقارنة دلالية (jsonb يطبّع المخزن — ADR 008).
 - **الوقت خادمي:** `serverNow` في كل استجابة؛ بعد `deadlineAt` يُنهي الخادم المحاولة `TimedOut` عند أول طلب لاحق (settle-on-request).
 - التصحيح خادمي بالكامل عبر `AnswerScorer` (ADR 008) — العميل لا يرى الإجابات الصحيحة إلا في `result` بعد الإنهاء.
+- `finish` Idempotent. إذا تزامن مع حفظ الإجابة الأخيرة، يعيد الخادم تحميل المحاولة مرة واحدة ويحسب النتيجة من الإجابات المحفوظة الأحدث بدل إرجاع خطأ 500؛ وإذا استمر تعارض الكتابة يعيد `409 Conflict` ليُعاد الطلب بأمان.
 
 ### المسابقة المباشرة (Phase 6)
 
@@ -249,6 +251,8 @@ GET  /api/v1/player/sessions/{joinCode}/attempts/{attemptId}/survey
 POST /api/v1/player/sessions/{joinCode}/attempts/{attemptId}/survey
 ```
 
+عمليات `POST` و`PUT` و`publish` للمعلم Owner/Teacher فقط؛ عمليتا `GET` متاحتان لكل عضو نشط.
+
 - يوجد Survey واحد كحد أقصى لكل Quiz. الإنشاء يقبل `quizId`, `title`, `description`, و`questions` من 1 إلى 50.
 - نوع السؤال واحد من `Rating`, `SingleChoice`, `ShortText`. سؤال `SingleChoice` يحتاج 2..20 خيارات مميزة، والأنواع الأخرى لا تقبل خيارات.
 - تعديل المسودة يتطلب `baseVersion`; اختلاف `xmin` يعيد `409 Conflict`. النشر Idempotent، وبعده يعيد التعديل `409 SurveyPublished`.
@@ -272,6 +276,8 @@ POST /api/v1/player/sessions/{joinCode}/attempts/{attemptId}/parent-share
 GET  /api/v1/player/certificates/{publicToken}
 GET  /api/v1/public/results/{publicToken}
 ```
+
+إنشاء/تعديل القوالب و`retry` للمعلم Owner/Teacher فقط؛ القوائم والتنزيل الداخلي متاحان لكل عضو نشط.
 
 - قالب الشهادة يقبل `name`, `titleText`, `bodyText`, `issuerName`, لوني Hex بصيغة `#RRGGBB`, و`isDefault`. تحديثه يتطلب `baseVersion`; يوجد قالب افتراضي واحد لكل Tenant.
 - إصدار اللاعب Idempotent ومتاح فقط لمحاولة مكتملة ناجحة؛ الرسوب يعيد `403 CertificateNotEligible`. الرد `PlayerCertificateResponse` هو `{ certificateId, certificateNumber, status, issuedAt, downloadUrl, publicUrl }`؛ الحالة `Pending | Ready | Failed`. يعيد الإصدار `200` عندما تكون جاهزة و`202` فيما عدا ذلك.
@@ -319,7 +325,7 @@ GET  /api/v1/tenants/{tenantId}/transfer/export
 POST /api/v1/tenants/{tenantId}/transfer/import?dryRun=true
 ```
 
-- المساران Owner-only. التصدير يعيد `application/zip`. الاستيراد `multipart/form-data` بحقل ملف اسمه `archive`، و`dryRun` افتراضيًا `true`.
+- المساران Owner-only. التصدير يعيد `application/zip` ويخضع لسياسة Rate Limit الخاصة بالتصدير؛ تجاوزها يعيد `429`. الاستيراد `multipart/form-data` بحقل ملف اسمه `archive`، و`dryRun` افتراضيًا `true`.
 - ZIP format version 1 يحتوي `manifest.json`, `questions.json`, `quizzes.json`, `surveys.json`, `certificate-templates.json` وملفات `media/`. الـmanifest يحمل counts وSHA-256 checksums لكل entry غير الـmanifest.
 - يشمل النقل بنوك الأسئلة والوسائط والأسئلة ونسخها وخياراتها ووسومها، الاختبارات ونسخها وعناصرها، الاستبانات، وقوالب الشهادات. لا يشمل المستخدمين أو بيانات المصادقة أو المشاركين أو المحاولات والنتائج أو الاشتراكات أو سجل التدقيق أو الأسرار. روابط Subject/Grade الاختيارية لا تُعاد ربطها عند الاستيراد.
 - الاستيراد يعيد تعيين كل المعرّفات العامة، يولد PublicCode جديدًا، ويجعل slugs وأسماء القوالب فريدة داخل الهدف. لا يثق في `TenantId` المصدر.

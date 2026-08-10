@@ -13,6 +13,7 @@
 /opt/teacher-platform/current -> releases/<git-sha>
 /etc/teacher-platform/teacher-platform.env
 /etc/teacher-platform/backup.env
+/etc/teacher-platform/monitor.env
 /etc/teacher-platform/pgpass
 /var/lib/teacher-platform/data-protection/
 /var/backups/teacher-platform/
@@ -32,11 +33,12 @@ sudo install -d -o root -g teacher-platform -m 0750 /etc/teacher-platform
 
 ## 2. Configuration والأسرار
 
-ابدأ من `ops/teacher-platform.env.example` و`ops/backup.env.example`، لكن اكتب القيم الحقيقية مباشرة في `/etc/teacher-platform/` من Secret store أو آلية provisioning، لا في Git:
+ابدأ من `ops/teacher-platform.env.example` و`ops/backup.env.example` و`ops/monitor.env.example`، لكن اكتب القيم الحقيقية مباشرة في `/etc/teacher-platform/` من Secret store أو آلية provisioning، لا في Git:
 
 ```bash
 sudo install -o root -g teacher-platform -m 0640 ops/teacher-platform.env.example /etc/teacher-platform/teacher-platform.env
 sudo install -o root -g teacher-platform -m 0640 ops/backup.env.example /etc/teacher-platform/backup.env
+sudo install -o root -g teacher-platform -m 0640 ops/monitor.env.example /etc/teacher-platform/monitor.env
 sudo systemctl daemon-reload
 sudo systemctl enable teacher-platform.service
 ```
@@ -134,6 +136,8 @@ journalctl -u teacher-platform.service --since '15 minutes ago' --no-pager
 curl --fail https://api.example.com/health/live
 curl --fail https://api.example.com/health/ready
 nginx -t
+sudo systemctl enable --now teacher-platform-monitor.timer
+systemctl list-timers teacher-platform-monitor.timer
 ```
 
-`/health/live` يثبت أن العملية تستجيب، و`/health/ready` يفحص PostgreSQL. استخدم `X-Request-Id` لربط رد API بسجل الخدمة. Runbooks الأعطال الموسعة في `docs/runbooks/incident-response.md`.
+`/health/live` يثبت أن العملية تستجيب، و`/health/ready` يفحص PostgreSQL. المؤقت يعمل كل خمس دقائق ويفشل إذا تعطلت الصحة، لم توجد نسخة `.dump.age` حديثة ضمن الحد، أو بقيت رسالة Outbox متأخرة أكثر من ساعة. systemd يسجل الفشل؛ اربطه بتنبيه خارجي على حالة الوحدة في منصة المراقبة المختارة. استخدم `X-Request-Id` لربط رد API بسجل الخدمة. Runbooks الأعطال في `docs/runbooks/incident-response.md` و`docs/runbooks/monitoring.md`.

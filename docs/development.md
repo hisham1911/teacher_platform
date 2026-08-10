@@ -231,7 +231,7 @@ curl -X POST http://localhost:5000/api/v1/tenants/{tenantId}/quizzes/{quizId}/pu
 ## 7. نشر Vercel (الواجهة فقط)
 
 - Build command: `npm run build` من `apps/web`؛ Output: `dist`.
-- `vercel.json` يتضمن SPA fallback (rewrite إلى index.html) ولا يمرر `/api` إلى Vercel — عنوان الـ API يأتي من `VITE_API_BASE_URL`.
+- `vercel.json` يتضمن SPA fallback (rewrite إلى index.html)، cache للـassets، وCSP/Referrer/Frame/Content-Type/Permissions headers، ولا يمرر `/api` إلى Vercel — عنوان الـ API يأتي من `VITE_API_BASE_URL`.
 - ممنوع استخدام Vercel Functions؛ كل المنطق في ASP.NET Core.
 
 ## 8. E2E بالمتصفح (Playwright)
@@ -284,7 +284,7 @@ npm ci
 - لأن `PublicTokenProtected` يعتمد ASP.NET Core Data Protection، استخدم `DataProtection:KeysDirectory` دائمًا خارج release directory وعلى تخزين دائم في Production.
 - `Storage:Provider=Local` مناسب للتطوير/E2E. محول S3-compatible منفذ عبر AWS SDK؛ اضبط `Endpoint`, `Bucket`, `AccessKey`, `SecretKey`, `Region`, و`ForcePathStyle` من Configuration، واختبر القراءة/الكتابة ضد المزود المختار قبل الإنتاج. Production يرفض endpoint غير HTTPS.
 
-## 10. Phase 7 محليًا
+## 10. Phase 7/8 محليًا
 
 - البريد يبقى `Mail:Provider=File` في Development/E2E ويكتب في `Mail:DevDropDirectory`. Production يتطلب `Mail:Provider=Smtp` و`Host` و`FromAddress` و`Security=StartTls`؛ بيانات الاعتماد لا توضع في ملف متتبع.
 - دور `PlatformAdmin` لا يُمنح عبر التسجيل العام. بعد إنشاء مستخدم حقيقي وتأكيد بريده، يستطيع مشغل قاعدة البيانات استخدام `scripts/grant-platform-admin.sql` بالطريقة الموثقة في `docs/deployment.md`، ثم يجب تسجيل الدخول مجددًا لإصدار JWT يحمل الدور.
@@ -292,6 +292,9 @@ npm ci
 - نقل المحتوى موجود في `/dashboard/settings` للـOwner: تنزيل ZIP، ثم dry-run إلزامي في الواجهة قبل الاستيراد الفعلي. الـAPI يقبل حتى 250MB ويعيد `413 FileTooLarge` لما يتجاوز ذلك.
 
 تشغيل الإنتاج والنسخ الاحتياطي والاستعادة والـrollback موثق في `docs/deployment.md`؛ القوالب تحت `ops/` والسكربتات تحت `scripts/`.
+
+- لا يحتاج فحص Phase 8 إلى بيانات وهمية: `npm ci` ثم بوابات الواجهة، و`dotnet test` مع `INTEGRATION_TEST_DB` حقيقية، وE2E على قاعدة منفصلة تكفي لإعادة إنتاج التحقق.
+- افحص سكربت المراقبة دون تشغيله عبر `bash -n scripts/check-operational-health.sh`. التشغيل الفعلي يحتاج متغيرات `ops/monitor.env.example` و`ops/backup.env.example` وأدوات `curl`, `psql`, وملف backup مشفر حقيقي.
 
 ## حل المشاكل
 

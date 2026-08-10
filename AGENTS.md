@@ -31,7 +31,7 @@ scripts/           سكربتات مساعدة
 - حدود الاستخدام: `QuizLimits` (`MaxQuizzesPerTenant` افتراضيًا 100، `MaxQuestionsPerQuiz` افتراضيًا 200، و`MaxPublishedQuizzesPerTenant` افتراضيًا 50) عبر IQuizLimitService؛ التجاوز → 403 `QuotaExceeded`.
 - المشاركة: `GET .../quizzes/{id}/share` يعيد PublicCode + ShareUrl؛ صفحة النشر تعرض الرابط + QR Code (react-qr-code).
 
-## الحالة الحالية (بعد Phase 7)
+## الحالة الحالية (بعد Phase 8)
 
 - **Phase 4:** Student Player / Sessions / Server-side scoring.
 - **Phase 4.1:** Answer payload validation + real-browser hardening.
@@ -47,7 +47,9 @@ scripts/           سكربتات مساعدة
 - **Phase 7:** خطط واشتراكات وتفعيل يدوي واستخدام وتدقيق عبر دور عالمي `PlatformAdmin` وصفحة `/platform`؛ الحدود الفعلية تُفرض خادميًا من الخطة النشطة مع fallback للإعدادات.
 - تصدير/استيراد محتوى المستأجر متاح للـOwner فقط كـZIP بإصدار format وفحوص checksums وdry-run؛ لا ينقل الحسابات أو المحاولات أو الاشتراكات أو الأسرار.
 - محولا S3-compatible وSMTP منفذان ويُفعّلان من Configuration؛ أمثلة Nginx/systemd وPipeline النشر والنسخ الاحتياطي المشفر والاستعادة تحت `ops/` و`scripts/`.
-- Phase 8 لم تبدأ.
+- **Phase 8:** اكتمل Hardening وجاهزية الـpilot: تشديد كل كتابات المحتوى إلى Owner/Teacher، معالجة سباق حفظ الإجابة الأخيرة مع إنهاء المحاولة، صفحات الخصوصية والشروط و404، Security Headers، وتحديث lockfile بلا ثغرات npm معروفة.
+- فحص التشغيل الدوري موجود في `scripts/check-operational-health.sh` مع systemd timer داخل `ops/systemd/`؛ يفحص live/readiness وحداثة النسخة المشفرة وتأخر Outbox.
+- المراحل 5–8 مكتملة في فرع التسليم. النشر الفعلي ما زال يتطلب Domain وProduction credentials وخدمات SMTP/S3 وقرار QuestPDF license؛ لا تُخزن أي منها في Git.
 
 ## قواعد إلزامية
 
