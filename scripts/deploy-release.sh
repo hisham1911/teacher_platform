@@ -20,6 +20,14 @@ if [[ ! -f "$artifact" || ! -f "$environment_file" || ! -f "$backup_environment_
   echo "Release artifact or a production environment file is missing." >&2
   exit 66
 fi
+if ! grep --fixed-strings --line-regexp --quiet 'ASPNETCORE_ENVIRONMENT=Production' "$environment_file"; then
+  echo "Production environment file must set ASPNETCORE_ENVIRONMENT=Production." >&2
+  exit 78
+fi
+command -v systemd-run >/dev/null 2>&1 || {
+  echo "Required executable is missing: systemd-run" >&2
+  exit 69
+}
 
 release_directory="$install_root/releases/$release_sha"
 if [[ -e "$release_directory" ]]; then
@@ -32,20 +40,27 @@ tar --extract --gzip --file "$artifact" --directory "$release_directory"
 test -f "$release_directory/backend/TeacherPlatform.Api.dll"
 test -x "$release_directory/backend/efbundle"
 test -x "$release_directory/scripts/backup-postgres.sh"
+test -x "$release_directory/scripts/check-operational-health.sh"
+test -x "$release_directory/scripts/restore-postgres.sh"
 
-# A deploy cannot proceed without a fresh, encrypted database backup. Calling the
-# new release directly also works on the first deployment, before current exists.
-set -a
-# shellcheck disable=SC1090
-source "$backup_environment_file"
-set +a
-"$release_directory/scripts/backup-postgres.sh"
+# A deploy cannot proceed without a fresh, encrypted database backup. Transient
+# units let systemd parse EnvironmentFile values without evaluating secrets as shell.
+systemd-run --quiet --wait --collect --pipe \
+  --unit="teacher-platform-predeploy-backup-${release_sha}" \
+  --property=Type=exec \
+  --property=User=teacher-platform \
+  --property=Group=teacher-platform \
+  --property="EnvironmentFile=$backup_environment_file" \
+  "$release_directory/scripts/backup-postgres.sh"
 
-set -a
-# shellcheck disable=SC1090
-source "$environment_file"
-set +a
-ASPNETCORE_ENVIRONMENT=Production "$release_directory/backend/efbundle"
+systemd-run --quiet --wait --collect --pipe \
+  --unit="teacher-platform-migrate-${release_sha}" \
+  --property=Type=exec \
+  --property=User=teacher-platform \
+  --property=Group=teacher-platform \
+  --property="WorkingDirectory=$release_directory/backend" \
+  --property="EnvironmentFile=$environment_file" \
+  "$release_directory/backend/efbundle"
 
 previous_release="$(readlink -f "$install_root/current" || true)"
 ln -s "$release_directory" "$install_root/current.next"

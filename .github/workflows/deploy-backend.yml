@@ -90,7 +90,12 @@ jobs:
             --startup-project src/TeacherPlatform.Api/TeacherPlatform.Api.csproj \
             --output "$release_root/backend/efbundle"
           cp ../scripts/backup-postgres.sh "$release_root/scripts/backup-postgres.sh"
-          chmod 0755 "$release_root/backend/efbundle" "$release_root/scripts/backup-postgres.sh"
+          cp ../scripts/check-operational-health.sh "$release_root/scripts/check-operational-health.sh"
+          cp ../scripts/restore-postgres.sh "$release_root/scripts/restore-postgres.sh"
+          chmod 0755 "$release_root/backend/efbundle" \
+            "$release_root/scripts/backup-postgres.sh" \
+            "$release_root/scripts/check-operational-health.sh" \
+            "$release_root/scripts/restore-postgres.sh"
           tar -C "$release_root" -czf "$RUNNER_TEMP/teacher-platform-${{ steps.release-metadata.outputs.sha }}.tar.gz" .
 
       - uses: actions/upload-artifact@v4
