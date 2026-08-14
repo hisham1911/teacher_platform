@@ -60,7 +60,6 @@ export default function QuestionNewPage() {
   });
 
   if (!tenantId) {
-    navigate('/onboarding/choose', { replace: true });
     return null;
   }
 
@@ -102,7 +101,7 @@ export default function QuestionNewPage() {
       <header className="flex items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold text-slate-900">سؤال جديد</h1>
-          <p className="text-sm text-slate-600">سيتم حفظ المحتوى كنسخة أولى (v1) غير قابلة للتعديل لاحقًا.</p>
+          <p className="text-sm text-slate-600">اختر بنك الأسئلة، ثم حدد نوع السؤال وأدخل محتواه وإجابته الصحيحة.</p>
         </div>
         <Link
           to="/dashboard/questions"

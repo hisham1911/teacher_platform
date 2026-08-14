@@ -90,6 +90,23 @@ public class QuestionBankWorkflowTests : IClassFixture<TestWebApplicationFactory
         return payload.GetProperty("id").GetGuid();
     }
 
+    private static async Task<Guid> UploadAudioAsync(HttpClient client, string accessToken, Guid tenantId)
+    {
+        using var content = new MultipartFormDataContent();
+        using var file = new ByteArrayContent([0xFF, 0xFB, 0x90, 0x64]);
+        file.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("audio/mpeg");
+        content.Add(file, "file", "question-audio.mp3");
+
+        var response = await client.SendAsync(WithAccessToken(new HttpRequestMessage(HttpMethod.Post,
+            $"/api/v1/tenants/{tenantId}/media")
+        {
+            Content = content
+        }, accessToken));
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        return (await ReadJson<JsonElement>(response)).GetProperty("id").GetGuid();
+    }
+
     private static HttpRequestMessage WithAccessToken(HttpRequestMessage request, string accessToken)
     {
         request.Headers.Add("Authorization", $"Bearer {accessToken}");
@@ -257,6 +274,68 @@ public class QuestionBankWorkflowTests : IClassFixture<TestWebApplicationFactory
     }
 
     [Fact]
+    public async Task ListVersions_UsesPersistedOptions_WhenCalculatingValidity()
+    {
+        var client = NewClient();
+        var (_, token, _) = await RegisterConfirmLogin(_factory, client);
+        var tenantId = await CreateTenantFor(client, token);
+        var bankId = await CreateBankFor(client, token, tenantId);
+        var audioId = await UploadAudioAsync(client, token, tenantId);
+
+        var questions = new[]
+        {
+            new
+            {
+                Type = "TrueFalse",
+                Prompt = "السماء زرقاء",
+                MediaId = (Guid?)null,
+                Options = new[] { new { text = "صح", isCorrect = true }, new { text = "خطأ", isCorrect = false } }
+            },
+            new
+            {
+                Type = "Ordering",
+                Prompt = "رتب الأرقام",
+                MediaId = (Guid?)null,
+                Options = new[] { new { text = "واحد", isCorrect = false }, new { text = "اثنان", isCorrect = false } }
+            },
+            new
+            {
+                Type = "Listening",
+                Prompt = "استمع واختر",
+                MediaId = (Guid?)audioId,
+                Options = new[] { new { text = "الأول", isCorrect = true }, new { text = "الثاني", isCorrect = false } }
+            }
+        };
+
+        foreach (var question in questions)
+        {
+            var createResponse = await client.SendAsync(WithAccessToken(new HttpRequestMessage(HttpMethod.Post,
+                $"/api/v1/tenants/{tenantId}/questions")
+            {
+                Content = Json(new
+                {
+                    bankId,
+                    questionType = question.Type,
+                    prompt = question.Prompt,
+                    mediaAssetId = question.MediaId,
+                    options = question.Options
+                })
+            }, token));
+            Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
+            var detail = await ReadJson<JsonElement>(createResponse);
+            var questionId = detail.GetProperty("id").GetGuid();
+
+            var versionsResponse = await client.SendAsync(WithAccessToken(new HttpRequestMessage(HttpMethod.Get,
+                $"/api/v1/tenants/{tenantId}/questions/{questionId}/versions"), token));
+            Assert.Equal(HttpStatusCode.OK, versionsResponse.StatusCode);
+            var versions = await ReadJson<JsonElement>(versionsResponse);
+
+            Assert.True(detail.GetProperty("currentVersion").GetProperty("isValid").GetBoolean());
+            Assert.True(versions[0].GetProperty("isValid").GetBoolean());
+        }
+    }
+
+    [Fact]
     public async Task CreateQuestion_MultipleChoice_WithTwoCorrect_Fails()
     {
         var client = NewClient();
@@ -342,6 +421,16 @@ public class QuestionBankWorkflowTests : IClassFixture<TestWebApplicationFactory
         Assert.Equal(version1Id, v1Dto.GetProperty("id").GetGuid());
         Assert.Equal(version1Number, v1Dto.GetProperty("versionNumber").GetInt32());
         Assert.Equal(version1Prompt, v1Dto.GetProperty("prompt").GetString());
+
+        var versionsResponse = await client.SendAsync(WithAccessToken(new HttpRequestMessage(HttpMethod.Get,
+            $"/api/v1/tenants/{tenantId}/questions/{questionId}/versions"), token));
+        Assert.Equal(HttpStatusCode.OK, versionsResponse.StatusCode);
+        var versions = await ReadJson<JsonElement>(versionsResponse);
+        Assert.All(versions.EnumerateArray(), summary => Assert.True(summary.GetProperty("isValid").GetBoolean()));
+        Assert.Equal(
+            v1Dto.GetProperty("isValid").GetBoolean(),
+            versions.EnumerateArray().Single(summary => summary.GetProperty("versionNumber").GetInt32() == 1)
+                .GetProperty("isValid").GetBoolean());
 
         // تعديل بنسخة قديمة مسروقة → 409
         var staleResponse = await client.SendAsync(WithAccessToken(new HttpRequestMessage(HttpMethod.Post,

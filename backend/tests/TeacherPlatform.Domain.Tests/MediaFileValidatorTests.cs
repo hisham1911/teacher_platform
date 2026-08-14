@@ -79,7 +79,7 @@ public class MediaFileValidatorTests
     }
 
     [Fact]
-    public void Webp_WithRiff_Passes()
+    public void Webp_WithRiffAndWebpContainer_Passes()
     {
         var ok = MediaFileValidator.TryValidate(
             512,
@@ -89,6 +89,19 @@ public class MediaFileValidatorTests
 
         Assert.True(ok);
         Assert.Equal(MediaKind.Image, result.Outcome!.Kind);
+    }
+
+    [Fact]
+    public void Webp_WithNonWebpRiffContainer_IsRejected()
+    {
+        var ok = MediaFileValidator.TryValidate(
+            512,
+            "image/webp", "photo.webp",
+            () => Header(Encoding.ASCII.GetBytes("RIFF\x10\x00\x00\x00WAVE")),
+            Default, out var result);
+
+        Assert.False(ok);
+        Assert.Equal("UnsupportedMediaType", result.ErrorCode);
     }
 
     [Fact]
@@ -118,16 +131,56 @@ public class MediaFileValidatorTests
     }
 
     [Fact]
-    public void Wav_WithRiffHeader_Passes()
+    public void Mp3_WithId3OnlyAtOffset4_IsRejected()
     {
+        var fake = Encoding.ASCII.GetBytes("xxxxID3\x04\x00\x00");
+        var ok = MediaFileValidator.TryValidate(
+            fake.Length,
+            "audio/mpeg", "clip.mp3",
+            () => Header(fake), Default, out var result);
+
+        Assert.False(ok);
+        Assert.Equal("UnsupportedMediaType", result.ErrorCode);
+    }
+
+    [Fact]
+    public void Wav_WithPcmFormat_Passes()
+    {
+        var wav = PcmWaveHeader(formatTag: 1);
         var ok = MediaFileValidator.TryValidate(
             4096,
             "audio/wav", "clip.wav",
-            () => Header(Encoding.ASCII.GetBytes("RIFF\x24\x08\x00\x00WAVE")),
+            () => Header(wav),
             Default, out var result);
 
         Assert.True(ok);
         Assert.Equal(MediaKind.Audio, result.Outcome!.Kind);
+    }
+
+    [Fact]
+    public void Wav_WithNonWaveRiffContainer_IsRejected()
+    {
+        var ok = MediaFileValidator.TryValidate(
+            4096,
+            "audio/wav", "clip.wav",
+            () => Header(Encoding.ASCII.GetBytes("RIFF\x24\x08\x00\x00WEBP")),
+            Default, out var result);
+
+        Assert.False(ok);
+        Assert.Equal("UnsupportedMediaType", result.ErrorCode);
+    }
+
+    [Fact]
+    public void Wav_WithCompressedFormat_IsRejected()
+    {
+        var ok = MediaFileValidator.TryValidate(
+            4096,
+            "audio/wav", "clip.wav",
+            () => Header(PcmWaveHeader(formatTag: 3)),
+            Default, out var result);
+
+        Assert.False(ok);
+        Assert.Equal("UnsupportedMediaType", result.ErrorCode);
     }
 
     [Fact]
@@ -168,5 +221,22 @@ public class MediaFileValidatorTests
             () => Header(exe), Default, out var result);
 
         Assert.False(ok);
+    }
+
+    private static byte[] PcmWaveHeader(ushort formatTag)
+    {
+        var header = new byte[44];
+        Encoding.ASCII.GetBytes("RIFF").CopyTo(header, 0);
+        BitConverter.GetBytes(36).CopyTo(header, 4);
+        Encoding.ASCII.GetBytes("WAVEfmt ").CopyTo(header, 8);
+        BitConverter.GetBytes(16).CopyTo(header, 16);
+        BitConverter.GetBytes(formatTag).CopyTo(header, 20);
+        BitConverter.GetBytes((ushort)1).CopyTo(header, 22);
+        BitConverter.GetBytes(44_100).CopyTo(header, 24);
+        BitConverter.GetBytes(88_200).CopyTo(header, 28);
+        BitConverter.GetBytes((ushort)2).CopyTo(header, 32);
+        BitConverter.GetBytes((ushort)16).CopyTo(header, 34);
+        Encoding.ASCII.GetBytes("data").CopyTo(header, 36);
+        return header;
     }
 }

@@ -1,12 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
-import { Link, useNavigate, useParams } from 'react-router';
+import { Link, useParams } from 'react-router';
 import { questionsApi } from '../../../data/api-client/endpoints';
 import { MediaContentPreview } from '../../../features/questions/media-content-preview';
 import { getActiveTenantId } from '../../../lib/auth/session';
 
 /** /dashboard/questions/:questionId/preview — معاينة المعلم للنسخة الحالية */
 export default function QuestionPreviewPage() {
-  const navigate = useNavigate();
   const tenantId = getActiveTenantId();
   const { questionId } = useParams<{ questionId: string }>();
 
@@ -20,7 +19,6 @@ export default function QuestionPreviewPage() {
   const mediaAssetId = question?.currentVersion.mediaAssetId ?? null;
 
   if (!tenantId || !questionId) {
-    navigate('/onboarding/choose', { replace: true });
     return null;
   }
 
@@ -46,17 +44,17 @@ export default function QuestionPreviewPage() {
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold text-slate-900">
-            معاينة المعلم — v{version.versionNumber}
+            معاينة السؤال
           </h1>
           <p className="text-sm text-slate-600">
-            ما يراه الطالب بالضبط (بدون كشف الصحة هنا — التصحيح في السيرفر لاحقًا).
+            هذه هي طريقة ظهور السؤال للطالب. لا تظهر الإجابة الصحيحة في وضع المعاينة.
           </p>
         </div>
         <div className="flex gap-2">
           <Link
             to={`/dashboard/questions/${questionId}/versions`}
             className="min-h-11 rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50">
-            سجل الإصدارات
+            سجل التعديلات
           </Link>
           <Link
             to={`/dashboard/questions/${questionId}/edit`}
@@ -68,7 +66,7 @@ export default function QuestionPreviewPage() {
 
       {!version.isValid ? (
         <p role="alert" className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
-          تحذير: هذه النسخة لا تجتاز تحقق المجال ({version.validationErrors.join('، ')}). لا تصلح للنشر بعد.
+          يحتاج السؤال إلى استكمال قبل استخدامه في اختبار: {version.validationErrors.join('، ')}
         </p>
       ) : null}
 
@@ -132,7 +130,7 @@ export default function QuestionPreviewPage() {
               className="min-h-11 w-full rounded-lg border border-slate-300 bg-slate-50 px-3 text-sm"
               dir={version.language === 'en' ? 'ltr' : 'rtl'}
             />
-            <p className="mt-1 text-xs text-slate-500">التصحيح النصي يحدث في الخادم — لا يكشف المعاينة الإجابة المقبولة.</p>
+            <p className="mt-1 text-xs text-slate-500">لن تظهر الإجابات المقبولة للطالب أثناء الاختبار.</p>
           </div>
         ) : null}
 
@@ -145,7 +143,7 @@ export default function QuestionPreviewPage() {
       </article>
 
       <p className="text-xs text-slate-500">
-        صحّة الاختيارات تُخفى عن المعاينة عمدًا — تُعرض للمعلم فقط من مسارات التحرير، وللطالب بعد إرسال الإجابة في Phase 4.
+        يمكنك مراجعة الإجابة الصحيحة من شاشة التعديل. لن تظهر للطالب إلا بعد إرسال إجابته إذا كانت إعدادات الاختبار تسمح بذلك.
       </p>
     </div>
   );

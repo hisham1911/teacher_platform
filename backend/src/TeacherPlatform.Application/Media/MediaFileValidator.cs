@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using TeacherPlatform.Application.Options;
 using TeacherPlatform.Domain.Media;
 
@@ -10,6 +11,8 @@ namespace TeacherPlatform.Application.Media;
 /// </summary>
 public static class MediaFileValidator
 {
+    public const int HeaderInspectionLimitBytes = 64 * 1024;
+
     private static readonly (string Mime, string Extension, byte[][] Signatures)[] Rules =
     [
         ("image/jpeg", ".jpg", [new byte[] { 0xFF, 0xD8, 0xFF }]),
@@ -79,7 +82,9 @@ public static class MediaFileValidator
             return false;
         }
 
-        if (!MatchesSignature(stream, ruleMatches.SelectMany(r => r.Signatures)))
+        var header = ReadHeader(stream);
+        if (!MatchesSignature(header, ruleMatches.SelectMany(r => r.Signatures))
+            || !MatchesContainer(ruleMatches[0].Extension, header))
         {
             result = (null, "UnsupportedMediaType");
             return false;
@@ -90,55 +95,90 @@ public static class MediaFileValidator
     }
 
     /// <summary>
-    /// يقرأ أول 12 بايت ويقارنها بالتوقيعات المعروفة.
-    /// ftyp لـM4A يظهر عند البايت 4؛ RIFF لـWEBP وWAV يتبعه تمييز إضافي.
+    /// يقارن الترويسة بالتوقيعات المعروفة.
+    /// ftyp لـM4A يظهر عند البايت 4.
     /// </summary>
-    private static bool MatchesSignature(Stream stream, IEnumerable<byte[]> signatures)
+    private static bool MatchesSignature(ReadOnlySpan<byte> header, IEnumerable<byte[]> signatures)
     {
-        Span<byte> header = stackalloc byte[12];
-        var read = stream.Read(header);
-
         foreach (var signature in signatures)
         {
-            if (read < signature.Length)
+            if (header.Length < signature.Length)
             {
                 continue;
             }
 
-            // فحص offset 0 أولاً
-            var atStart = true;
-            for (var i = 0; i < signature.Length; i++)
-            {
-                if (header[i] != signature[i])
-                {
-                    atStart = false;
-                    break;
-                }
-            }
-
-            if (atStart)
+            if (header.StartsWith(signature))
             {
                 return true;
             }
 
-            // فحص offset 4 (ftyp في ملفات M4A / MP4-like)
-            if (read >= signature.Length + 4)
+            if (signature.AsSpan().SequenceEqual("ftyp"u8)
+                && header.Length >= signature.Length + 4
+                && header[4..].StartsWith(signature))
             {
-                var at4 = true;
-                for (var i = 0; i < signature.Length; i++)
-                {
-                    if (header[4 + i] != signature[i])
-                    {
-                        at4 = false;
-                        break;
-                    }
-                }
-
-                if (at4)
-                {
-                    return true;
-                }
+                return true;
             }
+        }
+
+        return false;
+    }
+
+    private static byte[] ReadHeader(Stream stream)
+    {
+        using var buffer = new MemoryStream(HeaderInspectionLimitBytes);
+        var chunk = new byte[4096];
+        while (buffer.Length < HeaderInspectionLimitBytes)
+        {
+            var remaining = HeaderInspectionLimitBytes - (int)buffer.Length;
+            var read = stream.Read(chunk, 0, Math.Min(chunk.Length, remaining));
+            if (read == 0)
+            {
+                break;
+            }
+
+            buffer.Write(chunk, 0, read);
+        }
+
+        return buffer.ToArray();
+    }
+
+    private static bool MatchesContainer(string extension, ReadOnlySpan<byte> header) => extension switch
+    {
+        ".webp" => header.Length >= 12 && header[8..12].SequenceEqual("WEBP"u8),
+        ".wav" => IsPcmWave(header),
+        _ => true
+    };
+
+    private static bool IsPcmWave(ReadOnlySpan<byte> header)
+    {
+        if (header.Length < 20
+            || !header[..4].SequenceEqual("RIFF"u8)
+            || !header[8..12].SequenceEqual("WAVE"u8))
+        {
+            return false;
+        }
+
+        var offset = 12;
+        while (offset <= header.Length - 8)
+        {
+            var chunkId = header.Slice(offset, 4);
+            var chunkSize = BinaryPrimitives.ReadUInt32LittleEndian(header.Slice(offset + 4, 4));
+            var dataOffset = offset + 8;
+            if (chunkId.SequenceEqual("fmt "u8))
+            {
+                return chunkSize >= 2
+                    && dataOffset <= header.Length - 2
+                    && BinaryPrimitives.ReadUInt16LittleEndian(header.Slice(dataOffset, 2)) == 1;
+            }
+
+            var paddedSize = (long)chunkSize + (chunkSize & 1);
+            var nextOffset = dataOffset + paddedSize;
+            if (nextOffset > header.Length || nextOffset > int.MaxValue)
+            {
+                return false;
+            }
+
+            offset = (int)nextOffset;
         }
 
         return false;

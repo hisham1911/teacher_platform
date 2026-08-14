@@ -73,6 +73,7 @@ export function QuestionForm({
   );
   const [errors, setErrors] = useState<QuestionFormErrors>({});
   const [isUploading, setIsUploading] = useState(false);
+  const [selectedMedia, setSelectedMedia] = useState<File | null>(null);
 
   const uploadMutation = useMutation({
     mutationFn: (file: File) => mediaApi.upload(tenantId, file),
@@ -81,16 +82,21 @@ export function QuestionForm({
       setUploadedKind(asset.kind);
       setErrors((e) => ({ ...e, media: undefined }));
     },
-    onError: (error) => {
+    onError: (error, file) => {
       setMediaAssetId(null);
       setUploadedKind(null);
+      const body = error instanceof HttpError
+        ? error.body as { detail?: string; title?: string } | null
+        : null;
       setErrors((e) => ({
         ...e,
         media:
           error instanceof HttpError && error.status === 413
             ? 'الملف أكبر من الحد المسموح (5MB صور / 20MB صوت).'
             : error instanceof HttpError && error.status === 400
-              ? 'نوع الملف غير مدعوم (JPEG/PNG/WebP أو MP3/WAV/M4A فقط — بدون SVG).'
+              ? file.name.toLowerCase().endsWith('.wav')
+                ? 'ملف WAV مضغوط أو غير صالح. حوّله إلى WAV PCM غير مضغوط، أو استخدم MP3 أو M4A، ثم أعد المحاولة.'
+                : body?.detail ?? 'نوع الملف غير مدعوم. استخدم JPEG/PNG/WebP للصور أو MP3/M4A/WAV PCM غير مضغوط للصوت.'
               : 'تعذر رفع الملف. أعد المحاولة.',
       }));
     },
@@ -102,6 +108,7 @@ export function QuestionForm({
     setOptions(defaultOptionsFor(next));
     setMediaAssetId(null);
     setUploadedKind(null);
+    setSelectedMedia(null);
     setAcceptedAnswersInput('');
   }
 
@@ -109,6 +116,7 @@ export function QuestionForm({
     if (!file) {
       return;
     }
+    setSelectedMedia(file);
     setIsUploading(true);
     uploadMutation.mutate(file);
   }
@@ -287,14 +295,24 @@ export function QuestionForm({
             className="block w-full text-sm text-slate-600 file:me-3 file:min-h-11 file:rounded-lg file:border-0 file:bg-slate-900 file:px-4 file:text-sm file:text-white hover:file:bg-slate-700"
           />
           <p className="mt-1 text-xs text-slate-500">
-            {isListening ? 'MP3 أو WAV أو M4A — حد أقصى 20MB.' : 'JPEG أو PNG أو WebP — حد أقصى 5MB. SVG غير مدعوم حاليًا.'}
+            {isListening ? 'MP3 أو M4A أو WAV PCM غير مضغوط — حد أقصى 20MB.' : 'JPEG أو PNG أو WebP — حد أقصى 5MB. SVG غير مدعوم حاليًا.'}
           </p>
-          {isUploading ? <p className="mt-2 text-xs text-slate-500">جارٍ رفع الملف وفحصه…</p> : null}
-          {errors.media ? <p role="alert" className="mt-2 text-sm text-rose-600">{errors.media}</p> : null}
+          {selectedMedia ? (
+            <p className="mt-2 text-xs text-slate-600">
+              الملف المختار: <bdi className="font-semibold">{selectedMedia.name}</bdi> · {formatFileSize(selectedMedia.size)} · {selectedMedia.type || 'نوع غير محدد'}
+            </p>
+          ) : null}
+          {isUploading ? <p role="status" className="mt-2 text-xs text-slate-500">جارٍ رفع الملف وفحصه…</p> : null}
+          {errors.media ? (
+            <div role="alert" className="mt-2 rounded-lg bg-rose-50 p-3 text-sm text-rose-700">
+              <p>{errors.media}</p>
+              {selectedMedia ? <button type="button" onClick={() => onMediaSelected(selectedMedia)} className="mt-2 min-h-11 rounded-md border border-rose-300 bg-white px-3 font-semibold">إعادة المحاولة</button> : null}
+            </div>
+          ) : null}
 
           {mediaAssetId ? (
             <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50/50 p-3 text-sm">
-              <p className="mb-2 text-emerald-800">تم رفع الملف بنجاح.</p>
+              <p className="mb-2 font-medium text-emerald-800">تم رفع الملف وفحصه بنجاح. اختر ملفًا آخر أعلاه لاستبداله.</p>
               <MediaContentPreview
                 tenantId={tenantId}
                 mediaId={mediaAssetId}
@@ -339,6 +357,12 @@ export function QuestionForm({
 
     </form>
   );
+}
+
+function formatFileSize(sizeBytes: number) {
+  return sizeBytes < 1024 * 1024
+    ? `${Math.max(1, Math.round(sizeBytes / 1024))} كيلوبايت`
+    : `${(sizeBytes / (1024 * 1024)).toFixed(1)} ميجابايت`;
 }
 
 function defaultOptionsFor(type: QuestionType): QuestionOptionInput[] {

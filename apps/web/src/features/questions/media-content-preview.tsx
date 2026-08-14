@@ -16,11 +16,13 @@ export function MediaContentPreview({
 }) {
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
+  const [playbackFailed, setPlaybackFailed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     let currentUrl: string | null = null;
     setFailed(false);
+    setPlaybackFailed(false);
     setObjectUrl(null);
 
     mediaApi
@@ -50,9 +52,12 @@ export function MediaContentPreview({
 
   if (kind === 'Audio') {
     return (
-      <audio controls preload="metadata" src={objectUrl} className="w-full">
-        تعذر تشغيل الصوت في هذا المتصفح.
-      </audio>
+      <div>
+        <audio controls preload="metadata" src={objectUrl} onError={() => setPlaybackFailed(true)} className="w-full">
+          تعذر تشغيل الصوت في هذا المتصفح.
+        </audio>
+        {playbackFailed ? <p role="alert" className="mt-2 text-sm text-rose-700">تعذر تشغيل الملف. استخدم MP3 أو M4A أو WAV PCM غير مضغوط ثم استبدله.</p> : null}
+      </div>
     );
   }
 

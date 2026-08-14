@@ -229,19 +229,12 @@ public sealed class QuestionService
 
         var versions = await _db.QuestionVersions
             .AsNoTracking()
+            .Include(v => v.Options)
             .Where(v => v.QuestionId == questionId)
             .OrderByDescending(v => v.VersionNumber)
             .ToListAsync(cancellationToken);
 
-        return versions.Select(v => new QuestionVersionSummaryResponse
-        {
-            Id = v.Id,
-            VersionNumber = v.VersionNumber,
-            QuestionType = v.QuestionType.ToString(),
-            Prompt = v.Prompt,
-            IsValid = EvaluateVersion(v, []).IsValid,
-            CreatedAt = v.CreatedAt
-        }).ToList();
+        return versions.Select(ToVersionSummaryResponse).ToList();
     }
 
     public async Task<QuestionVersionResponse?> GetVersionAsync(
@@ -578,6 +571,30 @@ public sealed class QuestionService
             IsValid = validation.IsValid,
             ValidationErrors = validation.Errors,
             Options = options,
+            CreatedAt = version.CreatedAt
+        };
+    }
+
+    private static QuestionVersionSummaryResponse ToVersionSummaryResponse(QuestionVersion version)
+    {
+        var options = version.Options
+            .OrderBy(option => option.SortOrder)
+            .Select(option => new QuestionOptionResponse
+            {
+                Id = option.Id,
+                SortOrder = option.SortOrder,
+                OptionText = option.OptionText,
+                IsCorrect = option.IsCorrect
+            })
+            .ToList();
+
+        return new QuestionVersionSummaryResponse
+        {
+            Id = version.Id,
+            VersionNumber = version.VersionNumber,
+            QuestionType = version.QuestionType.ToString(),
+            Prompt = version.Prompt,
+            IsValid = EvaluateVersion(version, options).IsValid,
             CreatedAt = version.CreatedAt
         };
     }

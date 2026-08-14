@@ -74,7 +74,6 @@ export default function QuestionsPage() {
   });
 
   if (!tenantId) {
-    navigate('/onboarding/choose', { replace: true });
     return null;
   }
 
@@ -89,9 +88,9 @@ export default function QuestionsPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold text-slate-900">بنك الأسئلة</h1>
-          <p className="text-sm text-slate-600">إدارة الأسئلة والوسوم مع سجلّ الإصدارات غير القابل للتعديل.</p>
+          <p className="text-sm text-slate-600">أنشئ أسئلتك ونظّمها في بنوك، وارجع إلى سجل التعديلات عند الحاجة.</p>
         </div>
-        <Button onClick={() => navigate('/dashboard/questions/new')}>سؤال جديد</Button>
+        {(banks ?? []).length > 0 ? <Button onClick={() => navigate('/dashboard/questions/new')}>سؤال جديد</Button> : null}
       </div>
 
       {/* إدارة البنوك */}
@@ -234,9 +233,11 @@ export default function QuestionsPage() {
           <p className="mb-4 text-sm text-slate-700">
             {search || bankFilter || typeFilter || difficultyFilter || tagFilter
               ? 'لا نتائج مطابقة للبحث أو المرشحات الحالية.'
-              : 'لا توجد أسئلة بعد. أنشئ أول سؤال لتبدأ بناء الاختبارات.'}
+              : (banks ?? []).length === 0
+                ? 'ابدأ بإنشاء بنك أسئلة، ثم أضف إليه سؤالك الأول.'
+                : 'لا توجد أسئلة بعد. أنشئ أول سؤال لتبدأ بناء الاختبارات.'}
           </p>
-          <Button onClick={() => navigate('/dashboard/questions/new')}>إنشاء سؤال</Button>
+          {(banks ?? []).length > 0 ? <Button onClick={() => navigate('/dashboard/questions/new')}>إنشاء سؤال</Button> : null}
         </div>
       ) : null}
 
@@ -253,8 +254,6 @@ export default function QuestionsPage() {
                     {QUESTION_TYPE_LABELS[question.questionType as QuestionType] ?? question.questionType}
                     {' · '}
                     {DIFFICULTY_LABELS[question.difficulty as keyof typeof DIFFICULTY_LABELS] ?? question.difficulty}
-                    {' · إصدار '}
-                    v{question.currentVersionNumber}
                     {question.tags.length > 0 ? ` · ${question.tags.join('، ')}` : ''}
                   </p>
                 </div>
@@ -272,7 +271,7 @@ export default function QuestionsPage() {
                   <Link
                     to={`/dashboard/questions/${question.id}/versions`}
                     className="min-h-11 rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-sky-600">
-                    الإصدارات
+                    سجل التعديلات
                   </Link>
                 </div>
               </div>

@@ -9,7 +9,7 @@ import type { QuestionOptionInput } from '../../../types/questions';
 import { QuestionForm, type QuestionFormValue } from '../../../features/questions/question-form';
 import type { CreateQuestionVersionRequest } from '../../../types/questions';
 
-/** /dashboard/questions/:questionId/edit — تعديل المحتوى = إصدار جديد Immutable */
+/** /dashboard/questions/:questionId/edit — تعديل السؤال مع الاحتفاظ بسجل التغييرات. */
 export default function QuestionEditPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -68,7 +68,6 @@ export default function QuestionEditPage() {
   });
 
   if (!tenantId || !questionId) {
-    navigate('/onboarding/choose', { replace: true });
     return null;
   }
 
@@ -126,10 +125,10 @@ export default function QuestionEditPage() {
       <header className="flex items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold text-slate-900">
-            تعديل السؤال — إنشاء نسخة v{(question?.currentVersionNumber ?? 0) + 1}
+            تعديل السؤال
           </h1>
           <p className="text-sm text-slate-600">
-            النسخة الحالية (v{question?.currentVersionNumber}) تبقى Immutable؛ الحفظ ينتج نسخة جديدة.
+            عند الحفظ سنحتفظ بالتعديلات السابقة في سجل النسخ، ويمكنك الرجوع إليها لاحقًا.
           </p>
         </div>
         <div className="flex gap-2">
@@ -148,7 +147,7 @@ export default function QuestionEditPage() {
 
       {conflictMessage ? (
         <div role="alert" className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
-          <p className="font-semibold">تعارض تعديل متزامن (409)</p>
+          <p className="font-semibold">تم تحديث السؤال في مكان آخر</p>
           <p className="mt-1">{conflictMessage}</p>
           <Button
             variant="secondary"
@@ -182,7 +181,7 @@ export default function QuestionEditPage() {
           tenantId={tenantId}
           initialValue={initial}
           typeLocked
-          submitLabel={`حفظ كنسخة v${question!.currentVersionNumber + 1}`}
+          submitLabel="حفظ التعديلات"
           isPending={versionMutation.isPending}
           onSubmit={submit}
         />

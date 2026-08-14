@@ -73,15 +73,7 @@ public sealed class MediaService
             sizeBytes > 0 ? sizeBytes : buffered.Length,
             declaredMime,
             declaredName,
-            () =>
-            {
-                var clone = new MemoryStream();
-                var pos = buffered.Position;
-                buffered.CopyTo(clone, 12);
-                clone.Position = 0;
-                buffered.Position = pos;
-                return clone;
-            },
+            () => buffered,
             _options,
             out var result);
 
@@ -92,6 +84,8 @@ public sealed class MediaService
             {
                 "EmptyFile" => "The uploaded file is empty.",
                 "FileTooLarge" => $"File exceeds the allowed size (images ≤ {_options.ImageMaxBytes / (1024 * 1024)}MB, audio ≤ {_options.AudioMaxBytes / (1024 * 1024)}MB).",
+                _ when string.Equals(Path.GetExtension(declaredName), ".wav", StringComparison.OrdinalIgnoreCase) =>
+                    "Use MP3, M4A, or uncompressed PCM WAV audio.",
                 _ => "Unsupported or unsafe file type."
             };
             return (new ServiceResultException(errorCode, message), null);
@@ -206,4 +200,5 @@ public sealed class MediaService
             DownloadUrl = downloadUrl
         };
     }
+
 }
