@@ -546,6 +546,8 @@ function PlayingView({
   const [questionIndex, setQuestionIndex] = useState(attempt.currentQuestionIndex);
   const [actionError, setActionError] = useState<string | null>(null);
   const [lastFeedback, setLastFeedback] = useState<{ isCorrect: boolean; scoreAwarded: number } | null>(null);
+  const [answeredQuestionId, setAnsweredQuestionId] = useState<string | null>(null);
+  const [skipConfirmation, setSkipConfirmation] = useState<'next' | 'finish' | null>(null);
 
   const questionQuery = useQuery({
     queryKey: ['player-question', joinCode, attempt.attemptId, questionIndex],
@@ -557,6 +559,8 @@ function PlayingView({
     if (questionQuery.data) {
       clockSync(questionQuery.data.serverNow);
       setLastFeedback(null);
+      setAnsweredQuestionId(questionQuery.data.alreadyAnswered ? questionQuery.data.quizVersionItemId : null);
+      setSkipConfirmation(null);
     }
   }, [questionQuery.data, clockSync]);
 
@@ -589,6 +593,7 @@ function PlayingView({
       playerApi.submitAnswer(joinCode, attempt.attemptId, payload),
     onSuccess: (result) => {
       clockSync(result.serverNow);
+      setAnsweredQuestionId(result.quizVersionItemId);
       if (result.isCorrect != null && result.scoreAwarded != null) {
         setLastFeedback({ isCorrect: result.isCorrect, scoreAwarded: result.scoreAwarded });
       }
@@ -645,6 +650,26 @@ function PlayingView({
   }
 
   const isLast = question.index >= question.totalQuestions - 1;
+  const currentQuestionAnswered = question.alreadyAnswered
+    || answeredQuestionId === question.quizVersionItemId;
+
+  function continueFromCurrentQuestion() {
+    setSkipConfirmation(null);
+    if (isLast) {
+      finishMutation.mutate();
+    } else {
+      setQuestionIndex((index) => index + 1);
+    }
+  }
+
+  function requestQuestionProgress() {
+    if (currentQuestionAnswered) {
+      continueFromCurrentQuestion();
+      return;
+    }
+
+    setSkipConfirmation(isLast ? 'finish' : 'next');
+  }
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col p-4">
@@ -693,13 +718,13 @@ function PlayingView({
         <AnswerEditor
           key={question.quizVersionItemId}
           question={question}
-          disabled={answerMutation.isPending || question.alreadyAnswered}
+          disabled={answerMutation.isPending || currentQuestionAnswered}
           onSubmit={(answerJson) =>
             answerMutation.mutate({ quizVersionItemId: question.quizVersionItemId, answerJson })
           }
         />
 
-        {question.alreadyAnswered ? (
+        {currentQuestionAnswered ? (
           <p className="rounded-lg bg-slate-50 p-2 text-center text-xs text-slate-500">
             تم تسجيل إجابتك لهذا السؤال مسبقًا.
           </p>
@@ -720,12 +745,27 @@ function PlayingView({
         {actionError ? (
           <p role="alert" className="rounded-lg bg-rose-50 p-3 text-sm text-rose-700">{actionError}</p>
         ) : null}
+
+        {skipConfirmation ? (
+          <div role="alertdialog" aria-labelledby="skip-question-title" aria-describedby="skip-question-description" className="rounded-lg border border-amber-300 bg-amber-50 p-4">
+            <h2 id="skip-question-title" className="font-semibold text-amber-950">لم تُحفظ إجابة لهذا السؤال</h2>
+            <p id="skip-question-description" className="mt-1 text-sm text-amber-900">
+              يمكنك العودة والإجابة، أو تجاوز السؤال عمدًا وسيبقى بلا إجابة.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button variant="secondary" onClick={() => setSkipConfirmation(null)}>ابقَ وأجب</Button>
+              <Button onClick={continueFromCurrentQuestion}>
+                {skipConfirmation === 'finish' ? 'تجاوز وإنهاء الاختبار' : 'تجاوز هذا السؤال'}
+              </Button>
+            </div>
+          </div>
+        ) : null}
       </section>
 
       <footer className="mt-4 flex gap-2">
         {isLast ? (
           <Button
-            onClick={() => finishMutation.mutate()}
+            onClick={requestQuestionProgress}
             disabled={answerMutation.isPending || finishMutation.isPending}
             >
             {finishMutation.isPending ? <ButtonSpinner /> : null}
@@ -734,7 +774,7 @@ function PlayingView({
         ) : (
           <Button
             variant="secondary"
-            onClick={() => setQuestionIndex((i) => i + 1)}
+            onClick={requestQuestionProgress}
             disabled={answerMutation.isPending}>
             السؤال التالي ←
           </Button>
@@ -758,11 +798,15 @@ function QuestionMedia({
   questionType: PlayerQuestion['questionType'];
 }) {
   const url = playerApi.mediaUrl(joinCode, attemptId, mediaId);
+  const [playbackFailed, setPlaybackFailed] = useState(false);
   if (questionType === 'Listening') {
     return (
-      <audio controls preload="none" src={url} className="w-full" data-testid="question-media-audio">
-        المتصفح لا يدعم تشغيل الصوت.
-      </audio>
+      <div>
+        <audio controls preload="metadata" src={url} onError={() => setPlaybackFailed(true)} className="w-full" data-testid="question-media-audio">
+          المتصفح لا يدعم تشغيل الصوت.
+        </audio>
+        {playbackFailed ? <p role="alert" className="mt-2 rounded-lg bg-rose-50 p-3 text-sm text-rose-700">تعذر تشغيل الصوت. أعد تحميل الصفحة، وإن استمرت المشكلة فأبلغ المعلم.</p> : null}
+      </div>
     );
   }
   return (

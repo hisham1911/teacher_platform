@@ -72,6 +72,8 @@ describe('PublicQuizPage', () => {
     expect(screen.getByText('100')).toBeInTheDocument();
     expect(screen.getByText('60%')).toBeInTheDocument();
     expect(screen.getByText(/وقت إجمالي/)).toBeInTheDocument();
+    expect(screen.getByText(/صفحة تعريفية بالاختبار وليست صفحة الحل/)).toBeInTheDocument();
+    expect(screen.queryByText(/المرحلة 4|Player/)).not.toBeInTheDocument();
     expect(getByCodeMock).toHaveBeenCalledWith('abc-123', expect.anything());
   });
 

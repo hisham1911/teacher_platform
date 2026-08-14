@@ -271,6 +271,39 @@ describe('PlayPage', () => {
     expect(submitAnswerMock).toHaveBeenCalledTimes(2);
   });
 
+  it('يحذر قبل تجاوز سؤال بلا إجابة ويسمح بالتجاوز المتعمد', async () => {
+    const firstQuestion: PlayerQuestion = {
+      quizVersionItemId: 'q-1', index: 0, totalQuestions: 2, questionType: 'MultipleChoice',
+      prompt: 'السؤال الأول', points: 5, isRequired: true, mediaAssetId: null,
+      options: [{ optionId: 'o-1', optionText: 'أ' }, { optionId: 'o-2', optionText: 'ب' }],
+      alreadyAnswered: false, deadlineAt: null, serverNow: new Date().toISOString(),
+    };
+    const secondQuestion = { ...firstQuestion, quizVersionItemId: 'q-2', index: 1, prompt: 'السؤال الثاني' };
+    getSessionMock.mockResolvedValue(activeSession);
+    joinMock.mockResolvedValue(joinResponse);
+    startAttemptMock.mockResolvedValue(startResponse);
+    vi.mocked(playerApi.getCurrentQuestion)
+      .mockResolvedValueOnce(firstQuestion)
+      .mockResolvedValueOnce(secondQuestion);
+
+    renderPage();
+    await waitFor(() => screen.getByRole('button', { name: 'انضمام' }));
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'لاعب تجريبي' } });
+    fireEvent.click(screen.getByRole('button', { name: 'انضمام' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'ابدأ الاختبار' }));
+    await screen.findByText('السؤال الأول');
+
+    fireEvent.click(screen.getByRole('button', { name: 'السؤال التالي ←' }));
+    expect(screen.getByRole('alertdialog')).toHaveTextContent('لم تُحفظ إجابة لهذا السؤال');
+    fireEvent.click(screen.getByRole('button', { name: 'ابقَ وأجب' }));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(screen.getByText('السؤال الأول')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'السؤال التالي ←' }));
+    fireEvent.click(screen.getByRole('button', { name: 'تجاوز هذا السؤال' }));
+    expect(await screen.findByText('السؤال الثاني')).toBeInTheDocument();
+  });
+
   it('prevents finishing the final question while its answer is still being saved', async () => {
     const playerQuestion: PlayerQuestion = {
       quizVersionItemId: 'q-final',

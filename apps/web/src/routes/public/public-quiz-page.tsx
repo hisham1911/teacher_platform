@@ -8,7 +8,7 @@ import { TIME_MODE_LABELS } from '../../types/quizzes';
  * صفحة الهبوط العامة للاختبار المنشور (/q/:publicCode).
  *
  * تعرض بيانات تعريفية فقط (metadata) — بدون أسئلة أو خيارات أو إجابات.
- * واجهة الطالب (Player) الفعلية ستُبنى في المرحلة 4.
+ * رابط الحل الفعلي يصدر من جلسة ينشئها المعلم.
  */
 export default function PublicQuizPage() {
   const { publicCode } = useParams<{ publicCode: string }>();
@@ -114,7 +114,8 @@ export default function PublicQuizPage() {
       </dl>
 
       <p className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
-        هذه صفحة تعريفية بالاختبار. واجهة الطالب (Player) لبدء الإجابة ستتوفر في المرحلة 4.
+        هذه صفحة تعريفية بالاختبار وليست صفحة الحل. استخدم رابط الجلسة أو رمز الانضمام الذي
+        أرسله لك المعلم لبدء الإجابة.
       </p>
     </section>
   );

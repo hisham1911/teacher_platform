@@ -54,10 +54,30 @@ describe('PlayerDeliveryPanel', () => {
     expect(playerApi.issueCertificate).toHaveBeenCalledWith('JOIN123', 'attempt-1', expect.anything());
   });
 
+  it('يشرح للطالب أن الشهادة قيد التجهيز وأن الصفحة ستتحدث تلقائيًا', async () => {
+    vi.mocked(playerApi.issueCertificate).mockResolvedValue({
+      certificateId: 'certificate-1',
+      certificateNumber: 'CERT-2026-0001',
+      status: 'Pending',
+      issuedAt: '2026-08-09T12:00:00Z',
+      downloadUrl: null,
+      publicUrl: null,
+    });
+
+    renderPanel();
+
+    expect(await screen.findByText(/تُجهّز الشهادة تلقائيًا/)).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'تنزيل الشهادة PDF' })).not.toBeInTheDocument();
+  });
+
   it('ينشئ رابط النتيجة وينسخه عند طلب الطالب', async () => {
     renderPanel(false);
     fireEvent.click(screen.getByRole('button', { name: 'إنشاء رابط المشاركة' }));
     const copyButton = await screen.findByRole('button', { name: 'نسخ رابط النتيجة' });
+    expect(screen.getByRole('link', { name: 'فتح رابط ولي الأمر' })).toHaveAttribute(
+      'href',
+      'https://example.test/result/token-2',
+    );
     fireEvent.click(copyButton);
 
     await waitFor(() => expect(writeText).toHaveBeenCalledWith('https://example.test/result/token-2'));

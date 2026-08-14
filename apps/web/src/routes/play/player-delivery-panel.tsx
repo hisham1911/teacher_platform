@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Button } from '../../components/ui/button';
 import { ButtonSpinner } from '../../components/ui/spinner';
@@ -19,6 +19,7 @@ export function PlayerDeliveryPanel({
 }) {
   const [copied, setCopied] = useState<'certificate' | 'result' | null>(null);
   const [copyError, setCopyError] = useState(false);
+  const [certificateWaitIsLong, setCertificateWaitIsLong] = useState(false);
 
   const certificateQuery = useQuery({
     queryKey: ['player-certificate', joinCode, attemptId],
@@ -34,6 +35,16 @@ export function PlayerDeliveryPanel({
 
   const certificate = certificateQuery.data;
   const parentShare = parentShareMutation.data;
+
+  useEffect(() => {
+    if (!passed || (certificate && certificate.status !== 'Pending')) {
+      setCertificateWaitIsLong(false);
+      return;
+    }
+
+    const timer = window.setTimeout(() => setCertificateWaitIsLong(true), 8_000);
+    return () => window.clearTimeout(timer);
+  }, [certificate, passed]);
 
   async function copy(kind: 'certificate' | 'result', value: string) {
     try {
@@ -63,11 +74,22 @@ export function PlayerDeliveryPanel({
               <Button variant="secondary" onClick={() => void certificateQuery.refetch()}>إعادة المحاولة</Button>
             </div>
           ) : !certificate || certificate.status === 'Pending' ? (
-            <p role="status" className="mt-3 flex items-center gap-2 text-sm text-slate-600">
-              <ButtonSpinner /> جارٍ تجهيز ملف الشهادة…
-            </p>
+            <div className="mt-3 text-sm text-slate-600">
+              <p role="status" className="flex items-center gap-2">
+                <ButtonSpinner /> تُجهّز الشهادة تلقائيًا، وستتحدث هذه الصفحة عند اكتمالها.
+              </p>
+              {certificateWaitIsLong ? (
+                <div className="mt-3 rounded-lg bg-amber-50 p-3 text-amber-900">
+                  <p>ما زالت قيد التجهيز. يمكنك تحديث الحالة دون مغادرة الصفحة.</p>
+                  <Button variant="secondary" onClick={() => void certificateQuery.refetch()}>تحديث حالة الشهادة</Button>
+                </div>
+              ) : null}
+            </div>
           ) : certificate.status === 'Failed' ? (
-            <p role="alert" className="mt-2 text-sm text-rose-700">تعذر إنشاء الشهادة. أبلغ المعلم ليعيد المحاولة.</p>
+            <div role="alert" className="mt-2 text-sm text-rose-700">
+              <p>تعذر إنشاء الشهادة. أبلغ المعلم ليعيد المحاولة من صفحة الشهادات.</p>
+              <Button variant="secondary" onClick={() => void certificateQuery.refetch()}>تحديث الحالة</Button>
+            </div>
           ) : (
             <div className="mt-3 flex flex-col gap-2">
               <a
@@ -95,6 +117,13 @@ export function PlayerDeliveryPanel({
           ) : null}
           {parentShare ? (
             <div className="mt-3 flex flex-col gap-2">
+              <a
+                href={parentShare.shareUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex min-h-11 items-center justify-center rounded-lg bg-sky-700 px-4 py-2 text-sm font-bold text-white hover:bg-sky-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600">
+                فتح رابط ولي الأمر
+              </a>
               <Button variant="secondary" onClick={() => void copy('result', parentShare.shareUrl)}>
                 {copied === 'result' ? 'تم نسخ رابط النتيجة' : 'نسخ رابط النتيجة'}
               </Button>

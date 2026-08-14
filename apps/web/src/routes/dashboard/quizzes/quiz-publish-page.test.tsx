@@ -105,7 +105,7 @@ describe('QuizPublishPage', () => {
     getShareMock.mockRejectedValue(new Error('not published'));
   });
 
-  it('يعرض رابط المشاركة ورمز QR بعد نشر ناجح', async () => {
+  it('يوضح صفحة التعريف ويوجه المعلم لإنشاء جلسة بعد النشر', async () => {
     getDraftMock.mockResolvedValue(draft);
     publishMock.mockResolvedValue(publishResponse);
 
@@ -122,7 +122,11 @@ describe('QuizPublishPage', () => {
     );
 
     expect(screen.getByText('https://example.com/q/pub-code-1')).toBeInTheDocument();
-    expect(screen.getByText('pub-code-1')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'إنشاء جلسة للطلاب' })).toHaveAttribute(
+      'href',
+      `/dashboard/quizzes/${QUIZ_ID}/sessions`,
+    );
+    expect(screen.queryByText(/Checksum|المرحلة 4|Player/)).not.toBeInTheDocument();
 
     const qrContainer = screen.getByTestId('share-qr-code');
     expect(qrContainer.querySelector('svg')).not.toBeNull();
@@ -156,5 +160,6 @@ describe('QuizPublishPage', () => {
       expect(screen.getByTestId('share-qr-code').querySelector('svg')).not.toBeNull(),
     );
     expect(screen.getAllByText('https://example.com/q/pub-code-1').length).toBeGreaterThan(0);
+    expect(screen.getByRole('link', { name: 'إنشاء جلسة للطلاب' })).toBeInTheDocument();
   });
 });

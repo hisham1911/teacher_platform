@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useNavigate, useParams } from 'react-router';
+import { Link, useParams } from 'react-router';
 import QRCode from 'react-qr-code';
 import { Button } from '../../../components/ui/button';
 import { ButtonSpinner } from '../../../components/ui/spinner';
@@ -18,7 +18,6 @@ import {
 /** /dashboard/quizzes/:quizId/sessions — إدارة جلسات الاختبار (Phase 4) */
 export default function QuizSessionsPage() {
   const { quizId } = useParams<{ quizId: string }>();
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const tenantId = getActiveTenantId();
 
@@ -61,7 +60,6 @@ export default function QuizSessionsPage() {
   });
 
   if (!tenantId) {
-    navigate('/onboarding/choose', { replace: true });
     return null;
   }
 

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useNavigate, useParams } from 'react-router';
+import { Link, useParams } from 'react-router';
 import QRCode from 'react-qr-code';
 import { Button } from '../../../components/ui/button';
 import { ButtonSpinner } from '../../../components/ui/spinner';
@@ -16,7 +16,6 @@ import {
 /** /dashboard/quizzes/:quizId/publish — نشر الاختبار + قائمة الإصدارات */
 export default function QuizPublishPage() {
   const { quizId } = useParams<{ quizId: string }>();
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const tenantId = getActiveTenantId();
 
@@ -81,7 +80,6 @@ export default function QuizPublishPage() {
   });
 
   if (!tenantId) {
-    navigate('/onboarding/choose', { replace: true });
     return null;
   }
 
@@ -131,7 +129,7 @@ export default function QuizPublishPage() {
         <div>
           <h1 className="text-xl font-bold text-slate-900">نشر: {draft.title}</h1>
           <p className="text-sm text-slate-600">
-            مسودة v{draft.versionNumber} · {draft.items.length} سؤال · {draft.totalPoints} نقطة
+            {draft.items.length} سؤال · {draft.totalPoints} نقطة · راجع الجاهزية ثم انشر
           </p>
         </div>
         <div className="flex gap-2">
@@ -188,7 +186,7 @@ export default function QuizPublishPage() {
         <section aria-labelledby="publish-heading" className="rounded-xl border border-slate-200 bg-white p-4">
           <h2 id="publish-heading" className="mb-2 text-base font-semibold text-slate-900">تأكيد النشر</h2>
           <p className="mb-4 text-sm text-slate-600">
-            سيؤدي النشر إلى تجميد المسودة الحالية كإصدار منشور غير قابل للتعديل، وإنشاء مسودة جديدة للتعديلات المستقبلية.
+            سيحفظ النظام هذه النسخة كما هي للطلاب، ويمكنك متابعة التعديل لاحقًا في نسخة جديدة.
           </p>
           <Button
             onClick={() => publishMutation.mutate()}
@@ -210,52 +208,45 @@ export default function QuizPublishPage() {
           </h2>
           <dl className="flex flex-col gap-2 text-sm text-emerald-900">
             <div className="flex gap-2">
-              <dt className="font-medium">رقم الإصدار:</dt>
-              <dd>v{publishResult.versionNumber}</dd>
-            </div>
-            <div className="flex gap-2">
               <dt className="font-medium">تاريخ النشر:</dt>
               <dd>{new Date(publishResult.publishedAt).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</dd>
             </div>
-            <div className="flex gap-2">
-              <dt className="font-medium">البصمة (Checksum):</dt>
-              <dd dir="ltr" className="font-mono text-xs">{publishResult.checksum.slice(0, 16)}…</dd>
-            </div>
-            <div className="flex gap-2">
-              <dt className="font-medium">الرمز العام:</dt>
-              <dd dir="ltr" className="font-mono">{publishResult.publicCode}</dd>
-            </div>
             <div className="flex flex-wrap items-center gap-2">
-              <dt className="font-medium">رابط المشاركة:</dt>
+              <dt className="font-medium">صفحة تعريف الاختبار:</dt>
               <dd dir="ltr" className="font-mono text-xs">{publishResult.shareUrl}</dd>
               <Button variant="secondary" onClick={() => onCopyShareUrl(publishResult.shareUrl)}>
-                {copied ? 'تم النسخ ✓' : 'نسخ الرابط'}
+                {copied ? 'تم النسخ ✓' : 'نسخ صفحة التعريف'}
               </Button>
             </div>
           </dl>
           <div className="mt-4 flex flex-col items-start gap-2">
-            <span className="text-sm font-medium text-emerald-900">رمز QR للمشاركة:</span>
+            <span className="text-sm font-medium text-emerald-900">QR لصفحة التعريف:</span>
             <div dir="ltr" className="rounded-lg bg-white p-3" data-testid="share-qr-code">
               <QRCode value={publishResult.shareUrl} size={160} />
             </div>
           </div>
-          <p className="mt-3 rounded-lg border border-sky-200 bg-sky-50 p-3 text-xs text-sky-800">
-            ملاحظة: واجهة الطالب (Player) ستتوفر في المرحلة 4. الرابط العام يعرض صفحة تعريفية بالاختبار فقط حاليًا.
-          </p>
+          <div className="mt-4 rounded-lg border border-sky-200 bg-sky-50 p-4 text-sky-900">
+            <p className="text-sm font-semibold">الخطوة التالية: أنشئ جلسة للطلاب</p>
+            <p className="mt-1 text-xs leading-5">
+              رابط الحل ورمز الانضمام يظهران بعد إنشاء الجلسة وتفعيلها. اختر حلًا ذاتيًا أو مسابقة مباشرة.
+            </p>
+            <Link
+              to={`/dashboard/quizzes/${quizId}/sessions`}
+              className="mt-3 inline-flex min-h-11 items-center rounded-md bg-sky-700 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-700">
+              إنشاء جلسة للطلاب
+            </Link>
+          </div>
         </section>
       ) : null}
 
       {/* Share section for already-published quiz (when no fresh publish result) */}
       {!publishResult && shareQuery.data ? (
         <section aria-labelledby="share-heading" className="rounded-xl border border-slate-200 bg-white p-4">
-          <h2 id="share-heading" className="mb-3 text-base font-semibold text-slate-900">المشاركة</h2>
+          <h2 id="share-heading" className="mb-3 text-base font-semibold text-slate-900">صفحة تعريف الاختبار</h2>
+          <p className="mb-3 text-sm text-slate-600">هذه الصفحة تعرض معلومات الاختبار فقط. رابط الحل يصدر من جلسة الطلاب.</p>
           <dl className="flex flex-col gap-2 text-sm text-slate-800">
             <div className="flex gap-2">
-              <dt className="font-medium">الرمز العام:</dt>
-              <dd dir="ltr" className="font-mono">{shareQuery.data.publicCode}</dd>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <dt className="font-medium">رابط المشاركة:</dt>
+              <dt className="font-medium">الرابط التعريفي:</dt>
               <dd dir="ltr" className="font-mono text-xs">{shareQuery.data.shareUrl}</dd>
               <Button variant="secondary" onClick={() => onCopyShareUrl(shareQuery.data.shareUrl)}>
                 {copied ? 'تم النسخ ✓' : 'نسخ الرابط'}
@@ -263,11 +254,16 @@ export default function QuizPublishPage() {
             </div>
           </dl>
           <div className="mt-4 flex flex-col items-start gap-2">
-            <span className="text-sm font-medium text-slate-800">رمز QR للمشاركة:</span>
+            <span className="text-sm font-medium text-slate-800">QR لصفحة التعريف:</span>
             <div dir="ltr" className="rounded-lg bg-white p-3" data-testid="share-qr-code">
               <QRCode value={shareQuery.data.shareUrl} size={160} />
             </div>
           </div>
+          <Link
+            to={`/dashboard/quizzes/${quizId}/sessions`}
+            className="mt-4 inline-flex min-h-11 items-center rounded-md bg-sky-700 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-700">
+            إنشاء جلسة للطلاب
+          </Link>
         </section>
       ) : null}
 
