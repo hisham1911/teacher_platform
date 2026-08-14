@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
+import { Link, useParams, useSearchParams } from 'react-router';
 import { reportsApi } from '../../../data/api-client/endpoints';
 import { HttpError } from '../../../data/api-client/http-error';
 import { getActiveTenantId } from '../../../lib/auth/session';
@@ -11,7 +11,6 @@ export default function AttemptDetailPage() {
   const fallbackSessionId = searchParams.get('sessionId');
   const fallbackQuizId = searchParams.get('quizId');
   const tenantId = getActiveTenantId();
-  const navigate = useNavigate();
 
   const attemptQuery = useQuery({
     queryKey: ['attempt-detail', tenantId, attemptId],
@@ -21,7 +20,6 @@ export default function AttemptDetailPage() {
   });
 
   if (!tenantId) {
-    navigate('/onboarding/choose', { replace: true });
     return null;
   }
 

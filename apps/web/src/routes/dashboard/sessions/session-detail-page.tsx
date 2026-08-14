@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
+import { Link, useParams, useSearchParams } from 'react-router';
 import QRCode from 'react-qr-code';
 import { Button } from '../../../components/ui/button';
 import { ButtonSpinner } from '../../../components/ui/spinner';
@@ -19,7 +19,6 @@ export default function SessionDetailPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const [searchParams] = useSearchParams();
   const quizId = searchParams.get('quizId');
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const tenantId = getActiveTenantId();
 
@@ -63,7 +62,6 @@ export default function SessionDetailPage() {
   });
 
   if (!tenantId) {
-    navigate('/onboarding/choose', { replace: true });
     return null;
   }
 
@@ -125,8 +123,7 @@ export default function SessionDetailPage() {
             {session.label ?? 'جلسة بدون عنوان'}
           </h1>
           <p className="text-sm text-slate-600">
-            {session.quizTitle} · الإصدار v{session.quizVersionNumber} ·{' '}
-            {SESSION_MODE_LABELS[session.mode]} · {SESSION_STATUS_LABELS[session.status] ?? session.status}
+            {session.quizTitle} · {SESSION_MODE_LABELS[session.mode]} · {SESSION_STATUS_LABELS[session.status] ?? session.status}
           </p>
         </div>
         <Link
@@ -154,7 +151,7 @@ export default function SessionDetailPage() {
       {/* رمز الانضمام والمشاركة */}
       <section aria-labelledby="join-heading" className="rounded-xl border border-slate-200 bg-white p-4">
         <h2 id="join-heading" className="mb-3 text-base font-semibold text-slate-900">
-          رمز الانضمام
+          دخول الطلاب
         </h2>
         <div className="flex flex-wrap items-start gap-6">
           <div className="flex flex-col gap-2">
@@ -166,9 +163,10 @@ export default function SessionDetailPage() {
                 {copied ? 'تم النسخ ✓' : 'نسخ الرمز'}
               </Button>
               <Button variant="secondary" onClick={() => onCopy(playUrl)}>
-                نسخ الرابط
+                نسخ رابط الطلاب
               </Button>
             </div>
+            <p className="text-xs font-medium text-slate-700">أرسل هذا الرابط للطلاب بعد تفعيل الجلسة:</p>
             <p dir="ltr" className="font-mono text-xs text-slate-500">{playUrl}</p>
           </div>
           <div dir="ltr" className="rounded-lg border border-slate-200 bg-white p-3" data-testid="session-qr-code">

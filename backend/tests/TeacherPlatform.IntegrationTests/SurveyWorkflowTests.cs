@@ -101,6 +101,73 @@ public sealed class SurveyWorkflowTests : IClassFixture<TestWebApplicationFactor
     }
 
     [Fact]
+    public async Task TeacherSurveyResults_AggregateRatingChoiceAndTextAnswers()
+    {
+        var client = NewClient();
+        var teacher = await CreateTeacherAsync(client);
+        var seeded = await SeedAttemptAsync(teacher.TenantId, AttemptStatus.Finished);
+        var published = await CreateAndPublishSurveyAsync(client, teacher, seeded.QuizId);
+        var answers = BuildValidAnswers(await GetPlayerSurveyAsync(client, seeded));
+        var submitResponse = await client.SendAsync(PlayerRequest(
+            HttpMethod.Post,
+            $"/api/v1/player/sessions/{seeded.JoinCode}/attempts/{seeded.AttemptId}/survey",
+            seeded.RawToken,
+            new { answers }));
+        submitResponse.EnsureSuccessStatusCode();
+
+        var response = await client.SendAsync(TenantRequest(
+            HttpMethod.Get,
+            $"/api/v1/tenants/{teacher.TenantId}/surveys/{published.GetProperty("id").GetGuid()}/results",
+            teacher));
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var results = await ReadJsonAsync<JsonElement>(response);
+        Assert.Equal(1, results.GetProperty("responseCount").GetInt32());
+
+        var questions = results.GetProperty("questions").EnumerateArray().ToList();
+        var rating = questions.First(question => question.GetProperty("questionType").GetString() == "Rating");
+        Assert.Equal(5m, rating.GetProperty("ratingAverage").GetDecimal());
+        var fiveStars = rating.GetProperty("ratingDistribution").EnumerateArray()
+            .Single(entry => entry.GetProperty("value").GetInt32() == 5);
+        Assert.Equal(1, fiveStars.GetProperty("count").GetInt32());
+        Assert.Equal(100m, fiveStars.GetProperty("percentage").GetDecimal());
+
+        var choice = questions.First(question => question.GetProperty("questionType").GetString() == "SingleChoice");
+        var selected = choice.GetProperty("optionResults").EnumerateArray()
+            .Single(entry => entry.GetProperty("count").GetInt32() == 1);
+        Assert.Equal(100m, selected.GetProperty("percentage").GetDecimal());
+
+        var text = questions.First(question => question.GetProperty("questionType").GetString() == "ShortText");
+        Assert.Contains("تجربة واضحة ومفيدة", text.GetProperty("textResponses").EnumerateArray()
+            .Select(entry => entry.GetString()));
+    }
+
+    [Fact]
+    public async Task TeacherSurveyResults_WithoutResponsesReturnZeroSafeAggregates()
+    {
+        var client = NewClient();
+        var teacher = await CreateTeacherAsync(client);
+        var seeded = await SeedAttemptAsync(teacher.TenantId, AttemptStatus.Finished);
+        var published = await CreateAndPublishSurveyAsync(client, teacher, seeded.QuizId);
+
+        var response = await client.SendAsync(TenantRequest(
+            HttpMethod.Get,
+            $"/api/v1/tenants/{teacher.TenantId}/surveys/{published.GetProperty("id").GetGuid()}/results",
+            teacher));
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var results = await ReadJsonAsync<JsonElement>(response);
+        Assert.Equal(0, results.GetProperty("responseCount").GetInt32());
+
+        var questions = results.GetProperty("questions").EnumerateArray().ToList();
+        var rating = questions.First(question => question.GetProperty("questionType").GetString() == "Rating");
+        Assert.Equal(JsonValueKind.Null, rating.GetProperty("ratingAverage").ValueKind);
+        Assert.All(rating.GetProperty("ratingDistribution").EnumerateArray(), entry =>
+            Assert.Equal(0m, entry.GetProperty("percentage").GetDecimal()));
+        var choice = questions.First(question => question.GetProperty("questionType").GetString() == "SingleChoice");
+        Assert.All(choice.GetProperty("optionResults").EnumerateArray(), entry =>
+            Assert.Equal(0m, entry.GetProperty("percentage").GetDecimal()));
+    }
+
+    [Fact]
     public async Task PlayerSurvey_DuplicateSubmissionReturns409AndKeepsOneResponse()
     {
         var client = NewClient();
@@ -195,6 +262,12 @@ public sealed class SurveyWorkflowTests : IClassFixture<TestWebApplicationFactor
             otherContext));
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+
+        var resultsResponse = await client.SendAsync(TenantRequest(
+            HttpMethod.Get,
+            $"/api/v1/tenants/{otherTenantId}/surveys/{published.GetProperty("id").GetGuid()}/results",
+            otherContext));
+        Assert.Equal(HttpStatusCode.NotFound, resultsResponse.StatusCode);
     }
 
     private HttpClient NewClient() => _factory.CreateClient(

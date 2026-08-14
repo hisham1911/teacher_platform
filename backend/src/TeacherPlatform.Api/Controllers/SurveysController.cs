@@ -48,6 +48,23 @@ public sealed class SurveysController : ControllerBase
         return Ok(survey);
     }
 
+    [HttpGet("{surveyId:guid}/results")]
+    [ProducesResponseType(typeof(SurveyResultsResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetResults(
+        [FromRoute] Guid tenantId,
+        [FromRoute] Guid surveyId,
+        CancellationToken cancellationToken)
+    {
+        var results = await _surveyService.GetResultsAsync(surveyId, cancellationToken);
+        if (results is null)
+        {
+            throw new ServiceResultException("NotFound", "Survey not found.");
+        }
+
+        return Ok(results);
+    }
+
     [HttpPost]
     [Authorize(Policy = AuthorizationPolicies.TenantContentManagement)]
     [ProducesResponseType(typeof(SurveyDetailResponse), StatusCodes.Status201Created)]

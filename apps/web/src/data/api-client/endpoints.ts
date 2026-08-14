@@ -86,6 +86,21 @@ async function callBlob(path: string, signal?: AbortSignal, retriedAfterRefresh 
   return response.blob();
 }
 
+async function callPublicBlob(path: string, signal?: AbortSignal): Promise<Blob> {
+  const response = await fetch(`${resolveBaseUrl()}${path}`, {
+    method: 'GET',
+    credentials: 'include',
+    signal,
+  });
+
+  if (!response.ok) {
+    const errorBody: unknown = await response.json().catch(() => null);
+    throw new HttpError(response.status, errorBody);
+  }
+
+  return response.blob();
+}
+
 /** طلب متعدد الوسائط — لا نضبط Content-Type يدويًا: المتصفح يضعه مع boundary تلقائيًا */
 async function callMultipart<T>(
   path: string,
@@ -740,6 +755,7 @@ import type {
   SubmitSurveyRequest,
   SurveyDetail,
   SurveyListItem,
+  SurveyResults,
   SurveySubmission,
   UpdateSurveyRequest,
 } from '../../types/surveys';
@@ -1118,6 +1134,15 @@ export const surveysApi = {
       needsTenant: true,
     });
   },
+  getResults(tenantId: string, surveyId: string, signal?: AbortSignal) {
+    return call<SurveyResults>({
+      method: 'GET',
+      path: `/api/v1/tenants/${tenantId}/surveys/${surveyId}/results`,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
   create(tenantId: string, payload: CreateSurveyRequest, signal?: AbortSignal) {
     return call<SurveyDetail>({
       method: 'POST',
@@ -1226,5 +1251,11 @@ export const publicResultsApi = {
   },
   certificateUrl(publicToken: string): string {
     return `${resolveBaseUrl()}/api/v1/player/certificates/${encodeURIComponent(publicToken)}`;
+  },
+  fetchCertificate(publicToken: string, signal?: AbortSignal) {
+    return callPublicBlob(
+      `/api/v1/player/certificates/${encodeURIComponent(publicToken)}`,
+      signal,
+    );
   },
 };

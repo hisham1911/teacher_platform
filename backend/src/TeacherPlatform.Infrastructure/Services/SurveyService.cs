@@ -58,6 +58,24 @@ public sealed class SurveyService
         return survey is null ? null : MapDetail(survey);
     }
 
+    public async Task<SurveyResultsResponse?> GetResultsAsync(
+        Guid surveyId,
+        CancellationToken cancellationToken)
+    {
+        RequireTenantId();
+        var survey = await _db.Surveys
+            .AsNoTracking()
+            .AsSplitQuery()
+            .Include(item => item.Questions.OrderBy(question => question.SortOrder))
+                .ThenInclude(question => question.Options.OrderBy(option => option.SortOrder))
+            .Include(item => item.Questions)
+                .ThenInclude(question => question.Answers)
+            .Include(item => item.Responses)
+            .SingleOrDefaultAsync(item => item.Id == surveyId, cancellationToken);
+
+        return survey is null ? null : MapResults(survey);
+    }
+
     public async Task<(ServiceResultException? Error, SurveyDetailResponse? Result)> CreateAsync(
         CreateSurveyRequest request,
         CancellationToken cancellationToken)
@@ -358,6 +376,89 @@ public sealed class SurveyService
                 .ToList()
         };
     }
+
+    private static SurveyResultsResponse MapResults(Survey survey) => new()
+    {
+        SurveyId = survey.Id,
+        Title = survey.Title,
+        ResponseCount = survey.Responses.Count,
+        Questions = survey.Questions
+            .OrderBy(question => question.SortOrder)
+            .Select(MapQuestionResults)
+            .ToList()
+    };
+
+    private static SurveyQuestionResultsResponse MapQuestionResults(SurveyQuestion question)
+    {
+        var ratingValues = question.Answers
+            .Where(answer => answer.RatingValue.HasValue)
+            .Select(answer => answer.RatingValue!.Value)
+            .ToList();
+        var selectedOptions = question.Answers
+            .Where(answer => answer.SelectedOptionId.HasValue)
+            .Select(answer => answer.SelectedOptionId!.Value)
+            .ToList();
+        var textResponses = question.Answers
+            .Select(answer => answer.TextValue?.Trim())
+            .Where(text => !string.IsNullOrWhiteSpace(text))
+            .Cast<string>()
+            .ToList();
+
+        return new SurveyQuestionResultsResponse
+        {
+            Id = question.Id,
+            SortOrder = question.SortOrder,
+            QuestionType = question.QuestionType.ToString(),
+            Prompt = question.Prompt,
+            AnswerCount = question.QuestionType switch
+            {
+                SurveyQuestionType.Rating => ratingValues.Count,
+                SurveyQuestionType.SingleChoice => selectedOptions.Count,
+                _ => textResponses.Count
+            },
+            RatingAverage = ratingValues.Count == 0
+                ? null
+                : Math.Round(ratingValues.Average(value => (decimal)value), 2, MidpointRounding.AwayFromZero),
+            RatingDistribution = BuildRatingDistribution(ratingValues),
+            OptionResults = BuildOptionResults(question, selectedOptions),
+            TextResponses = textResponses
+        };
+    }
+
+    private static IReadOnlyList<SurveyRatingDistributionResponse> BuildRatingDistribution(
+        IReadOnlyCollection<int> ratingValues) => Enumerable.Range(1, 5)
+        .Select(value =>
+        {
+            var count = ratingValues.Count(rating => rating == value);
+            return new SurveyRatingDistributionResponse
+            {
+                Value = value,
+                Count = count,
+                Percentage = Percentage(count, ratingValues.Count)
+            };
+        })
+        .ToList();
+
+    private static IReadOnlyList<SurveyOptionResultsResponse> BuildOptionResults(
+        SurveyQuestion question,
+        IReadOnlyCollection<Guid> selectedOptions) => question.Options
+        .OrderBy(option => option.SortOrder)
+        .Select(option =>
+        {
+            var count = selectedOptions.Count(optionId => optionId == option.Id);
+            return new SurveyOptionResultsResponse
+            {
+                OptionId = option.Id,
+                OptionText = option.OptionText,
+                Count = count,
+                Percentage = Percentage(count, selectedOptions.Count)
+            };
+        })
+        .ToList();
+
+    private static decimal Percentage(int count, int total) => total == 0
+        ? 0m
+        : Math.Round(count * 100m / total, 2, MidpointRounding.AwayFromZero);
 
     private Guid RequireTenantId()
     {

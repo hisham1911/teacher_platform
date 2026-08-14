@@ -48,6 +48,42 @@ public sealed class SurveyOptionResponse
     public string OptionText { get; set; } = string.Empty;
 }
 
+public sealed class SurveyResultsResponse
+{
+    public Guid SurveyId { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public int ResponseCount { get; set; }
+    public IReadOnlyList<SurveyQuestionResultsResponse> Questions { get; set; } = [];
+}
+
+public sealed class SurveyQuestionResultsResponse
+{
+    public Guid Id { get; set; }
+    public int SortOrder { get; set; }
+    public string QuestionType { get; set; } = string.Empty;
+    public string Prompt { get; set; } = string.Empty;
+    public int AnswerCount { get; set; }
+    public decimal? RatingAverage { get; set; }
+    public IReadOnlyList<SurveyRatingDistributionResponse> RatingDistribution { get; set; } = [];
+    public IReadOnlyList<SurveyOptionResultsResponse> OptionResults { get; set; } = [];
+    public IReadOnlyList<string> TextResponses { get; set; } = [];
+}
+
+public sealed class SurveyRatingDistributionResponse
+{
+    public int Value { get; set; }
+    public int Count { get; set; }
+    public decimal Percentage { get; set; }
+}
+
+public sealed class SurveyOptionResultsResponse
+{
+    public Guid OptionId { get; set; }
+    public string OptionText { get; set; } = string.Empty;
+    public int Count { get; set; }
+    public decimal Percentage { get; set; }
+}
+
 public sealed class CreateSurveyRequest
 {
     [Required]

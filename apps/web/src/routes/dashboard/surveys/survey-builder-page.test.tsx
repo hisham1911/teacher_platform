@@ -15,6 +15,7 @@ vi.mock('../../../data/api-client/endpoints', async (importOriginal) => {
       create: vi.fn(),
       update: vi.fn(),
       publish: vi.fn(),
+      getResults: vi.fn(),
     },
   };
 });
@@ -25,6 +26,7 @@ const getMock = vi.mocked(surveysApi.get);
 const createMock = vi.mocked(surveysApi.create);
 const updateMock = vi.mocked(surveysApi.update);
 const publishMock = vi.mocked(surveysApi.publish);
+const getResultsMock = vi.mocked(surveysApi.getResults);
 
 const draft: SurveyDetail = {
   id: 'survey-1',
@@ -67,6 +69,33 @@ describe('SurveyBuilderPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     window.localStorage.setItem('teacher-platform:active-tenant-id', 'tenant-1');
+    getResultsMock.mockResolvedValue({ surveyId: draft.id, title: draft.title, responseCount: 0, questions: [] });
+  });
+
+  it('يعرض تجميعًا حقيقيًا لأنواع أسئلة الاستبيان المنشور', async () => {
+    const publishedSurvey = { ...draft, status: 'Published' as const, responseCount: 2 };
+    listMock.mockResolvedValue([{
+      id: draft.id, quizId: draft.quizId, quizTitle: draft.quizTitle, title: draft.title,
+      status: 'Published', questionCount: 3, responseCount: 2, publishedAt: draft.updatedAt,
+      updatedAt: draft.updatedAt,
+    }]);
+    getMock.mockResolvedValue(publishedSurvey);
+    getResultsMock.mockResolvedValue({
+      surveyId: draft.id,
+      title: draft.title,
+      responseCount: 2,
+      questions: [
+        { id: 'rating', sortOrder: 0, questionType: 'Rating', prompt: 'التقييم', answerCount: 2, ratingAverage: 4.5, ratingDistribution: [{ value: 5, count: 1, percentage: 50 }], optionResults: [], textResponses: [] },
+        { id: 'choice', sortOrder: 1, questionType: 'SingleChoice', prompt: 'الوقت', answerCount: 2, ratingAverage: null, ratingDistribution: [], optionResults: [{ optionId: 'o1', optionText: 'مناسب', count: 2, percentage: 100 }], textResponses: [] },
+        { id: 'text', sortOrder: 2, questionType: 'ShortText', prompt: 'اقتراحك', answerCount: 1, ratingAverage: null, ratingDistribution: [], optionResults: [], textResponses: ['اختبار واضح'] },
+      ],
+    });
+
+    renderPage();
+
+    expect(await screen.findByText('المتوسط:')).toBeInTheDocument();
+    expect(screen.getByText('مناسب')).toBeInTheDocument();
+    expect(screen.getByText('اختبار واضح')).toBeInTheDocument();
   });
 
   it('ينشئ مسودة ثم ينشرها بالعقد المحفوظ من الخادم', async () => {

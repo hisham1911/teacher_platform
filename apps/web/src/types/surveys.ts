@@ -43,6 +43,38 @@ export interface SurveyDetail {
   questions: SurveyQuestion[];
 }
 
+export interface SurveyRatingDistribution {
+  value: number;
+  count: number;
+  percentage: number;
+}
+
+export interface SurveyOptionResult {
+  optionId: string;
+  optionText: string;
+  count: number;
+  percentage: number;
+}
+
+export interface SurveyQuestionResults {
+  id: string;
+  sortOrder: number;
+  questionType: SurveyQuestionType;
+  prompt: string;
+  answerCount: number;
+  ratingAverage: number | null;
+  ratingDistribution: SurveyRatingDistribution[];
+  optionResults: SurveyOptionResult[];
+  textResponses: string[];
+}
+
+export interface SurveyResults {
+  surveyId: string;
+  title: string;
+  responseCount: number;
+  questions: SurveyQuestionResults[];
+}
+
 export interface SurveyOptionInput {
   optionText: string;
 }

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
+import { Link, useParams, useSearchParams } from 'react-router';
 import { Button } from '../../../components/ui/button';
 import { reportsApi } from '../../../data/api-client/endpoints';
 import { HttpError } from '../../../data/api-client/http-error';
@@ -18,7 +18,6 @@ export default function SessionReportPage() {
   const [searchParams] = useSearchParams();
   const quizId = searchParams.get('quizId');
   const tenantId = getActiveTenantId();
-  const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
@@ -38,7 +37,6 @@ export default function SessionReportPage() {
   });
 
   if (!tenantId) {
-    navigate('/onboarding/choose', { replace: true });
     return null;
   }
 

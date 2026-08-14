@@ -4,6 +4,7 @@ import { RootLayout } from '../components/layout/root-layout';
 import { RouteLoadingFallback } from './route-loading-fallback';
 import { RequireAuth } from '../features/auth/require-auth';
 import { RequirePlatformAdmin } from '../features/auth/require-platform-admin';
+import { RequireTenant } from '../features/auth/require-tenant';
 
 const HomePage = lazy(() => import('../routes/public/home-page'));
 const PublicQuizPage = lazy(() => import('../routes/public/public-quiz-page'));
@@ -41,6 +42,7 @@ const SurveyBuilderPage = lazy(() => import('../routes/dashboard/surveys/survey-
 const SessionDetailPage = lazy(() => import('../routes/dashboard/sessions/session-detail-page'));
 const LiveHostPage = lazy(() => import('../routes/dashboard/sessions/live-host-page'));
 const SessionReportPage = lazy(() => import('../routes/dashboard/reports/session-report-page'));
+const ReportsIndexPage = lazy(() => import('../routes/dashboard/reports/reports-index-page'));
 const AttemptDetailPage = lazy(() => import('../routes/dashboard/reports/attempt-detail-page'));
 const CertificatesPage = lazy(() => import('../routes/dashboard/certificates/certificates-page'));
 const PlatformAdminPage = lazy(() => import('../routes/platform/platform-admin-page'));
@@ -71,25 +73,31 @@ export const router = createBrowserRouter([
         children: [
           { path: '/onboarding', element: <OnboardingPage /> },
           { path: '/onboarding/choose', element: <ChooseWorkspacePage /> },
-          { path: '/dashboard', element: <DashboardPage /> },
-          { path: '/dashboard/settings', element: <SettingsPage /> },
-          { path: '/dashboard/questions', element: <QuestionsPage /> },
-          { path: '/dashboard/questions/new', element: <QuestionNewPage /> },
-          { path: '/dashboard/questions/:questionId/edit', element: <QuestionEditPage /> },
-          { path: '/dashboard/questions/:questionId/preview', element: <QuestionPreviewPage /> },
-          { path: '/dashboard/questions/:questionId/versions', element: <QuestionVersionsPage /> },
-          { path: '/dashboard/quizzes', element: <QuizzesPage /> },
-          { path: '/dashboard/quizzes/new', element: <QuizNewPage /> },
-          { path: '/dashboard/quizzes/:quizId/edit', element: <QuizEditPage /> },
-          { path: '/dashboard/quizzes/:quizId/preview', element: <QuizPreviewPage /> },
-          { path: '/dashboard/quizzes/:quizId/publish', element: <QuizPublishPage /> },
-          { path: '/dashboard/quizzes/:quizId/sessions', element: <QuizSessionsPage /> },
-          { path: '/dashboard/quizzes/:quizId/survey', element: <SurveyBuilderPage /> },
-          { path: '/dashboard/sessions/:sessionId', element: <SessionDetailPage /> },
-          { path: '/dashboard/sessions/:sessionId/live', element: <LiveHostPage /> },
-          { path: '/dashboard/reports/:sessionId', element: <SessionReportPage /> },
-          { path: '/dashboard/attempts/:attemptId', element: <AttemptDetailPage /> },
-          { path: '/dashboard/certificates', element: <CertificatesPage /> },
+          {
+            element: <RequireTenant />,
+            children: [
+              { path: '/dashboard', element: <DashboardPage /> },
+              { path: '/dashboard/settings', element: <SettingsPage /> },
+              { path: '/dashboard/questions', element: <QuestionsPage /> },
+              { path: '/dashboard/questions/new', element: <QuestionNewPage /> },
+              { path: '/dashboard/questions/:questionId/edit', element: <QuestionEditPage /> },
+              { path: '/dashboard/questions/:questionId/preview', element: <QuestionPreviewPage /> },
+              { path: '/dashboard/questions/:questionId/versions', element: <QuestionVersionsPage /> },
+              { path: '/dashboard/quizzes', element: <QuizzesPage /> },
+              { path: '/dashboard/quizzes/new', element: <QuizNewPage /> },
+              { path: '/dashboard/quizzes/:quizId/edit', element: <QuizEditPage /> },
+              { path: '/dashboard/quizzes/:quizId/preview', element: <QuizPreviewPage /> },
+              { path: '/dashboard/quizzes/:quizId/publish', element: <QuizPublishPage /> },
+              { path: '/dashboard/quizzes/:quizId/sessions', element: <QuizSessionsPage /> },
+              { path: '/dashboard/quizzes/:quizId/survey', element: <SurveyBuilderPage /> },
+              { path: '/dashboard/sessions/:sessionId', element: <SessionDetailPage /> },
+              { path: '/dashboard/sessions/:sessionId/live', element: <LiveHostPage /> },
+              { path: '/dashboard/reports', element: <ReportsIndexPage /> },
+              { path: '/dashboard/reports/:sessionId', element: <SessionReportPage /> },
+              { path: '/dashboard/attempts/:attemptId', element: <AttemptDetailPage /> },
+              { path: '/dashboard/certificates', element: <CertificatesPage /> },
+            ],
+          },
           {
             element: <RequirePlatformAdmin />,
             children: [{ path: '/platform', element: <PlatformAdminPage /> }],
