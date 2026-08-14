@@ -36,9 +36,9 @@ export default function ChooseWorkspacePage() {
                 className="flex min-h-11 w-full items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-3 text-start transition-colors hover:border-sky-300 hover:bg-sky-50/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600">
                 <span>
                   <span className="block text-sm font-semibold text-slate-900">{workspace.name}</span>
-                  <span className="block font-mono text-xs text-slate-500">{workspace.slug}</span>
+                  <span className="block text-xs text-slate-500">رابط المساحة: <bdi>{workspace.slug}</bdi></span>
                 </span>
-                <span className="text-xs font-medium text-slate-500">{workspace.myRole}</span>
+                <span className="text-xs font-medium text-slate-500">{roleLabel(workspace.myRole)}</span>
               </Link>
             </li>
           ))}
@@ -52,4 +52,10 @@ export default function ChooseWorkspacePage() {
       </div>
     </section>
   );
+}
+
+function roleLabel(role: string) {
+  if (role === 'Owner') return 'مالك المساحة';
+  if (role === 'Teacher') return 'معلم';
+  return role;
 }

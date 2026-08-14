@@ -59,8 +59,8 @@ export default function OnboardingPage() {
 
     const next: Record<string, string> = {};
     if (name.trim().length < 2) next.name = 'اسم مساحة العمل مطلوب (حرفان على الأقل)';
-    if (slug.trim().length < 3) next.slug = 'Slug مطلوب (3 أحرف على الأقل)';
-    if (!/^[a-zA-Z0-9-_]+$/.test(slug.trim())) next.slug = 'Slug يجب أن يحتوي أحرفًا وأرقامًا وشرطات فقط';
+    if (slug.trim().length < 3) next.slug = 'الرابط القصير مطلوب (3 أحرف على الأقل)';
+    if (!/^[a-zA-Z0-9-_]+$/.test(slug.trim())) next.slug = 'الرابط القصير يقبل أحرفًا إنجليزية وأرقامًا وشرطات فقط';
     setErrors(next);
     if (Object.keys(next).length > 0) return;
 
@@ -80,11 +80,11 @@ export default function OnboardingPage() {
       navigate('/dashboard', { replace: true });
     } catch (error) {
       if (error instanceof HttpError && error.status === 409) {
-        setApiError('هذا الـSlug مستخدم بالفعل. غيّره قليلًا وحاول مجددًا.');
+        setApiError('هذا الرابط القصير مستخدم بالفعل. غيّره قليلًا وحاول مجددًا.');
       } else if (error instanceof HttpError && error.status === 400) {
         setApiError('البيانات غير مكتملة. راجع الحقول وأعد المحاولة.');
       } else {
-        setApiError('تعذر إنشاء Workspace. حاول مرة أخرى لاحقًا.');
+        setApiError('تعذر إنشاء مساحة العمل. حاول مرة أخرى لاحقًا.');
       }
     } finally {
       setIsSubmitting(false);
@@ -95,7 +95,7 @@ export default function OnboardingPage() {
     <section className="mx-auto max-w-lg rounded-2xl bg-white p-8 shadow-sm">
       <h1 className="mb-2 text-xl font-bold text-slate-900">إنشاء مساحة عملك</h1>
       <p className="mb-6 text-sm text-slate-600">
-        هذه خطوة واحدة تُكمل بها إعداد حسابك. ستصبح تلقائيًا مالك Workspace.
+        هذه خطوة واحدة تُكمل بها إعداد حسابك. ستصبح تلقائيًا مالك مساحة العمل.
       </p>
 
       <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
@@ -110,7 +110,7 @@ export default function OnboardingPage() {
           )}
         </FormField>
 
-        <FormField id="slug" label="Slug (رابط قصير فريد)" error={errors.slug}>
+        <FormField id="slug" label="رابط مساحة العمل" error={errors.slug}>
           {(props) => (
             <TextInput
               {...props}
@@ -126,7 +126,7 @@ export default function OnboardingPage() {
           )}
         </FormField>
         <p id="slug-hint" className="text-xs text-slate-500">
-          سيُستخدم في روابط مشاركة الاختبارات: {slug || 'your-slug'}
+          اختر رابطًا قصيرًا بالإنجليزية، مثل: {slug || 'english-class-101'}
         </p>
 
         <FormField id="country" label="الدولة" error={errors.countryCode}>

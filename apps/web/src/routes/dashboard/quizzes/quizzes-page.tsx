@@ -53,7 +53,6 @@ export default function QuizzesPage() {
   });
 
   if (!tenantId) {
-    navigate('/onboarding/choose', { replace: true });
     return null;
   }
 
@@ -75,7 +74,7 @@ export default function QuizzesPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold text-slate-900">الاختبارات</h1>
-          <p className="text-sm text-slate-600">إنشاء وإدارة الاختبارات مع إصدارات ونشر آمن.</p>
+          <p className="text-sm text-slate-600">أنشئ اختباراتك من بنك الأسئلة، ثم انشرها وابدأ جلسات الطلاب.</p>
         </div>
         <Button onClick={() => navigate('/dashboard/quizzes/new')}>اختبار جديد</Button>
       </div>

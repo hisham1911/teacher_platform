@@ -35,11 +35,7 @@ export default function QuizNewPage() {
     onError: (error) => {
       if (error instanceof HttpError) {
         const body = error.body as { title?: string; detail?: string } | null;
-        setSubmitError(
-          body?.detail
-            ? `تحقق من الإدخال: ${body.detail} (Code: ${body.title ?? error.status})`
-            : `فشل الإنشاء. الحالة: ${error.status}`,
-        );
+        setSubmitError(body?.detail ? `تعذر إنشاء الاختبار: ${body.detail}` : 'تعذر إنشاء الاختبار. تحقق من البيانات ثم أعد المحاولة.');
       } else {
         setSubmitError('فشل الإنشاء. أعد المحاولة.');
       }
@@ -47,7 +43,6 @@ export default function QuizNewPage() {
   });
 
   if (!tenantId) {
-    navigate('/onboarding/choose', { replace: true });
     return null;
   }
 
@@ -93,7 +88,7 @@ export default function QuizNewPage() {
           )}
         </FormField>
 
-        <FormField id="quiz-slug" label="الرابط (Slug)" error={slugError ?? undefined}>
+        <FormField id="quiz-slug" label="اسم رابط الاختبار" error={slugError ?? undefined}>
           {(props) => (
             <TextInput
               {...props}

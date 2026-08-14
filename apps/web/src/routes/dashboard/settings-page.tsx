@@ -1,6 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router';
 import { Button } from '../../components/ui/button';
 import { FormField, TextInput } from '../../components/ui/form-field';
 import { ButtonSpinner } from '../../components/ui/spinner';
@@ -11,7 +10,6 @@ import { HttpError } from '../../data/api-client/http-error';
 
 /** /dashboard/settings — يقرأ ويحدّث الإعدادات المسموح بها فقط عبر Owner */
 export default function SettingsPage() {
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const activeTenantId = getActiveTenantId();
 
@@ -42,7 +40,6 @@ export default function SettingsPage() {
   }, [settings]);
 
   if (!activeTenantId) {
-    navigate('/onboarding/choose', { replace: true });
     return null;
   }
 
@@ -99,7 +96,7 @@ export default function SettingsPage() {
       const url = URL.createObjectURL(archive);
       const anchor = document.createElement('a');
       anchor.href = url;
-      anchor.download = `tenant-export-${new Date().toISOString().slice(0, 10)}.zip`;
+      anchor.download = `workspace-content-${new Date().toISOString().slice(0, 10)}.zip`;
       anchor.click();
       URL.revokeObjectURL(url);
       setTransferMessage('تم تجهيز نسخة المحتوى وتنزيلها.');
@@ -216,7 +213,7 @@ export default function SettingsPage() {
         </Button>
       </div>
       <div className="mt-6 border-t border-slate-100 pt-5">
-        <label htmlFor="tenant-import" className="block text-sm font-medium text-slate-700">ملف Tenant Export بصيغة ZIP</label>
+        <label htmlFor="tenant-import" className="block text-sm font-medium text-slate-700">نسخة محتوى مساحة العمل بصيغة ZIP</label>
         <input
           id="tenant-import"
           type="file"

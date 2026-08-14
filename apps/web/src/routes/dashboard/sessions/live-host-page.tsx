@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
+import { Link, useParams, useSearchParams } from 'react-router';
 import { Button } from '../../../components/ui/button';
 import { ButtonSpinner } from '../../../components/ui/spinner';
 import { liveApi, sessionsApi } from '../../../data/api-client/endpoints';
@@ -22,7 +22,6 @@ export default function LiveHostPage() {
   const [searchParams] = useSearchParams();
   const quizId = searchParams.get('quizId');
   const tenantId = getActiveTenantId();
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [durationSeconds, setDurationSeconds] = useState(30);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -76,7 +75,6 @@ export default function LiveHostPage() {
   });
 
   if (!tenantId) {
-    navigate('/onboarding/choose', { replace: true });
     return null;
   }
   if (!quizId) {
@@ -100,7 +98,7 @@ export default function LiveHostPage() {
       <header className="overflow-hidden rounded-2xl bg-slate-950 p-5 text-white shadow-xl">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-bold tracking-[0.2em] text-sky-300">LIVE CONTROL</p>
+            <p className="text-sm font-semibold text-sky-300">إدارة المسابقة المباشرة</p>
             <h1 className="mt-1 text-2xl font-black">{session.label ?? session.quizTitle}</h1>
             <p className="mt-1 text-sm text-slate-300">رمز الانضمام <span dir="ltr" className="font-mono text-lg font-bold text-white">{session.joinCode}</span></p>
           </div>
@@ -169,6 +167,7 @@ export default function LiveHostPage() {
           <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
             مدة السؤال بالثواني
             <input
+              aria-label="مدة السؤال بالثواني"
               type="number"
               min={5}
               max={300}
@@ -176,6 +175,7 @@ export default function LiveHostPage() {
               onChange={(event) => setDurationSeconds(Math.min(300, Math.max(5, Number(event.target.value))))}
               className="min-h-11 w-28 rounded-md border border-slate-300 px-3 text-base text-slate-900"
             />
+            <span className="max-w-48 text-[11px] font-normal leading-4 text-slate-500">تُطبّق المدة عند فتح السؤال التالي.</span>
           </label>
         ) : null}
         {canOpen ? (

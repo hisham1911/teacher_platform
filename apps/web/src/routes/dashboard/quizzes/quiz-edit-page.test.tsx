@@ -28,6 +28,7 @@ vi.mock('../../../data/api-client/endpoints', async (importOriginal) => {
 
 const { quizzesApi, questionsApi } = await import('../../../data/api-client/endpoints');
 const getDraftMock = vi.mocked(quizzesApi.getDraft);
+const updateDraftMock = vi.mocked(quizzesApi.updateDraft);
 const useLatestMock = vi.mocked(quizzesApi.useLatestItemVersion);
 const listQuestionsMock = vi.mocked(questionsApi.list);
 
@@ -90,6 +91,7 @@ function renderPage() {
       <MemoryRouter initialEntries={[`/dashboard/quizzes/${QUIZ_ID}/edit`]}>
         <Routes>
           <Route path="/dashboard/quizzes/:quizId/edit" element={<QuizEditPage />} />
+          <Route path="/dashboard/quizzes/:quizId/preview" element={<p>صفحة المعاينة</p>} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
@@ -157,5 +159,30 @@ describe('QuizEditPage — GAP-C: استخدام أحدث نسخة', () => {
     await waitFor(() =>
       expect(useLatestMock).toHaveBeenCalledWith(TENANT_ID, QUIZ_ID, 'item-1', { baseVersion: 3 }),
     );
+  });
+
+  it('يحفظ أحدث قيم الوقت قبل الانتقال إلى المعاينة', async () => {
+    const draft = makeDraft();
+    getDraftMock.mockResolvedValue(draft);
+    updateDraftMock.mockResolvedValue({
+      ...draft,
+      timeMode: 'TotalTime',
+      timeLimitSeconds: 300,
+      version: 4,
+    });
+
+    renderPage();
+    await screen.findByDisplayValue('اختبار');
+
+    fireEvent.change(screen.getByLabelText('وضع الوقت'), { target: { value: 'TotalTime' } });
+    fireEvent.change(screen.getByLabelText('الوقت الإجمالي (ثانية)'), { target: { value: '300' } });
+    fireEvent.click(screen.getAllByRole('link', { name: 'معاينة' })[0]!);
+
+    await waitFor(() => expect(updateDraftMock).toHaveBeenCalledWith(
+      TENANT_ID,
+      QUIZ_ID,
+      expect.objectContaining({ timeMode: 'TotalTime', timeLimitSeconds: 300, baseVersion: 3 }),
+    ));
+    expect(await screen.findByText('صفحة المعاينة')).toBeInTheDocument();
   });
 });

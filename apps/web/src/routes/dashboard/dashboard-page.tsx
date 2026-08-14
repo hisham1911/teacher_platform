@@ -1,8 +1,7 @@
 import { useNavigate } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
-import { Button } from '../../components/ui/button';
-import { tenantsApi, authApi } from '../../data/api-client/endpoints';
-import { clearSession, getActiveTenantId } from '../../lib/auth/session';
+import { tenantsApi } from '../../data/api-client/endpoints';
+import { getActiveTenantId } from '../../lib/auth/session';
 import { useSessionSnapshot } from '../../features/auth/use-session';
 
 /** /dashboard — نقطة دخول عملية إلى وظائف مساحة العمل، بلا مؤشرات أو بيانات مختلقة. */
@@ -18,15 +17,6 @@ export default function DashboardPage() {
 
   const activeWorkspace = workspaces?.find((w) => w.id === activeTenantId) ?? null;
 
-  async function onLogout() {
-    try {
-      await authApi.logout();
-    } finally {
-      clearSession();
-      navigate('/auth/login', { replace: true });
-    }
-  }
-
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -36,9 +26,6 @@ export default function DashboardPage() {
           </h1>
           <p className="text-sm text-slate-600">مرحبًا {session.user?.fullName ?? 'ضيف'}.</p>
         </div>
-        <Button variant="secondary" onClick={() => void onLogout()}>
-          تسجيل الخروج
-        </Button>
       </div>
 
       {isLoading ? <p className="text-sm text-slate-500">جارٍ تحميل مساحات العمل…</p> : null}
@@ -58,7 +45,7 @@ export default function DashboardPage() {
       {!isLoading && !isError && workspaces && workspaces.length === 0 ? (
         <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50/60 p-8 text-center">
           <p className="mb-4 text-sm text-slate-700">لا توجد مساحة عمل بعد. أنشئ أول مساحة لك.</p>
-          <Button onClick={() => navigate('/onboarding')}>إنشاء مساحة عمل</Button>
+          <button type="button" onClick={() => navigate('/onboarding')} className="min-h-11 rounded-md bg-sky-700 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-800">إنشاء مساحة عمل</button>
         </div>
       ) : null}
 
@@ -68,13 +55,24 @@ export default function DashboardPage() {
         </div>
       ) : null}
 
-      {activeWorkspace && !isError ? <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      {activeWorkspace && !isError ? <>
+        <section className="rounded-xl border border-sky-200 bg-sky-50 p-5">
+          <h2 className="text-lg font-bold text-slate-950">ابدأ أول اختبار في أربع خطوات</h2>
+          <ol className="mt-3 grid gap-2 text-sm text-slate-700 sm:grid-cols-2">
+            <li><b>1.</b> أضف أسئلتك إلى بنك الأسئلة.</li>
+            <li><b>2.</b> أنشئ اختبارًا وانشره.</li>
+            <li><b>3.</b> أنشئ جلسة وشارك رابط الطلاب.</li>
+            <li><b>4.</b> راجع النتائج والتقارير بعد الحل.</li>
+          </ol>
+          <button type="button" onClick={() => navigate('/dashboard/questions')} className="mt-4 min-h-11 rounded-md bg-sky-700 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-800">ابدأ ببنك الأسئلة</button>
+        </section>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <button
           type="button"
           onClick={() => navigate('/dashboard/questions')}
           className="min-h-24 rounded-lg border border-slate-200 bg-white p-4 text-start hover:border-sky-300 focus-visible:outline-2 focus-visible:outline-sky-600">
           <p className="text-sm font-semibold text-slate-900">بنك الأسئلة</p>
-          <p className="mt-1 text-xs text-slate-500">إنشاء وتعديل أسئلة مع إصدارات Immutable ووسائط صوت/صورة.</p>
+          <p className="mt-1 text-xs text-slate-500">أنشئ أسئلة نصية وصوتية ومصورة واحتفظ بتاريخ تعديلاتك.</p>
         </button>
         <button
           type="button"
@@ -92,12 +90,20 @@ export default function DashboardPage() {
         </button>
         <button
           type="button"
+          onClick={() => navigate('/dashboard/reports')}
+          className="min-h-24 rounded-lg border border-slate-200 bg-white p-4 text-start hover:border-sky-300 focus-visible:outline-2 focus-visible:outline-sky-600">
+          <p className="text-sm font-semibold text-slate-900">النتائج والتقارير</p>
+          <p className="mt-1 text-xs text-slate-500">افتح نتائج الجلسات ومحاولات الطلاب وتحليلات الأسئلة.</p>
+        </button>
+        <button
+          type="button"
           onClick={() => navigate('/dashboard/settings')}
           className="min-h-24 rounded-lg border border-slate-200 bg-white p-4 text-start hover:border-sky-300 focus-visible:outline-2 focus-visible:outline-sky-600">
           <p className="text-sm font-semibold text-slate-900">إعدادات مساحة العمل</p>
           <p className="mt-1 text-xs text-slate-500">اسم المعلم الظاهر والألوان واللغة.</p>
         </button>
-      </div> : null}
+        </div>
+      </> : null}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Link, useNavigate, useParams } from 'react-router';
+import { Link, useParams } from 'react-router';
 import { MediaContentPreview } from '../../../features/questions/media-content-preview';
 import { quizzesApi } from '../../../data/api-client/endpoints';
 import { HttpError } from '../../../data/api-client/http-error';
@@ -10,7 +10,6 @@ import { TIME_MODE_LABELS, type QuizDraftItem } from '../../../types/quizzes';
 /** /dashboard/quizzes/:quizId/preview — معاينة المعلم للمسودة (لا تنشئ محاولة) */
 export default function QuizPreviewPage() {
   const { quizId } = useParams<{ quizId: string }>();
-  const navigate = useNavigate();
   const tenantId = getActiveTenantId();
 
   const previewQuery = useQuery({
@@ -21,7 +20,6 @@ export default function QuizPreviewPage() {
   });
 
   if (!tenantId) {
-    navigate('/onboarding/choose', { replace: true });
     return null;
   }
 
@@ -55,7 +53,7 @@ export default function QuizPreviewPage() {
         <div>
           <h1 className="text-xl font-bold text-slate-900">معاينة: {draft.title}</h1>
           <p className="text-sm text-slate-600">
-            مسودة v{draft.versionNumber} · {draft.items.length} سؤال · {draft.totalPoints} نقطة
+            {draft.items.length} سؤال · {draft.totalPoints} نقطة
             {' · '}
             {TIME_MODE_LABELS[draft.timeMode] ?? draft.timeMode}
             {draft.timeLimitSeconds ? ` (${draft.timeLimitSeconds} ثانية)` : ''}
@@ -166,9 +164,9 @@ function QuizPreviewItem({
 
       {item.questionType === 'Ordering' ? (
         <ol className="flex flex-col gap-1">
-          {item.options.map((option) => (
+          {item.options.map((option, optionIndex) => (
             <li key={option.sortOrder} className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
-              {option.sortOrder}. {option.optionText}
+              {optionIndex + 1}. {option.optionText}
             </li>
           ))}
         </ol>

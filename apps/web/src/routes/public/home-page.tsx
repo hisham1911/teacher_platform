@@ -1,33 +1,4 @@
 import { Link } from 'react-router';
-import { HttpError } from '../../data/api-client/http-error';
-import { useSystemInfoQuery } from '../../data/queries/system-info';
-
-function ApiStatusCard() {
-  const { data, isPending, error, isError } = useSystemInfoQuery();
-
-  if (isPending) {
-    return <p className="text-sm text-slate-500">جاري الاتصال بالـAPI…</p>;
-  }
-
-  if (isError) {
-    const unreachable =
-      error instanceof HttpError
-        ? `الـAPI ردّ بالحالة ${error.status}`
-        : 'تعذر الوصول إلى الخدمة الآن. حاول مرة أخرى بعد قليل.';
-    return <p className="text-sm text-amber-700">{unreachable}</p>;
-  }
-
-  return (
-    <dl className="grid grid-cols-2 gap-2 text-sm">
-      <dt className="text-slate-500">الخدمة</dt>
-      <dd className="font-medium">{data.service}</dd>
-      <dt className="text-slate-500">الحالة</dt>
-      <dd className="font-medium text-emerald-600">{data.status}</dd>
-      <dt className="text-slate-500">إصدار الـAPI</dt>
-      <dd className="font-medium">{data.apiVersion}</dd>
-    </dl>
-  );
-}
 
 export default function HomePage() {
   return (
@@ -43,7 +14,7 @@ export default function HomePage() {
           <Link
             to="/auth/signup"
             className="inline-flex min-h-11 items-center justify-center rounded-lg bg-sky-700 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-sky-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600">
-            إنشاء حساب معلم
+            أنشئ اختبارك الأول
           </Link>
           <Link
             to="/auth/login"
@@ -51,11 +22,6 @@ export default function HomePage() {
             تسجيل الدخول
           </Link>
         </div>
-      </div>
-
-      <div className="max-w-xl rounded-xl border border-slate-200 bg-white p-5">
-        <h2 className="mb-3 text-sm font-semibold">حالة الخدمة</h2>
-        <ApiStatusCard />
       </div>
     </section>
   );

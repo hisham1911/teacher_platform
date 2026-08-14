@@ -1,9 +1,19 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { RootLayout } from './root-layout';
-import { clearSession } from '../../lib/auth/session';
+import { clearSession, establishSession } from '../../lib/auth/session';
+
+vi.mock('../../data/api-client/endpoints', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../data/api-client/endpoints')>();
+  return {
+    ...actual,
+    tenantsApi: { ...actual.tenantsApi, listMine: vi.fn().mockResolvedValue([]) },
+  };
+});
+
+const { tenantsApi } = await import('../../data/api-client/endpoints');
 
 describe('RootLayout', () => {
   it('يعرض روابط التنقل الأساسية للزائر', () => {
@@ -24,5 +34,22 @@ describe('RootLayout', () => {
     expect(screen.getByRole('link', { name: 'تسجيل الدخول' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'إنشاء حساب' })).toBeInTheDocument();
     expect(screen.getByText('محتوى')).toBeInTheDocument();
+  });
+
+  it('يعرض التقارير وقائمة موبايل رأسية للمستخدم المسجل', async () => {
+    establishSession({
+      accessToken: 'token', accessTokenExpiresAtMs: Date.now() + 10_000,
+      user: { id: 'u1', email: 'teacher@example.test', fullName: 'معلمة', emailConfirmed: true, platformRoles: [] },
+      activeWorkspace: { id: 'tenant-1', name: 'مدرستي', slug: 'school', role: 'Owner', status: 'Active' },
+    });
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const view = render(<QueryClientProvider client={queryClient}><MemoryRouter><RootLayout><div>محتوى</div></RootLayout></MemoryRouter></QueryClientProvider>);
+
+    expect(screen.getByText('القائمة الرئيسية')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'النتائج والتقارير' })).toHaveAttribute('href', '/dashboard/reports');
+    await waitFor(() => expect(tenantsApi.listMine).toHaveBeenCalled());
+    await waitFor(() => expect(queryClient.isFetching()).toBe(0));
+    view.unmount();
+    clearSession();
   });
 });

@@ -6,7 +6,7 @@ import { authApi, tenantsApi } from '../../data/api-client/endpoints';
 import { useQuery } from '@tanstack/react-query';
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-  `inline-flex min-h-11 shrink-0 items-center rounded-md px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600 ${
+  `inline-flex min-h-11 w-full shrink-0 items-center rounded-md px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600 lg:w-auto ${
     isActive ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
   }`;
 
@@ -36,13 +36,13 @@ export function RootLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col" dir="rtl">
       <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex min-h-14 w-full max-w-5xl flex-col items-stretch justify-between gap-1 px-4 py-2 sm:h-14 sm:flex-row sm:items-center sm:gap-4 sm:py-0">
+        <div className="mx-auto flex min-h-14 w-full max-w-5xl flex-col items-stretch justify-between gap-1 px-4 py-2 lg:h-14 lg:flex-row lg:items-center lg:gap-4 lg:py-0">
           <Link to="/" className="inline-flex min-h-11 shrink-0 items-center text-base font-bold text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600">
             منصة المعلم
           </Link>
 
-          <nav className="flex w-full items-center gap-1 overflow-x-auto sm:w-auto" aria-label="التنقل الرئيسي">
-            {!session.user ? (
+          {!session.user ? (
+            <nav className="flex w-full items-center gap-1 lg:w-auto" aria-label="التنقل الرئيسي">
               <>
                 <NavLink to="/" end className={navLinkClass}>
                   الرئيسية
@@ -54,8 +54,14 @@ export function RootLayout({ children }: { children: ReactNode }) {
                   إنشاء حساب
                 </NavLink>
               </>
-            ) : (
-              <>
+            </nav>
+          ) : (
+            <details className="group w-full lg:w-auto">
+              <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 marker:content-none lg:hidden">
+                القائمة الرئيسية
+                <span aria-hidden="true">☰</span>
+              </summary>
+              <nav className="mt-2 hidden w-full flex-col gap-1 group-open:flex lg:mt-0 lg:flex lg:w-auto lg:flex-row lg:items-center" aria-label="التنقل الرئيسي">
                 <NavLink to="/dashboard" className={navLinkClass}>
                   لوحة التحكم
                 </NavLink>
@@ -64,6 +70,9 @@ export function RootLayout({ children }: { children: ReactNode }) {
                 </NavLink>
                 <NavLink to="/dashboard/quizzes" className={navLinkClass}>
                   الاختبارات
+                </NavLink>
+                <NavLink to="/dashboard/reports" className={navLinkClass}>
+                  النتائج والتقارير
                 </NavLink>
                 <NavLink to="/dashboard/certificates" className={navLinkClass}>
                   الشهادات
@@ -79,18 +88,38 @@ export function RootLayout({ children }: { children: ReactNode }) {
                 <button
                   type="button"
                   onClick={() => void onLogout()}
-                  className="min-h-11 rounded-md px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600">
+                  className="min-h-11 w-full rounded-md px-3 py-2 text-start text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600 lg:w-auto">
                   تسجيل الخروج
                 </button>
-              </>
-            )}
-          </nav>
+              </nav>
+            </details>
+          )}
         </div>
 
-        {/* Workspace switcher يظهر فقط للمستخدم المُصادق الذي لديه أكثر من Workspace */}
+        {/* يظهر مبدّل المساحة فقط للمستخدم الذي يملك مساحة واحدة على الأقل. */}
         {session.user && workspaces && workspaces.length > 0 ? (
           <div className="border-t border-slate-100 bg-white">
-            <div className="mx-auto flex w-full max-w-5xl items-center gap-2 overflow-x-auto px-4 py-1.5">
+            <div className="mx-auto w-full max-w-5xl px-4 py-2">
+              <div className="flex items-end gap-2 lg:hidden">
+              <label className="flex min-w-0 flex-1 flex-col gap-1 text-xs text-slate-600">
+                مساحة العمل
+                <select
+                  value={activeWorkspace?.id ?? ''}
+                  onChange={(event) => {
+                    setActiveWorkspaceId(event.target.value);
+                    navigate('/dashboard', { replace: true });
+                  }}
+                  className="min-h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-800">
+                  {workspaces.map((workspace) => <option key={workspace.id} value={workspace.id}>{workspace.name}</option>)}
+                </select>
+              </label>
+              <Link
+                to="/onboarding"
+                className="inline-flex min-h-11 shrink-0 items-center rounded-md border border-dashed border-slate-400 px-3 text-xs font-medium text-slate-600">
+                + جديدة
+              </Link>
+              </div>
+              <div className="hidden items-center gap-2 lg:flex">
               <span className="shrink-0 text-xs text-slate-500">مساحة العمل:</span>
               <div className="flex gap-1">
                 {workspaces.map((workspace) => {
@@ -118,6 +147,7 @@ export function RootLayout({ children }: { children: ReactNode }) {
                   className="inline-flex min-h-11 items-center rounded-md border border-dashed border-slate-400 px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:border-slate-500 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600">
                   + جديدة
                 </Link>
+              </div>
               </div>
             </div>
           </div>

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent, type MouseEvent as ReactMouseEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams } from 'react-router';
 import { Button } from '../../../components/ui/button';
@@ -26,7 +26,7 @@ import {
 const HEX_COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;
 const AUTOSAVE_DEBOUNCE_MS = 1200;
 
-type SaveState = 'idle' | 'saving' | 'saved' | 'error';
+type SaveState = 'idle' | 'pending' | 'saving' | 'saved' | 'error';
 
 /** /dashboard/quizzes/:quizId/edit — بناء الاختبار (أساسيات + أسئلة + إعدادات + سمة) */
 export default function QuizEditPage() {
@@ -66,6 +66,7 @@ export default function QuizEditPage() {
   // Track the latest known version for optimistic concurrency
   const versionRef = useRef<number>(0);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveNowRef = useRef<() => void>(() => undefined);
   const initializedRef = useRef(false);
 
   // Sync form from draft on first load / after reload
@@ -104,17 +105,13 @@ export default function QuizEditPage() {
     onError: (error) => {
       setSaveState('error');
       if (error instanceof HttpError && error.status === 409) {
-        setConflictMessage('تعارض تعديل متزامن (409): قام مستخدم آخر بتعديل هذه المسودة.');
+        setConflictMessage('تم تحديث هذا الاختبار في مكان آخر. حمّل أحدث نسخة قبل متابعة التعديل.');
         setSaveError(null);
       } else if (error instanceof HttpError && error.status === 403) {
         setSaveError('ليس لديك صلاحية تعديل الاختبارات (يلزم دور مالك أو معلم).');
       } else if (error instanceof HttpError) {
         const body = error.body as { title?: string; detail?: string } | null;
-        setSaveError(
-          body?.detail
-            ? `تحقق من الإدخال: ${body.detail} (Code: ${body.title ?? error.status})`
-            : `فشل الحفظ. الحالة: ${error.status}`,
-        );
+        setSaveError(body?.detail ? `تعذر الحفظ: ${body.detail}` : 'تعذر الحفظ. راجع البيانات ثم أعد المحاولة.');
       } else {
         setSaveError('فشل الحفظ. تحقق من الاتصال.');
       }
@@ -155,9 +152,33 @@ export default function QuizEditPage() {
     saveMutation.mutate(request);
   }
 
+  saveNowRef.current = saveNow;
+
   function scheduleAutosave() {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(saveNow, AUTOSAVE_DEBOUNCE_MS);
+    setSaveState('pending');
+    debounceRef.current = setTimeout(() => saveNowRef.current(), AUTOSAVE_DEBOUNCE_MS);
+  }
+
+  async function saveBeforeNavigation(event: ReactMouseEvent<HTMLAnchorElement>, path: string) {
+    if (saveState === 'saving') {
+      event.preventDefault();
+      return;
+    }
+    if (saveState !== 'pending' && saveState !== 'error') return;
+
+    event.preventDefault();
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    const request = buildUpdateRequest();
+    if (!request) return;
+
+    setSaveState('saving');
+    try {
+      await saveMutation.mutateAsync(request);
+      navigate(path);
+    } catch {
+      // The mutation callbacks keep the user on the page and show the actionable error.
+    }
   }
 
   useEffect(() => () => { if (debounceRef.current) clearTimeout(debounceRef.current); }, []);
@@ -172,14 +193,10 @@ export default function QuizEditPage() {
     },
     onError: (error) => {
       if (error instanceof HttpError && error.status === 409) {
-        setConflictMessage('تعارض تعديل متزامن (409): أعد تحميل أحدث نسخة.');
+        setConflictMessage('تم تحديث أسئلة الاختبار في مكان آخر. حمّل أحدث نسخة ثم أعد المحاولة.');
       } else if (error instanceof HttpError) {
         const body = error.body as { title?: string; detail?: string } | null;
-        setSaveError(
-          body?.detail
-            ? `فشل تحديث الأسئلة: ${body.detail} (Code: ${body.title ?? error.status})`
-            : `فشل تحديث الأسئلة. الحالة: ${error.status}`,
-        );
+        setSaveError(body?.detail ? `تعذر تحديث الأسئلة: ${body.detail}` : 'تعذر تحديث الأسئلة. أعد المحاولة.');
       }
     },
   });
@@ -255,12 +272,11 @@ export default function QuizEditPage() {
   }
 
   if (!tenantId) {
-    navigate('/onboarding/choose', { replace: true });
     return null;
   }
 
   if (draftQuery.isLoading) {
-    return <p className="text-sm text-slate-500">جارٍ تحميل المسودة…</p>;
+    return <div role="status" className="animate-pulse rounded-lg bg-slate-100 p-4 text-sm text-slate-600">جارٍ تجهيز منشئ الاختبار…</div>;
   }
 
   if (draftQuery.isError || !draft) {
@@ -274,6 +290,7 @@ export default function QuizEditPage() {
               ? 'ليس لديك صلاحية عرض هذا الاختبار.'
               : 'تعذر تحميل المسودة. أعد المحاولة.'}
         </p>
+        <Button variant="secondary" onClick={() => void draftQuery.refetch()}>إعادة المحاولة</Button>
         <Link to="/dashboard/quizzes" className="text-sm text-sky-700 hover:underline">
           عودة لقائمة الاختبارات
         </Link>
@@ -291,32 +308,52 @@ export default function QuizEditPage() {
         <div>
           <h1 className="text-xl font-bold text-slate-900">بناء الاختبار</h1>
           <p className="text-sm text-slate-600">
-            مسودة v{draft.versionNumber} · {draft.items.length} سؤال · {totalPoints} نقطة
+            رتّب الأسئلة واضبط وقت الاختبار ثم راجعه قبل النشر.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs text-slate-500" role="status" aria-live="polite">
             {saveState === 'saving' ? 'جارٍ الحفظ…' : null}
+            {saveState === 'pending' ? 'تعديلات بانتظار الحفظ…' : null}
             {saveState === 'saved' ? 'تم الحفظ ✓' : null}
             {saveState === 'error' ? 'فشل الحفظ' : null}
           </span>
           <Link
             to={`/dashboard/quizzes/${quizId}/preview`}
+            onClick={(event) => void saveBeforeNavigation(event, `/dashboard/quizzes/${quizId}/preview`)}
             className="min-h-11 rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-sky-600">
             معاينة
           </Link>
           <Link
             to={`/dashboard/quizzes/${quizId}/publish`}
+            onClick={(event) => void saveBeforeNavigation(event, `/dashboard/quizzes/${quizId}/publish`)}
             className="min-h-11 rounded-md bg-sky-700 px-3 py-2 text-sm font-semibold text-white hover:bg-sky-800 focus-visible:outline-2 focus-visible:outline-sky-600">
             نشر
           </Link>
           <Link
             to="/dashboard/quizzes"
+            onClick={(event) => void saveBeforeNavigation(event, '/dashboard/quizzes')}
             className="min-h-11 rounded-md px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-sky-600">
             عودة
           </Link>
         </div>
       </div>
+
+      <section aria-label="ملخص الاختبار" className="rounded-xl bg-slate-900 p-4 text-white">
+        <dl className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
+          <div><dt className="text-slate-300">الأسئلة</dt><dd className="mt-1 text-lg font-bold">{draft.items.length}</dd></div>
+          <div><dt className="text-slate-300">إجمالي النقاط</dt><dd className="mt-1 text-lg font-bold">{totalPoints}</dd></div>
+          <div><dt className="text-slate-300">نسبة النجاح</dt><dd className="mt-1 text-lg font-bold">{passingPercentage}%</dd></div>
+          <div><dt className="text-slate-300">الوقت</dt><dd className="mt-1 text-sm font-bold">{TIME_MODE_LABELS[timeMode]}</dd></div>
+        </dl>
+        <nav aria-label="أقسام منشئ الاختبار" className="mt-4 flex flex-wrap gap-2 border-t border-slate-700 pt-4 text-xs">
+          <a href="#items-heading" className="rounded-md bg-slate-800 px-3 py-2 hover:bg-slate-700">الأسئلة</a>
+          <a href="#picker-heading" className="rounded-md bg-slate-800 px-3 py-2 hover:bg-slate-700">إضافة سؤال</a>
+          <a href="#settings-heading" className="rounded-md bg-slate-800 px-3 py-2 hover:bg-slate-700">الإعدادات</a>
+          <a href="#theme-heading" className="rounded-md bg-slate-800 px-3 py-2 hover:bg-slate-700">العرض المتقدم</a>
+          <Link to={`/dashboard/quizzes/${quizId}/publish`} onClick={(event) => void saveBeforeNavigation(event, `/dashboard/quizzes/${quizId}/publish`)} className="rounded-md bg-sky-600 px-3 py-2 font-semibold hover:bg-sky-500">المراجعة والنشر</Link>
+        </nav>
+      </section>
 
       {/* Conflict banner */}
       {conflictMessage ? (
@@ -377,11 +414,9 @@ export default function QuizEditPage() {
                       {QUESTION_TYPE_LABELS[item.questionType] ?? item.questionType}
                       {' · '}
                       {DIFFICULTY_LABELS[item.difficulty] ?? item.difficulty}
-                      {' · '}
-                      v{item.pinnedVersionNumber}
                       {item.pinnedVersionNumber < item.latestVersionNumber ? (
                         <span className="ms-1 rounded-full bg-amber-100 px-2 py-0.5 text-amber-800">
-                          توجد نسخة أحدث (v{item.latestVersionNumber})
+                          توجد تعديلات أحدث على السؤال
                         </span>
                       ) : null}
                       {item.sourceQuestionArchived ? (
@@ -485,7 +520,10 @@ export default function QuizEditPage() {
 
         {pickerQuery.isLoading ? <p className="text-sm text-slate-500">جارٍ تحميل الأسئلة…</p> : null}
         {pickerQuery.isError ? (
-          <p role="alert" className="rounded-lg bg-rose-50 p-3 text-sm text-rose-700">تعذر تحميل الأسئلة.</p>
+          <div role="alert" className="rounded-lg bg-rose-50 p-3 text-sm text-rose-700">
+            <p>تعذر تحميل الأسئلة.</p>
+            <Button variant="secondary" onClick={() => void pickerQuery.refetch()}>إعادة المحاولة</Button>
+          </div>
         ) : null}
 
         {pickerQuery.data && pickerQuery.data.items.length === 0 ? (
@@ -504,8 +542,6 @@ export default function QuizEditPage() {
                       {QUESTION_TYPE_LABELS[question.questionType] ?? question.questionType}
                       {' · '}
                       {DIFFICULTY_LABELS[question.difficulty] ?? question.difficulty}
-                      {' · '}
-                      v{question.currentVersionNumber}
                     </p>
                   </div>
                   <Button
@@ -600,8 +636,9 @@ export default function QuizEditPage() {
       </section>
 
       {/* Section 5: Theme */}
-      <section aria-labelledby="theme-heading" className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-4">
-        <h2 id="theme-heading" className="text-base font-semibold text-slate-900">المظهر</h2>
+      <details className="rounded-xl border border-slate-200 bg-white p-4">
+        <summary id="theme-heading" className="min-h-11 cursor-pointer text-base font-semibold text-slate-900">العرض والخيارات المتقدمة</summary>
+        <div className="mt-4 flex flex-col gap-4">
         <FormField id="edit-theme-template" label="القالب">
           {(props) => (
             <SelectInput
@@ -640,7 +677,16 @@ export default function QuizEditPage() {
             حفظ الآن
           </Button>
         </div>
-      </section>
+        </div>
+      </details>
+
+      <aside className="sticky bottom-3 hidden items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white/95 p-3 shadow-lg backdrop-blur lg:flex">
+        <span className="text-sm text-slate-600">{saveState === 'saving' ? 'جارٍ حفظ التعديلات…' : saveState === 'pending' ? 'تعديلات بانتظار الحفظ…' : saveState === 'error' ? 'تعذر الحفظ' : 'تعديلاتك محفوظة'}</span>
+        <div className="flex gap-2">
+          <Link to={`/dashboard/quizzes/${quizId}/preview`} onClick={(event) => void saveBeforeNavigation(event, `/dashboard/quizzes/${quizId}/preview`)} className="inline-flex min-h-11 items-center rounded-md border border-slate-300 px-4 text-sm font-semibold text-slate-700">معاينة</Link>
+          <Link to={`/dashboard/quizzes/${quizId}/publish`} onClick={(event) => void saveBeforeNavigation(event, `/dashboard/quizzes/${quizId}/publish`)} className="inline-flex min-h-11 items-center rounded-md bg-sky-700 px-4 text-sm font-semibold text-white hover:bg-sky-800">المراجعة والنشر</Link>
+        </div>
+      </aside>
     </div>
   );
 }

@@ -50,7 +50,7 @@ describe('SettingsPage tenant transfer', () => {
       type: 'application/zip', lastModified: 123,
     });
 
-    fireEvent.change(screen.getByLabelText('ملف Tenant Export بصيغة ZIP'), {
+    fireEvent.change(screen.getByLabelText('نسخة محتوى مساحة العمل بصيغة ZIP'), {
       target: { files: [archive] },
     });
     const importButton = screen.getByRole('button', { name: 'استيراد المحتوى' });
