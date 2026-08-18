@@ -36,6 +36,22 @@ describe('RootLayout', () => {
     expect(screen.getByText('محتوى')).toBeInTheDocument();
   });
 
+  it('يعرض Player بلا تنقل أو Footer المعلم', () => {
+    clearSession();
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={['/play/JOIN123']}>
+          <RootLayout><div>واجهة الطالب المستقلة</div></RootLayout>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    expect(screen.getByText('واجهة الطالب المستقلة')).toBeInTheDocument();
+    expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
+    expect(screen.queryByText('منصة المعلم — إدارة الاختبارات والنتائج')).not.toBeInTheDocument();
+  });
+
   it('يعرض التقارير وقائمة موبايل رأسية للمستخدم المسجل', async () => {
     establishSession({
       accessToken: 'token', accessTokenExpiresAtMs: Date.now() + 10_000,

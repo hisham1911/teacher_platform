@@ -31,14 +31,14 @@ test('survives API restart + finish + result + F5 (Part B)', async ({ page }) =>
   await page.getByRole('button', { name: 'إنهاء الاختبار' }).click();
 
   // النتيجة: 10/10، 100%، ناجح
-  await expect(page.getByText(/انتهى الاختبار/)).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'أحسنت يا طالب E2E!' })).toBeVisible();
   await expect(page.getByText('10 / 10')).toBeVisible();
   await expect(page.getByText('100%')).toBeVisible();
-  await expect(page.getByText(/ناجح ✓/)).toBeVisible();
+  await expect(page.getByText('اجتزت الاختبار بنجاح')).toBeVisible();
 
   // شهادة النجاح تُنشأ عبر Outbox ثم تصبح PDF قابلة للتنزيل من نفس Guest Cookie.
   await certificateResponsePromise;
-  const certificateLink = page.getByRole('link', { name: 'تنزيل الشهادة PDF' });
+  const certificateLink = page.getByRole('link', { name: 'عرض الشهادة' });
   await expect(certificateLink).toBeVisible({ timeout: 30_000 });
   const certificateHref = await certificateLink.getAttribute('href');
   if (!certificateHref) throw new Error('Certificate download URL is missing.');
@@ -70,7 +70,7 @@ test('survives API restart + finish + result + F5 (Part B)', async ({ page }) =>
   // F5 على صفحة النتيجة — تُستعاد النتيجة تلقائيًا (لا شاشة انضمام/استعداد)
   await page.reload();
   await expect(page.getByText('10 / 10')).toBeVisible();
-  await expect(page.getByText(/ناجح ✓/)).toBeVisible();
+  await expect(page.getByText('اجتزت الاختبار بنجاح')).toBeVisible();
   await expect(page.getByPlaceholder('اكتب اسمك هنا')).not.toBeVisible();
 
   // المعلم يسجل الدخول ويرى النتيجة الفعلية ويصدر CSV من شاشة التقرير.
@@ -97,8 +97,8 @@ test('failed attempt does not receive a certificate', async ({ browser }) => {
   const page = await context.newPage();
   await page.goto(`/play/${JOIN_CODE}`);
   await page.getByPlaceholder('اكتب اسمك هنا').fill('طالب لم يجتز');
-  await page.getByRole('button', { name: 'انضمام' }).click();
   await page.getByRole('button', { name: 'ابدأ الاختبار' }).click();
+  await page.getByRole('button', { name: 'ابدأ الآن' }).click();
 
   await page.getByText('الإسكندرية', { exact: true }).click();
   await page.getByRole('button', { name: 'تثبيت الإجابة' }).click();
@@ -108,8 +108,8 @@ test('failed attempt does not receive a certificate', async ({ browser }) => {
   await page.getByRole('button', { name: 'إنهاء الاختبار' }).click();
 
   await expect(page.getByText('0 / 10')).toBeVisible();
-  await expect(page.getByText('لم تتجاوز درجة النجاح')).toBeVisible();
-  await expect(page.getByRole('link', { name: 'تنزيل الشهادة PDF' })).toHaveCount(0);
-  await expect(page.getByText('تُصدر الشهادة تلقائيًا عند تجاوز درجة النجاح.')).toBeVisible();
+  await expect(page.getByText('لم تصل إلى درجة النجاح هذه المرة')).toBeVisible();
+  await expect(page.getByRole('link', { name: 'عرض الشهادة' })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'الشهادة' })).toHaveCount(0);
   await context.close();
 });

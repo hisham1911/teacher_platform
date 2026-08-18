@@ -14,11 +14,11 @@ test('guest cookie + join + attempt + answer + F5 resume (Part A)', async ({ pag
   // 2) انضم باسم
   await expect(page.getByRole('heading', { name: 'اختبار E2E' })).toBeVisible();
   await page.getByPlaceholder('اكتب اسمك هنا').fill('طالب E2E');
-  await page.getByRole('button', { name: 'انضمام' }).click();
+  await page.getByRole('button', { name: 'ابدأ الاختبار' }).click();
 
   // 3) ابدأ المحاولة
-  await expect(page.getByRole('button', { name: 'ابدأ الاختبار' })).toBeVisible();
-  await page.getByRole('button', { name: 'ابدأ الاختبار' }).click();
+  await expect(page.getByRole('button', { name: 'ابدأ الآن' })).toBeVisible();
+  await page.getByRole('button', { name: 'ابدأ الآن' }).click();
 
   // 4) أجب عن السؤال الأول
   await expect(page.getByText('ما عاصمة مصر؟')).toBeVisible();

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Link, NavLink, useNavigate } from 'react-router';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router';
 import { clearSession, getActiveTenantId, setActiveWorkspaceId } from '../../lib/auth/session';
 import { useSessionSnapshot } from '../../features/auth/use-session';
 import { authApi, tenantsApi } from '../../data/api-client/endpoints';
@@ -12,6 +12,7 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
 
 export function RootLayout({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const session = useSessionSnapshot();
   const activeTenantId = getActiveTenantId();
 
@@ -23,6 +24,10 @@ export function RootLayout({ children }: { children: ReactNode }) {
   });
 
   const activeWorkspace = workspaces?.find((w) => w.id === activeTenantId) ?? null;
+
+  if (location.pathname.startsWith('/play/')) {
+    return <div className="min-h-dvh" dir="rtl">{children}</div>;
+  }
 
   async function onLogout() {
     try {

@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Button } from '../../components/ui/button';
 import { TextArea } from '../../components/ui/form-field';
 import { ButtonSpinner } from '../../components/ui/spinner';
 import { playerApi } from '../../data/api-client/endpoints';
 import { HttpError } from '../../data/api-client/http-error';
 import type { PlayerSurvey, SubmitSurveyRequest } from '../../types/surveys';
+import { StudentButton } from './student-ui';
 
 type AnswerValue = number | string;
 
@@ -42,15 +42,15 @@ export function PlayerSurveyPanel({ joinCode, attemptId }: { joinCode: string; a
   });
 
   if (surveyQuery.isLoading) {
-    return <p className="py-4 text-center text-sm text-slate-500">جارٍ تحميل الاستبيان…</p>;
+    return <p role="status" className="py-6 text-center text-sm font-semibold text-[var(--student-muted)]">جارٍ تحميل الاستبيان…</p>;
   }
 
   if (surveyQuery.isError) {
     if (surveyQuery.error instanceof HttpError && surveyQuery.error.status === 404) return null;
     return (
-      <section className="rounded-xl border border-slate-200 bg-white p-5 text-center">
+      <section className="student-panel p-6 text-center">
         <p role="alert" className="mb-3 text-sm text-rose-700">تعذر تحميل استبيان ما بعد الاختبار.</p>
-        <Button variant="secondary" onClick={() => void surveyQuery.refetch()}>إعادة المحاولة</Button>
+        <StudentButton variant="secondary" onClick={() => void surveyQuery.refetch()}>إعادة المحاولة</StudentButton>
       </section>
     );
   }
@@ -61,9 +61,10 @@ export function PlayerSurveyPanel({ joinCode, attemptId }: { joinCode: string; a
 
   if (survey.submitted) {
     return (
-      <section className="rounded-xl border border-emerald-200 bg-emerald-50 p-6 text-center">
-        <p className="text-lg font-bold text-emerald-900">شكرًا لمشاركتك</p>
-        <p className="mt-1 text-sm text-emerald-800">تم استلام ردك على الاستبيان.</p>
+      <section className="student-panel p-7 text-center">
+        <div aria-hidden="true" className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-emerald-100 text-xl font-black text-emerald-800">✓</div>
+        <p className="text-lg font-black text-emerald-900">شكرًا لمشاركتك</p>
+        <p className="mt-1 text-sm text-[var(--student-muted)]">تم استلام ردك، ويمكنك مغادرة الصفحة بأمان.</p>
       </section>
     );
   }
@@ -97,17 +98,17 @@ export function PlayerSurveyPanel({ joinCode, attemptId }: { joinCode: string; a
   }
 
   return (
-    <section aria-labelledby="player-survey-title" className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
+    <section aria-labelledby="player-survey-title" className="student-panel p-5 sm:p-7">
       <div className="mb-6 text-center">
-        <p className="mb-1 text-sm font-semibold text-sky-700">رأيك يهمنا</p>
-        <h2 id="player-survey-title" className="text-xl font-bold text-slate-900">{survey.title}</h2>
-        {survey.description ? <p className="mt-2 text-sm text-slate-600">{survey.description}</p> : null}
+        <p className="mb-1 text-sm font-bold text-[var(--student-primary-strong)]">قبل أن تغادر…</p>
+        <h2 id="player-survey-title" className="text-xl font-black text-[var(--student-ink)]">{survey.title}</h2>
+        <p className="mt-2 text-sm leading-7 text-[var(--student-muted)]">{survey.description || 'أخبر معلمك عن تجربتك في دقائق قليلة.'}</p>
       </div>
 
       <div className="divide-y divide-slate-200">
         {survey.questions.map((question, index) => (
           <fieldset key={question.questionId} className="py-5 first:pt-0">
-            <legend className="mb-3 block w-full text-sm font-semibold text-slate-800">
+            <legend className="mb-4 block w-full text-base font-bold text-[var(--student-ink)]">
               <span className="text-slate-400">{index + 1}.</span> {question.prompt}
               {question.isRequired ? <span className="mr-1 text-rose-600" aria-label="مطلوب">*</span> : null}
             </legend>
@@ -124,7 +125,7 @@ export function PlayerSurveyPanel({ joinCode, attemptId }: { joinCode: string; a
                       onChange={() => setAnswers((current) => ({ ...current, [question.questionId]: rating }))}
                       className="peer sr-only"
                     />
-                    <span className="flex min-h-11 items-center justify-center rounded-lg border border-slate-300 bg-white text-sm font-bold text-slate-700 peer-checked:border-sky-600 peer-checked:bg-sky-50 peer-checked:text-sky-800 peer-focus-visible:outline-2 peer-focus-visible:outline-sky-600">
+                    <span className="flex min-h-14 items-center justify-center rounded-xl border border-slate-300 bg-white text-base font-black text-slate-700 transition-colors duration-200 peer-checked:border-emerald-700 peer-checked:bg-emerald-50 peer-checked:text-emerald-900 peer-focus-visible:outline-2 peer-focus-visible:outline-emerald-700">
                       {rating}
                     </span>
                   </label>
@@ -137,7 +138,7 @@ export function PlayerSurveyPanel({ joinCode, attemptId }: { joinCode: string; a
                 {question.options.map((option) => (
                   <label
                     key={option.optionId}
-                    className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 has-[:checked]:border-sky-600 has-[:checked]:bg-sky-50">
+                    className="flex min-h-14 cursor-pointer items-center gap-3 rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-800 transition-colors duration-200 has-[:checked]:border-emerald-700 has-[:checked]:bg-emerald-50 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-emerald-700">
                     <input
                       type="radio"
                       name={`survey-${question.questionId}`}
@@ -147,7 +148,7 @@ export function PlayerSurveyPanel({ joinCode, attemptId }: { joinCode: string; a
                         ...current,
                         [question.questionId]: option.optionId,
                       }))}
-                      className="h-4 w-4 accent-sky-600"
+                      className="h-5 w-5 accent-emerald-700"
                     />
                     {option.optionText}
                   </label>
@@ -162,6 +163,7 @@ export function PlayerSurveyPanel({ joinCode, attemptId }: { joinCode: string; a
                 rows={3}
                 maxLength={1000}
                 placeholder="اكتب إجابتك هنا"
+                className="min-h-32 rounded-xl p-4 text-base leading-7 placeholder:text-slate-500 focus:border-emerald-700 focus:outline-emerald-700"
                 onChange={(event) => setAnswers((current) => ({
                   ...current,
                   [question.questionId]: event.target.value,
@@ -173,10 +175,10 @@ export function PlayerSurveyPanel({ joinCode, attemptId }: { joinCode: string; a
       </div>
 
       {error ? <p role="alert" className="mb-3 rounded-lg bg-rose-50 p-3 text-sm text-rose-700">{error}</p> : null}
-      <Button disabled={submitMutation.isPending} onClick={submit}>
+      <StudentButton disabled={submitMutation.isPending} onClick={submit} className="w-full sm:w-auto">
         {submitMutation.isPending ? <ButtonSpinner /> : null}
         {submitMutation.isPending ? 'جارٍ الإرسال…' : 'إرسال الاستبيان'}
-      </Button>
+      </StudentButton>
     </section>
   );
 }

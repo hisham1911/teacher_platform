@@ -47,10 +47,10 @@ describe('PlayerDeliveryPanel', () => {
     });
   });
 
-  it('يصدر شهادة للمحاولة الناجحة ويعرض تنزيلها', async () => {
+  it('يصدر شهادة للمحاولة الناجحة ويعرضها كالإجراء الأساسي', async () => {
     renderPanel();
 
-    await waitFor(() => expect(screen.getByRole('link', { name: 'تنزيل الشهادة PDF' })).toHaveAttribute('href', '/certificate.pdf'));
+    await waitFor(() => expect(screen.getByRole('link', { name: 'عرض الشهادة' })).toHaveAttribute('href', '/certificate.pdf'));
     expect(playerApi.issueCertificate).toHaveBeenCalledWith('JOIN123', 'attempt-1', expect.anything());
   });
 
@@ -66,14 +66,15 @@ describe('PlayerDeliveryPanel', () => {
 
     renderPanel();
 
-    expect(await screen.findByText(/تُجهّز الشهادة تلقائيًا/)).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: 'تنزيل الشهادة PDF' })).not.toBeInTheDocument();
+    expect(await screen.findByText(/جاري تجهيز شهادتك/)).toBeInTheDocument();
+    expect(screen.getByText(/سيتم تحديث الصفحة تلقائيًا/)).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'عرض الشهادة' })).not.toBeInTheDocument();
   });
 
   it('ينشئ رابط النتيجة وينسخه عند طلب الطالب', async () => {
     renderPanel(false);
     fireEvent.click(screen.getByRole('button', { name: 'إنشاء رابط المشاركة' }));
-    const copyButton = await screen.findByRole('button', { name: 'نسخ رابط النتيجة' });
+    const copyButton = await screen.findByRole('button', { name: 'نسخ الرابط' });
     expect(screen.getByRole('link', { name: 'فتح رابط ولي الأمر' })).toHaveAttribute(
       'href',
       'https://example.test/result/token-2',
@@ -82,5 +83,16 @@ describe('PlayerDeliveryPanel', () => {
 
     await waitFor(() => expect(writeText).toHaveBeenCalledWith('https://example.test/result/token-2'));
     expect(playerApi.issueCertificate).not.toHaveBeenCalled();
+    expect(screen.queryByRole('heading', { name: 'الشهادة' })).not.toBeInTheDocument();
+  });
+
+  it('يعرض الرابط نفسه للنسخ اليدوي عندما يرفض المتصفح Clipboard', async () => {
+    writeText.mockRejectedValueOnce(new Error('clipboard denied'));
+    renderPanel(false);
+    fireEvent.click(screen.getByRole('button', { name: 'إنشاء رابط المشاركة' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'نسخ الرابط' }));
+
+    const fallback = await screen.findByLabelText('تعذر النسخ تلقائيًا — انسخ الرابط يدويًا');
+    expect(fallback).toHaveValue('https://example.test/result/token-2');
   });
 });

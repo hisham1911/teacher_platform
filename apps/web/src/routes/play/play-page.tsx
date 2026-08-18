@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useParams } from 'react-router';
 import { Button } from '../../components/ui/button';
 import { ButtonSpinner } from '../../components/ui/spinner';
-import { FormField, TextInput, TextArea } from '../../components/ui/form-field';
+import { TextInput, TextArea } from '../../components/ui/form-field';
 import { playerApi } from '../../data/api-client/endpoints';
 import { HttpError } from '../../data/api-client/http-error';
 import { LiveCountdown } from '../../features/live/live-countdown';
@@ -16,8 +16,11 @@ import type {
   PlayerSession,
   StartAttemptResponse,
 } from '../../types/sessions';
+import { QUESTION_TYPE_LABELS } from '../../types/questions';
 import { PlayerSurveyPanel } from './player-survey-panel';
 import { PlayerDeliveryPanel } from './player-delivery-panel';
+import { StudentAudioPlayer } from './student-audio-player';
+import { QuestionProgress, StudentButton, StudentError, StudentLoading, StudentShell } from './student-ui';
 
 /**
  * /play/:joinCode — واجهة الطالب (Phase 4).
@@ -31,7 +34,7 @@ type PlayerStage =
   | { kind: 'join'; session: PlayerSession }
   | { kind: 'ready'; session: PlayerSession; displayName: string; attemptId: string | null }
   | { kind: 'live'; session: PlayerSession; displayName: string; attemptId: string | null }
-  | { kind: 'playing'; attempt: StartAttemptResponse }
+  | { kind: 'playing'; attempt: StartAttemptResponse; session: PlayerSession }
   | { kind: 'result'; attemptId: string }
   | { kind: 'unavailable'; message: string };
 
@@ -67,6 +70,15 @@ function formatRemaining(seconds: number): string {
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
+function sessionTimeLabel(session: PlayerSession): string {
+  if (session.timeMode === 'None' || !session.timeLimitSeconds) return 'بدون مؤقت';
+  const seconds = session.timeMode === 'TotalTime'
+    ? session.timeLimitSeconds
+    : session.timeLimitSeconds * session.questionCount;
+  const minutes = Math.max(1, Math.ceil(seconds / 60));
+  return `حوالي ${minutes} ${minutes === 1 ? 'دقيقة' : 'دقائق'}`;
+}
+
 export default function PlayPage() {
   const { joinCode } = useParams<{ joinCode: string }>();
   const queryClient = useQueryClient();
@@ -87,16 +99,16 @@ export default function PlayPage() {
 
   useEffect(() => {
     if (sessionQuery.isSuccess && stage.kind === 'loading') {
-      const s = sessionQuery.data;
-       if (s.status === 'Active' && s.canJoin) {
-         setStage({ kind: 'join', session: s });
+      const session = sessionQuery.data;
+      if (session.status === 'Active' && session.canJoin) {
+        setStage({ kind: 'join', session });
         // الاستعادة بعد F5 من السيرفر عبر الكوكي فقط — بدون حفظ الاسم في localStorage
         restoreMutation.mutate();
-      } else if (s.status === 'Scheduled') {
+      } else if (session.status === 'Scheduled') {
         setStage({ kind: 'unavailable', message: 'الجلسة لم تُفعَّل بعد. انتظر المعلم.' });
-       } else if (s.status === 'Finished') {
-         setStage({ kind: 'unavailable', message: 'انتهت هذه الجلسة.' });
-         restoreMutation.mutate();
+      } else if (session.status === 'Finished') {
+        setStage({ kind: 'unavailable', message: 'انتهت هذه الجلسة.' });
+        restoreMutation.mutate();
       } else {
         setStage({ kind: 'unavailable', message: 'هذه الجلسة لم تعد متاحة.' });
       }
@@ -114,24 +126,24 @@ export default function PlayPage() {
   }, [sessionQuery.isSuccess, sessionQuery.isError, sessionQuery.data, sessionQuery.error, stage.kind]);
 
   // يوجه اللاعب حسب حالة الخادم الفعلية (منسّق مشترك بين /me و /join)
-  function dispatchResult(joinCode: string, result: JoinSessionResponse, session: PlayerSession) {
-    if (result.attemptId && result.attemptStatus === 'InProgress') {
+  function applyPlayerState(joinCode: string, playerState: JoinSessionResponse, session: PlayerSession) {
+    if (playerState.attemptId && playerState.attemptStatus === 'InProgress') {
       // استئناف محاولة قائمة (F5 / إعادة فتح)
       if (session.mode === 'Live') {
-        setStage({ kind: 'live', session, displayName: result.displayName, attemptId: result.attemptId });
+        setStage({ kind: 'live', session, displayName: playerState.displayName, attemptId: playerState.attemptId });
       } else {
         startMutation.mutate();
       }
-    } else if (result.attemptId && (result.attemptStatus === 'Finished' || result.attemptStatus === 'TimedOut')) {
+    } else if (playerState.attemptId && (playerState.attemptStatus === 'Finished' || playerState.attemptStatus === 'TimedOut')) {
       // محاولة منتهية — نعرض النتيجة مباشرة دون شاشة استعداد
-      void queryClient.invalidateQueries({ queryKey: ['player-result', joinCode, result.attemptId] });
-      setStage({ kind: 'result', attemptId: result.attemptId });
+      void queryClient.invalidateQueries({ queryKey: ['player-result', joinCode, playerState.attemptId] });
+      setStage({ kind: 'result', attemptId: playerState.attemptId });
     } else if (session.status === 'Active' && session.mode === 'Live') {
-      setStage({ kind: 'live', session, displayName: result.displayName, attemptId: result.attemptId });
+      setStage({ kind: 'live', session, displayName: playerState.displayName, attemptId: playerState.attemptId });
     } else {
       setStage((prev) =>
         prev.kind === 'join' || prev.kind === 'ready'
-          ? { kind: 'ready', session: prev.session, displayName: result.displayName, attemptId: result.attemptId }
+          ? { kind: 'ready', session: prev.session, displayName: playerState.displayName, attemptId: playerState.attemptId }
           : prev,
       );
     }
@@ -140,9 +152,9 @@ export default function PlayPage() {
   // استعادة تلقائية بعد إعادة تحميل الصفحة: السيرفر يقرّر الوجهة من الكوكي فقط
   const restoreMutation = useMutation({
     mutationFn: () => playerApi.getCurrentPlayer(joinCode!),
-    onSuccess: (result) => {
+    onSuccess: (playerState) => {
       setActionError(null);
-      dispatchResult(joinCode!, result, sessionQuery.data!);
+      applyPlayerState(joinCode!, playerState, sessionQuery.data!);
     },
     onError: (error) => {
       // 401 = لا كوكي صالح ⇒ نترك شاشة الانضمام. بقية الأخطاء غير مؤذية للعرض.
@@ -154,9 +166,9 @@ export default function PlayPage() {
 
   const joinMutation = useMutation({
     mutationFn: (name: string) => playerApi.join(joinCode!, { displayName: name }),
-    onSuccess: (result) => {
+    onSuccess: (playerState) => {
       setActionError(null);
-      dispatchResult(joinCode!, result, sessionQuery.data!);
+      applyPlayerState(joinCode!, playerState, sessionQuery.data!);
     },
     onError: (error) => {
       if (error instanceof HttpError && error.status === 409) {
@@ -174,7 +186,7 @@ export default function PlayPage() {
     onSuccess: (attempt) => {
       clock.sync(attempt.serverNow);
       setActionError(null);
-      setStage({ kind: 'playing', attempt });
+      setStage({ kind: 'playing', attempt, session: sessionQuery.data! });
     },
     onError: (error) => {
       if (error instanceof HttpError && error.status === 409) {
@@ -204,111 +216,78 @@ export default function PlayPage() {
   // ─── شاشات ────────────────────────────────────────────────────────────────
 
   if (stage.kind === 'loading') {
-    return (
-      <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col justify-center p-4">
-        <p className="text-center text-sm text-slate-500">جارٍ تحميل الجلسة…</p>
-      </main>
-    );
+    return <StudentLoading message="جارٍ تجهيز الاختبار…" />;
   }
 
   if (stage.kind === 'unavailable') {
-    return (
-      <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col justify-center p-4">
-        <div className="rounded-xl border border-slate-200 bg-white p-6 text-center">
-          <h1 className="mb-2 text-lg font-bold text-slate-900">غير متاح</h1>
-          <p className="text-sm text-slate-600">{stage.message}</p>
-        </div>
-      </main>
-    );
+    return <StudentError title="الاختبار غير متاح الآن" message={stage.message} />;
   }
 
   if (stage.kind === 'join') {
     const { session } = stage;
     return (
-      <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col justify-center p-4">
-        <div className="rounded-xl border border-slate-200 bg-white p-6">
-          <h1 className="mb-1 text-xl font-bold text-slate-900">{session.title}</h1>
-          {session.description ? (
-            <p className="mb-3 text-sm text-slate-600">{session.description}</p>
-          ) : null}
-          <dl className="mb-4 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
-            <div className="flex gap-1">
-              <dt>الأسئلة:</dt>
-              <dd>{session.questionCount}</dd>
-            </div>
-            <div className="flex gap-1">
-              <dt>النقاط:</dt>
-              <dd>{session.totalPoints}</dd>
-            </div>
-            <div className="flex gap-1">
-              <dt>النجاح من:</dt>
-              <dd dir="ltr">{session.passingPercentage}%</dd>
-            </div>
-            {session.timeMode !== 'None' && session.timeLimitSeconds ? (
-              <div className="flex gap-1">
-                <dt>الوقت:</dt>
-                <dd>
-                  {session.timeMode === 'TotalTime'
-                    ? `${Math.round(session.timeLimitSeconds / 60)} دقيقة إجمالًا`
-                    : `${session.timeLimitSeconds} ثانية لكل سؤال`}
-                </dd>
-              </div>
-            ) : null}
+      <StudentShell centered>
+        <section className="student-panel student-enter overflow-hidden p-6 sm:p-8">
+          <div className="text-center">
+            <p className="text-sm font-bold text-[var(--student-primary-strong)]">جاهز للتحدي؟</p>
+            <h1 dir="auto" className="mt-2 text-2xl font-black leading-tight text-[var(--student-ink)] sm:text-3xl">{session.title}</h1>
+            {session.description ? <p className="mx-auto mt-3 max-w-md text-sm leading-7 text-[var(--student-muted)]">{session.description}</p> : null}
+          </div>
+
+          <dl className="my-6 flex items-stretch justify-center divide-x divide-x-reverse divide-slate-200 text-center">
+            <div className="min-w-0 flex-1 px-3"><dt className="text-xs text-[var(--student-muted)]">الأسئلة</dt><dd className="mt-1 text-base font-black">{session.questionCount}</dd></div>
+            <div className="min-w-0 flex-1 px-3"><dt className="text-xs text-[var(--student-muted)]">الوقت</dt><dd className="mt-1 text-sm font-black">{sessionTimeLabel(session)}</dd></div>
+            <div className="min-w-0 flex-1 px-3"><dt className="text-xs text-[var(--student-muted)]">النجاح</dt><dd dir="ltr" className="mt-1 text-base font-black">{session.passingPercentage}%</dd></div>
           </dl>
-          {session.instructions ? (
-            <p className="mb-4 rounded-lg bg-sky-50 p-3 text-xs text-sky-800">{session.instructions}</p>
-          ) : null}
+
+          {session.instructions ? <p className="mb-6 rounded-xl bg-emerald-50 p-4 text-sm leading-7 text-emerald-950">{session.instructions}</p> : null}
           <form onSubmit={onJoinSubmit} className="flex flex-col gap-3">
-            <FormField id="display-name" label="اسمك (سيظهر للمعلم)" error={nameError}>
-              {(props) => (
-                <TextInput
-                  {...props}
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  minLength={2}
-                  maxLength={50}
-                  required
-                  autoComplete="name"
-                  placeholder="اكتب اسمك هنا"
-                />
-              )}
-            </FormField>
-            {actionError ? (
-              <p role="alert" className="rounded-lg bg-rose-50 p-3 text-sm text-rose-700">
-                {actionError}
-              </p>
-            ) : null}
-            <Button type="submit" disabled={joinMutation.isPending}>
+            <label htmlFor="display-name" className="text-base font-black">ما اسمك؟</label>
+            <TextInput
+              id="display-name"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              minLength={2}
+              maxLength={50}
+              required
+              autoComplete="name"
+              placeholder="اكتب اسمك هنا"
+              aria-invalid={Boolean(nameError)}
+              aria-describedby={nameError ? 'display-name-error' : undefined}
+              className="min-h-14 rounded-xl px-4 text-base placeholder:text-slate-500 focus:border-emerald-700 focus:outline-emerald-700"
+            />
+            {nameError ? <p id="display-name-error" role="alert" className="text-sm text-rose-700">{nameError}</p> : null}
+            {actionError ? <p role="alert" className="rounded-xl bg-rose-50 p-3 text-sm text-rose-700">{actionError}</p> : null}
+            <StudentButton type="submit" disabled={joinMutation.isPending} className="mt-2 w-full">
               {joinMutation.isPending ? <ButtonSpinner /> : null}
-              {joinMutation.isPending ? 'جارٍ الانضمام…' : 'انضمام'}
-            </Button>
+              {joinMutation.isPending ? 'جارٍ تجهيز دخولك…' : 'ابدأ الاختبار'}
+            </StudentButton>
           </form>
-        </div>
-      </main>
+        </section>
+      </StudentShell>
     );
   }
 
   if (stage.kind === 'ready') {
     return (
-      <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col justify-center p-4">
-        <div className="rounded-xl border border-slate-200 bg-white p-6 text-center">
-          <h1 className="mb-1 text-xl font-bold text-slate-900">أهلًا {stage.displayName} 👋</h1>
-          <p className="mb-4 text-sm text-slate-600">
-            {stage.attemptId
-              ? 'لديك محاولة سابقة — ستكمل من حيث توقفت.'
-              : 'عند الضغط على "ابدأ" سيبدأ الوقت (إن وُجد). ركّز وبالتوفيق!'}
+      <StudentShell centered>
+        <section className="student-panel student-enter p-6 text-center sm:p-9">
+          <div aria-hidden="true" className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-2xl font-black text-emerald-800">✓</div>
+          <h1 className="mt-5 text-2xl font-black">أنت جاهز، {stage.displayName}!</h1>
+          <p dir="auto" className="mt-2 text-lg font-bold text-slate-700">{stage.session.title}</p>
+          <div className="mx-auto mt-6 flex max-w-sm flex-wrap justify-center gap-x-5 gap-y-2 text-sm text-[var(--student-muted)]">
+            <span>{stage.session.questionCount} أسئلة</span><span>{sessionTimeLabel(stage.session)}</span><span>النجاح من <b dir="ltr">{stage.session.passingPercentage}%</b></span>
+          </div>
+          <p className="mx-auto mt-6 max-w-sm rounded-xl bg-slate-50 p-4 text-sm leading-7 text-slate-700">
+            {stage.attemptId ? 'سنُعيدك إلى آخر سؤال وصلت إليه.' : 'اقرأ كل سؤال بهدوء، وثبّت إجابتك قبل الانتقال.'}
           </p>
-          {actionError ? (
-            <p role="alert" className="mb-3 rounded-lg bg-rose-50 p-3 text-sm text-rose-700">
-              {actionError}
-            </p>
-          ) : null}
-          <Button onClick={() => startMutation.mutate()} disabled={startMutation.isPending}>
+          {actionError ? <p role="alert" className="mt-4 rounded-xl bg-rose-50 p-3 text-sm text-rose-700">{actionError}</p> : null}
+          <StudentButton onClick={() => startMutation.mutate()} disabled={startMutation.isPending} className="mt-6 w-full sm:w-auto sm:min-w-48">
             {startMutation.isPending ? <ButtonSpinner /> : null}
-            {startMutation.isPending ? 'جارٍ البدء…' : stage.attemptId ? 'استئناف المحاولة' : 'ابدأ الاختبار'}
-          </Button>
-        </div>
-      </main>
+            {startMutation.isPending ? 'جارٍ البدء…' : stage.attemptId ? 'استئناف المحاولة' : 'ابدأ الآن'}
+          </StudentButton>
+        </section>
+      </StudentShell>
     );
   }
 
@@ -317,6 +296,7 @@ export default function PlayPage() {
       <PlayingView
         joinCode={joinCode!}
         attempt={stage.attempt}
+        quizTitle={stage.session.title}
         clockSync={clock.sync}
         clockNow={clock.now}
         onFinished={(attemptId) => {
@@ -475,12 +455,13 @@ function LivePlayerView({
                   <h2 className="text-lg font-bold leading-8 text-slate-950">{question.prompt}</h2>
                   <span className="shrink-0 rounded-md bg-slate-100 px-2 py-1 text-xs text-slate-600">{question.points} نقطة</span>
                 </div>
-                {question.mediaAssetId ? <QuestionMedia joinCode={joinCode} attemptId={attemptId!} mediaId={question.mediaAssetId} questionType={question.questionType} /> : null}
+                {question.mediaAssetId ? <QuestionMedia joinCode={joinCode} attemptId={attemptId!} mediaId={question.mediaAssetId} questionType={question.questionType} presentation="live" /> : null}
                 <div className="mt-4">
                   <AnswerEditor
                     key={question.quizVersionItemId}
                     question={question}
                     disabled={answerMutation.isPending || isAnswered}
+                    presentation="live"
                     onSubmit={(answerJson) => answerMutation.mutate({ quizVersionItemId: question.quizVersionItemId, answerJson })}
                   />
                 </div>
@@ -533,12 +514,14 @@ function Leaderboard({ state }: { state: LiveSessionState }) {
 function PlayingView({
   joinCode,
   attempt,
+  quizTitle,
   clockSync,
   clockNow,
   onFinished,
 }: {
   joinCode: string;
   attempt: StartAttemptResponse;
+  quizTitle: string;
   clockSync: (serverNow: string) => void;
   clockNow: () => Date;
   onFinished: (attemptId: string) => void;
@@ -591,11 +574,11 @@ function PlayingView({
   const answerMutation = useMutation({
     mutationFn: (payload: { quizVersionItemId: string; answerJson: string }) =>
       playerApi.submitAnswer(joinCode, attempt.attemptId, payload),
-    onSuccess: (result) => {
-      clockSync(result.serverNow);
-      setAnsweredQuestionId(result.quizVersionItemId);
-      if (result.isCorrect != null && result.scoreAwarded != null) {
-        setLastFeedback({ isCorrect: result.isCorrect, scoreAwarded: result.scoreAwarded });
+    onSuccess: (savedAnswer) => {
+      clockSync(savedAnswer.serverNow);
+      setAnsweredQuestionId(savedAnswer.quizVersionItemId);
+      if (savedAnswer.isCorrect != null && savedAnswer.scoreAwarded != null) {
+        setLastFeedback({ isCorrect: savedAnswer.isCorrect, scoreAwarded: savedAnswer.scoreAwarded });
       }
       setActionError(null);
     },
@@ -623,11 +606,7 @@ function PlayingView({
   });
 
   if (questionQuery.isLoading) {
-    return (
-      <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col justify-center p-4">
-        <p className="text-center text-sm text-slate-500">جارٍ تحميل السؤال…</p>
-      </main>
-    );
+    return <StudentLoading message="جارٍ تحميل السؤال…" />;
   }
 
   if (questionQuery.isError || !question) {
@@ -638,14 +617,11 @@ function PlayingView({
       return null;
     }
     return (
-      <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col justify-center p-4">
-        <div className="rounded-xl border border-slate-200 bg-white p-6 text-center">
-          <p role="alert" className="mb-3 text-sm text-rose-700">تعذر تحميل السؤال.</p>
-          <Button variant="secondary" onClick={() => void questionQuery.refetch()}>
-            إعادة المحاولة
-          </Button>
-        </div>
-      </main>
+      <StudentError
+        title="تعذر تحميل السؤال"
+        message="تحقق من اتصالك ثم حاول مرة أخرى. إجاباتك السابقة محفوظة."
+        action={<StudentButton variant="secondary" onClick={() => void questionQuery.refetch()}>إعادة المحاولة</StudentButton>}
+      />
     );
   }
 
@@ -672,115 +648,112 @@ function PlayingView({
   }
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col p-4">
-      {/* شريط الحالة */}
-      <header className="mb-3 flex items-center justify-between gap-2">
-        <p className="text-sm font-medium text-slate-700">
-          سؤال {question.index + 1} من {question.totalQuestions}
-        </p>
-        {remaining != null ? (
-          <p
-            role="timer"
-            dir="ltr"
-            className={`rounded-md px-2 py-1 font-mono text-sm font-bold ${
-              remaining <= 30 ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-700'
-            }`}>
-            {formatRemaining(remaining)}
-          </p>
-        ) : null}
-      </header>
-
-      {/* شريط التقدم */}
-      <div className="mb-4 h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
-        <div
-          className="h-full rounded-full bg-sky-600 transition-all"
-          style={{ width: `${((question.index + 1) / question.totalQuestions) * 100}%` }}
-        />
-      </div>
-
-      <section className="flex flex-1 flex-col gap-4 rounded-xl border border-slate-200 bg-white p-4">
-        <div className="flex items-start justify-between gap-2">
-          <h1 className="text-base font-semibold leading-relaxed text-slate-900">{question.prompt}</h1>
-          <span className="shrink-0 rounded-md bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
-            {question.points} نقطة
-          </span>
-        </div>
-
-        {question.mediaAssetId ? (
-          <QuestionMedia
-            joinCode={joinCode}
-            attemptId={attempt.attemptId}
-            mediaId={question.mediaAssetId}
-            questionType={question.questionType}
-          />
-        ) : null}
-
-        <AnswerEditor
-          key={question.quizVersionItemId}
-          question={question}
-          disabled={answerMutation.isPending || currentQuestionAnswered}
-          onSubmit={(answerJson) =>
-            answerMutation.mutate({ quizVersionItemId: question.quizVersionItemId, answerJson })
-          }
-        />
-
-        {currentQuestionAnswered ? (
-          <p className="rounded-lg bg-slate-50 p-2 text-center text-xs text-slate-500">
-            تم تسجيل إجابتك لهذا السؤال مسبقًا.
-          </p>
-        ) : null}
-
-        {lastFeedback ? (
-          <p
-            role="status"
-            className={`rounded-lg p-2 text-center text-sm font-medium ${
-              lastFeedback.isCorrect ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'
-            }`}>
-            {lastFeedback.isCorrect
-              ? `إجابة صحيحة ✓ (+${lastFeedback.scoreAwarded})`
-              : 'إجابة غير صحيحة'}
-          </p>
-        ) : null}
-
-        {actionError ? (
-          <p role="alert" className="rounded-lg bg-rose-50 p-3 text-sm text-rose-700">{actionError}</p>
-        ) : null}
-
-        {skipConfirmation ? (
-          <div role="alertdialog" aria-labelledby="skip-question-title" aria-describedby="skip-question-description" className="rounded-lg border border-amber-300 bg-amber-50 p-4">
-            <h2 id="skip-question-title" className="font-semibold text-amber-950">لم تُحفظ إجابة لهذا السؤال</h2>
-            <p id="skip-question-description" className="mt-1 text-sm text-amber-900">
-              يمكنك العودة والإجابة، أو تجاوز السؤال عمدًا وسيبقى بلا إجابة.
-            </p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <Button variant="secondary" onClick={() => setSkipConfirmation(null)}>ابقَ وأجب</Button>
-              <Button onClick={continueFromCurrentQuestion}>
-                {skipConfirmation === 'finish' ? 'تجاوز وإنهاء الاختبار' : 'تجاوز هذا السؤال'}
-              </Button>
-            </div>
+    <StudentShell width="wide">
+      <div className="student-enter flex flex-1 flex-col">
+        <header className="mb-5 flex items-start justify-between gap-4 pt-2 sm:items-center">
+          <div className="min-w-0">
+            <p className="text-xs font-semibold text-[var(--student-muted)]">{quizTitle}</p>
+            <h1 className="mt-1 text-base font-black text-[var(--student-ink)]">واصل بهدوء، إجاباتك تُحفظ أولًا بأول</h1>
           </div>
-        ) : null}
-      </section>
+          {remaining != null ? (
+            <p
+              role="timer"
+              dir="ltr"
+              aria-label={`الوقت المتبقي ${formatRemaining(remaining)}`}
+              className={`shrink-0 rounded-full px-3 py-2 font-mono text-sm font-black tabular-nums ${remaining <= 30 ? 'bg-rose-100 text-rose-800' : 'bg-white text-slate-800 shadow-[0_1px_4px_rgb(15_23_42/0.08)]'}`}>
+              {formatRemaining(remaining)}
+            </p>
+          ) : null}
+        </header>
 
-      <footer className="mt-4 flex gap-2">
-        {isLast ? (
-          <Button
-            onClick={requestQuestionProgress}
-            disabled={answerMutation.isPending || finishMutation.isPending}
-            >
-            {finishMutation.isPending ? <ButtonSpinner /> : null}
-            إنهاء الاختبار
-          </Button>
-        ) : (
-          <Button
-            variant="secondary"
-            onClick={requestQuestionProgress}
-            disabled={answerMutation.isPending}>
-            السؤال التالي ←
-          </Button>
-        )}
-      </footer>
-    </main>
+        <QuestionProgress current={question.index + 1} total={question.totalQuestions} />
+
+        <section className="student-panel mt-5 flex flex-1 flex-col p-5 sm:p-8">
+          <div className="mb-5 flex flex-wrap items-center gap-2">
+            <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800">
+              {QUESTION_TYPE_LABELS[question.questionType]}
+            </span>
+            <span className="text-xs font-semibold text-[var(--student-muted)]">{question.points} نقطة</span>
+          </div>
+
+          <h2 dir="auto" className="max-w-3xl text-pretty text-xl font-black leading-relaxed text-[var(--student-ink)] sm:text-2xl">
+            {question.prompt}
+          </h2>
+
+          {question.mediaAssetId ? (
+            <div className="mt-6">
+              <QuestionMedia
+                joinCode={joinCode}
+                attemptId={attempt.attemptId}
+                mediaId={question.mediaAssetId}
+                questionType={question.questionType}
+                presentation="student"
+              />
+            </div>
+          ) : null}
+
+          <div className="mt-7">
+            <AnswerEditor
+              key={question.quizVersionItemId}
+              question={question}
+              disabled={answerMutation.isPending || currentQuestionAnswered}
+              presentation="student"
+              onSubmit={(answerJson) => answerMutation.mutate({ quizVersionItemId: question.quizVersionItemId, answerJson })}
+            />
+          </div>
+
+          <div aria-live="polite" className="mt-4 min-h-6">
+            {answerMutation.isPending ? <p role="status" className="text-center text-sm font-semibold text-[var(--student-muted)]">جارٍ حفظ إجابتك…</p> : null}
+            {currentQuestionAnswered && !lastFeedback && !answerMutation.isPending ? <p role="status" className="text-center text-sm font-bold text-emerald-800">تم حفظ إجابتك ✓</p> : null}
+            {lastFeedback && !answerMutation.isPending ? (
+              <p role="status" className={`rounded-xl p-3 text-center text-sm font-bold ${lastFeedback.isCorrect ? 'bg-emerald-50 text-emerald-800' : 'bg-amber-50 text-amber-900'}`}>
+                {lastFeedback.isCorrect ? `إجابة صحيحة ✓ (+${lastFeedback.scoreAwarded})` : 'تم حفظ الإجابة — ليست صحيحة هذه المرة'}
+              </p>
+            ) : null}
+          </div>
+
+          {actionError ? <p role="alert" className="mt-3 rounded-xl bg-rose-50 p-3 text-sm text-rose-700">{actionError}</p> : null}
+        </section>
+
+        <footer className="sticky bottom-0 z-20 mt-4 bg-[var(--student-bg)] py-3">
+          <div className="flex justify-start">
+            {isLast ? (
+              <StudentButton onClick={requestQuestionProgress} disabled={answerMutation.isPending || finishMutation.isPending} className="w-full sm:w-auto sm:min-w-48">
+                {finishMutation.isPending ? <ButtonSpinner /> : null}إنهاء الاختبار
+              </StudentButton>
+            ) : (
+              <StudentButton onClick={requestQuestionProgress} disabled={answerMutation.isPending} className="w-full sm:w-auto sm:min-w-48">
+                السؤال التالي ←
+              </StudentButton>
+            )}
+          </div>
+        </footer>
+
+      </div>
+      {skipConfirmation ? (
+        <SkipConfirmationDialog
+          isFinish={skipConfirmation === 'finish'}
+          onStay={() => setSkipConfirmation(null)}
+          onSkip={continueFromCurrentQuestion}
+        />
+      ) : null}
+    </StudentShell>
+  );
+}
+
+function SkipConfirmationDialog({ isFinish, onStay, onSkip }: { isFinish: boolean; onStay: () => void; onSkip: () => void }) {
+  return (
+    <div className="fixed inset-0 z-40 flex items-end justify-center bg-slate-950/35 p-0 sm:items-center sm:p-4">
+      <section role="alertdialog" aria-modal="true" aria-labelledby="skip-question-title" aria-describedby="skip-question-description" className="student-panel w-full rounded-b-none p-6 sm:max-w-md sm:rounded-2xl">
+        <div aria-hidden="true" className="mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-amber-100 text-xl font-black text-amber-900">!</div>
+        <h2 id="skip-question-title" className="text-lg font-black text-[var(--student-ink)]">لم تجب عن هذا السؤال بعد</h2>
+        <p id="skip-question-description" className="mt-2 text-sm leading-7 text-[var(--student-muted)]">يمكنك البقاء والإجابة، أو تجاوز السؤال عمدًا وسيبقى بلا إجابة.</p>
+        <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <StudentButton autoFocus onClick={onStay}>ابقَ وأجب</StudentButton>
+          <StudentButton variant="secondary" onClick={onSkip}>{isFinish ? 'تجاوز وإنهاء الاختبار' : 'تجاوز هذا السؤال'}</StudentButton>
+        </div>
+      </section>
+    </div>
   );
 }
 
@@ -791,15 +764,18 @@ function QuestionMedia({
   attemptId,
   mediaId,
   questionType,
+  presentation,
 }: {
   joinCode: string;
   attemptId: string;
   mediaId: string;
   questionType: PlayerQuestion['questionType'];
+  presentation: 'student' | 'live';
 }) {
   const url = playerApi.mediaUrl(joinCode, attemptId, mediaId);
   const [playbackFailed, setPlaybackFailed] = useState(false);
   if (questionType === 'Listening') {
+    if (presentation === 'student') return <StudentAudioPlayer src={url} />;
     return (
       <div>
         <audio controls preload="metadata" src={url} onError={() => setPlaybackFailed(true)} className="w-full" data-testid="question-media-audio">
@@ -814,7 +790,7 @@ function QuestionMedia({
       src={url}
       alt="وسيط مرفق بالسؤال"
       loading="lazy"
-      className="max-h-64 w-full rounded-lg object-contain"
+      className={presentation === 'student' ? 'max-h-80 w-full rounded-xl bg-slate-50 object-contain' : 'max-h-64 w-full rounded-lg object-contain'}
       data-testid="question-media-image"
     />
   );
@@ -825,10 +801,12 @@ function QuestionMedia({
 function AnswerEditor({
   question,
   disabled,
+  presentation,
   onSubmit,
 }: {
   question: PlayerQuestion;
   disabled: boolean;
+  presentation: 'student' | 'live';
   onSubmit: (answerJson: string) => void;
 }) {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
@@ -836,37 +814,48 @@ function AnswerEditor({
   const [ordered, setOrdered] = useState<string[]>(() => question.options.map((o) => o.optionId));
 
   const type = question.questionType;
+  const isStudent = presentation === 'student';
 
   if (type === 'MultipleChoice' || type === 'TrueFalse' || type === 'Listening') {
     return (
-      <fieldset className="flex flex-col gap-2">
+      <fieldset className={`flex flex-col ${isStudent ? 'gap-3' : 'gap-2'}`}>
         <legend className="sr-only">اختر إجابة</legend>
-        {question.options.map((opt) => (
-          <label
-            key={opt.optionId}
-            className={`flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border p-3 text-sm ${
-              selectedOption === opt.optionId
-                ? 'border-sky-500 bg-sky-50 text-sky-900'
-                : 'border-slate-300 bg-white text-slate-800'
-            } ${disabled ? 'opacity-60' : ''}`}>
-            <input
-              type="radio"
-              name={`q-${question.quizVersionItemId}`}
-              value={opt.optionId}
-              checked={selectedOption === opt.optionId}
-              disabled={disabled}
-              onChange={() => setSelectedOption(opt.optionId)}
-              className="h-5 w-5 accent-sky-600"
-            />
-            <span>{opt.optionText}</span>
-          </label>
-        ))}
-        <Button
-          type="button"
-          disabled={disabled || !selectedOption}
-          onClick={() => onSubmit(JSON.stringify({ optionId: selectedOption }))}>
-          تثبيت الإجابة
-        </Button>
+        {question.options.map((opt, index) => {
+          const optionDirection = /[\u0600-\u06ff]/.test(opt.optionText) ? 'rtl' : 'ltr';
+          return (
+            <label
+              key={opt.optionId}
+              dir={isStudent ? optionDirection : undefined}
+              className={`flex cursor-pointer items-center gap-3 border transition-[background-color,border-color,color,transform] duration-200 focus-within:outline-2 focus-within:outline-offset-2 ${
+                isStudent ? 'min-h-16 rounded-xl p-4 text-base focus-within:outline-emerald-700' : 'min-h-11 rounded-lg p-3 text-sm focus-within:outline-sky-600'
+              } ${selectedOption === opt.optionId
+                ? isStudent ? 'border-emerald-700 bg-emerald-50 text-emerald-950' : 'border-sky-500 bg-sky-50 text-sky-900'
+                : 'border-slate-300 bg-white text-slate-800 hover:border-slate-400'
+              } ${disabled ? 'cursor-default opacity-60' : 'active:translate-y-px'}`}>
+              <input
+                type="radio"
+                name={`q-${question.quizVersionItemId}`}
+                value={opt.optionId}
+                checked={selectedOption === opt.optionId}
+                disabled={disabled}
+                onChange={() => setSelectedOption(opt.optionId)}
+                className={isStudent ? 'sr-only' : 'h-5 w-5 accent-sky-600'}
+              />
+              {isStudent ? (
+                <span aria-hidden="true" className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-sm font-black ${selectedOption === opt.optionId ? 'border-emerald-700 bg-emerald-700 text-white' : 'border-slate-300 bg-slate-50 text-slate-600'}`}>
+                  {String.fromCharCode(65 + index)}
+                </span>
+              ) : null}
+              <span className="min-w-0 flex-1 text-start font-semibold">{opt.optionText}</span>
+              {isStudent && selectedOption === opt.optionId ? <span aria-hidden="true" className="text-lg font-black text-emerald-700">✓</span> : null}
+            </label>
+          );
+        })}
+        {isStudent ? (
+          <StudentButton type="button" disabled={disabled || !selectedOption} onClick={() => onSubmit(JSON.stringify({ optionId: selectedOption }))} className="mt-2 w-full sm:w-auto sm:self-end">تثبيت الإجابة</StudentButton>
+        ) : (
+          <Button type="button" disabled={disabled || !selectedOption} onClick={() => onSubmit(JSON.stringify({ optionId: selectedOption }))}>تثبيت الإجابة</Button>
+        )}
       </fieldset>
     );
   }
@@ -890,29 +879,28 @@ function AnswerEditor({
           disabled={disabled}
           placeholder="اكتب إجابتك هنا"
           aria-label="إجابتك"
+          className={isStudent ? 'min-h-36 rounded-xl p-4 text-base leading-7 placeholder:text-slate-500 focus:border-emerald-700 focus:outline-emerald-700' : ''}
         />
-        <Button type="submit" disabled={disabled || text.trim().length < 2}>
-          تثبيت الإجابة
-        </Button>
+        {isStudent ? <StudentButton type="submit" disabled={disabled || text.trim().length < 2} className="mt-2 w-full sm:w-auto sm:self-end">تثبيت الإجابة</StudentButton> : <Button type="submit" disabled={disabled || text.trim().length < 2}>تثبيت الإجابة</Button>}
       </form>
     );
   }
 
   // Ordering — أزرار أعلى/أسفل (مناسبة للمس بدل السحب والإفلات)
   return (
-    <div className="flex flex-col gap-2">
-      <p className="text-xs text-slate-500">رتّب العناصر بالترتيب الصحيح:</p>
-      <ol className="flex flex-col gap-2">
+    <div className={`flex flex-col ${isStudent ? 'gap-3' : 'gap-2'}`}>
+      <p className={isStudent ? 'text-sm font-semibold text-slate-700' : 'text-xs text-slate-500'}>رتّب العناصر بالترتيب الصحيح:</p>
+      <ol className={`flex flex-col ${isStudent ? 'gap-3' : 'gap-2'}`}>
         {ordered.map((optionId, idx) => {
           const opt = question.options.find((o) => o.optionId === optionId);
           return (
             <li
               key={optionId}
-              className="flex min-h-11 items-center gap-2 rounded-lg border border-slate-300 bg-white p-2">
-              <span className="w-6 text-center font-mono text-sm font-bold text-slate-500">
+              className={`flex items-center gap-2 border border-slate-300 bg-white ${isStudent ? 'min-h-16 rounded-xl p-3' : 'min-h-11 rounded-lg p-2'}`}>
+              <span className={`text-center font-mono text-sm font-bold ${isStudent ? 'flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-700' : 'w-6 text-slate-500'}`}>
                 {idx + 1}
               </span>
-              <span className="flex-1 text-sm text-slate-800">{opt?.optionText ?? optionId}</span>
+              <span dir="auto" className={`flex-1 text-slate-800 ${isStudent ? 'text-base font-semibold' : 'text-sm'}`}>{opt?.optionText ?? optionId}</span>
               <div className="flex gap-1">
                 <button
                   type="button"
@@ -930,7 +918,7 @@ function AnswerEditor({
                       return next;
                     })
                   }
-                  className="flex h-11 w-11 items-center justify-center rounded-md border border-slate-300 text-slate-600 hover:bg-slate-50 disabled:opacity-40">
+                  className="flex h-11 w-11 items-center justify-center rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 disabled:opacity-40">
                   ↑
                 </button>
                 <button
@@ -949,7 +937,7 @@ function AnswerEditor({
                       return next;
                     })
                   }
-                  className="flex h-11 w-11 items-center justify-center rounded-md border border-slate-300 text-slate-600 hover:bg-slate-50 disabled:opacity-40">
+                  className="flex h-11 w-11 items-center justify-center rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 disabled:opacity-40">
                   ↓
                 </button>
               </div>
@@ -957,12 +945,11 @@ function AnswerEditor({
           );
         })}
       </ol>
-      <Button
-        type="button"
-        disabled={disabled}
-        onClick={() => onSubmit(JSON.stringify({ orderedOptionIds: ordered }))}>
-        تثبيت الترتيب
-      </Button>
+      {isStudent ? (
+        <StudentButton type="button" disabled={disabled} onClick={() => onSubmit(JSON.stringify({ orderedOptionIds: ordered }))} className="mt-2 w-full sm:w-auto sm:self-end">تثبيت الترتيب</StudentButton>
+      ) : (
+        <Button type="button" disabled={disabled} onClick={() => onSubmit(JSON.stringify({ orderedOptionIds: ordered }))}>تثبيت الترتيب</Button>
+      )}
     </div>
   );
 }
@@ -977,87 +964,56 @@ function ResultView({ joinCode, attemptId }: { joinCode: string; attemptId: stri
   });
 
   if (resultQuery.isLoading) {
-    return (
-      <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col justify-center p-4">
-        <p className="text-center text-sm text-slate-500">جارٍ تحميل النتيجة…</p>
-      </main>
-    );
+    return <StudentLoading message="جارٍ تجهيز نتيجتك…" />;
   }
 
   if (resultQuery.isError || !resultQuery.data) {
     return (
-      <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col justify-center p-4">
-        <div className="rounded-xl border border-slate-200 bg-white p-6 text-center">
-          <p role="alert" className="mb-3 text-sm text-rose-700">
-            تعذر تحميل النتيجة. قد تكون الجلسة أُلغيت.
-          </p>
-          <Button variant="secondary" onClick={() => void resultQuery.refetch()}>
-            إعادة المحاولة
-          </Button>
-        </div>
-      </main>
+      <StudentError
+        title="تعذر عرض النتيجة"
+        message="لم نتمكن من تحميل نتيجتك الآن. حاول مرة أخرى."
+        action={<StudentButton variant="secondary" onClick={() => void resultQuery.refetch()}>إعادة المحاولة</StudentButton>}
+      />
     );
   }
 
-  const result: AttemptResult = resultQuery.data;
-  const finished = result.status === 'Finished' || result.status === 'TimedOut';
+  const attemptResult: AttemptResult = resultQuery.data;
+  const finished = attemptResult.status === 'Finished' || attemptResult.status === 'TimedOut';
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col justify-center gap-4 p-4">
-      <div className="rounded-xl border border-slate-200 bg-white p-6 text-center">
-        <h1 className="mb-1 text-xl font-bold text-slate-900">
-          {finished ? 'انتهى الاختبار 🎉' : 'محاولتك قيد التنفيذ'}
-        </h1>
-        <p className="mb-4 text-sm text-slate-600">{result.displayName}</p>
-
-        {finished && result.score != null && result.maxScore != null ? (
-          <>
-            <p dir="ltr" className="mb-1 text-4xl font-bold text-slate-900">
-              {result.score} / {result.maxScore}
-            </p>
-            {result.percentage != null ? (
-              <p dir="ltr" className="mb-3 text-lg text-slate-600">{Math.round(result.percentage)}%</p>
-            ) : null}
-            {result.passed != null ? (
-              <p
-                className={`mb-4 inline-block rounded-full px-4 py-1 text-sm font-bold ${
-                  result.passed ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
-                }`}>
-                {result.passed ? 'ناجح ✓' : 'لم تتجاوز درجة النجاح'}
-              </p>
-            ) : null}
-          </>
-        ) : (
-          <p className="mb-4 text-sm text-slate-500">
-            أجبت على {result.answeredCount} من {result.totalQuestions} سؤالًا.
+    <StudentShell>
+      <div className="student-enter flex flex-col gap-5 pt-4 sm:pt-8">
+        <section className="student-panel px-6 py-8 text-center sm:px-9 sm:py-10">
+          <p className={`text-sm font-bold ${attemptResult.passed ? 'text-emerald-700' : 'text-amber-800'}`}>
+            {finished ? 'النتيجة' : 'محاولتك قيد التنفيذ'}
           </p>
-        )}
+          <h1 className="mt-2 text-2xl font-black text-[var(--student-ink)]">
+            {attemptResult.passed ? `أحسنت يا ${attemptResult.displayName}!` : attemptResult.displayName}
+          </h1>
 
-        <dl className="mx-auto flex max-w-xs flex-col gap-1 text-start text-xs text-slate-500">
-          <div className="flex justify-between">
-            <dt>الأسئلة المجابة:</dt>
-            <dd dir="ltr">
-              {result.answeredCount} / {result.totalQuestions}
-            </dd>
-          </div>
-          {result.durationMs != null ? (
-            <div className="flex justify-between">
-              <dt>المدة:</dt>
-              <dd dir="ltr">{Math.round(result.durationMs / 1000)} ثانية</dd>
-            </div>
-          ) : null}
-          {result.status === 'TimedOut' ? (
-            <div className="flex justify-between">
-              <dt>الحالة:</dt>
-              <dd>انتهت المهلة الزمنية</dd>
-            </div>
-          ) : null}
-        </dl>
+          {finished && attemptResult.score != null && attemptResult.maxScore != null ? (
+            <>
+              {attemptResult.percentage != null ? <p dir="ltr" className="mt-6 text-6xl font-black tracking-tight text-[var(--student-ink)]">{Math.round(attemptResult.percentage)}%</p> : null}
+              <p dir="ltr" className="mt-3 text-lg font-bold text-slate-700">{attemptResult.score} / {attemptResult.maxScore}</p>
+              {attemptResult.passed != null ? (
+                <p className={`mx-auto mt-4 max-w-sm text-base font-bold leading-7 ${attemptResult.passed ? 'text-emerald-800' : 'text-slate-700'}`}>
+                  {attemptResult.passed ? 'اجتزت الاختبار بنجاح' : 'لم تصل إلى درجة النجاح هذه المرة'}
+                </p>
+              ) : null}
+            </>
+          ) : (
+            <p className="mt-5 text-sm text-[var(--student-muted)]">أجبت على {attemptResult.answeredCount} من {attemptResult.totalQuestions} سؤالًا.</p>
+          )}
+
+          <dl className="mx-auto mt-7 flex max-w-sm justify-center divide-x divide-x-reverse divide-slate-200 text-center">
+            <div className="flex-1 px-3"><dt className="text-xs text-[var(--student-muted)]">المجاب</dt><dd dir="ltr" className="mt-1 text-sm font-black">{attemptResult.answeredCount} / {attemptResult.totalQuestions}</dd></div>
+            {attemptResult.durationMs != null ? <div className="flex-1 px-3"><dt className="text-xs text-[var(--student-muted)]">المدة</dt><dd className="mt-1 text-sm font-black">{Math.max(1, Math.round(attemptResult.durationMs / 60_000))} دقيقة</dd></div> : null}
+            {attemptResult.status === 'TimedOut' ? <div className="flex-1 px-3"><dt className="text-xs text-[var(--student-muted)]">الحالة</dt><dd className="mt-1 text-sm font-black">انتهى الوقت</dd></div> : null}
+          </dl>
+        </section>
+        {finished && attemptResult.passed != null ? <PlayerDeliveryPanel joinCode={joinCode} attemptId={attemptId} passed={attemptResult.passed} /> : null}
+        {finished ? <PlayerSurveyPanel joinCode={joinCode} attemptId={attemptId} /> : null}
       </div>
-      {finished && result.passed != null ? (
-        <PlayerDeliveryPanel joinCode={joinCode} attemptId={attemptId} passed={result.passed} />
-      ) : null}
-      {finished ? <PlayerSurveyPanel joinCode={joinCode} attemptId={attemptId} /> : null}
-    </main>
+    </StudentShell>
   );
 }

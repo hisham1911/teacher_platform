@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Button } from '../../components/ui/button';
 import { ButtonSpinner } from '../../components/ui/spinner';
 import { playerApi } from '../../data/api-client/endpoints';
+import { StudentButton } from './student-ui';
 
-async function copyText(value: string) {
-  await navigator.clipboard.writeText(value);
+async function copyText(text: string) {
+  await navigator.clipboard.writeText(text);
 }
 
 export function PlayerDeliveryPanel({
@@ -18,7 +18,7 @@ export function PlayerDeliveryPanel({
   passed: boolean;
 }) {
   const [copied, setCopied] = useState<'certificate' | 'result' | null>(null);
-  const [copyError, setCopyError] = useState(false);
+  const [copyFallback, setCopyFallback] = useState<string | null>(null);
   const [certificateWaitIsLong, setCertificateWaitIsLong] = useState(false);
 
   const certificateQuery = useQuery({
@@ -41,109 +41,106 @@ export function PlayerDeliveryPanel({
       setCertificateWaitIsLong(false);
       return;
     }
-
     const timer = window.setTimeout(() => setCertificateWaitIsLong(true), 8_000);
     return () => window.clearTimeout(timer);
   }, [certificate, passed]);
 
-  async function copy(kind: 'certificate' | 'result', value: string) {
+  async function copy(kind: 'certificate' | 'result', text: string) {
     try {
-      await copyText(value);
+      await copyText(text);
       setCopied(kind);
-      setCopyError(false);
+      setCopyFallback(null);
     } catch {
-      setCopyError(true);
+      setCopyFallback(text);
     }
   }
 
   return (
-    <section aria-labelledby="delivery-title" className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-      <div className="border-b border-slate-100 px-5 py-4 sm:px-6">
-        <p className="text-xs font-bold tracking-wide text-sky-700">الخطوة التالية</p>
-        <h2 id="delivery-title" className="mt-1 text-lg font-bold text-slate-900">احتفظ بالنتيجة وشاركها</h2>
+    <section aria-labelledby="delivery-title" className="student-panel overflow-hidden">
+      <div className="px-5 py-6 sm:px-7">
+        <p className="text-sm font-bold text-[var(--student-primary-strong)]">الخطوة التالية</p>
+        <h2 id="delivery-title" className="mt-1 text-xl font-black text-[var(--student-ink)]">
+          {passed ? 'شهادتك ونتيجتك' : 'احتفظ بنتيجتك'}
+        </h2>
       </div>
 
-      <div className="grid gap-px bg-slate-100 sm:grid-cols-2">
-        <div className="bg-white p-5 sm:p-6">
-          <h3 className="font-bold text-slate-900">شهادة النجاح</h3>
-          {!passed ? (
-            <p className="mt-2 text-sm text-slate-600">تُصدر الشهادة تلقائيًا عند تجاوز درجة النجاح.</p>
-          ) : certificateQuery.isError ? (
+      {passed ? (
+        <div className="border-t border-slate-200 px-5 py-6 sm:px-7">
+          <h3 className="text-base font-black text-[var(--student-ink)]">الشهادة</h3>
+          {certificateQuery.isError ? (
             <div className="mt-3">
               <p role="alert" className="mb-3 text-sm text-rose-700">تعذر تجهيز الشهادة الآن.</p>
-              <Button variant="secondary" onClick={() => void certificateQuery.refetch()}>إعادة المحاولة</Button>
+              <StudentButton variant="secondary" onClick={() => void certificateQuery.refetch()}>إعادة المحاولة</StudentButton>
             </div>
           ) : !certificate || certificate.status === 'Pending' ? (
-            <div className="mt-3 text-sm text-slate-600">
-              <p role="status" className="flex items-center gap-2">
-                <ButtonSpinner /> تُجهّز الشهادة تلقائيًا، وستتحدث هذه الصفحة عند اكتمالها.
+            <div className="mt-3 text-sm leading-7 text-[var(--student-muted)]">
+              <p role="status" className="flex items-center gap-2 font-semibold text-slate-700">
+                <ButtonSpinner /> جاري تجهيز شهادتك…
               </p>
+              <p>سيتم تحديث الصفحة تلقائيًا عند اكتمالها.</p>
               {certificateWaitIsLong ? (
-                <div className="mt-3 rounded-lg bg-amber-50 p-3 text-amber-900">
-                  <p>ما زالت قيد التجهيز. يمكنك تحديث الحالة دون مغادرة الصفحة.</p>
-                  <Button variant="secondary" onClick={() => void certificateQuery.refetch()}>تحديث حالة الشهادة</Button>
+                <div className="mt-3 rounded-xl bg-amber-50 p-4 text-amber-950">
+                  <p>ما زالت الشهادة قيد التجهيز. يمكنك تحديث حالتها دون مغادرة الصفحة.</p>
+                  <StudentButton variant="secondary" onClick={() => void certificateQuery.refetch()} className="mt-3">تحديث الحالة</StudentButton>
                 </div>
               ) : null}
             </div>
           ) : certificate.status === 'Failed' ? (
-            <div role="alert" className="mt-2 text-sm text-rose-700">
-              <p>تعذر إنشاء الشهادة. أبلغ المعلم ليعيد المحاولة من صفحة الشهادات.</p>
-              <Button variant="secondary" onClick={() => void certificateQuery.refetch()}>تحديث الحالة</Button>
+            <div role="alert" className="mt-3 text-sm text-rose-700">
+              <p>تعذر تجهيز الشهادة الآن.</p>
+              <StudentButton variant="secondary" onClick={() => void certificateQuery.refetch()} className="mt-3">إعادة المحاولة</StudentButton>
             </div>
           ) : (
-            <div className="mt-3 flex flex-col gap-2">
+            <div className="mt-4 flex flex-col gap-3">
               <a
                 href={playerApi.certificateDownloadUrl(joinCode, attemptId)}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex min-h-11 items-center justify-center rounded-lg bg-emerald-700 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600">
-                تنزيل الشهادة PDF
+                className="inline-flex min-h-12 items-center justify-center rounded-xl bg-violet-700 px-5 py-3 text-sm font-black text-white transition-colors duration-200 hover:bg-violet-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-700">
+                عرض الشهادة
               </a>
               {certificate.publicUrl ? (
-                <Button variant="secondary" onClick={() => void copy('certificate', certificate.publicUrl!)}>
-                  {copied === 'certificate' ? 'تم نسخ رابط الشهادة' : 'نسخ رابط الشهادة'}
-                </Button>
+                <StudentButton variant="secondary" onClick={() => void copy('certificate', certificate.publicUrl!)}>
+                  {copied === 'certificate' ? 'تم نسخ رابط الشهادة ✓' : 'نسخ رابط الشهادة'}
+                </StudentButton>
               ) : null}
-              <p dir="ltr" className="text-center text-xs text-slate-500">{certificate.certificateNumber}</p>
+              <p dir="ltr" className="text-center text-xs text-[var(--student-muted)]">{certificate.certificateNumber}</p>
             </div>
           )}
         </div>
+      ) : null}
 
-        <div className="bg-white p-5 sm:p-6">
-          <h3 className="font-bold text-slate-900">مشاركة النتيجة مع ولي الأمر</h3>
-          <p className="mt-2 text-sm text-slate-600">أنشئ رابطًا خاصًا مؤقتًا يعرض ملخص النتيجة فقط.</p>
-          {parentShareMutation.isError ? (
-            <p role="alert" className="mt-3 text-sm text-rose-700">تعذر إنشاء رابط المشاركة. حاول مجددًا.</p>
-          ) : null}
-          {parentShare ? (
-            <div className="mt-3 flex flex-col gap-2">
-              <a
-                href={parentShare.shareUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex min-h-11 items-center justify-center rounded-lg bg-sky-700 px-4 py-2 text-sm font-bold text-white hover:bg-sky-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600">
-                فتح رابط ولي الأمر
-              </a>
-              <Button variant="secondary" onClick={() => void copy('result', parentShare.shareUrl)}>
-                {copied === 'result' ? 'تم نسخ رابط النتيجة' : 'نسخ رابط النتيجة'}
-              </Button>
-              <p className="text-xs text-slate-500">
-                صالح حتى {new Date(parentShare.expiresAt).toLocaleDateString('ar-EG')}
-              </p>
-            </div>
-          ) : (
-            <div className="mt-3">
-              <Button
-                variant="secondary"
-                disabled={parentShareMutation.isPending}
-                onClick={() => parentShareMutation.mutate()}>
-                {parentShareMutation.isPending ? <ButtonSpinner /> : 'إنشاء رابط المشاركة'}
-              </Button>
-            </div>
-          )}
-        </div>
+      <div className="border-t border-slate-200 px-5 py-6 sm:px-7">
+        <h3 className="text-base font-black text-[var(--student-ink)]">مشاركة النتيجة مع ولي الأمر</h3>
+        <p className="mt-2 text-sm leading-7 text-[var(--student-muted)]">أنشئ رابطًا خاصًا مؤقتًا يعرض ملخص النتيجة فقط.</p>
+        {parentShareMutation.isError ? <p role="alert" className="mt-3 text-sm text-rose-700">تعذر إنشاء الرابط. حاول مجددًا.</p> : null}
+        {parentShare ? (
+          <div className="mt-4 flex flex-col gap-3">
+            <a
+              href={parentShare.shareUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex min-h-12 items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-800 transition-colors duration-200 hover:border-slate-400 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700">
+              فتح رابط ولي الأمر
+            </a>
+            <StudentButton variant="quiet" onClick={() => void copy('result', parentShare.shareUrl)}>
+              {copied === 'result' ? 'تم نسخ الرابط ✓' : 'نسخ الرابط'}
+            </StudentButton>
+            <p className="text-center text-xs text-[var(--student-muted)]">صالح حتى {new Date(parentShare.expiresAt).toLocaleDateString('ar-EG')}</p>
+          </div>
+        ) : (
+          <StudentButton variant="secondary" disabled={parentShareMutation.isPending} onClick={() => parentShareMutation.mutate()} className="mt-4 w-full sm:w-auto">
+            {parentShareMutation.isPending ? <ButtonSpinner /> : 'إنشاء رابط المشاركة'}
+          </StudentButton>
+        )}
       </div>
-      {copyError ? <p role="alert" className="border-t border-slate-100 bg-rose-50 px-5 py-3 text-sm text-rose-700">تعذر النسخ تلقائيًا. افتح الرابط ثم انسخه من شريط العنوان.</p> : null}
+
+      {copyFallback ? (
+        <div role="alert" className="border-t border-slate-200 bg-amber-50 px-5 py-4 sm:px-7">
+          <label htmlFor="manual-share-link" className="text-sm font-bold text-amber-950">تعذر النسخ تلقائيًا — انسخ الرابط يدويًا</label>
+          <input id="manual-share-link" dir="ltr" readOnly value={copyFallback} onFocus={(event) => event.currentTarget.select()} className="mt-2 min-h-12 w-full rounded-xl border border-amber-300 bg-white px-3 text-sm text-slate-900 focus:outline-2 focus:outline-amber-700" />
+        </div>
+      ) : null}
     </section>
   );
 }

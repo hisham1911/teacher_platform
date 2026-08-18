@@ -23,7 +23,7 @@ test('teacher hosts a live competition and scoring stays hidden until close', as
 
   await player.goto(`/play/${state.liveJoinCode}`);
   await player.getByPlaceholder('اكتب اسمك هنا').fill('طالب مباشر');
-  await player.getByRole('button', { name: 'انضمام' }).click();
+  await player.getByRole('button', { name: 'ابدأ الاختبار' }).click();
   await expect(player.getByRole('heading', { name: 'أنت داخل قاعة الانتظار' })).toBeVisible();
 
   await host.getByRole('button', { name: 'فتح السؤال الأول' }).click();
