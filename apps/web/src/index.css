@@ -8,6 +8,10 @@
   --student-muted: oklch(0.46 0.025 245);
   --student-primary: oklch(0.5 0.13 163);
   --student-primary-strong: oklch(0.42 0.12 163);
+  --student-violet: oklch(0.57 0.19 292);
+  --student-violet-soft: oklch(0.955 0.035 292);
+  --student-orange: oklch(0.76 0.16 67);
+  --student-orange-soft: oklch(0.965 0.045 72);
 }
 
 body {
@@ -15,7 +19,12 @@ body {
 }
 
 .student-shell {
-  background: var(--student-bg);
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 8% 6%, oklch(0.955 0.04 72 / 0.72), transparent 22rem),
+    radial-gradient(circle at 94% 14%, oklch(0.95 0.035 292 / 0.58), transparent 20rem),
+    var(--student-bg);
   color: var(--student-ink);
 }
 
@@ -23,6 +32,45 @@ body {
   border-radius: 1rem;
   background: var(--student-surface);
   box-shadow: 0 2px 8px rgb(15 23 42 / 0.08);
+}
+
+.student-visual-mark {
+  position: relative;
+  display: flex;
+  height: 4.5rem;
+  width: 4.5rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--student-violet-soft);
+  color: var(--student-violet);
+}
+
+.student-visual-mark::before {
+  position: absolute;
+  inset: -0.55rem;
+  border: 1px solid oklch(0.78 0.08 292 / 0.42);
+  border-radius: inherit;
+  content: '';
+}
+
+.student-score-ring {
+  position: relative;
+  display: grid;
+  height: 9rem;
+  width: 9rem;
+  place-items: center;
+  flex: none;
+  border-radius: 50%;
+  background: conic-gradient(var(--student-score-color, var(--student-primary)) var(--student-score), oklch(0.91 0.012 245) 0);
+}
+
+.student-score-ring::before {
+  position: absolute;
+  inset: 0.65rem;
+  border-radius: inherit;
+  background: white;
+  content: '';
 }
 
 .student-enter {

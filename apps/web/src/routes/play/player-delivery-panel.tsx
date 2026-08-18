@@ -65,7 +65,7 @@ export function PlayerDeliveryPanel({
       </div>
 
       {passed ? (
-        <div className="border-t border-slate-200 px-5 py-6 sm:px-7">
+        <div className="border-t border-emerald-100 bg-emerald-50/55 px-5 py-6 sm:px-7">
           <h3 className="text-base font-black text-[var(--student-ink)]">الشهادة</h3>
           {certificateQuery.isError ? (
             <div className="mt-3">
@@ -96,7 +96,7 @@ export function PlayerDeliveryPanel({
                 href={playerApi.certificateDownloadUrl(joinCode, attemptId)}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex min-h-12 items-center justify-center rounded-xl bg-violet-700 px-5 py-3 text-sm font-black text-white transition-colors duration-200 hover:bg-violet-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-700">
+                className="inline-flex min-h-12 items-center justify-center rounded-xl bg-[var(--student-primary)] px-5 py-3 text-sm font-black text-white shadow-[0_2px_8px_rgb(5_150_105/0.22)] transition-colors duration-200 hover:bg-[var(--student-primary-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--student-primary)]">
                 عرض الشهادة
               </a>
               {certificate.publicUrl ? (

@@ -16,10 +16,13 @@ export function StudentShell({
 }) {
   return (
     <main className="student-shell min-h-dvh overflow-x-clip" dir="rtl">
-      <div className={`mx-auto flex min-h-dvh w-full ${shellWidths[width]} flex-col px-4 sm:px-6`}>
+      <div className={`relative z-10 mx-auto flex min-h-dvh w-full ${shellWidths[width]} flex-col px-4 sm:px-6`}>
         <header className="flex min-h-16 items-center justify-between gap-3 py-3">
-          <span className="text-sm font-black text-[var(--student-ink)]">منصة المعلم</span>
-          <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-[var(--student-muted)] shadow-[0_1px_4px_rgb(15_23_42/0.08)]">
+          <span className="inline-flex items-center gap-2 text-sm font-black text-[var(--student-ink)]">
+            <span aria-hidden="true" className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--student-primary)] text-xs text-white">م</span>
+            منصة المعلم
+          </span>
+          <span className="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-[var(--student-primary-strong)] shadow-[0_1px_4px_rgb(15_23_42/0.08)]">
             تجربة الطالب
           </span>
         </header>
@@ -32,7 +35,7 @@ export function StudentShell({
 }
 
 const studentButtonVariants = {
-  primary: 'bg-[var(--student-primary)] text-white hover:bg-[var(--student-primary-strong)]',
+  primary: 'bg-[var(--student-primary)] text-white shadow-[0_2px_8px_rgb(5_150_105/0.22)] hover:bg-[var(--student-primary-strong)]',
   secondary: 'border border-slate-300 bg-white text-slate-800 hover:border-slate-400 hover:bg-slate-50',
   quiet: 'bg-transparent text-slate-700 hover:bg-slate-100',
 } as const;
@@ -57,10 +60,10 @@ export function StudentButton({
 export function QuestionProgress({ current, total }: { current: number; total: number }) {
   const percentage = total > 0 ? Math.min(100, Math.max(0, (current / total) * 100)) : 0;
   return (
-    <div className="space-y-2">
+    <div className="space-y-2.5">
       <div className="flex items-center justify-between gap-3 text-sm">
-        <span className="font-bold text-[var(--student-ink)]">سؤال {current} من {total}</span>
-        <span className="text-xs font-semibold text-[var(--student-muted)]">{Math.round(percentage)}%</span>
+        <span className="font-black text-[var(--student-ink)]">سؤال {current} من {total}</span>
+        <span className="rounded-full bg-white px-2.5 py-1 text-xs font-bold text-[var(--student-primary-strong)] shadow-[0_1px_4px_rgb(15_23_42/0.07)]">{Math.round(percentage)}%</span>
       </div>
       <div
         role="progressbar"
@@ -68,7 +71,7 @@ export function QuestionProgress({ current, total }: { current: number; total: n
         aria-valuemin={0}
         aria-valuemax={total}
         aria-valuenow={current}
-        className="h-2 overflow-hidden rounded-full bg-slate-200">
+        className="h-2.5 overflow-hidden rounded-full bg-slate-200">
         <div
           className="h-full rounded-full bg-[var(--student-primary)] transition-[width] duration-200 ease-out motion-reduce:transition-none"
           style={{ width: `${percentage}%` }}
