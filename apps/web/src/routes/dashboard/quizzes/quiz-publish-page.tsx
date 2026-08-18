@@ -137,7 +137,7 @@ export default function QuizPublishPage() {
 
       {publicationState === 'PublishedCurrent' ? (
         <PublishedSharePanel
-          heading="مشاركة الاختبار"
+          heading="صفحة تعريف الاختبار"
           shareUrl={shareUrl}
           copied={copied}
           onCopy={onCopyShareUrl}
@@ -252,17 +252,22 @@ function PublishedSharePanel({
     <section aria-labelledby="published-share-heading" className="border-t border-slate-200 pt-5">
       <h2 id="published-share-heading" className="text-lg font-black text-slate-900">{heading}</h2>
       {sessionHref ? <Link to={sessionHref} className="mt-3 inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-4 text-sm font-bold text-slate-700 hover:border-emerald-600 hover:text-emerald-800">إنشاء جلسة باستخدام النسخة المنشورة</Link> : null}
-      {shareError ? <p role="alert" className="mt-3 text-sm text-rose-800">تعذر تحميل رابط الاختبار المنشور.</p> : null}
+      {sessionHref ? <h3 className="mt-5 text-base font-black text-slate-900">صفحة تعريف الاختبار</h3> : null}
+      <p className="mt-1 text-sm leading-6 text-slate-600">هذه الصفحة تعرض معلومات الاختبار فقط. رابط حل الطلاب يظهر بعد إنشاء جلسة.</p>
+      {shareError ? <p role="alert" className="mt-3 text-sm text-rose-800">تعذر تحميل رابط صفحة التعريف.</p> : null}
       {shareUrl ? (
         <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
             <p dir="ltr" className="break-all text-sm text-slate-600">{shareUrl}</p>
             <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-              <a href={shareUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-4 text-sm font-bold text-slate-700 hover:border-emerald-600 hover:text-emerald-800">فتح صفحة تعريف الاختبار</a>
-              <Button variant="secondary" onClick={() => void onCopy(shareUrl)}>{copied ? 'تم نسخ الرابط ✓' : 'نسخ الرابط'}</Button>
+              <a href={shareUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-4 text-sm font-bold text-slate-700 hover:border-emerald-600 hover:text-emerald-800">فتح صفحة التعريف</a>
+              <Button variant="secondary" onClick={() => void onCopy(shareUrl)}>{copied ? 'تم نسخ رابط صفحة التعريف ✓' : 'نسخ رابط صفحة التعريف'}</Button>
             </div>
           </div>
-          <div dir="ltr" className="w-fit rounded-lg bg-white p-2" data-testid="share-qr-code"><QRCode value={shareUrl} size={112} /></div>
+          <figure className="flex w-fit flex-col items-center gap-2">
+            <div dir="ltr" className="rounded-lg bg-white p-2" data-testid="share-qr-code"><QRCode value={shareUrl} size={112} /></div>
+            <figcaption className="text-xs font-bold text-slate-600">QR صفحة التعريف</figcaption>
+          </figure>
         </div>
       ) : null}
     </section>

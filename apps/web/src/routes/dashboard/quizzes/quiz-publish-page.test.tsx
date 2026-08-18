@@ -108,16 +108,22 @@ describe('QuizPublishPage publication lifecycle', () => {
     expect(screen.getByRole('link', { name: 'معاينة' })).toBeInTheDocument();
     expect(screen.queryByText('الاختبار منشور ✓')).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'إنشاء جلسة للطلاب' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'صفحة تعريف الاختبار' })).not.toBeInTheDocument();
   });
 
-  it('يعرض إنشاء الجلسة والمشاركة عندما تكون النسخة المنشورة هي الحالية', async () => {
+  it('يميّز صفحة التعريف عن رابط حل الطلاب عندما تكون النسخة المنشورة هي الحالية', async () => {
     getDraftMock.mockResolvedValue(draftWithState('PublishedCurrent'));
     listVersionsMock.mockResolvedValue([publishedVersion]);
     renderPage();
 
     expect(await screen.findByRole('heading', { name: 'الاختبار منشور ✓' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'إنشاء جلسة للطلاب' })).toHaveAttribute('href', `/dashboard/quizzes/${QUIZ_ID}/sessions`);
-    expect(screen.getByRole('link', { name: 'فتح صفحة تعريف الاختبار' })).toHaveAttribute('href', SHARE_URL);
+    expect(screen.getByRole('heading', { name: 'صفحة تعريف الاختبار' })).toBeInTheDocument();
+    expect(screen.getByText('هذه الصفحة تعرض معلومات الاختبار فقط. رابط حل الطلاب يظهر بعد إنشاء جلسة.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'فتح صفحة التعريف' })).toHaveAttribute('href', SHARE_URL);
+    expect(screen.getByRole('button', { name: 'نسخ رابط صفحة التعريف' })).toBeInTheDocument();
+    expect(screen.getByText('QR صفحة التعريف')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'مشاركة الاختبار' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /نشر/ })).not.toBeInTheDocument();
     expect(screen.getByTestId('share-qr-code').querySelector('svg')).not.toBeNull();
   });
@@ -132,6 +138,10 @@ describe('QuizPublishPage publication lifecycle', () => {
     expect(screen.getByRole('link', { name: 'معاينة التعديلات' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'النسخة المنشورة الحالية' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'إنشاء جلسة باستخدام النسخة المنشورة' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'صفحة تعريف الاختبار' })).toBeInTheDocument();
+    expect(screen.getByText('هذه الصفحة تعرض معلومات الاختبار فقط. رابط حل الطلاب يظهر بعد إنشاء جلسة.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'فتح صفحة التعريف' })).toHaveAttribute('href', SHARE_URL);
+    expect(screen.getByRole('button', { name: 'نسخ رابط صفحة التعريف' })).toBeInTheDocument();
     expect(screen.queryByText('الاختبار منشور ✓')).not.toBeInTheDocument();
   });
 

@@ -59,6 +59,12 @@ test('teacher builds a quiz and sees a coherent publication lifecycle', async ({
 
   await expect(page.getByRole('heading', { name: 'الاختبار منشور ✓' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'إنشاء جلسة للطلاب' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'صفحة تعريف الاختبار' })).toBeVisible();
+  await expect(page.getByText('هذه الصفحة تعرض معلومات الاختبار فقط. رابط حل الطلاب يظهر بعد إنشاء جلسة.')).toBeVisible();
+  await expect(page.getByRole('link', { name: 'فتح صفحة التعريف' })).toHaveAttribute('href', /\/q\//);
+  await expect(page.getByRole('button', { name: 'نسخ رابط صفحة التعريف' })).toBeVisible();
+  await expect(page.getByText('QR صفحة التعريف')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'مشاركة الاختبار' })).toHaveCount(0);
   await page.getByRole('link', { name: 'تعديل الاختبار' }).click();
 
   await expect(page.getByRole('link', { name: 'إنشاء جلسة' })).toBeVisible();
@@ -67,9 +73,19 @@ test('teacher builds a quiz and sees a coherent publication lifecycle', async ({
 
   await expect(page.getByRole('heading', { name: 'لديك تعديلات جديدة لم تُنشر بعد' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'النسخة المنشورة الحالية' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'صفحة تعريف الاختبار' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'فتح صفحة التعريف' })).toHaveAttribute('href', /\/q\//);
   await page.getByRole('button', { name: 'نشر التحديثات' }).click();
 
   await expect(page.getByRole('heading', { name: 'الاختبار منشور ✓' })).toBeVisible();
   await page.getByRole('link', { name: 'إنشاء جلسة للطلاب' }).click();
   await expect(page.getByRole('heading', { name: 'جلسات الاختبار' })).toBeVisible();
+  await page.getByLabel('عنوان الجلسة (اختياري)').fill('جلسة رابط الطلاب');
+  await page.getByRole('button', { name: 'إنشاء جلسة', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'تم إنشاء الجلسة ✓' })).toBeVisible();
+  await page.getByRole('link', { name: /فتح صفحة الجلسة/ }).click();
+  await expect(page.getByRole('heading', { name: 'دخول الطلاب' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'نسخ رابط الطلاب' })).toBeVisible();
+  await expect(page.getByText(/\/play\/[A-Z0-9]+/)).toBeVisible();
+  await expect(page.getByText(/\/q\//)).toHaveCount(0);
 });
