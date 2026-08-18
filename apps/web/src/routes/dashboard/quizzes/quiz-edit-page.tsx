@@ -307,6 +307,15 @@ export default function QuizEditPage() {
     : saveState === 'error'
       ? 'تعذر الحفظ'
       : 'تم الحفظ ✓';
+  const hasPendingContentChanges = saveState === 'pending' || saveState === 'saving' || saveState === 'error' || itemMutation.isPending;
+  const headerPublicationState = draft.publicationState === 'PublishedCurrent' && hasPendingContentChanges
+    ? 'PublishedWithChanges'
+    : draft.publicationState;
+  const primaryAction = headerPublicationState === 'PublishedCurrent'
+    ? { label: 'إنشاء جلسة', path: `/dashboard/quizzes/${quizId}/sessions`, icon: 'play' as const }
+    : headerPublicationState === 'PublishedWithChanges'
+      ? { label: 'نشر التحديثات', path: `/dashboard/quizzes/${quizId}/publish`, icon: 'publish' as const }
+      : { label: 'نشر الاختبار', path: `/dashboard/quizzes/${quizId}/publish`, icon: 'publish' as const };
   const timeSummary = timeMode === 'None'
     ? 'بدون وقت'
     : timeMode === 'TotalTime'
@@ -338,8 +347,8 @@ export default function QuizEditPage() {
             <Link to={`/dashboard/quizzes/${quizId}/preview`} onClick={(event) => void saveBeforeNavigation(event, `/dashboard/quizzes/${quizId}/preview`)} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 text-sm font-bold text-slate-700 hover:border-emerald-600 hover:text-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700">
               <TeacherIcon name="preview" />معاينة
             </Link>
-            <Link to={`/dashboard/quizzes/${quizId}/publish`} onClick={(event) => void saveBeforeNavigation(event, `/dashboard/quizzes/${quizId}/publish`)} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[var(--teacher-primary)] px-5 text-sm font-black text-white hover:bg-[var(--teacher-primary-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700">
-              <TeacherIcon name="publish" />نشر الاختبار
+            <Link to={primaryAction.path} onClick={headerPublicationState === 'PublishedCurrent' ? undefined : (event) => void saveBeforeNavigation(event, primaryAction.path)} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[var(--teacher-primary)] px-5 text-sm font-black text-white hover:bg-[var(--teacher-primary-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700">
+              <TeacherIcon name={primaryAction.icon} />{primaryAction.label}
             </Link>
           </div>
         </div>
@@ -399,37 +408,36 @@ export default function QuizEditPage() {
             ) : (
               <ol className="divide-y divide-slate-100">
                 {draft.items.map((item, index) => (
-                  <li key={item.id} className="px-4 py-4 sm:px-5">
-                    <div className="flex flex-col gap-4">
-                      <div className="flex items-start gap-3">
-                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-sm font-black tabular-nums text-slate-700">{index + 1}</span>
-                        <div className="min-w-0 flex-1">
-                          <p dir="auto" className="text-base font-bold leading-7 text-slate-900">{item.prompt}</p>
-                          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs font-semibold">
-                            <span className="inline-flex items-center gap-1 rounded-full bg-violet-50 px-2.5 py-1 text-violet-800">
-                              {item.questionType === 'Listening' ? <TeacherIcon name="audio" className="h-4 w-4" /> : null}
-                              {QUESTION_TYPE_LABELS[item.questionType] ?? item.questionType}
-                            </span>
-                            {item.pinnedVersionNumber < item.latestVersionNumber ? <span className="rounded-full bg-amber-100 px-2.5 py-1 text-amber-900">توجد تعديلات أحدث</span> : null}
-                            {item.sourceQuestionArchived ? <span className="rounded-full bg-rose-100 px-2.5 py-1 text-rose-800">السؤال المصدر مؤرشف</span> : null}
-                          </div>
+                  <li key={item.id} className="px-4 py-3 sm:px-5">
+                    <div className="flex items-start gap-3">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-sm font-black tabular-nums text-slate-700">{index + 1}</span>
+                      <div className="min-w-0 flex-1">
+                        <p dir="auto" className="text-base font-bold leading-7 text-slate-900">{item.prompt}</p>
+                        <div className="mt-2 flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-600">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-violet-50 px-2.5 py-1 text-violet-800">
+                            {item.questionType === 'Listening' ? <TeacherIcon name="audio" className="h-4 w-4" /> : null}
+                            {QUESTION_TYPE_LABELS[item.questionType] ?? item.questionType}
+                          </span>
+                          <span aria-hidden="true">•</span>
+                          <label className="inline-flex min-h-11 items-center gap-1.5">
+                            <input type="number" min={1} max={100} value={item.points} onChange={(event) => {
+                              const points = Number(event.target.value);
+                              if (Number.isInteger(points) && points >= 1 && points <= 100) onUpdateItemPoints(item.id, points);
+                            }} className="h-10 w-14 rounded-md border border-slate-300 bg-white px-2 text-center text-sm font-bold tabular-nums text-slate-800" aria-label={`نقاط السؤال ${index + 1}`} />
+                            نقاط
+                          </label>
+                          {item.pinnedVersionNumber < item.latestVersionNumber ? <span className="rounded-full bg-amber-100 px-2.5 py-1 text-amber-900">توجد تعديلات أحدث</span> : null}
+                          {item.sourceQuestionArchived ? <span className="rounded-full bg-rose-100 px-2.5 py-1 text-rose-800">السؤال المصدر مؤرشف</span> : null}
                         </div>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2 sm:ps-12">
-                        <label className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-slate-50 px-3 text-sm font-bold text-slate-700">
-                          النقاط
-                          <input type="number" min={1} max={100} value={item.points} onChange={(event) => {
-                            const value = Number(event.target.value);
-                            if (Number.isInteger(value) && value >= 1 && value <= 100) onUpdateItemPoints(item.id, value);
-                          }} className="h-9 w-14 rounded-md border border-slate-300 bg-white px-2 text-center text-sm tabular-nums" aria-label={`نقاط السؤال ${index + 1}`} />
-                        </label>
-                        <button type="button" onClick={() => onMoveItem(item.id, 'up')} disabled={index === 0 || itemMutation.isPending} aria-label={`نقل السؤال ${index + 1} لأعلى`} className="min-h-11 rounded-lg border border-slate-300 px-3 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-40">أعلى ↑</button>
-                        <button type="button" onClick={() => onMoveItem(item.id, 'down')} disabled={index === draft.items.length - 1 || itemMutation.isPending} aria-label={`نقل السؤال ${index + 1} لأسفل`} className="min-h-11 rounded-lg border border-slate-300 px-3 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-40">أسفل ↓</button>
-                        <Link to={`/dashboard/questions/${item.questionId}/edit`} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center rounded-lg border border-slate-300 px-3 text-sm font-bold text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700">تعديل السؤال</Link>
-                        <button type="button" onClick={() => onRemoveItem(item.id)} disabled={itemMutation.isPending} aria-label={`إزالة السؤال ${index + 1}`} className="min-h-11 rounded-lg px-3 text-sm font-bold text-rose-700 hover:bg-rose-50 disabled:opacity-40">حذف</button>
-                        {item.pinnedVersionNumber < item.latestVersionNumber && !item.sourceQuestionArchived ? (
-                          <button type="button" onClick={() => onUseLatestVersion(item.id)} disabled={itemMutation.isPending} aria-label={`استخدام أحدث نسخة للسؤال ${index + 1}`} className="min-h-11 rounded-lg bg-amber-50 px-3 text-sm font-bold text-amber-900 hover:bg-amber-100 disabled:opacity-40">استخدام التعديلات الأحدث</button>
-                        ) : null}
+                        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                          <button type="button" title="نقل لأعلى" onClick={() => onMoveItem(item.id, 'up')} disabled={index === 0 || itemMutation.isPending} aria-label={`نقل السؤال ${index + 1} لأعلى`} className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 disabled:opacity-35"><TeacherIcon name="move-up" /></button>
+                          <button type="button" title="نقل لأسفل" onClick={() => onMoveItem(item.id, 'down')} disabled={index === draft.items.length - 1 || itemMutation.isPending} aria-label={`نقل السؤال ${index + 1} لأسفل`} className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 disabled:opacity-35"><TeacherIcon name="move-down" /></button>
+                          <Link to={`/dashboard/questions/${item.questionId}/edit`} target="_blank" rel="noreferrer" aria-label={`تعديل السؤال ${index + 1}`} className="inline-flex min-h-11 items-center rounded-lg border border-slate-300 bg-white px-3 text-sm font-bold text-slate-700 hover:border-emerald-600 hover:text-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700">تعديل</Link>
+                          <button type="button" title="إزالة من الاختبار" onClick={() => onRemoveItem(item.id)} disabled={itemMutation.isPending} aria-label={`إزالة السؤال ${index + 1} من الاختبار`} className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-rose-700 hover:bg-rose-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-700 disabled:opacity-35"><TeacherIcon name="remove" /></button>
+                          {item.pinnedVersionNumber < item.latestVersionNumber && !item.sourceQuestionArchived ? (
+                            <button type="button" onClick={() => onUseLatestVersion(item.id)} disabled={itemMutation.isPending} aria-label={`استخدام أحدث نسخة للسؤال ${index + 1}`} className="min-h-11 rounded-lg bg-amber-50 px-3 text-sm font-bold text-amber-900 hover:bg-amber-100 disabled:opacity-40">استخدام التعديلات الأحدث</button>
+                          ) : null}
+                        </div>
                       </div>
                     </div>
                   </li>

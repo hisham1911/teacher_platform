@@ -215,6 +215,7 @@ public sealed class QuizDraftResponse
     public QuizThemeInput Theme { get; set; } = new();
     public IReadOnlyList<QuizDraftItemResponse> Items { get; set; } = [];
     public int TotalPoints { get; set; }
+    public string PublicationState { get; set; } = string.Empty;
 
     /// <summary>قيمة xmin للمسودة — لازمة لكل عمليات التعديل.</summary>
     public uint Version { get; set; }

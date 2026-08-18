@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { PublishQuizResponse, QuizDraft, QuizVersionSummary } from '../../../types/quizzes';
+import type { PublishQuizResponse, QuizDraft, QuizPublicationState, QuizVersionSummary } from '../../../types/quizzes';
 import QuizPublishPage from './quiz-publish-page';
 
 vi.mock('../../../data/api-client/endpoints', async (importOriginal) => {
@@ -27,6 +27,7 @@ const getShareMock = vi.mocked(quizzesApi.getShare);
 
 const TENANT_ID = 'tenant-1';
 const QUIZ_ID = 'quiz-1';
+const SHARE_URL = 'https://example.com/q/pub-code-1';
 
 const draft: QuizDraft = {
   id: 'draft-1',
@@ -40,34 +41,16 @@ const draft: QuizDraft = {
   timeLimitSeconds: null,
   shuffleQuestions: false,
   shuffleOptions: false,
-  theme: {
-    template: 'default',
-    primaryColor: '#1e40af',
-    secondaryColor: '#64748b',
-    backgroundColor: '#ffffff',
-  },
-  items: [
-    {
-      id: 'item-1',
-      questionVersionId: 'qv-1',
-      questionId: 'q-1',
-      sortOrder: 1,
-      points: 10,
-      isRequired: true,
-      questionType: 'MultipleChoice',
-      prompt: 'ما عاصمة مصر؟',
-      explanation: null,
-      difficulty: 'Easy',
-      language: 'ar',
-      configJson: '{}',
-      mediaAssetId: null,
-      options: [{ sortOrder: 1, optionText: 'القاهرة', isCorrect: true }],
-      pinnedVersionNumber: 1,
-      latestVersionNumber: 1,
-      sourceQuestionArchived: false,
-    },
-  ],
+  theme: { template: 'default', primaryColor: '#1e40af', secondaryColor: '#64748b', backgroundColor: '#ffffff' },
+  items: [{
+    id: 'item-1', questionVersionId: 'qv-1', questionId: 'q-1', sortOrder: 1, points: 10,
+    isRequired: true, questionType: 'MultipleChoice', prompt: 'ما عاصمة مصر؟', explanation: null,
+    difficulty: 'Easy', language: 'ar', configJson: '{}', mediaAssetId: null,
+    options: [{ sortOrder: 1, optionText: 'القاهرة', isCorrect: true }],
+    pinnedVersionNumber: 1, latestVersionNumber: 1, sourceQuestionArchived: false,
+  }],
   totalPoints: 10,
+  publicationState: 'NeverPublished',
   version: 7,
   updatedAt: '2026-01-01T00:00:00Z',
 };
@@ -79,87 +62,90 @@ const publishResponse: PublishQuizResponse = {
   publishedAt: '2026-01-02T00:00:00Z',
   checksum: 'abcdef0123456789abcdef0123456789',
   publicCode: 'pub-code-1',
-  shareUrl: 'https://example.com/q/pub-code-1',
+  shareUrl: SHARE_URL,
 };
 
+const publishedVersion: QuizVersionSummary = {
+  id: 'pv-1', versionNumber: 2, status: 'Published', itemCount: 1, totalPoints: 10,
+  publishedAt: '2026-01-02T00:00:00Z', checksum: 'abc', createdAt: '2026-01-01T00:00:00Z',
+};
+
+function draftWithState(publicationState: QuizPublicationState): QuizDraft {
+  return { ...draft, publicationState };
+}
+
 function renderPage() {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  });
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={queryClient}>
       <MemoryRouter initialEntries={[`/dashboard/quizzes/${QUIZ_ID}/publish`]}>
-        <Routes>
-          <Route path="/dashboard/quizzes/:quizId/publish" element={<QuizPublishPage />} />
-        </Routes>
+        <Routes><Route path="/dashboard/quizzes/:quizId/publish" element={<QuizPublishPage />} /></Routes>
       </MemoryRouter>
     </QueryClientProvider>,
   );
 }
 
-describe('QuizPublishPage', () => {
+describe('QuizPublishPage publication lifecycle', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     window.localStorage.setItem('teacher-platform:active-tenant-id', TENANT_ID);
-    listVersionsMock.mockResolvedValue([] as QuizVersionSummary[]);
-    getShareMock.mockRejectedValue(new Error('not published'));
-  });
-
-  it('يوضح صفحة التعريف ويوجه المعلم لإنشاء جلسة بعد النشر', async () => {
-    getDraftMock.mockResolvedValue(draft);
-    publishMock.mockResolvedValue(publishResponse);
-
-    renderPage();
-
-    await waitFor(() =>
-      expect(screen.getByRole('heading', { name: /مراجعة ونشر اختبار العلوم/ })).toBeInTheDocument(),
-    );
-
-    fireEvent.click(screen.getByRole('button', { name: 'نشر الاختبار' }));
-
-    await waitFor(() =>
-      expect(screen.getByText('تم نشر الاختبار')).toBeInTheDocument(),
-    );
-
-    expect(screen.getByText('https://example.com/q/pub-code-1')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'إنشاء جلسة للطلاب' })).toHaveAttribute(
-      'href',
-      `/dashboard/quizzes/${QUIZ_ID}/sessions`,
-    );
-    expect(screen.queryByText(/Checksum|المرحلة 4|Player/)).not.toBeInTheDocument();
-
-    const qrContainer = screen.getByTestId('share-qr-code');
-    expect(qrContainer.querySelector('svg')).not.toBeNull();
-  });
-
-  it('يعرض رمز QR لاختبار منشور مسبقًا عبر getShare', async () => {
-    getDraftMock.mockResolvedValue(draft);
-    listVersionsMock.mockResolvedValue([
-      {
-        id: 'pv-1',
-        versionNumber: 2,
-        status: 'Published',
-        itemCount: 1,
-        totalPoints: 10,
-        publishedAt: '2026-01-02T00:00:00Z',
-        checksum: 'abc',
-        createdAt: '2026-01-01T00:00:00Z',
-      },
-    ] as QuizVersionSummary[]);
+    listVersionsMock.mockResolvedValue([]);
     getShareMock.mockResolvedValue({
       quizId: QUIZ_ID,
       publicCode: 'pub-code-1',
-      shareUrl: 'https://example.com/q/pub-code-1',
+      shareUrl: SHARE_URL,
       status: 'Published',
       publishedVersionNumber: 2,
     });
+  });
 
+  it('يعرض إجراء النشر فقط عندما لم يُنشر الاختبار من قبل', async () => {
+    getDraftMock.mockResolvedValue(draftWithState('NeverPublished'));
     renderPage();
 
-    await waitFor(() =>
-      expect(screen.getByTestId('share-qr-code').querySelector('svg')).not.toBeNull(),
-    );
-    expect(screen.getAllByText('https://example.com/q/pub-code-1').length).toBeGreaterThan(0);
+    expect(await screen.findByRole('heading', { name: 'اختبارك جاهز للنشر' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'نشر الاختبار' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'معاينة' })).toBeInTheDocument();
+    expect(screen.queryByText('الاختبار منشور ✓')).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'إنشاء جلسة للطلاب' })).not.toBeInTheDocument();
+  });
+
+  it('يعرض إنشاء الجلسة والمشاركة عندما تكون النسخة المنشورة هي الحالية', async () => {
+    getDraftMock.mockResolvedValue(draftWithState('PublishedCurrent'));
+    listVersionsMock.mockResolvedValue([publishedVersion]);
+    renderPage();
+
+    expect(await screen.findByRole('heading', { name: 'الاختبار منشور ✓' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'إنشاء جلسة للطلاب' })).toHaveAttribute('href', `/dashboard/quizzes/${QUIZ_ID}/sessions`);
+    expect(screen.getByRole('link', { name: 'فتح صفحة تعريف الاختبار' })).toHaveAttribute('href', SHARE_URL);
+    expect(screen.queryByRole('button', { name: /نشر/ })).not.toBeInTheDocument();
+    expect(screen.getByTestId('share-qr-code').querySelector('svg')).not.toBeNull();
+  });
+
+  it('يفصل التعديلات غير المنشورة عن النسخة المنشورة الحالية', async () => {
+    getDraftMock.mockResolvedValue(draftWithState('PublishedWithChanges'));
+    listVersionsMock.mockResolvedValue([publishedVersion]);
+    renderPage();
+
+    expect(await screen.findByRole('heading', { name: 'لديك تعديلات جديدة لم تُنشر بعد' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'نشر التحديثات' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'معاينة التعديلات' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'النسخة المنشورة الحالية' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'إنشاء جلسة باستخدام النسخة المنشورة' })).toBeInTheDocument();
+    expect(screen.queryByText('الاختبار منشور ✓')).not.toBeInTheDocument();
+  });
+
+  it('يعود إلى الحالة المنشورة الحالية بعد نشر التحديثات', async () => {
+    getDraftMock.mockResolvedValue(draftWithState('PublishedWithChanges'));
+    listVersionsMock.mockResolvedValue([publishedVersion]);
+    publishMock.mockResolvedValue(publishResponse);
+    renderPage();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'نشر التحديثات' }));
+
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'الاختبار منشور ✓' })).toBeInTheDocument());
     expect(screen.getByRole('link', { name: 'إنشاء جلسة للطلاب' })).toBeInTheDocument();
+    expect(screen.getByText(SHARE_URL)).toBeInTheDocument();
+    expect(screen.queryByText('لديك تعديلات جديدة لم تُنشر بعد')).not.toBeInTheDocument();
   });
 });

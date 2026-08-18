@@ -970,6 +970,7 @@ public sealed class QuizService
         }
 
         var items = await BuildItemResponsesAsync(draft.Items.ToList(), cancellationToken);
+        var publicationState = await GetPublicationStateAsync(draft, cancellationToken);
 
         return new QuizDraftResponse
         {
@@ -987,9 +988,32 @@ public sealed class QuizService
             Theme = DeserializeTheme(draft.ThemeJson),
             Items = items,
             TotalPoints = items.Sum(i => i.Points),
+            PublicationState = publicationState,
             Version = draft.Version,
             UpdatedAt = draft.UpdatedAt
         };
+    }
+
+    private async Task<string> GetPublicationStateAsync(QuizVersion draft, CancellationToken cancellationToken)
+    {
+        var publicationSnapshot = await _db.Quizzes
+            .AsNoTracking()
+            .Where(q => q.Id == draft.QuizId)
+            .Select(q => new
+            {
+                HasPublishedVersion = q.CurrentPublishedVersionId != null,
+                PublishedChecksum = q.Versions
+                    .Where(v => v.Id == q.CurrentPublishedVersionId)
+                    .Select(v => v.Checksum)
+                    .SingleOrDefault()
+            })
+            .SingleOrDefaultAsync(cancellationToken);
+
+        return publicationSnapshot is null || !publicationSnapshot.HasPublishedVersion
+            ? "NeverPublished"
+            : string.Equals(ComputeChecksum(draft), publicationSnapshot.PublishedChecksum, StringComparison.Ordinal)
+                ? "PublishedCurrent"
+                : "PublishedWithChanges";
     }
 
     private async Task<IReadOnlyList<QuizDraftItemResponse>> BuildItemResponsesAsync(

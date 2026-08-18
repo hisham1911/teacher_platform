@@ -15,6 +15,9 @@ export type TeacherIconName =
   | 'short-answer'
   | 'ordering'
   | 'true-false'
+  | 'move-up'
+  | 'move-down'
+  | 'remove'
   | 'workspace'
   | 'logout';
 
@@ -34,6 +37,9 @@ export function TeacherIcon({ name, className = 'h-5 w-5' }: { name: TeacherIcon
     'short-answer': <><path d="M4 6h16M4 11h12M4 16h8" /></>,
     ordering: <><path d="M9 6h11M9 12h11M9 18h11" /><path d="M4 5h1v2M4 11h1v2M4 17h1v2" /></>,
     'true-false': <><circle cx="12" cy="12" r="9" /><path d="m8 12 2.5 2.5L16 9" /></>,
+    'move-up': <><path d="m7 11 5-5 5 5" /><path d="M12 6v12" /></>,
+    'move-down': <><path d="m7 13 5 5 5-5" /><path d="M12 6v12" /></>,
+    remove: <><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13" /><path d="M10 11v5M14 11v5" /></>,
     workspace: <><path d="M3 7h18v13H3zM8 7V4h8v3" /><path d="M3 12h18" /></>,
     logout: <><path d="M10 4H4v16h6M14 8l4 4-4 4M8 12h10" /></>,
   } satisfies Record<TeacherIconName, ReactNode>;

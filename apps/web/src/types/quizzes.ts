@@ -4,6 +4,7 @@ import type { QuestionDifficulty, QuestionType } from './questions';
 
 export type QuizStatus = 'Draft' | 'Published' | 'Archived';
 export type QuizTimeMode = 'None' | 'TotalTime' | 'PerQuestion';
+export type QuizPublicationState = 'NeverPublished' | 'PublishedCurrent' | 'PublishedWithChanges';
 
 export interface QuizListItem {
   id: string;
@@ -137,6 +138,7 @@ export interface QuizDraft {
   theme: QuizTheme;
   items: QuizDraftItem[];
   totalPoints: number;
+  publicationState: QuizPublicationState;
   /** معرف الصف (xmin) — مطلوب لإرسال BaseVersion عند التعديل. */
   version: number;
   updatedAt: string;

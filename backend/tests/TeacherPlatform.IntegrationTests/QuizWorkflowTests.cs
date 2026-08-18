@@ -626,6 +626,51 @@ public class QuizWorkflowTests : IClassFixture<TestWebApplicationFactory>, IAsyn
     }
 
     [Fact]
+    public async Task PublicationState_TracksNeverPublished_Current_AndItemChanges()
+    {
+        var client = NewClient();
+        var (_, token, _) = await RegisterConfirmLogin(_factory, client);
+        var tenantId = await CreateTenantFor(client, token);
+        var bankId = await CreateBankFor(client, token, tenantId);
+        var questionId = await CreateQuestionAsync(client, token, tenantId, bankId, "سؤال دورة النشر");
+        var quizId = await CreateQuizAsync(client, token, tenantId, "اختبار دورة النشر", "quiz-publication-state");
+
+        var initialDraft = await GetDraftAsync(client, token, tenantId, quizId);
+        Assert.Equal("NeverPublished", initialDraft.GetProperty("publicationState").GetString());
+
+        var readyDraft = await AddItemAsync(client, token, tenantId, quizId, questionId, 5);
+        var firstPublish = await client.SendAsync(WithAccessToken(new HttpRequestMessage(HttpMethod.Post,
+            $"/api/v1/tenants/{tenantId}/quizzes/{quizId}/publish")
+        {
+            Content = Json(new { baseVersion = readyDraft.GetProperty("version").GetUInt32() })
+        }, token));
+        Assert.Equal(HttpStatusCode.OK, firstPublish.StatusCode);
+
+        var currentDraft = await GetDraftAsync(client, token, tenantId, quizId);
+        Assert.Equal("PublishedCurrent", currentDraft.GetProperty("publicationState").GetString());
+
+        var itemId = currentDraft.GetProperty("items")[0].GetProperty("id").GetGuid();
+        var updateItem = await client.SendAsync(WithAccessToken(new HttpRequestMessage(HttpMethod.Patch,
+            $"/api/v1/tenants/{tenantId}/quizzes/{quizId}/draft/items/{itemId}")
+        {
+            Content = Json(new { points = 7, isRequired = true })
+        }, token));
+        Assert.Equal(HttpStatusCode.OK, updateItem.StatusCode);
+        var changedDraft = await ReadJson<JsonElement>(updateItem);
+        Assert.Equal("PublishedWithChanges", changedDraft.GetProperty("publicationState").GetString());
+
+        var updatePublish = await client.SendAsync(WithAccessToken(new HttpRequestMessage(HttpMethod.Post,
+            $"/api/v1/tenants/{tenantId}/quizzes/{quizId}/publish")
+        {
+            Content = Json(new { baseVersion = changedDraft.GetProperty("version").GetUInt32() })
+        }, token));
+        Assert.Equal(HttpStatusCode.OK, updatePublish.StatusCode);
+
+        var republishedDraft = await GetDraftAsync(client, token, tenantId, quizId);
+        Assert.Equal("PublishedCurrent", republishedDraft.GetProperty("publicationState").GetString());
+    }
+
+    [Fact]
     public async Task PublishedVersion_IsImmutable()
     {
         var client = NewClient();

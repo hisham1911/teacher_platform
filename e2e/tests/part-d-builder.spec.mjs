@@ -6,7 +6,7 @@ import { expect, test } from '@playwright/test';
 const e2eDir = fileURLToPath(new URL('..', import.meta.url));
 const state = JSON.parse(readFileSync(join(e2eDir, 'state.json'), 'utf8'));
 
-test('teacher creates, builds, previews, publishes, and hands off to sessions', async ({ page }) => {
+test('teacher builds a quiz and sees a coherent publication lifecycle', async ({ page }) => {
   await page.goto('/auth/login');
   await page.getByLabel('البريد الإلكتروني').fill(state.email);
   await page.getByLabel('كلمة المرور').fill('SecurePassword123!');
@@ -14,17 +14,15 @@ test('teacher creates, builds, previews, publishes, and hands off to sessions', 
 
   await expect(page.getByRole('heading', { name: 'مرحبًا، E2E Teacher' })).toBeVisible();
   await page.getByRole('link', { name: /إنشاء اختبار جديد/ }).click();
-
   await page.getByLabel('اسم الاختبار').fill('اختبار رحلة المعلم');
   await page.getByRole('button', { name: 'ابدأ إضافة الأسئلة' }).click();
+
   await expect(page.getByRole('heading', { name: 'اختبار رحلة المعلم' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'ابدأ بإضافة أول سؤال' })).toBeVisible();
-
   await page.getByRole('link', { name: /صح أو خطأ/ }).click();
   await expect(page.getByRole('heading', { name: 'إضافة سؤال إلى الاختبار' })).toBeVisible();
   await expect(page.getByLabel('نوع السؤال')).toHaveValue('TrueFalse');
   await page.getByRole('link', { name: 'العودة إلى منشئ الاختبار' }).click();
-  await expect(page.getByRole('heading', { name: 'اختبار رحلة المعلم' })).toBeVisible();
 
   await page.locator('#question-bank-picker > summary').click();
   await expect(page.getByRole('button', { name: 'إضافة للاختبار' })).toHaveCount(2);
@@ -33,7 +31,19 @@ test('teacher creates, builds, previews, publishes, and hands off to sessions', 
   await page.getByRole('button', { name: 'إضافة للاختبار' }).click();
   await expect(page.getByRole('button', { name: 'إضافة للاختبار' })).toHaveCount(0);
 
-  await page.getByRole('button', { name: 'نقل السؤال 2 لأعلى' }).click();
+  await expect(page.getByRole('button', { name: 'نقل السؤال 1 لأعلى' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'نقل السؤال 2 لأسفل' })).toBeDisabled();
+
+  const editPagePromise = page.waitForEvent('popup');
+  await page.getByRole('link', { name: 'تعديل السؤال 1' }).click();
+  const editPage = await editPagePromise;
+  await expect(editPage).toHaveURL(/\/dashboard\/questions\/.+\/edit$/);
+  await editPage.close();
+
+  await page.getByRole('button', { name: 'نقل السؤال 1 لأسفل' }).click();
+  await page.getByRole('button', { name: 'إزالة السؤال 2 من الاختبار' }).click();
+  await expect(page.getByText('1 أسئلة', { exact: true })).toBeVisible();
+
   await page.getByLabel('درجة النجاح (%)').fill('60');
   await page.getByLabel('مدة الاختبار').selectOption('TotalTime');
   await page.getByLabel('المدة بالدقائق').fill('5');
@@ -43,12 +53,23 @@ test('teacher creates, builds, previews, publishes, and hands off to sessions', 
   await expect(page.getByText(/وقت إجمالي \(300 ثانية\)/)).toBeVisible();
   await page.getByRole('link', { name: 'تعديل' }).click();
 
-  await expect(page.getByRole('heading', { name: 'اختبار رحلة المعلم' })).toBeVisible();
   await page.getByRole('link', { name: 'نشر الاختبار' }).click();
-  await expect(page.getByRole('heading', { name: 'مراجعة ونشر اختبار رحلة المعلم' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'اختبارك جاهز للنشر' })).toBeVisible();
   await page.getByRole('button', { name: 'نشر الاختبار' }).click();
 
-  await expect(page.getByRole('heading', { name: 'تم نشر الاختبار' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'الاختبار منشور ✓' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'إنشاء جلسة للطلاب' })).toBeVisible();
+  await page.getByRole('link', { name: 'تعديل الاختبار' }).click();
+
+  await expect(page.getByRole('link', { name: 'إنشاء جلسة' })).toBeVisible();
+  await page.getByLabel('المدة بالدقائق').fill('7');
+  await page.getByRole('link', { name: 'نشر التحديثات' }).click();
+
+  await expect(page.getByRole('heading', { name: 'لديك تعديلات جديدة لم تُنشر بعد' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'النسخة المنشورة الحالية' })).toBeVisible();
+  await page.getByRole('button', { name: 'نشر التحديثات' }).click();
+
+  await expect(page.getByRole('heading', { name: 'الاختبار منشور ✓' })).toBeVisible();
   await page.getByRole('link', { name: 'إنشاء جلسة للطلاب' }).click();
   await expect(page.getByRole('heading', { name: 'جلسات الاختبار' })).toBeVisible();
 });
