@@ -1,19 +1,23 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { useEffect, useState, type FormEvent } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router';
 import { Button } from '../../../components/ui/button';
 import { FormField, TextInput } from '../../../components/ui/form-field';
-import { questionBanksApi, questionsApi } from '../../../data/api-client/endpoints';
+import { questionBanksApi, questionsApi, quizzesApi } from '../../../data/api-client/endpoints';
 import { HttpError } from '../../../data/api-client/http-error';
 import { getActiveTenantId } from '../../../lib/auth/session';
 import { QuestionForm, type QuestionFormValue } from '../../../features/questions/question-form';
-import type { CreateQuestionRequest } from '../../../types/questions';
+import type { CreateQuestionRequest, QuestionType } from '../../../types/questions';
 
-/** /dashboard/questions/new — إنشاء سؤال ضمن بنك موجود، مع إمكانية إنشاء بنك جديد inline */
 export default function QuestionNewPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const tenantId = getActiveTenantId();
+  const quizId = searchParams.get('quizId');
+  const returnToParam = searchParams.get('returnTo');
+  const returnTo = returnToParam?.startsWith('/dashboard/quizzes/') ? returnToParam : null;
+  const initialQuestionType = parseQuestionType(searchParams.get('type'));
 
   const [selectedBankId, setSelectedBankId] = useState('');
   const [newBankName, setNewBankName] = useState('');
@@ -25,6 +29,10 @@ export default function QuestionNewPage() {
     queryFn: ({ signal }) => questionBanksApi.list(tenantId!, signal),
     enabled: Boolean(tenantId),
   });
+
+  useEffect(() => {
+    if (!selectedBankId && banks?.[0]) setSelectedBankId(banks[0].id);
+  }, [banks, selectedBankId]);
 
   const createBankMutation = useMutation({
     mutationFn: (name: string) => questionBanksApi.create(tenantId!, { name }),
@@ -43,6 +51,16 @@ export default function QuestionNewPage() {
       await queryClient.invalidateQueries({ queryKey: ['questions', tenantId] });
       await queryClient.invalidateQueries({ queryKey: ['question-banks', tenantId] });
       await queryClient.invalidateQueries({ queryKey: ['question-tags', tenantId] });
+      if (quizId && returnTo) {
+        try {
+          const updatedDraft = await quizzesApi.addItem(tenantId!, quizId, { questionId: question.id });
+          queryClient.setQueryData(['quiz-draft', tenantId, quizId], updatedDraft);
+          navigate(returnTo, { replace: true });
+        } catch {
+          setFormError('تم إنشاء السؤال في بنك الأسئلة، لكن تعذر إضافته إلى الاختبار. ارجع إلى المنشئ وأضفه من بنك الأسئلة.');
+        }
+        return;
+      }
       navigate(`/dashboard/questions/${question.id}/preview`, { replace: true });
     },
     onError: (error) => {
@@ -63,7 +81,7 @@ export default function QuestionNewPage() {
     return null;
   }
 
-  const canCreateBank = !isLoadingBanks && (banks?.length ?? 0) > -1;
+  const canCreateBank = !isLoadingBanks;
 
   function onBankSubmit(event: FormEvent) {
     event.preventDefault();
@@ -100,13 +118,13 @@ export default function QuestionNewPage() {
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
       <header className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">سؤال جديد</h1>
-          <p className="text-sm text-slate-600">اختر بنك الأسئلة، ثم حدد نوع السؤال وأدخل محتواه وإجابته الصحيحة.</p>
+          <h1 className="text-2xl font-black text-slate-900">{returnTo ? 'إضافة سؤال إلى الاختبار' : 'سؤال جديد'}</h1>
+          <p className="mt-1 text-base leading-7 text-slate-600">اختر بنك الأسئلة، ثم اكتب السؤال وإجابته الصحيحة.</p>
         </div>
         <Link
-          to="/dashboard/questions"
-          className="min-h-11 rounded-md px-3 py-2 text-sm text-slate-600 hover:bg-slate-100">
-          عودة للقائمة
+          to={returnTo ?? '/dashboard/questions'}
+          className="inline-flex min-h-11 items-center rounded-md px-3 py-2 text-sm font-bold text-slate-600 hover:bg-slate-100">
+          {returnTo ? 'العودة إلى منشئ الاختبار' : 'عودة للقائمة'}
         </Link>
       </header>
 
@@ -164,11 +182,18 @@ export default function QuestionNewPage() {
       {selectedBankId ? (
         <QuestionForm
           tenantId={tenantId}
-          submitLabel="إنشاء السؤال"
+          initialValue={{ questionType: initialQuestionType }}
+          submitLabel={returnTo ? 'حفظ وإضافة للاختبار' : 'إنشاء السؤال'}
           isPending={createQuestionMutation.isPending}
           onSubmit={onSubmitForm}
         />
       ) : null}
     </div>
   );
+}
+
+function parseQuestionType(value: string | null): QuestionType {
+  return value === 'TrueFalse' || value === 'ShortAnswer' || value === 'Ordering' || value === 'Listening'
+    ? value
+    : 'MultipleChoice';
 }

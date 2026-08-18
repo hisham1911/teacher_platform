@@ -174,9 +174,9 @@ describe('QuizEditPage — GAP-C: استخدام أحدث نسخة', () => {
     renderPage();
     await screen.findByDisplayValue('اختبار');
 
-    fireEvent.change(screen.getByLabelText('وضع الوقت'), { target: { value: 'TotalTime' } });
-    fireEvent.change(screen.getByLabelText('الوقت الإجمالي (ثانية)'), { target: { value: '300' } });
-    fireEvent.click(screen.getAllByRole('link', { name: 'معاينة' })[0]!);
+    fireEvent.change(screen.getByLabelText('مدة الاختبار'), { target: { value: 'TotalTime' } });
+    fireEvent.change(screen.getByLabelText('المدة بالدقائق'), { target: { value: '5' } });
+    fireEvent.click(screen.getByRole('link', { name: 'معاينة' }));
 
     await waitFor(() => expect(updateDraftMock).toHaveBeenCalledWith(
       TENANT_ID,

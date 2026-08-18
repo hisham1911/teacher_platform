@@ -62,7 +62,8 @@ describe('RootLayout', () => {
     const view = render(<QueryClientProvider client={queryClient}><MemoryRouter><RootLayout><div>محتوى</div></RootLayout></MemoryRouter></QueryClientProvider>);
 
     expect(screen.getByText('القائمة الرئيسية')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'النتائج والتقارير' })).toHaveAttribute('href', '/dashboard/reports');
+    expect(screen.getAllByRole('link', { name: 'النتائج والتقارير' })).toHaveLength(2);
+    expect(screen.getAllByRole('link', { name: 'النتائج والتقارير' })[0]).toHaveAttribute('href', '/dashboard/reports');
     await waitFor(() => expect(tenantsApi.listMine).toHaveBeenCalled());
     await waitFor(() => expect(queryClient.isFetching()).toBe(0));
     view.unmount();

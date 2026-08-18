@@ -112,13 +112,13 @@ describe('QuizPublishPage', () => {
     renderPage();
 
     await waitFor(() =>
-      expect(screen.getByRole('heading', { name: /نشر: اختبار العلوم/ })).toBeInTheDocument(),
+      expect(screen.getByRole('heading', { name: /مراجعة ونشر اختبار العلوم/ })).toBeInTheDocument(),
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'نشر الآن' }));
+    fireEvent.click(screen.getByRole('button', { name: 'نشر الاختبار' }));
 
     await waitFor(() =>
-      expect(screen.getByText('تم النشر بنجاح ✓')).toBeInTheDocument(),
+      expect(screen.getByText('تم نشر الاختبار')).toBeInTheDocument(),
     );
 
     expect(screen.getByText('https://example.com/q/pub-code-1')).toBeInTheDocument();

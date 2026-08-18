@@ -2,6 +2,17 @@
 
 :root {
   font-family: 'Segoe UI', Tahoma, system-ui, sans-serif;
+  font-kerning: normal;
+  --teacher-bg: oklch(0.975 0.008 174);
+  --teacher-surface: oklch(1 0 0);
+  --teacher-ink: oklch(0.24 0.025 245);
+  --teacher-muted: oklch(0.47 0.025 245);
+  --teacher-primary: oklch(0.47 0.12 163);
+  --teacher-primary-strong: oklch(0.39 0.105 163);
+  --teacher-primary-soft: oklch(0.95 0.035 163);
+  --teacher-violet: oklch(0.55 0.17 292);
+  --teacher-violet-soft: oklch(0.96 0.03 292);
+  --teacher-orange-soft: oklch(0.965 0.04 72);
   --student-bg: oklch(0.978 0.008 174);
   --student-surface: oklch(1 0 0);
   --student-ink: oklch(0.22 0.025 245);
@@ -16,6 +27,36 @@
 
 body {
   @apply bg-slate-50 text-slate-900 antialiased;
+}
+
+.teacher-app {
+  background: var(--teacher-bg);
+  color: var(--teacher-ink);
+}
+
+.teacher-surface {
+  border: 1px solid oklch(0.91 0.012 245);
+  border-radius: 0.875rem;
+  background: var(--teacher-surface);
+}
+
+.teacher-focus {
+  outline-color: var(--teacher-primary);
+}
+
+.teacher-workspace-header {
+  box-shadow: 0 2px 8px rgb(15 23 42 / 0.06);
+}
+
+.quiz-builder-layout {
+  display: grid;
+  gap: 1.5rem;
+}
+
+@media (min-width: 64rem) {
+  .quiz-builder-layout {
+    grid-template-columns: minmax(0, 1fr) 18rem;
+  }
 }
 
 .student-shell {

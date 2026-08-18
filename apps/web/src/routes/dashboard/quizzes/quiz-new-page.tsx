@@ -1,15 +1,15 @@
 import { useState, type FormEvent } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router';
-import { Button } from '../../../components/ui/button';
+import { TeacherIcon } from '../../../components/ui/teacher-icon';
 import { FormField, TextArea, TextInput } from '../../../components/ui/form-field';
 import { quizzesApi } from '../../../data/api-client/endpoints';
 import { HttpError } from '../../../data/api-client/http-error';
 import { getActiveTenantId } from '../../../lib/auth/session';
+import type { CreateQuizRequest } from '../../../types/quizzes';
 
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
-/** /dashboard/quizzes/new — إنشاء اختبار جديد */
 export default function QuizNewPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -22,117 +22,108 @@ export default function QuizNewPage() {
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const createMutation = useMutation({
-    mutationFn: () =>
-      quizzesApi.create(tenantId!, {
-        title: title.trim(),
-        slug: slug.trim(),
-        description: description.trim() || undefined,
-      }),
+    mutationFn: (request: CreateQuizRequest) => quizzesApi.create(tenantId!, request),
     onSuccess: async (quiz) => {
       await queryClient.invalidateQueries({ queryKey: ['quizzes', tenantId] });
       navigate(`/dashboard/quizzes/${quiz.id}/edit`);
     },
     onError: (error) => {
       if (error instanceof HttpError) {
-        const body = error.body as { title?: string; detail?: string } | null;
-        setSubmitError(body?.detail ? `تعذر إنشاء الاختبار: ${body.detail}` : 'تعذر إنشاء الاختبار. تحقق من البيانات ثم أعد المحاولة.');
+        const body = error.body as { detail?: string } | null;
+        setSubmitError(body?.detail ? `تعذر إنشاء الاختبار: ${body.detail}` : 'تعذر إنشاء الاختبار. راجع البيانات ثم حاول مرة أخرى.');
       } else {
-        setSubmitError('فشل الإنشاء. أعد المحاولة.');
+        setSubmitError('تعذر إنشاء الاختبار الآن. تحقق من الاتصال ثم حاول مرة أخرى.');
       }
     },
   });
 
-  if (!tenantId) {
-    return null;
-  }
+  if (!tenantId) return null;
 
   function onSubmit(event: FormEvent) {
     event.preventDefault();
     setSubmitError(null);
     setSlugError(null);
 
-    const trimmedSlug = slug.trim();
-    if (!SLUG_PATTERN.test(trimmedSlug)) {
-      setSlugError('الرابط يجب أن يحتوي على أحرف إنجليزية صغيرة وأرقام وشرطات فقط (مثال: math-quiz-1).');
+    const customSlug = slug.trim();
+    if (customSlug && !SLUG_PATTERN.test(customSlug)) {
+      setSlugError('استخدم أحرفًا إنجليزية صغيرة وأرقامًا وشرطات فقط، مثل: unit-1-review.');
       return;
     }
 
-    createMutation.mutate();
+    createMutation.mutate({
+      title: title.trim(),
+      slug: customSlug || createQuizSlug(title),
+      description: description.trim() || undefined,
+    });
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900">اختبار جديد</h1>
-          <p className="text-sm text-slate-600">أدخل البيانات الأساسية ثم انتقل لبناء الأسئلة.</p>
-        </div>
-        <Link
-          to="/dashboard/quizzes"
-          className="min-h-11 rounded-md px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-sky-600">
-          عودة للقائمة
-        </Link>
-      </div>
+    <div className="mx-auto max-w-3xl">
+      <Link to="/dashboard" className="inline-flex min-h-11 items-center text-sm font-bold text-slate-600 hover:text-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700">العودة إلى الرئيسية →</Link>
 
-      <form onSubmit={onSubmit} className="flex max-w-2xl flex-col gap-4">
-        <FormField id="quiz-title" label="عنوان الاختبار">
+      <header className="mt-6 max-w-2xl">
+        <span aria-hidden="true" className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--teacher-primary-soft)] text-[var(--teacher-primary-strong)]"><TeacherIcon name="create" className="h-6 w-6" /></span>
+        <h1 className="mt-5 text-3xl font-black text-[var(--teacher-ink)]">أنشئ اختبارك</h1>
+        <p className="mt-2 max-w-xl text-base leading-7 text-[var(--teacher-muted)]">ابدأ بالاسم فقط. ستضيف الأسئلة والإعدادات داخل مساحة البناء في الخطوة التالية.</p>
+      </header>
+
+      <form onSubmit={onSubmit} className="mt-8 flex max-w-2xl flex-col gap-5">
+        <FormField id="quiz-title" label="اسم الاختبار">
           {(props) => (
             <TextInput
               {...props}
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(event) => setTitle(event.target.value)}
               required
+              autoFocus
               maxLength={200}
-              placeholder="مثال: اختبار الوحدة الأولى — رياضيات"
+              placeholder="مثال: مراجعة Unit 1"
+              className="min-h-14 text-base"
             />
           )}
         </FormField>
 
-        <FormField id="quiz-slug" label="اسم رابط الاختبار" error={slugError ?? undefined}>
-          {(props) => (
-            <TextInput
-              {...props}
-              value={slug}
-              onChange={(e) => setSlug(e.target.value)}
-              required
-              maxLength={100}
-              dir="ltr"
-              placeholder="math-unit-1-quiz"
-            />
-          )}
-        </FormField>
-        <p className="-mt-3 text-xs text-slate-500">
-          أحرف إنجليزية صغيرة وأرقام وشرطات فقط. يُستخدم في روابط المشاركة.
-        </p>
+        <details className="border-y border-slate-200 py-3">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between text-sm font-bold text-slate-700 marker:content-none">
+            تفاصيل اختيارية
+            <span aria-hidden="true" className="text-lg text-slate-400">⌄</span>
+          </summary>
+          <div className="mt-4 flex flex-col gap-4 pb-2">
+            <FormField id="quiz-description" label="وصف مختصر">
+              {(props) => (
+                <TextArea {...props} value={description} onChange={(event) => setDescription(event.target.value)} rows={3} maxLength={2000} placeholder="ما الذي يغطيه هذا الاختبار؟" />
+              )}
+            </FormField>
+            <FormField id="quiz-slug" label="رابط مخصص" error={slugError ?? undefined}>
+              {(props) => (
+                <TextInput {...props} value={slug} onChange={(event) => setSlug(event.target.value)} maxLength={100} dir="ltr" placeholder="unit-1-review" />
+              )}
+            </FormField>
+            <p className="text-sm leading-6 text-slate-600">اختياري. إذا تركته فارغًا سننشئ رابطًا آمنًا تلقائيًا.</p>
+          </div>
+        </details>
 
-        <FormField id="quiz-description" label="الوصف (اختياري)">
-          {(props) => (
-            <TextArea
-              {...props}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={3}
-              maxLength={2000}
-              placeholder="وصف مختصر للاختبار…"
-            />
-          )}
-        </FormField>
+        {submitError ? <p role="alert" className="rounded-xl bg-rose-50 p-4 text-sm leading-6 text-rose-800">{submitError}</p> : null}
 
-        {submitError ? (
-          <p role="alert" className="rounded-lg bg-rose-50 p-3 text-sm text-rose-700">
-            {submitError}
-          </p>
-        ) : null}
-
-        <div className="flex gap-2">
-          <Button type="submit" disabled={createMutation.isPending || !title.trim() || !slug.trim()}>
-            {createMutation.isPending ? 'جارٍ الإنشاء…' : 'إنشاء الاختبار'}
-          </Button>
-          <Button type="button" variant="secondary" onClick={() => navigate('/dashboard/quizzes')}>
-            إلغاء
-          </Button>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <button type="submit" disabled={createMutation.isPending || !title.trim()} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-[var(--teacher-primary)] px-6 text-sm font-black text-white hover:bg-[var(--teacher-primary-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 disabled:cursor-not-allowed disabled:opacity-60">
+            {createMutation.isPending ? 'جارٍ إنشاء مساحة الاختبار…' : 'ابدأ إضافة الأسئلة'}
+            {!createMutation.isPending ? <span aria-hidden="true">←</span> : null}
+          </button>
+          <Link to="/dashboard/quizzes" className="inline-flex min-h-11 items-center justify-center px-4 text-sm font-bold text-slate-600 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700">عرض اختباراتي</Link>
         </div>
       </form>
     </div>
   );
+}
+
+function createQuizSlug(title: string) {
+  const englishWords = title
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 72);
+
+  return englishWords || `quiz-${Date.now().toString(36)}`;
 }

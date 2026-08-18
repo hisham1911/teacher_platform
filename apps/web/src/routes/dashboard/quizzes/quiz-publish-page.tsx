@@ -4,6 +4,7 @@ import { Link, useParams } from 'react-router';
 import QRCode from 'react-qr-code';
 import { Button } from '../../../components/ui/button';
 import { ButtonSpinner } from '../../../components/ui/spinner';
+import { TeacherIcon } from '../../../components/ui/teacher-icon';
 import { quizzesApi } from '../../../data/api-client/endpoints';
 import { HttpError } from '../../../data/api-client/http-error';
 import { getActiveTenantId } from '../../../lib/auth/session';
@@ -13,7 +14,6 @@ import {
   type QuizVersionSummary,
 } from '../../../types/quizzes';
 
-/** /dashboard/quizzes/:quizId/publish — نشر الاختبار + قائمة الإصدارات */
 export default function QuizPublishPage() {
   const { quizId } = useParams<{ quizId: string }>();
   const queryClient = useQueryClient();
@@ -59,7 +59,7 @@ export default function QuizPublishPage() {
     },
     onError: (error) => {
       if (error instanceof HttpError && error.status === 409) {
-        setConflictMessage('تعارض تعديل متزامن (409): أعد تحميل الصفحة ثم حاول النشر مجددًا.');
+        setConflictMessage('تم تعديل الاختبار في مكان آخر. حمّل أحدث نسخة ثم حاول النشر مجددًا.');
         setPublishError(null);
       } else if (error instanceof HttpError && error.status === 403) {
         setPublishError('ليس لديك صلاحية نشر الاختبارات (يلزم دور مالك أو معلم).');
@@ -68,8 +68,8 @@ export default function QuizPublishPage() {
         const body = error.body as { title?: string; detail?: string } | null;
         setPublishError(
           body?.detail
-            ? `فشل النشر: ${body.detail} (Code: ${body.title ?? error.status})`
-            : `فشل النشر. الحالة: ${error.status}`,
+            ? `تعذر نشر الاختبار: ${body.detail}`
+            : 'تعذر نشر الاختبار. راجع الجاهزية ثم حاول مرة أخرى.',
         );
         setConflictMessage(null);
       } else {
@@ -107,7 +107,6 @@ export default function QuizPublishPage() {
 
   const draft = draftQuery.data;
 
-  // Readiness checklist
   const hasItems = draft.items.length > 0;
   const hasArchivedSource = draft.items.some((i) => i.sourceQuestionArchived);
   const hasTimeLimitWhenNeeded = draft.timeMode === 'None' || (draft.timeLimitSeconds != null && draft.timeLimitSeconds > 0);
@@ -124,50 +123,19 @@ export default function QuizPublishPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900">نشر: {draft.title}</h1>
-          <p className="text-sm text-slate-600">
-            {draft.items.length} سؤال · {draft.totalPoints} نقطة · راجع الجاهزية ثم انشر
-          </p>
+    <div className="mx-auto flex max-w-4xl flex-col gap-6">
+      <header>
+        <Link to={`/dashboard/quizzes/${quizId}/edit`} className="inline-flex min-h-11 items-center text-sm font-bold text-slate-600 hover:text-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700">العودة إلى منشئ الاختبار →</Link>
+        <div className="mt-4 flex items-start gap-4">
+          <span aria-hidden="true" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[var(--teacher-primary-soft)] text-[var(--teacher-primary-strong)]"><TeacherIcon name="publish" className="h-6 w-6" /></span>
+          <div>
+            <p className="text-sm font-bold text-[var(--teacher-primary-strong)]">الخطوة الأخيرة</p>
+            <h1 className="mt-1 text-3xl font-black text-[var(--teacher-ink)]">مراجعة ونشر {draft.title}</h1>
+            <p className="mt-2 text-base leading-7 text-[var(--teacher-muted)]">{draft.items.length} سؤال · {draft.totalPoints} نقطة · النجاح من {draft.passingPercentage}%</p>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Link
-            to={`/dashboard/quizzes/${quizId}/survey`}
-            className="min-h-11 rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-sm font-medium text-sky-700 hover:bg-sky-100 focus-visible:outline-2 focus-visible:outline-sky-600">
-            استبيان الطلاب
-          </Link>
-          <Link
-            to={`/dashboard/quizzes/${quizId}/edit`}
-            className="min-h-11 rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-sky-600">
-            تعديل
-          </Link>
-          <Link
-            to="/dashboard/quizzes"
-            className="min-h-11 rounded-md px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-sky-600">
-            عودة
-          </Link>
-        </div>
-      </div>
+      </header>
 
-      {/* Readiness checklist */}
-      <section aria-labelledby="readiness-heading" className="rounded-xl border border-slate-200 bg-white p-4">
-        <h2 id="readiness-heading" className="mb-3 text-base font-semibold text-slate-900">جاهزية النشر</h2>
-        <ul className="flex flex-col gap-2 text-sm">
-          <li className={hasItems ? 'text-emerald-700' : 'text-rose-700'}>
-            {hasItems ? '✓' : '✗'} يحتوي على أسئلة ({draft.items.length})
-          </li>
-          <li className={!hasArchivedSource ? 'text-emerald-700' : 'text-rose-700'}>
-            {!hasArchivedSource ? '✓' : '✗'} لا توجد أسئلة مصدرها مؤرشف
-          </li>
-          <li className={hasTimeLimitWhenNeeded ? 'text-emerald-700' : 'text-rose-700'}>
-            {hasTimeLimitWhenNeeded ? '✓' : '✗'} الوقت محدد عند اختيار وضع وقت
-          </li>
-        </ul>
-      </section>
-
-      {/* Conflict banner */}
       {conflictMessage ? (
         <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
           <p className="font-medium">{conflictMessage}</p>
@@ -178,135 +146,91 @@ export default function QuizPublishPage() {
       ) : null}
 
       {publishError ? (
-        <p role="alert" className="rounded-lg bg-rose-50 p-3 text-sm text-rose-700">{publishError}</p>
+        <p role="alert" className="rounded-xl bg-rose-50 p-4 text-sm leading-6 text-rose-800">{publishError}</p>
       ) : null}
 
-      {/* Publish action */}
       {!publishResult ? (
-        <section aria-labelledby="publish-heading" className="rounded-xl border border-slate-200 bg-white p-4">
-          <h2 id="publish-heading" className="mb-2 text-base font-semibold text-slate-900">تأكيد النشر</h2>
-          <p className="mb-4 text-sm text-slate-600">
-            سيحفظ النظام هذه النسخة كما هي للطلاب، ويمكنك متابعة التعديل لاحقًا في نسخة جديدة.
-          </p>
-          <Button
-            onClick={() => publishMutation.mutate()}
-            disabled={!allReady || publishMutation.isPending}>
-            {publishMutation.isPending ? <ButtonSpinner /> : null}
-            {publishMutation.isPending ? 'جارٍ النشر…' : 'نشر الآن'}
-          </Button>
+        <section aria-labelledby="readiness-heading" className={`teacher-surface p-5 sm:p-6 ${allReady ? 'bg-emerald-50/60' : 'bg-white'}`}>
+          <div className="flex items-start gap-3">
+            <span aria-hidden="true" className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${allReady ? 'bg-emerald-700 text-white' : 'bg-amber-100 text-amber-900'}`}>{allReady ? '✓' : '!'}</span>
+            <div>
+              <h2 id="readiness-heading" className="text-xl font-black text-slate-900">{allReady ? 'الاختبار جاهز للنشر' : 'أكمل الاختبار قبل النشر'}</h2>
+              <p className="mt-1 text-base leading-7 text-slate-600">{allReady ? 'راجع الملخص ثم انشر. يمكنك متابعة التعديل لاحقًا.' : 'صحح النقاط التالية ثم عُد إلى هذه الصفحة.'}</p>
+            </div>
+          </div>
           {!allReady ? (
-            <p className="mt-2 text-xs text-slate-500">أكمل عناصر الجاهزية أعلاه قبل النشر.</p>
+            <ul className="mt-4 space-y-2 text-sm font-semibold text-rose-800">
+              {!hasItems ? <li>أضف سؤالًا واحدًا على الأقل.</li> : null}
+              {hasArchivedSource ? <li>استبدل الأسئلة التي أصبح مصدرها مؤرشفًا.</li> : null}
+              {!hasTimeLimitWhenNeeded ? <li>حدد مدة صالحة للاختبار.</li> : null}
+            </ul>
           ) : null}
+          <button type="button" onClick={() => publishMutation.mutate()} disabled={!allReady || publishMutation.isPending} className="mt-6 inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-[var(--teacher-primary)] px-6 text-sm font-black text-white hover:bg-[var(--teacher-primary-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 disabled:cursor-not-allowed disabled:opacity-50">
+            {publishMutation.isPending ? <ButtonSpinner /> : <TeacherIcon name="publish" />}
+            {publishMutation.isPending ? 'جارٍ نشر الاختبار…' : 'نشر الاختبار'}
+          </button>
         </section>
       ) : null}
 
-      {/* Success panel */}
       {publishResult ? (
-        <section aria-labelledby="success-heading" className="rounded-xl border border-emerald-300 bg-emerald-50 p-4">
-          <h2 id="success-heading" className="mb-3 text-base font-semibold text-emerald-900">
-            تم النشر بنجاح ✓
-          </h2>
-          <dl className="flex flex-col gap-2 text-sm text-emerald-900">
-            <div className="flex gap-2">
-              <dt className="font-medium">تاريخ النشر:</dt>
-              <dd>{new Date(publishResult.publishedAt).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</dd>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <dt className="font-medium">صفحة تعريف الاختبار:</dt>
-              <dd dir="ltr" className="font-mono text-xs">{publishResult.shareUrl}</dd>
-              <Button variant="secondary" onClick={() => onCopyShareUrl(publishResult.shareUrl)}>
-                {copied ? 'تم النسخ ✓' : 'نسخ صفحة التعريف'}
-              </Button>
-            </div>
-          </dl>
-          <div className="mt-4 flex flex-col items-start gap-2">
-            <span className="text-sm font-medium text-emerald-900">QR لصفحة التعريف:</span>
-            <div dir="ltr" className="rounded-lg bg-white p-3" data-testid="share-qr-code">
-              <QRCode value={publishResult.shareUrl} size={160} />
-            </div>
+        <section aria-labelledby="success-heading" className="teacher-surface overflow-hidden">
+          <div className="bg-emerald-50 px-5 py-6 sm:px-6">
+            <span aria-hidden="true" className="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-700 text-xl font-black text-white">✓</span>
+            <h2 id="success-heading" className="mt-4 text-2xl font-black text-emerald-950">تم نشر الاختبار</h2>
+            <p className="mt-2 text-base text-emerald-900">الخطوة التالية: أنشئ جلسة للطلاب واختر طريقة التشغيل.</p>
+            <Link to={`/dashboard/quizzes/${quizId}/sessions`} className="mt-5 inline-flex min-h-12 items-center gap-2 rounded-lg bg-[var(--teacher-primary)] px-6 text-sm font-black text-white hover:bg-[var(--teacher-primary-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"><TeacherIcon name="play" />إنشاء جلسة للطلاب</Link>
           </div>
-          <div className="mt-4 rounded-lg border border-sky-200 bg-sky-50 p-4 text-sky-900">
-            <p className="text-sm font-semibold">الخطوة التالية: أنشئ جلسة للطلاب</p>
-            <p className="mt-1 text-xs leading-5">
-              رابط الحل ورمز الانضمام يظهران بعد إنشاء الجلسة وتفعيلها. اختر حلًا ذاتيًا أو مسابقة مباشرة.
-            </p>
-            <Link
-              to={`/dashboard/quizzes/${quizId}/sessions`}
-              className="mt-3 inline-flex min-h-11 items-center rounded-md bg-sky-700 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-700">
-              إنشاء جلسة للطلاب
-            </Link>
+          <div className="grid gap-5 px-5 py-5 sm:grid-cols-[1fr_auto] sm:px-6">
+            <div className="min-w-0">
+              <p className="text-sm font-black text-slate-900">صفحة تعريف الاختبار</p>
+              <p dir="ltr" className="mt-2 break-all text-sm text-slate-600">{publishResult.shareUrl}</p>
+              <Button variant="secondary" onClick={() => onCopyShareUrl(publishResult.shareUrl)}>{copied ? 'تم النسخ ✓' : 'نسخ الصفحة التعريفية'}</Button>
+            </div>
+            <div dir="ltr" className="w-fit rounded-lg bg-white p-2" data-testid="share-qr-code"><QRCode value={publishResult.shareUrl} size={120} /></div>
           </div>
         </section>
       ) : null}
 
-      {/* Share section for already-published quiz (when no fresh publish result) */}
       {!publishResult && shareQuery.data ? (
-        <section aria-labelledby="share-heading" className="rounded-xl border border-slate-200 bg-white p-4">
-          <h2 id="share-heading" className="mb-3 text-base font-semibold text-slate-900">صفحة تعريف الاختبار</h2>
-          <p className="mb-3 text-sm text-slate-600">هذه الصفحة تعرض معلومات الاختبار فقط. رابط الحل يصدر من جلسة الطلاب.</p>
-          <dl className="flex flex-col gap-2 text-sm text-slate-800">
-            <div className="flex gap-2">
-              <dt className="font-medium">الرابط التعريفي:</dt>
-              <dd dir="ltr" className="font-mono text-xs">{shareQuery.data.shareUrl}</dd>
-              <Button variant="secondary" onClick={() => onCopyShareUrl(shareQuery.data.shareUrl)}>
-                {copied ? 'تم النسخ ✓' : 'نسخ الرابط'}
-              </Button>
+        <section aria-labelledby="share-heading" className="teacher-surface p-5">
+          <h2 id="share-heading" className="text-lg font-black text-slate-900">هذا الاختبار منشور بالفعل</h2>
+          <p className="mt-1 text-base leading-7 text-slate-600">أنشئ جلسة للحصول على رابط الحل ورمز الانضمام، أو انسخ صفحة التعريف الحالية.</p>
+          <div className="mt-4 grid gap-4 sm:grid-cols-[1fr_auto]">
+            <div className="min-w-0">
+              <p dir="ltr" className="break-all text-sm text-slate-600">{shareQuery.data.shareUrl}</p>
+              <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                <Link to={`/dashboard/quizzes/${quizId}/sessions`} className="inline-flex min-h-11 items-center justify-center rounded-lg bg-[var(--teacher-primary)] px-5 text-sm font-black text-white hover:bg-[var(--teacher-primary-strong)]">إنشاء جلسة للطلاب</Link>
+                <Button variant="secondary" onClick={() => onCopyShareUrl(shareQuery.data.shareUrl)}>{copied ? 'تم النسخ ✓' : 'نسخ صفحة التعريف'}</Button>
+              </div>
             </div>
-          </dl>
-          <div className="mt-4 flex flex-col items-start gap-2">
-            <span className="text-sm font-medium text-slate-800">QR لصفحة التعريف:</span>
-            <div dir="ltr" className="rounded-lg bg-white p-3" data-testid="share-qr-code">
-              <QRCode value={shareQuery.data.shareUrl} size={160} />
-            </div>
+            <div dir="ltr" className="w-fit rounded-lg bg-white p-2" data-testid="share-qr-code"><QRCode value={shareQuery.data.shareUrl} size={120} /></div>
           </div>
-          <Link
-            to={`/dashboard/quizzes/${quizId}/sessions`}
-            className="mt-4 inline-flex min-h-11 items-center rounded-md bg-sky-700 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-700">
-            إنشاء جلسة للطلاب
-          </Link>
         </section>
       ) : null}
 
-      {/* Versions list */}
-      <section aria-labelledby="versions-heading" className="rounded-xl border border-slate-200 bg-white p-4">
-        <h2 id="versions-heading" className="mb-3 text-base font-semibold text-slate-900">الإصدارات</h2>
-        {versionsQuery.isLoading ? <p className="text-sm text-slate-500">جارٍ تحميل الإصدارات…</p> : null}
-        {versionsQuery.isError ? (
-          <p role="alert" className="rounded-lg bg-rose-50 p-3 text-sm text-rose-700">تعذر تحميل الإصدارات.</p>
-        ) : null}
-        {versionsQuery.data && versionsQuery.data.length === 0 ? (
-          <p className="text-sm text-slate-500">لا توجد إصدارات بعد.</p>
-        ) : null}
-        {versionsQuery.data && versionsQuery.data.length > 0 ? (
-          <ol className="flex flex-col gap-2">
-            {versionsQuery.data.map((version: QuizVersionSummary) => (
-              <li
-                key={version.id}
-                className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4">
-                <div>
-                  <p className="text-sm font-medium text-slate-900">الإصدار v{version.versionNumber}</p>
-                  <p className="mt-0.5 text-xs text-slate-500">
-                    {version.itemCount} سؤال · {version.totalPoints} نقطة
-                    {version.publishedAt
-                      ? ` · نُشر ${new Date(version.publishedAt).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`
-                      : ''}
-                  </p>
-                </div>
-                <span
-                  className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                    version.status === 'Published'
-                      ? 'bg-emerald-100 text-emerald-800'
-                      : version.status === 'Retired'
-                        ? 'bg-slate-100 text-slate-600'
-                        : 'bg-amber-100 text-amber-800'
-                  }`}>
-                  {QUIZ_VERSION_STATUS_LABELS[version.status] ?? version.status}
-                </span>
-              </li>
-            ))}
-          </ol>
-        ) : null}
-      </section>
+      <div className="flex justify-between gap-3 border-t border-slate-200 pt-5">
+        <Link to={`/dashboard/quizzes/${quizId}/survey`} className="inline-flex min-h-11 items-center text-sm font-bold text-slate-600 hover:text-emerald-800">إعداد استبيان الطلاب</Link>
+        <Link to={`/dashboard/quizzes/${quizId}/edit`} className="inline-flex min-h-11 items-center text-sm font-bold text-slate-600 hover:text-emerald-800">تعديل الاختبار</Link>
+      </div>
+
+      <details className="teacher-surface p-4">
+        <summary id="versions-heading" className="flex min-h-11 cursor-pointer list-none items-center justify-between text-base font-black text-slate-900 marker:content-none">سجل النشر<span aria-hidden="true" className="text-slate-400">⌄</span></summary>
+        <div className="mt-4 border-t border-slate-100 pt-4">
+          {versionsQuery.isLoading ? <p className="text-sm text-slate-600">جارٍ تحميل سجل النشر…</p> : null}
+          {versionsQuery.isError ? <p role="alert" className="rounded-lg bg-rose-50 p-3 text-sm text-rose-800">تعذر تحميل سجل النشر.</p> : null}
+          {versionsQuery.data && versionsQuery.data.length === 0 ? <p className="text-sm text-slate-600">لم يُنشر الاختبار بعد.</p> : null}
+          {versionsQuery.data && versionsQuery.data.length > 0 ? (
+            <ol className="divide-y divide-slate-100">
+              {versionsQuery.data.map((version: QuizVersionSummary) => (
+                <li key={version.id} className="flex items-center justify-between gap-3 py-3">
+                  <div><p className="text-sm font-bold text-slate-900">{version.itemCount} سؤال · {version.totalPoints} نقطة</p><p className="mt-1 text-xs text-slate-600">{version.publishedAt ? `نُشر ${new Date(version.publishedAt).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' })}` : 'تعديلات لم تُنشر بعد'}</p></div>
+                  <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${version.status === 'Published' ? 'bg-emerald-100 text-emerald-800' : version.status === 'Retired' ? 'bg-slate-100 text-slate-700' : 'bg-amber-100 text-amber-900'}`}>{QUIZ_VERSION_STATUS_LABELS[version.status]}</span>
+                </li>
+              ))}
+            </ol>
+          ) : null}
+        </div>
+      </details>
     </div>
   );
 }

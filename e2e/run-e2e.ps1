@@ -83,6 +83,8 @@ if ($Stage -eq "all") {
         $locationPushed = $true
         node seed.mjs
         if ($LASTEXITCODE -ne 0) { throw "E2E seed failed with exit code $LASTEXITCODE" }
+        npx playwright test tests/part-d-builder.spec.mjs --reporter=line
+        if ($LASTEXITCODE -ne 0) { throw "Playwright Part D builder failed with exit code $LASTEXITCODE" }
         npx playwright test tests/part-a.spec.mjs --reporter=line
         if ($LASTEXITCODE -ne 0) { throw "Playwright Part A failed with exit code $LASTEXITCODE" }
 

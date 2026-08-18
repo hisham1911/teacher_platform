@@ -2,8 +2,8 @@ import { useEffect, useMemo, useRef, useState, type FormEvent, type MouseEvent a
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams } from 'react-router';
 import { Button } from '../../../components/ui/button';
+import { TeacherIcon, type TeacherIconName } from '../../../components/ui/teacher-icon';
 import { FormField, SelectInput, TextArea, TextInput } from '../../../components/ui/form-field';
-import { ButtonSpinner } from '../../../components/ui/spinner';
 import { questionsApi, quizzesApi } from '../../../data/api-client/endpoints';
 import { HttpError } from '../../../data/api-client/http-error';
 import { getActiveTenantId } from '../../../lib/auth/session';
@@ -26,16 +26,22 @@ import {
 const HEX_COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;
 const AUTOSAVE_DEBOUNCE_MS = 1200;
 
+const questionTypeActions: Array<{ type: QuestionType; label: string; description: string; icon: TeacherIconName }> = [
+  { type: 'MultipleChoice', label: 'اختيار من متعدد', description: 'اختيار واحد صحيح', icon: 'quizzes' },
+  { type: 'TrueFalse', label: 'صح أو خطأ', description: 'إجابة سريعة وواضحة', icon: 'true-false' },
+  { type: 'ShortAnswer', label: 'إجابة قصيرة', description: 'إجابة نصية محددة', icon: 'short-answer' },
+  { type: 'Ordering', label: 'ترتيب', description: 'رتّب العناصر باللمس', icon: 'ordering' },
+  { type: 'Listening', label: 'استماع', description: 'سؤال مع مقطع صوتي', icon: 'audio' },
+];
+
 type SaveState = 'idle' | 'pending' | 'saving' | 'saved' | 'error';
 
-/** /dashboard/quizzes/:quizId/edit — بناء الاختبار (أساسيات + أسئلة + إعدادات + سمة) */
 export default function QuizEditPage() {
   const { quizId } = useParams<{ quizId: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const tenantId = getActiveTenantId();
 
-  // ---- Draft query ----
   const draftQuery = useQuery({
     queryKey: ['quiz-draft', tenantId, quizId],
     queryFn: ({ signal }) => quizzesApi.getDraft(tenantId!, quizId!, signal),
@@ -44,7 +50,6 @@ export default function QuizEditPage() {
   });
   const draft = draftQuery.data;
 
-  // ---- Local form state (synced from draft) ----
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [instructions, setInstructions] = useState('');
@@ -90,7 +95,6 @@ export default function QuizEditPage() {
     setConflictMessage(null);
   }, [draft]);
 
-  // ---- Save (updateDraft) mutation ----
   const saveMutation = useMutation({
     mutationFn: (request: UpdateDraftRequest) =>
       quizzesApi.updateDraft(tenantId!, quizId!, request),
@@ -183,7 +187,6 @@ export default function QuizEditPage() {
 
   useEffect(() => () => { if (debounceRef.current) clearTimeout(debounceRef.current); }, []);
 
-  // ---- Item mutations ----
   const itemMutation = useMutation({
     mutationFn: (fn: () => Promise<QuizDraft>) => fn(),
     onSuccess: (updated) => {
@@ -240,7 +243,6 @@ export default function QuizEditPage() {
     );
   }
 
-  // ---- Question picker state ----
   const [pickerSearchInput, setPickerSearchInput] = useState('');
   const [pickerSearch, setPickerSearch] = useState('');
   const [pickerType, setPickerType] = useState('');
@@ -300,62 +302,49 @@ export default function QuizEditPage() {
 
   const existingQuestionIds = new Set(draft.items.map((i) => i.questionId));
   const totalPoints = draft.items.reduce((sum, i) => sum + i.points, 0);
+  const saveLabel = saveState === 'saving' || saveState === 'pending'
+    ? 'جارٍ الحفظ…'
+    : saveState === 'error'
+      ? 'تعذر الحفظ'
+      : 'تم الحفظ ✓';
+  const timeSummary = timeMode === 'None'
+    ? 'بدون وقت'
+    : timeMode === 'TotalTime'
+      ? `${timeLimitSeconds === '' ? '—' : Math.max(1, Math.round(Number(timeLimitSeconds) / 60))} دقيقة`
+      : `${timeLimitSeconds === '' ? '—' : timeLimitSeconds} ثانية لكل سؤال`;
+
+  function createQuestionPath(type: QuestionType) {
+    const returnTo = `/dashboard/quizzes/${quizId}/edit`;
+    const query = new URLSearchParams({ type, quizId: quizId!, returnTo });
+    return `/dashboard/questions/new?${query.toString()}`;
+  }
 
   return (
-    <div className="flex flex-col gap-8">
-      {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900">بناء الاختبار</h1>
-          <p className="text-sm text-slate-600">
-            رتّب الأسئلة واضبط وقت الاختبار ثم راجعه قبل النشر.
-          </p>
+    <div className="flex flex-col gap-6">
+      <header className="teacher-surface teacher-workspace-header z-30 bg-white p-4 lg:sticky lg:top-4 lg:p-5">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+          <div className="min-w-0">
+            <Link to="/dashboard/quizzes" onClick={(event) => void saveBeforeNavigation(event, '/dashboard/quizzes')} className="inline-flex min-h-11 items-center text-sm font-bold text-slate-500 hover:text-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700">الاختبارات →</Link>
+            <h1 dir="auto" className="truncate text-2xl font-black text-[var(--teacher-ink)] sm:text-3xl">{title || draft.title}</h1>
+            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm font-semibold text-[var(--teacher-muted)]">
+              <span className="tabular-nums">{draft.items.length} أسئلة</span>
+              <span className="tabular-nums">{totalPoints} نقطة</span>
+              <span className="tabular-nums">النجاح {passingPercentage}%</span>
+              <span>{timeSummary}</span>
+              <span role="status" aria-live="polite" className={saveState === 'error' ? 'text-rose-700' : 'text-emerald-700'}>{saveLabel}</span>
+            </div>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Link to={`/dashboard/quizzes/${quizId}/preview`} onClick={(event) => void saveBeforeNavigation(event, `/dashboard/quizzes/${quizId}/preview`)} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 text-sm font-bold text-slate-700 hover:border-emerald-600 hover:text-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700">
+              <TeacherIcon name="preview" />معاينة
+            </Link>
+            <Link to={`/dashboard/quizzes/${quizId}/publish`} onClick={(event) => void saveBeforeNavigation(event, `/dashboard/quizzes/${quizId}/publish`)} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[var(--teacher-primary)] px-5 text-sm font-black text-white hover:bg-[var(--teacher-primary-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700">
+              <TeacherIcon name="publish" />نشر الاختبار
+            </Link>
+          </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs text-slate-500" role="status" aria-live="polite">
-            {saveState === 'saving' ? 'جارٍ الحفظ…' : null}
-            {saveState === 'pending' ? 'تعديلات بانتظار الحفظ…' : null}
-            {saveState === 'saved' ? 'تم الحفظ ✓' : null}
-            {saveState === 'error' ? 'فشل الحفظ' : null}
-          </span>
-          <Link
-            to={`/dashboard/quizzes/${quizId}/preview`}
-            onClick={(event) => void saveBeforeNavigation(event, `/dashboard/quizzes/${quizId}/preview`)}
-            className="min-h-11 rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-sky-600">
-            معاينة
-          </Link>
-          <Link
-            to={`/dashboard/quizzes/${quizId}/publish`}
-            onClick={(event) => void saveBeforeNavigation(event, `/dashboard/quizzes/${quizId}/publish`)}
-            className="min-h-11 rounded-md bg-sky-700 px-3 py-2 text-sm font-semibold text-white hover:bg-sky-800 focus-visible:outline-2 focus-visible:outline-sky-600">
-            نشر
-          </Link>
-          <Link
-            to="/dashboard/quizzes"
-            onClick={(event) => void saveBeforeNavigation(event, '/dashboard/quizzes')}
-            className="min-h-11 rounded-md px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-sky-600">
-            عودة
-          </Link>
-        </div>
-      </div>
+      </header>
 
-      <section aria-label="ملخص الاختبار" className="rounded-xl bg-slate-900 p-4 text-white">
-        <dl className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
-          <div><dt className="text-slate-300">الأسئلة</dt><dd className="mt-1 text-lg font-bold">{draft.items.length}</dd></div>
-          <div><dt className="text-slate-300">إجمالي النقاط</dt><dd className="mt-1 text-lg font-bold">{totalPoints}</dd></div>
-          <div><dt className="text-slate-300">نسبة النجاح</dt><dd className="mt-1 text-lg font-bold">{passingPercentage}%</dd></div>
-          <div><dt className="text-slate-300">الوقت</dt><dd className="mt-1 text-sm font-bold">{TIME_MODE_LABELS[timeMode]}</dd></div>
-        </dl>
-        <nav aria-label="أقسام منشئ الاختبار" className="mt-4 flex flex-wrap gap-2 border-t border-slate-700 pt-4 text-xs">
-          <a href="#items-heading" className="rounded-md bg-slate-800 px-3 py-2 hover:bg-slate-700">الأسئلة</a>
-          <a href="#picker-heading" className="rounded-md bg-slate-800 px-3 py-2 hover:bg-slate-700">إضافة سؤال</a>
-          <a href="#settings-heading" className="rounded-md bg-slate-800 px-3 py-2 hover:bg-slate-700">الإعدادات</a>
-          <a href="#theme-heading" className="rounded-md bg-slate-800 px-3 py-2 hover:bg-slate-700">العرض المتقدم</a>
-          <Link to={`/dashboard/quizzes/${quizId}/publish`} onClick={(event) => void saveBeforeNavigation(event, `/dashboard/quizzes/${quizId}/publish`)} className="rounded-md bg-sky-600 px-3 py-2 font-semibold hover:bg-sky-500">المراجعة والنشر</Link>
-        </nav>
-      </section>
-
-      {/* Conflict banner */}
       {conflictMessage ? (
         <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
           <p className="font-medium">{conflictMessage}</p>
@@ -374,319 +363,157 @@ export default function QuizEditPage() {
         <p role="alert" className="rounded-lg bg-rose-50 p-3 text-sm text-rose-700">{saveError}</p>
       ) : null}
 
-      {/* Section 1: Basics */}
-      <section aria-labelledby="basics-heading" className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-4">
-        <h2 id="basics-heading" className="text-base font-semibold text-slate-900">الأساسيات</h2>
-        <FormField id="edit-title" label="العنوان">
-          {(props) => (
-            <TextInput {...props} value={title} onChange={(e) => { setTitle(e.target.value); scheduleAutosave(); }} required maxLength={200} />
-          )}
-        </FormField>
-        <FormField id="edit-description" label="الوصف">
-          {(props) => (
-            <TextArea {...props} value={description} onChange={(e) => { setDescription(e.target.value); scheduleAutosave(); }} rows={2} maxLength={2000} />
-          )}
-        </FormField>
-        <FormField id="edit-instructions" label="تعليمات للطالب">
-          {(props) => (
-            <TextArea {...props} value={instructions} onChange={(e) => { setInstructions(e.target.value); scheduleAutosave(); }} rows={3} maxLength={4000} placeholder="تظهر للطالب قبل بدء الاختبار…" />
-          )}
-        </FormField>
-      </section>
-
-      {/* Section 2: Current items */}
-      <section aria-labelledby="items-heading" className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-4">
-        <h2 id="items-heading" className="text-base font-semibold text-slate-900">
-          أسئلة الاختبار ({draft.items.length})
-        </h2>
-        {draft.items.length === 0 ? (
-          <p className="text-sm text-slate-500">لا توجد أسئلة بعد. أضف أسئلة من بنك الأسئلة أدناه.</p>
-        ) : (
-          <ol className="flex flex-col gap-2">
-            {draft.items.map((item, index) => (
-              <li key={item.id} className="rounded-lg border border-slate-200 bg-slate-50/60 p-3">
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-slate-900">
-                      {index + 1}. {item.prompt}
-                    </p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      {QUESTION_TYPE_LABELS[item.questionType] ?? item.questionType}
-                      {' · '}
-                      {DIFFICULTY_LABELS[item.difficulty] ?? item.difficulty}
-                      {item.pinnedVersionNumber < item.latestVersionNumber ? (
-                        <span className="ms-1 rounded-full bg-amber-100 px-2 py-0.5 text-amber-800">
-                          توجد تعديلات أحدث على السؤال
-                        </span>
-                      ) : null}
-                      {item.sourceQuestionArchived ? (
-                        <span className="ms-1 rounded-full bg-rose-100 px-2 py-0.5 text-rose-800">
-                          السؤال المصدر مؤرشف
-                        </span>
-                      ) : null}
-                    </p>
-                  </div>
-                  <div className="flex shrink-0 flex-wrap items-center gap-1">
-                    <label className="flex items-center gap-1 text-xs text-slate-600">
-                      نقاط:
-                      <input
-                        type="number"
-                        min={1}
-                        max={100}
-                        value={item.points}
-                        onChange={(e) => {
-                          const value = Number(e.target.value);
-                          if (Number.isInteger(value) && value >= 1 && value <= 100) {
-                            onUpdateItemPoints(item.id, value);
-                          }
-                        }}
-                        className="h-9 w-16 rounded-md border border-slate-300 px-2 text-sm"
-                        aria-label={`نقاط السؤال ${index + 1}`}
-                      />
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => onMoveItem(item.id, 'up')}
-                      disabled={index === 0 || itemMutation.isPending}
-                      aria-label={`نقل السؤال ${index + 1} لأعلى`}
-                      className="min-h-11 rounded-md border border-slate-300 px-2 text-xs text-slate-600 hover:bg-slate-50 disabled:opacity-40">
-                      ↑
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => onMoveItem(item.id, 'down')}
-                      disabled={index === draft.items.length - 1 || itemMutation.isPending}
-                      aria-label={`نقل السؤال ${index + 1} لأسفل`}
-                      className="min-h-11 rounded-md border border-slate-300 px-2 text-xs text-slate-600 hover:bg-slate-50 disabled:opacity-40">
-                      ↓
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => onRemoveItem(item.id)}
-                      disabled={itemMutation.isPending}
-                      aria-label={`إزالة السؤال ${index + 1}`}
-                      className="min-h-11 rounded-md border border-rose-300 px-2 text-xs text-rose-600 hover:bg-rose-50 disabled:opacity-40">
-                      إزالة
-                    </button>
-                    {item.pinnedVersionNumber < item.latestVersionNumber && !item.sourceQuestionArchived ? (
-                      <button
-                        type="button"
-                        onClick={() => onUseLatestVersion(item.id)}
-                        disabled={itemMutation.isPending}
-                        aria-label={`استخدام أحدث نسخة للسؤال ${index + 1}`}
-                        className="min-h-11 rounded-md border border-amber-300 bg-amber-50 px-2 text-xs font-medium text-amber-800 hover:bg-amber-100 disabled:opacity-40">
-                        استخدام أحدث نسخة
-                      </button>
-                    ) : null}
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ol>
-        )}
-      </section>
-
-      {/* Section 3: Question picker */}
-      <section aria-labelledby="picker-heading" className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-4">
-        <h2 id="picker-heading" className="text-base font-semibold text-slate-900">إضافة من بنك الأسئلة</h2>
-        <form onSubmit={onPickerSearchSubmit} className="flex flex-wrap items-end gap-2" role="search">
-          <FormField id="picker-search" label="بحث">
-            {(props) => (
-              <TextInput {...props} value={pickerSearchInput} onChange={(e) => setPickerSearchInput(e.target.value)} placeholder="ابحث في الأسئلة…" />
-            )}
-          </FormField>
-          <FormField id="picker-type" label="النوع">
-            {(props) => (
-              <SelectInput {...props} value={pickerType} onChange={(e) => { setPickerType(e.target.value); setPickerPage(1); }}>
-                <option value="">كل الأنواع</option>
-                {Object.entries(QUESTION_TYPE_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
-                ))}
-              </SelectInput>
-            )}
-          </FormField>
-          <FormField id="picker-difficulty" label="الصعوبة">
-            {(props) => (
-              <SelectInput {...props} value={pickerDifficulty} onChange={(e) => { setPickerDifficulty(e.target.value); setPickerPage(1); }}>
-                <option value="">كل المستويات</option>
-                {Object.entries(DIFFICULTY_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
-                ))}
-              </SelectInput>
-            )}
-          </FormField>
-          <Button type="submit" variant="secondary">بحث</Button>
-        </form>
-
-        {pickerQuery.isLoading ? <p className="text-sm text-slate-500">جارٍ تحميل الأسئلة…</p> : null}
-        {pickerQuery.isError ? (
-          <div role="alert" className="rounded-lg bg-rose-50 p-3 text-sm text-rose-700">
-            <p>تعذر تحميل الأسئلة.</p>
-            <Button variant="secondary" onClick={() => void pickerQuery.refetch()}>إعادة المحاولة</Button>
-          </div>
-        ) : null}
-
-        {pickerQuery.data && pickerQuery.data.items.length === 0 ? (
-          <p className="text-sm text-slate-500">لا توجد أسئلة مطابقة.</p>
-        ) : null}
-
-        {pickerQuery.data && pickerQuery.data.items.length > 0 ? (
-          <ul className="flex flex-col gap-2">
-            {pickerQuery.data.items.map((question) => {
-              const alreadyAdded = existingQuestionIds.has(question.id);
-              return (
-                <li key={question.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 p-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm text-slate-900">{question.prompt}</p>
-                    <p className="mt-0.5 text-xs text-slate-500">
-                      {QUESTION_TYPE_LABELS[question.questionType] ?? question.questionType}
-                      {' · '}
-                      {DIFFICULTY_LABELS[question.difficulty] ?? question.difficulty}
-                    </p>
-                  </div>
-                  <Button
-                    variant="secondary"
-                    disabled={alreadyAdded || itemMutation.isPending}
-                    onClick={() => onAddItem(question.id)}>
-                    {alreadyAdded ? 'مُضاف ✓' : 'إضافة'}
-                  </Button>
-                </li>
-              );
-            })}
-          </ul>
-        ) : null}
-
-        {pickerQuery.data && pickerQuery.data.totalPages > 1 ? (
-          <nav className="flex items-center justify-center gap-2" aria-label="ترقيم الأسئلة">
-            <Button variant="secondary" disabled={pickerPage <= 1} onClick={() => setPickerPage((p) => Math.max(1, p - 1))}>
-              السابق
-            </Button>
-            <span className="text-sm text-slate-600">
-              صفحة {pickerQuery.data.page} من {pickerQuery.data.totalPages}
-            </span>
-            <Button variant="secondary" disabled={pickerPage >= pickerQuery.data.totalPages} onClick={() => setPickerPage((p) => p + 1)}>
-              التالي
-            </Button>
-          </nav>
-        ) : null}
-      </section>
-
-      {/* Section 4: Settings */}
-      <section aria-labelledby="settings-heading" className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-4">
-        <h2 id="settings-heading" className="text-base font-semibold text-slate-900">الإعدادات</h2>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <FormField id="edit-passing" label="نسبة النجاح (%)">
-            {(props) => (
-              <TextInput
-                {...props}
-                type="number"
-                min={0}
-                max={100}
-                value={passingPercentage}
-                onChange={(e) => { setPassingPercentage(Number(e.target.value)); scheduleAutosave(); }}
-              />
-            )}
-          </FormField>
-          <FormField id="edit-time-mode" label="وضع الوقت">
-            {(props) => (
-              <SelectInput
-                {...props}
-                value={timeMode}
-                onChange={(e) => { setTimeMode(e.target.value as QuizTimeMode); scheduleAutosave(); }}>
-                {Object.entries(TIME_MODE_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
-                ))}
-              </SelectInput>
-            )}
-          </FormField>
-          {timeMode !== 'None' ? (
-            <FormField id="edit-time-limit" label={timeMode === 'TotalTime' ? 'الوقت الإجمالي (ثانية)' : 'الوقت لكل سؤال (ثانية)'}>
-              {(props) => (
-                <TextInput
-                  {...props}
-                  type="number"
-                  min={1}
-                  value={timeLimitSeconds}
-                  onChange={(e) => { setTimeLimitSeconds(e.target.value === '' ? '' : Number(e.target.value)); scheduleAutosave(); }}
-                />
-              )}
-            </FormField>
-          ) : null}
-        </div>
-        <div className="flex flex-wrap gap-4">
-          <label className="flex min-h-11 items-center gap-2 text-sm text-slate-700">
-            <input
-              type="checkbox"
-              checked={shuffleQuestions}
-              onChange={(e) => { setShuffleQuestions(e.target.checked); scheduleAutosave(); }}
-              className="h-4 w-4 rounded border-slate-300"
-            />
-            خلط ترتيب الأسئلة
-          </label>
-          <label className="flex min-h-11 items-center gap-2 text-sm text-slate-700">
-            <input
-              type="checkbox"
-              checked={shuffleOptions}
-              onChange={(e) => { setShuffleOptions(e.target.checked); scheduleAutosave(); }}
-              className="h-4 w-4 rounded border-slate-300"
-            />
-            خلط ترتيب الخيارات
-          </label>
-        </div>
-      </section>
-
-      {/* Section 5: Theme */}
-      <details className="rounded-xl border border-slate-200 bg-white p-4">
-        <summary id="theme-heading" className="min-h-11 cursor-pointer text-base font-semibold text-slate-900">العرض والخيارات المتقدمة</summary>
-        <div className="mt-4 flex flex-col gap-4">
-        <FormField id="edit-theme-template" label="القالب">
-          {(props) => (
-            <SelectInput
-              {...props}
-              value={themeTemplate}
-              onChange={(e) => { setThemeTemplate(e.target.value as QuizThemeTemplate); scheduleAutosave(); }}>
-              {QUIZ_THEME_TEMPLATES.map((template) => (
-                <option key={template} value={template}>{QUIZ_THEME_TEMPLATE_LABELS[template]}</option>
+      <div className="quiz-builder-layout items-start">
+        <main className="min-w-0 space-y-6">
+          <section aria-labelledby="add-question-heading" className="teacher-surface p-4 sm:p-5">
+            <div>
+              <h2 id="add-question-heading" className="text-xl font-black text-[var(--teacher-ink)]">إضافة سؤال جديد</h2>
+              <p className="mt-1 text-sm leading-6 text-[var(--teacher-muted)]">اختر النوع؛ سيُحفظ السؤال في بنك الأسئلة ويُضاف إلى هذا الاختبار تلقائيًا.</p>
+            </div>
+            <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5">
+              {questionTypeActions.map((action) => (
+                <Link key={action.type} to={createQuestionPath(action.type)} className="group flex min-h-28 flex-col rounded-xl bg-slate-50 p-3 text-start hover:bg-[var(--teacher-primary-soft)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700">
+                  <TeacherIcon name={action.icon} className="h-6 w-6 text-[var(--teacher-primary-strong)]" />
+                  <span className="mt-3 text-sm font-black text-slate-900">{action.label}</span>
+                  <span className="mt-1 text-xs leading-5 text-slate-600">{action.description}</span>
+                </Link>
               ))}
-            </SelectInput>
-          )}
-        </FormField>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <FormField id="edit-primary-color" label="اللون الأساسي">
-            {(props) => (
-              <TextInput {...props} dir="ltr" value={primaryColor} onChange={(e) => { setPrimaryColor(e.target.value); scheduleAutosave(); }} placeholder="#0284c7" />
-            )}
-          </FormField>
-          <FormField id="edit-secondary-color" label="اللون الثانوي">
-            {(props) => (
-              <TextInput {...props} dir="ltr" value={secondaryColor} onChange={(e) => { setSecondaryColor(e.target.value); scheduleAutosave(); }} placeholder="#0f172a" />
-            )}
-          </FormField>
-          <FormField id="edit-background-color" label="لون الخلفية">
-            {(props) => (
-              <TextInput {...props} dir="ltr" value={backgroundColor} onChange={(e) => { setBackgroundColor(e.target.value); scheduleAutosave(); }} placeholder="#ffffff" />
-            )}
-          </FormField>
-        </div>
-        {colorError ? (
-          <p role="alert" className="rounded-lg bg-rose-50 p-3 text-sm text-rose-700">{colorError}</p>
-        ) : null}
-        <div className="flex justify-end">
-          <Button onClick={saveNow} disabled={saveMutation.isPending}>
-            {saveMutation.isPending ? <ButtonSpinner /> : null}
-            حفظ الآن
-          </Button>
-        </div>
-        </div>
-      </details>
+            </div>
+          </section>
 
-      <aside className="sticky bottom-3 hidden items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white/95 p-3 shadow-lg backdrop-blur lg:flex">
-        <span className="text-sm text-slate-600">{saveState === 'saving' ? 'جارٍ حفظ التعديلات…' : saveState === 'pending' ? 'تعديلات بانتظار الحفظ…' : saveState === 'error' ? 'تعذر الحفظ' : 'تعديلاتك محفوظة'}</span>
-        <div className="flex gap-2">
-          <Link to={`/dashboard/quizzes/${quizId}/preview`} onClick={(event) => void saveBeforeNavigation(event, `/dashboard/quizzes/${quizId}/preview`)} className="inline-flex min-h-11 items-center rounded-md border border-slate-300 px-4 text-sm font-semibold text-slate-700">معاينة</Link>
-          <Link to={`/dashboard/quizzes/${quizId}/publish`} onClick={(event) => void saveBeforeNavigation(event, `/dashboard/quizzes/${quizId}/publish`)} className="inline-flex min-h-11 items-center rounded-md bg-sky-700 px-4 text-sm font-semibold text-white hover:bg-sky-800">المراجعة والنشر</Link>
-        </div>
-      </aside>
+          <section aria-labelledby="items-heading" className="teacher-surface overflow-hidden">
+            <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-4 sm:px-5">
+              <div>
+                <h2 id="items-heading" className="scroll-mt-24 text-xl font-black text-[var(--teacher-ink)]">أسئلة الاختبار</h2>
+                <p className="mt-1 text-sm text-[var(--teacher-muted)]">الترتيب الظاهر هو ترتيب الطالب ما لم تفعل الخلط.</p>
+              </div>
+              <span className="rounded-full bg-[var(--teacher-primary-soft)] px-3 py-1 text-sm font-black text-[var(--teacher-primary-strong)] tabular-nums">{draft.items.length}</span>
+            </div>
+            {draft.items.length === 0 ? (
+              <div className="px-5 py-12 text-center">
+                <TeacherIcon name="questions" className="mx-auto h-10 w-10 text-[var(--teacher-primary)]" />
+                <h3 className="mt-4 text-lg font-black text-slate-900">ابدأ بإضافة أول سؤال</h3>
+                <p className="mx-auto mt-2 max-w-md text-base leading-7 text-[var(--teacher-muted)]">استخدم أنواع الأسئلة أعلاه، أو افتح بنك الأسئلة لاختيار سؤال موجود.</p>
+                <a href="#question-bank-picker" className="mt-4 inline-flex min-h-11 items-center font-bold text-[var(--teacher-primary-strong)] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700">إضافة من بنك الأسئلة ↓</a>
+              </div>
+            ) : (
+              <ol className="divide-y divide-slate-100">
+                {draft.items.map((item, index) => (
+                  <li key={item.id} className="px-4 py-4 sm:px-5">
+                    <div className="flex flex-col gap-4">
+                      <div className="flex items-start gap-3">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-sm font-black tabular-nums text-slate-700">{index + 1}</span>
+                        <div className="min-w-0 flex-1">
+                          <p dir="auto" className="text-base font-bold leading-7 text-slate-900">{item.prompt}</p>
+                          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs font-semibold">
+                            <span className="inline-flex items-center gap-1 rounded-full bg-violet-50 px-2.5 py-1 text-violet-800">
+                              {item.questionType === 'Listening' ? <TeacherIcon name="audio" className="h-4 w-4" /> : null}
+                              {QUESTION_TYPE_LABELS[item.questionType] ?? item.questionType}
+                            </span>
+                            {item.pinnedVersionNumber < item.latestVersionNumber ? <span className="rounded-full bg-amber-100 px-2.5 py-1 text-amber-900">توجد تعديلات أحدث</span> : null}
+                            {item.sourceQuestionArchived ? <span className="rounded-full bg-rose-100 px-2.5 py-1 text-rose-800">السؤال المصدر مؤرشف</span> : null}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 sm:ps-12">
+                        <label className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-slate-50 px-3 text-sm font-bold text-slate-700">
+                          النقاط
+                          <input type="number" min={1} max={100} value={item.points} onChange={(event) => {
+                            const value = Number(event.target.value);
+                            if (Number.isInteger(value) && value >= 1 && value <= 100) onUpdateItemPoints(item.id, value);
+                          }} className="h-9 w-14 rounded-md border border-slate-300 bg-white px-2 text-center text-sm tabular-nums" aria-label={`نقاط السؤال ${index + 1}`} />
+                        </label>
+                        <button type="button" onClick={() => onMoveItem(item.id, 'up')} disabled={index === 0 || itemMutation.isPending} aria-label={`نقل السؤال ${index + 1} لأعلى`} className="min-h-11 rounded-lg border border-slate-300 px-3 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-40">أعلى ↑</button>
+                        <button type="button" onClick={() => onMoveItem(item.id, 'down')} disabled={index === draft.items.length - 1 || itemMutation.isPending} aria-label={`نقل السؤال ${index + 1} لأسفل`} className="min-h-11 rounded-lg border border-slate-300 px-3 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-40">أسفل ↓</button>
+                        <Link to={`/dashboard/questions/${item.questionId}/edit`} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center rounded-lg border border-slate-300 px-3 text-sm font-bold text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700">تعديل السؤال</Link>
+                        <button type="button" onClick={() => onRemoveItem(item.id)} disabled={itemMutation.isPending} aria-label={`إزالة السؤال ${index + 1}`} className="min-h-11 rounded-lg px-3 text-sm font-bold text-rose-700 hover:bg-rose-50 disabled:opacity-40">حذف</button>
+                        {item.pinnedVersionNumber < item.latestVersionNumber && !item.sourceQuestionArchived ? (
+                          <button type="button" onClick={() => onUseLatestVersion(item.id)} disabled={itemMutation.isPending} aria-label={`استخدام أحدث نسخة للسؤال ${index + 1}`} className="min-h-11 rounded-lg bg-amber-50 px-3 text-sm font-bold text-amber-900 hover:bg-amber-100 disabled:opacity-40">استخدام التعديلات الأحدث</button>
+                        ) : null}
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </section>
+
+          <details id="question-bank-picker" className="teacher-surface scroll-mt-24 p-4 sm:p-5">
+            <summary id="picker-heading" className="flex min-h-11 cursor-pointer list-none items-center justify-between text-lg font-black text-[var(--teacher-ink)] marker:content-none">
+              إضافة من بنك الأسئلة
+              <span aria-hidden="true" className="text-slate-400">⌄</span>
+            </summary>
+            <div className="mt-5 flex flex-col gap-4 border-t border-slate-100 pt-5">
+              <form onSubmit={onPickerSearchSubmit} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" role="search">
+                <div className="sm:col-span-2"><FormField id="picker-search" label="ابحث في أسئلتك">{(props) => <TextInput {...props} value={pickerSearchInput} onChange={(event) => setPickerSearchInput(event.target.value)} placeholder="اكتب كلمات من السؤال…" />}</FormField></div>
+                <FormField id="picker-type" label="النوع">{(props) => <SelectInput {...props} value={pickerType} onChange={(event) => { setPickerType(event.target.value); setPickerPage(1); }}><option value="">كل الأنواع</option>{Object.entries(QUESTION_TYPE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</SelectInput>}</FormField>
+                <div className="flex items-end gap-2"><FormField id="picker-difficulty" label="الصعوبة">{(props) => <SelectInput {...props} value={pickerDifficulty} onChange={(event) => { setPickerDifficulty(event.target.value); setPickerPage(1); }}><option value="">الكل</option>{Object.entries(DIFFICULTY_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</SelectInput>}</FormField><Button type="submit" variant="secondary">بحث</Button></div>
+              </form>
+
+              {pickerQuery.isLoading ? <p className="text-sm text-slate-600">جارٍ تحميل الأسئلة…</p> : null}
+              {pickerQuery.isError ? <div role="alert" className="rounded-lg bg-rose-50 p-4 text-sm text-rose-800"><p>تعذر تحميل بنك الأسئلة.</p><Button variant="secondary" onClick={() => void pickerQuery.refetch()}>إعادة المحاولة</Button></div> : null}
+              {pickerQuery.data && pickerQuery.data.items.length === 0 ? <p className="py-4 text-center text-sm text-slate-600">لا توجد أسئلة مطابقة. جرّب بحثًا آخر أو أنشئ سؤالًا جديدًا أعلاه.</p> : null}
+              {pickerQuery.data && pickerQuery.data.items.length > 0 ? (
+                <ul className="divide-y divide-slate-100 border-y border-slate-100">
+                  {pickerQuery.data.items.map((question) => {
+                    const alreadyAdded = existingQuestionIds.has(question.id);
+                    return <li key={question.id} className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between"><div className="min-w-0"><p dir="auto" className="truncate text-base font-bold text-slate-900">{question.prompt}</p><p className="mt-1 text-sm text-slate-600">{QUESTION_TYPE_LABELS[question.questionType]} · {DIFFICULTY_LABELS[question.difficulty]}</p></div><Button variant="secondary" disabled={alreadyAdded || itemMutation.isPending} onClick={() => onAddItem(question.id)}>{alreadyAdded ? 'مُضاف ✓' : 'إضافة للاختبار'}</Button></li>;
+                  })}
+                </ul>
+              ) : null}
+              {pickerQuery.data && pickerQuery.data.totalPages > 1 ? <nav className="flex items-center justify-center gap-2" aria-label="ترقيم الأسئلة"><Button variant="secondary" disabled={pickerPage <= 1} onClick={() => setPickerPage((page) => Math.max(1, page - 1))}>السابق</Button><span className="text-sm text-slate-600">صفحة {pickerQuery.data.page} من {pickerQuery.data.totalPages}</span><Button variant="secondary" disabled={pickerPage >= pickerQuery.data.totalPages} onClick={() => setPickerPage((page) => page + 1)}>التالي</Button></nav> : null}
+            </div>
+          </details>
+        </main>
+
+        <aside className="space-y-4 lg:sticky lg:top-48">
+          <section aria-labelledby="settings-heading" className="teacher-surface p-4">
+            <h2 id="settings-heading" className="text-lg font-black text-[var(--teacher-ink)]">إعدادات الاختبار</h2>
+            <p className="mt-1 text-sm leading-6 text-[var(--teacher-muted)]">التغييرات تُحفظ تلقائيًا.</p>
+            <div className="mt-5 flex flex-col gap-4">
+              <FormField id="edit-passing" label="درجة النجاح (%)">{(props) => <TextInput {...props} type="number" min={0} max={100} value={passingPercentage} onChange={(event) => { setPassingPercentage(Number(event.target.value)); scheduleAutosave(); }} />}</FormField>
+              <FormField id="edit-time-mode" label="مدة الاختبار">{(props) => <SelectInput {...props} value={timeMode} onChange={(event) => { setTimeMode(event.target.value as QuizTimeMode); scheduleAutosave(); }}>{Object.entries(TIME_MODE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</SelectInput>}</FormField>
+              {timeMode !== 'None' ? (
+                <FormField id="edit-time-limit" label={timeMode === 'TotalTime' ? 'المدة بالدقائق' : 'وقت كل سؤال بالثواني'}>
+                  {(props) => <TextInput {...props} type="number" min={1} value={timeLimitSeconds === '' ? '' : timeMode === 'TotalTime' ? Math.max(1, Math.round(Number(timeLimitSeconds) / 60)) : timeLimitSeconds} onChange={(event) => {
+                    const next = event.target.value === '' ? '' : Number(event.target.value);
+                    setTimeLimitSeconds(next === '' ? '' : timeMode === 'TotalTime' ? next * 60 : next);
+                    scheduleAutosave();
+                  }} />}
+                </FormField>
+              ) : null}
+            </div>
+          </section>
+
+          <details className="teacher-surface p-4">
+            <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between text-base font-black text-slate-900 marker:content-none">خيارات إضافية<span aria-hidden="true" className="text-slate-400">⌄</span></summary>
+            <div className="mt-4 flex flex-col gap-5 border-t border-slate-100 pt-4">
+              <div className="flex flex-col gap-2">
+                <label className="flex min-h-11 items-center gap-3 text-sm font-semibold text-slate-700"><input type="checkbox" checked={shuffleQuestions} onChange={(event) => { setShuffleQuestions(event.target.checked); scheduleAutosave(); }} className="h-5 w-5 rounded border-slate-300 accent-emerald-700" />خلط ترتيب الأسئلة</label>
+                <label className="flex min-h-11 items-center gap-3 text-sm font-semibold text-slate-700"><input type="checkbox" checked={shuffleOptions} onChange={(event) => { setShuffleOptions(event.target.checked); scheduleAutosave(); }} className="h-5 w-5 rounded border-slate-300 accent-emerald-700" />خلط ترتيب الخيارات</label>
+              </div>
+              <div className="border-t border-slate-100 pt-4">
+                <h3 className="mb-3 text-sm font-black text-slate-900">تفاصيل الاختبار</h3>
+                <div className="flex flex-col gap-4">
+                  <FormField id="edit-title" label="الاسم">{(props) => <TextInput {...props} value={title} onChange={(event) => { setTitle(event.target.value); scheduleAutosave(); }} required maxLength={200} />}</FormField>
+                  <FormField id="edit-description" label="الوصف">{(props) => <TextArea {...props} value={description} onChange={(event) => { setDescription(event.target.value); scheduleAutosave(); }} rows={2} maxLength={2000} />}</FormField>
+                  <FormField id="edit-instructions" label="تعليمات للطالب">{(props) => <TextArea {...props} value={instructions} onChange={(event) => { setInstructions(event.target.value); scheduleAutosave(); }} rows={3} maxLength={4000} placeholder="تظهر قبل بدء الاختبار…" />}</FormField>
+                </div>
+              </div>
+              <details>
+                <summary id="theme-heading" className="flex min-h-11 cursor-pointer list-none items-center justify-between text-sm font-black text-slate-900 marker:content-none">المظهر<span aria-hidden="true" className="text-slate-400">⌄</span></summary>
+                <div className="mt-3 flex flex-col gap-4">
+                  <FormField id="edit-theme-template" label="القالب">{(props) => <SelectInput {...props} value={themeTemplate} onChange={(event) => { setThemeTemplate(event.target.value as QuizThemeTemplate); scheduleAutosave(); }}>{QUIZ_THEME_TEMPLATES.map((template) => <option key={template} value={template}>{QUIZ_THEME_TEMPLATE_LABELS[template]}</option>)}</SelectInput>}</FormField>
+                  <FormField id="edit-primary-color" label="اللون الأساسي">{(props) => <TextInput {...props} dir="ltr" value={primaryColor} onChange={(event) => { setPrimaryColor(event.target.value); scheduleAutosave(); }} placeholder="#0284c7" />}</FormField>
+                  <FormField id="edit-secondary-color" label="اللون الثانوي">{(props) => <TextInput {...props} dir="ltr" value={secondaryColor} onChange={(event) => { setSecondaryColor(event.target.value); scheduleAutosave(); }} placeholder="#0f172a" />}</FormField>
+                  <FormField id="edit-background-color" label="لون الخلفية">{(props) => <TextInput {...props} dir="ltr" value={backgroundColor} onChange={(event) => { setBackgroundColor(event.target.value); scheduleAutosave(); }} placeholder="#ffffff" />}</FormField>
+                  {colorError ? <p role="alert" className="rounded-lg bg-rose-50 p-3 text-sm text-rose-800">{colorError}</p> : null}
+                </div>
+              </details>
+            </div>
+          </details>
+        </aside>
+      </div>
     </div>
   );
 }
