@@ -17,20 +17,27 @@ export function StudentShell({
   return (
     <main className="student-shell min-h-dvh overflow-x-clip" dir="rtl">
       <div className={`relative z-10 mx-auto flex min-h-dvh w-full ${shellWidths[width]} flex-col px-4 sm:px-6`}>
-        <header className="flex min-h-16 items-center justify-between gap-3 py-3">
-          <span className="inline-flex items-center gap-2 text-sm font-black text-[var(--student-ink)]">
-            <span aria-hidden="true" className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--student-primary)] text-xs text-white">م</span>
-            منصة المعلم
-          </span>
-          <span className="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-[var(--student-primary-strong)] shadow-[0_1px_4px_rgb(15_23_42/0.08)]">
-            تجربة الطالب
-          </span>
-        </header>
-        <div className={`flex flex-1 flex-col pb-5 ${centered ? 'justify-center py-6 sm:py-10' : ''}`}>
+        <div className={`flex flex-1 flex-col pb-5 pt-4 ${centered ? 'justify-center py-6 sm:py-10' : 'sm:pt-6'}`}>
           {children}
         </div>
       </div>
     </main>
+  );
+}
+
+export function StudentLearningVisual() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 160 120" className="h-24 w-36" fill="none">
+      <circle cx="80" cy="60" r="54" fill="var(--student-violet-soft)" />
+      <path d="M27 43c18-7 36-3 53 9v43c-17-11-35-15-53-8V43Z" fill="white" stroke="var(--student-primary)" strokeWidth="3" strokeLinejoin="round" />
+      <path d="M133 43c-18-7-36-3-53 9v43c17-11 35-15 53-8V43Z" fill="white" stroke="var(--student-primary)" strokeWidth="3" strokeLinejoin="round" />
+      <path d="M80 52v43" stroke="var(--student-primary)" strokeWidth="3" strokeLinecap="round" />
+      <g transform="rotate(-24 119 33)">
+        <rect x="102" y="25" width="34" height="11" rx="5.5" fill="var(--student-orange)" />
+        <path d="m101 25-10 5.5 10 5.5V25Z" fill="var(--student-ink)" />
+      </g>
+      <path d="m42 24 3.5 7.5L53 35l-7.5 3.5L42 46l-3.5-7.5L31 35l7.5-3.5L42 24Z" fill="var(--student-violet)" />
+    </svg>
   );
 }
 

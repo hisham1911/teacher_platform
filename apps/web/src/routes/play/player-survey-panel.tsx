@@ -9,17 +9,38 @@ import { StudentButton } from './student-ui';
 
 type AnswerValue = number | string;
 
-export function PlayerSurveyPanel({ joinCode, attemptId }: { joinCode: string; attemptId: string }) {
-  const queryClient = useQueryClient();
-  const queryKey = ['player-survey', joinCode, attemptId] as const;
-  const [answers, setAnswers] = useState<Record<string, AnswerValue>>({});
-  const [error, setError] = useState<string | null>(null);
+function playerSurveyQueryKey(joinCode: string, attemptId: string) {
+  return ['player-survey', joinCode, attemptId] as const;
+}
 
-  const surveyQuery = useQuery({
-    queryKey,
+function usePlayerSurvey(joinCode: string, attemptId: string) {
+  return useQuery({
+    queryKey: playerSurveyQueryKey(joinCode, attemptId),
     queryFn: ({ signal }) => playerApi.getSurvey(joinCode, attemptId, signal),
     retry: false,
   });
+}
+
+export function PlayerSurveyAction({ joinCode, attemptId }: { joinCode: string; attemptId: string }) {
+  const surveyQuery = usePlayerSurvey(joinCode, attemptId);
+  if (!surveyQuery.data || surveyQuery.data.submitted) return null;
+
+  return (
+    <div className="border-t border-slate-200 px-5 py-4 sm:px-7">
+      <a href="#player-survey" className="inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-800 transition-colors duration-200 hover:border-slate-400 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 sm:w-auto">
+        أكمل الاستبيان
+      </a>
+    </div>
+  );
+}
+
+export function PlayerSurveyPanel({ joinCode, attemptId }: { joinCode: string; attemptId: string }) {
+  const queryClient = useQueryClient();
+  const queryKey = playerSurveyQueryKey(joinCode, attemptId);
+  const [answers, setAnswers] = useState<Record<string, AnswerValue>>({});
+  const [error, setError] = useState<string | null>(null);
+
+  const surveyQuery = usePlayerSurvey(joinCode, attemptId);
 
   const submitMutation = useMutation({
     mutationFn: (payload: SubmitSurveyRequest) => playerApi.submitSurvey(joinCode, attemptId, payload),
@@ -61,7 +82,7 @@ export function PlayerSurveyPanel({ joinCode, attemptId }: { joinCode: string; a
 
   if (survey.submitted) {
     return (
-      <section className="student-panel p-7 text-center">
+      <section id="player-survey" className="student-panel p-7 text-center">
         <div aria-hidden="true" className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-emerald-100 text-xl font-black text-emerald-800">✓</div>
         <p className="text-lg font-black text-emerald-900">شكرًا لمشاركتك</p>
         <p className="mt-1 text-sm text-[var(--student-muted)]">تم استلام ردك، ويمكنك مغادرة الصفحة بأمان.</p>
@@ -98,7 +119,7 @@ export function PlayerSurveyPanel({ joinCode, attemptId }: { joinCode: string; a
   }
 
   return (
-    <section aria-labelledby="player-survey-title" className="student-panel p-5 sm:p-7">
+    <section id="player-survey" aria-labelledby="player-survey-title" className="student-panel scroll-mt-6 p-5 sm:p-7">
       <div className="mb-6 text-center">
         <p className="mb-1 text-sm font-bold text-[var(--student-primary-strong)]">قبل أن تغادر…</p>
         <h2 id="player-survey-title" className="text-xl font-black text-[var(--student-ink)]">{survey.title}</h2>

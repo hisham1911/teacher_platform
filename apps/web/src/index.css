@@ -34,26 +34,6 @@ body {
   box-shadow: 0 2px 8px rgb(15 23 42 / 0.08);
 }
 
-.student-visual-mark {
-  position: relative;
-  display: flex;
-  height: 4.5rem;
-  width: 4.5rem;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: var(--student-violet-soft);
-  color: var(--student-violet);
-}
-
-.student-visual-mark::before {
-  position: absolute;
-  inset: -0.55rem;
-  border: 1px solid oklch(0.78 0.08 292 / 0.42);
-  border-radius: inherit;
-  content: '';
-}
-
 .student-score-ring {
   position: relative;
   display: grid;

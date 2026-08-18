@@ -17,10 +17,10 @@ import type {
   StartAttemptResponse,
 } from '../../types/sessions';
 import { QUESTION_TYPE_LABELS } from '../../types/questions';
-import { PlayerSurveyPanel } from './player-survey-panel';
+import { PlayerSurveyAction, PlayerSurveyPanel } from './player-survey-panel';
 import { PlayerDeliveryPanel } from './player-delivery-panel';
 import { StudentAudioPlayer } from './student-audio-player';
-import { QuestionProgress, StudentButton, StudentError, StudentLoading, StudentShell } from './student-ui';
+import { QuestionProgress, StudentButton, StudentError, StudentLearningVisual, StudentLoading, StudentShell } from './student-ui';
 
 /**
  * /play/:joinCode — واجهة الطالب (Phase 4).
@@ -231,7 +231,7 @@ export default function PlayPage() {
           <div className="relative flex flex-col items-center justify-center overflow-hidden bg-[var(--student-orange-soft)] px-6 py-8 text-center sm:px-8 md:py-10">
             <span aria-hidden="true" className="absolute right-8 top-8 h-2.5 w-2.5 rounded-full bg-[var(--student-orange)]" />
             <span aria-hidden="true" className="absolute bottom-12 left-10 h-3 w-3 rotate-45 rounded-sm bg-[var(--student-violet)] opacity-75" />
-            <div className="student-visual-mark mb-6 text-3xl font-black" aria-hidden="true">✦</div>
+            <div className="mb-4"><StudentLearningVisual /></div>
             <h2 dir="auto" className="rounded-full bg-white px-4 py-2 text-sm font-black text-[var(--student-ink)] shadow-[0_1px_4px_rgb(15_23_42/0.08)]">{session.title}</h2>
             <h1 className="mt-5 text-balance text-3xl font-black leading-tight text-[var(--student-ink)] sm:text-4xl">جاهز للتحدي؟</h1>
             {session.description ? <p className="mx-auto mt-3 max-w-sm text-pretty text-sm font-semibold leading-7 text-amber-950/75">{session.description}</p> : null}
@@ -278,14 +278,19 @@ export default function PlayPage() {
     return (
       <StudentShell centered width="wide">
         <section className="student-panel student-enter mx-auto w-full max-w-3xl overflow-hidden p-6 text-center sm:p-10">
-          <div className="relative mx-auto mb-7 w-fit">
-            <span aria-hidden="true" className="absolute -right-8 top-2 h-2.5 w-2.5 rounded-full bg-[var(--student-orange)]" />
-            <span aria-hidden="true" className="absolute -left-7 bottom-1 h-3 w-3 rotate-45 rounded-sm bg-[var(--student-violet)] opacity-70" />
-            <div aria-hidden="true" className="student-visual-mark text-3xl font-black">✓</div>
+          <div className="mx-auto flex max-w-xl flex-col items-center justify-center gap-5 sm:flex-row sm:gap-8 sm:text-right">
+            <div className="relative shrink-0">
+              <span aria-hidden="true" className="absolute -right-2 top-3 h-2.5 w-2.5 rounded-full bg-[var(--student-orange)]" />
+              <span aria-hidden="true" className="absolute -left-2 bottom-4 h-3 w-3 rotate-45 rounded-sm bg-[var(--student-violet)] opacity-70" />
+              <StudentLearningVisual />
+              <span aria-hidden="true" className="absolute -bottom-1 right-3 flex h-9 w-9 items-center justify-center rounded-full bg-emerald-700 text-lg font-black text-white shadow-[0_2px_8px_rgb(5_150_105/0.2)]">✓</span>
+            </div>
+            <div>
+              <p className="text-sm font-black text-[var(--student-violet)]">كل شيء جاهز</p>
+              <h1 className="mt-2 text-balance text-3xl font-black text-[var(--student-ink)] sm:text-4xl">أنت جاهز، {stage.displayName}!</h1>
+              <p dir="auto" className="mt-3 text-lg font-black text-slate-700">{stage.session.title}</p>
+            </div>
           </div>
-          <p className="text-sm font-black text-[var(--student-violet)]">كل شيء جاهز</p>
-          <h1 className="mt-2 text-balance text-3xl font-black text-[var(--student-ink)] sm:text-4xl">أنت جاهز، {stage.displayName}!</h1>
-          <p dir="auto" className="mt-3 text-lg font-black text-slate-700">{stage.session.title}</p>
 
           <dl className="mx-auto mt-7 flex max-w-xl items-stretch justify-center divide-x divide-x-reverse divide-slate-200 rounded-xl bg-slate-50 py-5 text-center">
             <div className="min-w-0 flex-1 px-3"><dt className="text-xs text-[var(--student-muted)]">الأسئلة</dt><dd className="mt-1 font-black text-emerald-800">{stage.session.questionCount}</dd></div>
@@ -476,7 +481,7 @@ function LivePlayerView({
                   <AnswerEditor
                     key={question.quizVersionItemId}
                     question={question}
-                    disabled={answerMutation.isPending || isAnswered}
+                    answerState={answerMutation.isPending ? 'saving' : isAnswered ? 'saved' : 'editing'}
                     presentation="live"
                     onSubmit={(answerJson) => answerMutation.mutate({ quizVersionItemId: question.quizVersionItemId, answerJson })}
                   />
@@ -713,15 +718,13 @@ function PlayingView({
             <AnswerEditor
               key={question.quizVersionItemId}
               question={question}
-              disabled={answerMutation.isPending || currentQuestionAnswered}
+              answerState={answerMutation.isPending ? 'saving' : currentQuestionAnswered ? 'saved' : 'editing'}
               presentation="student"
               onSubmit={(answerJson) => answerMutation.mutate({ quizVersionItemId: question.quizVersionItemId, answerJson })}
             />
           </div>
 
           <div aria-live="polite" className="mt-4 flex min-h-6 justify-center">
-            {answerMutation.isPending ? <p role="status" className="text-center text-sm font-semibold text-[var(--student-muted)]">جارٍ حفظ إجابتك…</p> : null}
-            {currentQuestionAnswered && !lastFeedback && !answerMutation.isPending ? <p role="status" className="rounded-full bg-emerald-50 px-4 py-2 text-center text-sm font-bold text-emerald-800">تم حفظ إجابتك ✓</p> : null}
             {lastFeedback && !answerMutation.isPending ? (
               <p role="status" className={`rounded-xl p-3 text-center text-sm font-bold ${lastFeedback.isCorrect ? 'bg-emerald-50 text-emerald-800' : 'bg-amber-50 text-amber-900'}`}>
                 {lastFeedback.isCorrect ? `إجابة صحيحة ✓ (+${lastFeedback.scoreAwarded})` : 'تم حفظ الإجابة — ليست صحيحة هذه المرة'}
@@ -735,11 +738,11 @@ function PlayingView({
         <footer className="sticky bottom-0 z-20 mt-3 bg-[var(--student-bg)] py-3">
           <div className="flex justify-start">
             {isLast ? (
-              <StudentButton onClick={requestQuestionProgress} disabled={answerMutation.isPending || finishMutation.isPending} className="w-full text-base sm:w-64">
+              <StudentButton variant={currentQuestionAnswered ? 'primary' : 'secondary'} onClick={requestQuestionProgress} disabled={answerMutation.isPending || finishMutation.isPending} className="w-full text-base sm:w-64">
                 {finishMutation.isPending ? <ButtonSpinner /> : null}إنهاء الاختبار
               </StudentButton>
             ) : (
-              <StudentButton onClick={requestQuestionProgress} disabled={answerMutation.isPending} className="w-full text-base sm:w-64">
+              <StudentButton variant={currentQuestionAnswered ? 'primary' : 'secondary'} onClick={requestQuestionProgress} disabled={answerMutation.isPending} className="w-full text-base sm:w-64">
                 السؤال التالي ←
               </StudentButton>
             )}
@@ -815,14 +818,42 @@ function QuestionMedia({
 
 // ─── محرر الإجابة حسب النوع ─────────────────────────────────────────────────
 
+type AnswerState = 'editing' | 'saving' | 'saved';
+
+function StudentSaveControl({
+  answerState,
+  label,
+  disabled,
+  type,
+  onClick,
+}: {
+  answerState: AnswerState;
+  label: string;
+  disabled: boolean;
+  type: 'button' | 'submit';
+  onClick?: () => void;
+}) {
+  if (answerState === 'saved') {
+    return <p role="status" className="mt-2 flex min-h-12 w-full items-center justify-center rounded-xl bg-emerald-50 px-5 py-3 text-sm font-black text-emerald-800 sm:w-48 sm:self-start">تم حفظ إجابتك ✓</p>;
+  }
+
+  const isSaving = answerState === 'saving';
+  return (
+    <StudentButton type={type} disabled={disabled || isSaving} onClick={onClick} className="mt-2 w-full sm:w-48 sm:self-start">
+      {isSaving ? <ButtonSpinner /> : null}
+      {isSaving ? 'جارٍ الحفظ…' : label}
+    </StudentButton>
+  );
+}
+
 function AnswerEditor({
   question,
-  disabled,
+  answerState,
   presentation,
   onSubmit,
 }: {
   question: PlayerQuestion;
-  disabled: boolean;
+  answerState: AnswerState;
   presentation: 'student' | 'live';
   onSubmit: (answerJson: string) => void;
 }) {
@@ -832,6 +863,7 @@ function AnswerEditor({
 
   const type = question.questionType;
   const isStudent = presentation === 'student';
+  const disabled = answerState !== 'editing';
 
   if (type === 'MultipleChoice' || type === 'TrueFalse' || type === 'Listening') {
     return (
@@ -869,7 +901,13 @@ function AnswerEditor({
           );
         })}
         {isStudent ? (
-          <StudentButton type="button" disabled={disabled || !selectedOption} onClick={() => onSubmit(JSON.stringify({ optionId: selectedOption }))} className="mt-2 w-full sm:w-48 sm:self-start">تثبيت الإجابة</StudentButton>
+          <StudentSaveControl
+            answerState={answerState}
+            label="تثبيت الإجابة"
+            disabled={!selectedOption}
+            type="button"
+            onClick={() => onSubmit(JSON.stringify({ optionId: selectedOption }))}
+          />
         ) : (
           <Button type="button" disabled={disabled || !selectedOption} onClick={() => onSubmit(JSON.stringify({ optionId: selectedOption }))}>تثبيت الإجابة</Button>
         )}
@@ -898,7 +936,7 @@ function AnswerEditor({
           aria-label="إجابتك"
           className={isStudent ? 'min-h-36 rounded-xl p-4 text-base leading-7 placeholder:text-slate-500 focus:border-emerald-700 focus:outline-emerald-700' : ''}
         />
-        {isStudent ? <StudentButton type="submit" disabled={disabled || text.trim().length < 2} className="mt-2 w-full sm:w-48 sm:self-start">تثبيت الإجابة</StudentButton> : <Button type="submit" disabled={disabled || text.trim().length < 2}>تثبيت الإجابة</Button>}
+        {isStudent ? <StudentSaveControl answerState={answerState} label="تثبيت الإجابة" disabled={text.trim().length < 2} type="submit" /> : <Button type="submit" disabled={disabled || text.trim().length < 2}>تثبيت الإجابة</Button>}
       </form>
     );
   }
@@ -963,7 +1001,7 @@ function AnswerEditor({
         })}
       </ol>
       {isStudent ? (
-        <StudentButton type="button" disabled={disabled} onClick={() => onSubmit(JSON.stringify({ orderedOptionIds: ordered }))} className="mt-2 w-full sm:w-48 sm:self-start">تثبيت الترتيب</StudentButton>
+        <StudentSaveControl answerState={answerState} label="تثبيت الترتيب" disabled={false} type="button" onClick={() => onSubmit(JSON.stringify({ orderedOptionIds: ordered }))} />
       ) : (
         <Button type="button" disabled={disabled} onClick={() => onSubmit(JSON.stringify({ orderedOptionIds: ordered }))}>تثبيت الترتيب</Button>
       )}
@@ -1055,7 +1093,14 @@ function ResultView({ joinCode, attemptId }: { joinCode: string; attemptId: stri
             {attemptResult.status === 'TimedOut' ? <div className="flex-1 px-3"><dt className="text-xs text-[var(--student-muted)]">الحالة</dt><dd className="mt-1 text-base font-black text-amber-900">انتهى الوقت</dd></div> : null}
           </dl>
         </section>
-        {finished && attemptResult.passed != null ? <PlayerDeliveryPanel joinCode={joinCode} attemptId={attemptId} passed={attemptResult.passed} /> : null}
+        {finished && attemptResult.passed != null ? (
+          <PlayerDeliveryPanel
+            joinCode={joinCode}
+            attemptId={attemptId}
+            passed={attemptResult.passed}
+            surveyAction={<PlayerSurveyAction joinCode={joinCode} attemptId={attemptId} />}
+          />
+        ) : null}
         {finished ? <PlayerSurveyPanel joinCode={joinCode} attemptId={attemptId} /> : null}
       </div>
     </StudentShell>
