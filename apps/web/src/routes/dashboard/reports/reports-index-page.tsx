@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router';
 import { quizzesApi, sessionsApi } from '../../../data/api-client/endpoints';
 import { getActiveTenantId } from '../../../lib/auth/session';
-import { SESSION_MODE_LABELS, SESSION_STATUS_LABELS } from '../../../types/sessions';
+import { SESSION_MODE_LABELS, SESSION_STATUS_LABELS, type SessionStatus } from '../../../types/sessions';
 
 export default function ReportsIndexPage() {
   const tenantId = getActiveTenantId()!;
@@ -21,73 +21,158 @@ export default function ReportsIndexPage() {
   });
 
   return (
-    <div className="flex flex-col gap-6">
-      <header>
-        <h1 className="text-xl font-bold text-slate-900">النتائج والتقارير</h1>
-        <p className="mt-1 text-sm text-slate-600">اختر اختبارًا ثم افتح تقرير الجلسة المطلوبة.</p>
+    <div className="flex flex-col gap-7">
+      <header className="max-w-3xl">
+        <h1 className="text-balance text-2xl font-black text-[var(--teacher-ink)]">النتائج والتقارير</h1>
+        <p className="mt-2 text-sm leading-6 text-[var(--teacher-muted)]">
+          تابع نتائج الاختبارات والجلسات السابقة وأداء الطلاب.
+        </p>
       </header>
 
-      {quizzesQuery.isPending ? <LoadingBlock label="جارٍ تحميل الاختبارات…" /> : null}
+      {quizzesQuery.isPending ? <ReportsLoading /> : null}
       {quizzesQuery.isError ? (
-        <RetryBlock message="تعذر تحميل الاختبارات." onRetry={() => void quizzesQuery.refetch()} />
+        <RetryBlock message="تعذر تحميل الاختبارات الآن." onRetry={() => void quizzesQuery.refetch()} />
       ) : null}
       {quizzesQuery.data && quizzes.length === 0 ? (
-        <section className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center">
-          <h2 className="font-semibold text-slate-900">لا توجد اختبارات بعد</h2>
-          <p className="mt-2 text-sm text-slate-600">أنشئ اختبارًا وشغّل جلسة طلاب لتظهر النتائج هنا.</p>
-          <Link to="/dashboard/quizzes/new" className="mt-4 inline-flex min-h-11 items-center rounded-md bg-sky-700 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-800">إنشاء اختبار</Link>
-        </section>
+        <EmptyState
+          title="لا توجد نتائج بعد"
+          description="أنشئ اختبارًا وشغّل جلسة للطلاب، ثم ستجد نتائجهم هنا."
+          actionLabel="إنشاء اختبار"
+          actionTo="/dashboard/quizzes/new"
+        />
       ) : null}
 
       {quizzes.length > 0 ? (
-        <section className="space-y-4 rounded-xl border border-slate-200 bg-white p-4">
-          <label className="flex max-w-lg flex-col gap-2 text-sm font-semibold text-slate-800">
-            الاختبار
-            <select value={selectedQuizId} onChange={(event) => setChosenQuizId(event.target.value)} className="min-h-11 rounded-md border border-slate-300 bg-white px-3 text-sm font-normal">
-              {quizzes.map((quiz) => <option key={quiz.id} value={quiz.id}>{quiz.title}</option>)}
-            </select>
-          </label>
-
-          {sessionsQuery.isPending ? <LoadingBlock label="جارٍ تحميل جلسات الاختبار…" /> : null}
-          {sessionsQuery.isError ? (
-            <RetryBlock message="تعذر تحميل جلسات الاختبار." onRetry={() => void sessionsQuery.refetch()} />
-          ) : null}
-          {sessionsQuery.data && sessionsQuery.data.items.length === 0 ? (
-            <div className="rounded-lg bg-slate-50 p-5 text-sm text-slate-700">
-              <p>لا توجد جلسات لهذا الاختبار. أنشئ جلسة وشارك رابطها مع الطلاب أولًا.</p>
-              <Link to={`/dashboard/quizzes/${selectedQuizId}/sessions`} className="mt-3 inline-flex min-h-11 items-center font-semibold text-sky-700 hover:underline">إنشاء جلسة</Link>
+        <section aria-labelledby="reports-list-heading" className="teacher-surface overflow-hidden">
+          <div className="flex flex-col gap-4 border-b border-slate-200 p-4 sm:flex-row sm:items-end sm:justify-between sm:p-5">
+            <div>
+              <h2 id="reports-list-heading" className="text-lg font-black text-[var(--teacher-ink)]">الجلسات السابقة</h2>
+              <p className="mt-1 text-sm text-[var(--teacher-muted)]">اختر الاختبار للوصول إلى جلساته ونتائج طلابه.</p>
             </div>
-          ) : null}
-          {sessionsQuery.data && sessionsQuery.data.items.length > 0 ? (
-            <ul className="divide-y divide-slate-200">
-              {sessionsQuery.data.items.map((session) => (
-                <li key={session.id} className="flex flex-wrap items-center justify-between gap-3 py-4 first:pt-0 last:pb-0">
-                  <div>
-                    <p className="font-semibold text-slate-900">{session.label || session.quizTitle}</p>
-                    <p className="mt-1 text-xs text-slate-600">
-                      {SESSION_STATUS_LABELS[session.status]} · {SESSION_MODE_LABELS[session.mode]} · {session.attemptCount} محاولة
-                    </p>
-                  </div>
-                  <Link to={`/dashboard/reports/${session.id}?quizId=${selectedQuizId}`} className="inline-flex min-h-11 items-center rounded-md bg-sky-700 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-800">عرض التقرير</Link>
-                </li>
-              ))}
-            </ul>
-          ) : null}
+            <label className="flex w-full flex-col gap-1.5 text-sm font-bold text-slate-700 sm:max-w-sm">
+              الاختبار
+              <select
+                value={selectedQuizId}
+                onChange={(event) => setChosenQuizId(event.target.value)}
+                className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm font-medium text-slate-800 focus:border-[var(--teacher-primary)] focus:outline-2 focus:outline-[var(--teacher-primary)]">
+                {quizzes.map((quiz) => <option key={quiz.id} value={quiz.id}>{quiz.title}</option>)}
+              </select>
+            </label>
+          </div>
+
+          <div className="p-4 sm:p-5">
+            {sessionsQuery.isPending ? <SessionRowsLoading /> : null}
+            {sessionsQuery.isError ? (
+              <RetryBlock message="تعذر تحميل جلسات الاختبار." onRetry={() => void sessionsQuery.refetch()} />
+            ) : null}
+            {sessionsQuery.data && sessionsQuery.data.items.length === 0 ? (
+              <EmptyState
+                compact
+                title="لا توجد نتائج بعد"
+                description="أنشئ جلسة لهذا الاختبار وشارك رابطها مع الطلاب أولًا."
+                actionLabel="إنشاء جلسة"
+                actionTo={`/dashboard/quizzes/${selectedQuizId}/sessions`}
+              />
+            ) : null}
+            {sessionsQuery.data && sessionsQuery.data.items.length > 0 ? (
+              <ul className="divide-y divide-slate-200">
+                {sessionsQuery.data.items.map((session) => (
+                  <li key={session.id} className="py-5 first:pt-0 last:pb-0">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="truncate font-black text-slate-900">{session.quizTitle}</h3>
+                          <SessionStatusBadge status={session.status} />
+                        </div>
+                        <p className="mt-1 text-sm font-medium text-slate-700">{session.label || 'جلسة بدون عنوان'}</p>
+                        <dl className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-600">
+                          <div className="flex gap-1.5"><dt>النوع:</dt><dd className="font-semibold text-slate-800">{SESSION_MODE_LABELS[session.mode]}</dd></div>
+                          <div className="flex gap-1.5"><dt>التاريخ:</dt><dd className="font-semibold text-slate-800">{formatDate(session.finishedAt ?? session.activatedAt ?? session.createdAt)}</dd></div>
+                          <div className="flex gap-1.5"><dt>المشاركون:</dt><dd className="font-semibold text-slate-800">{session.participantCount}</dd></div>
+                        </dl>
+                      </div>
+                      <Link
+                        to={`/dashboard/reports/${session.id}?quizId=${selectedQuizId}`}
+                        className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-lg bg-[var(--teacher-primary)] px-4 py-2 text-sm font-black text-white transition-colors hover:bg-[var(--teacher-primary-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--teacher-primary)]">
+                        فتح التقرير
+                      </Link>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
         </section>
       ) : null}
     </div>
   );
 }
 
-function LoadingBlock({ label }: { label: string }) {
-  return <div role="status" className="animate-pulse rounded-lg bg-slate-100 p-4 text-sm text-slate-600">{label}</div>;
+function formatDate(dateTime: string) {
+  return new Intl.DateTimeFormat('ar-EG', { dateStyle: 'medium' }).format(new Date(dateTime));
+}
+
+function SessionStatusBadge({ status }: { status: SessionStatus }) {
+  const tone = status === 'Finished'
+    ? 'bg-emerald-50 text-emerald-800'
+    : status === 'Cancelled'
+      ? 'bg-rose-50 text-rose-800'
+      : status === 'Active'
+        ? 'bg-sky-50 text-sky-800'
+        : 'bg-slate-100 text-slate-700';
+  return <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${tone}`}>{SESSION_STATUS_LABELS[status]}</span>;
+}
+
+function ReportsLoading() {
+  return (
+    <div role="status" aria-label="جارٍ تحميل النتائج والتقارير" className="teacher-surface space-y-4 p-5 motion-safe:animate-pulse">
+      <div className="h-11 w-full max-w-sm rounded-lg bg-slate-200" />
+      <div className="h-20 rounded-xl bg-slate-100" />
+      <div className="h-20 rounded-xl bg-slate-100" />
+    </div>
+  );
+}
+
+function SessionRowsLoading() {
+  return (
+    <div role="status" aria-label="جارٍ تحميل جلسات الاختبار" className="space-y-3 motion-safe:animate-pulse">
+      <div className="h-24 rounded-xl bg-slate-100" />
+      <div className="h-24 rounded-xl bg-slate-100" />
+    </div>
+  );
 }
 
 function RetryBlock({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
-    <div role="alert" className="rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
+    <div role="alert" className="rounded-xl bg-rose-50 p-4 text-sm text-rose-800">
       <p>{message}</p>
-      <button type="button" onClick={onRetry} className="mt-3 min-h-11 rounded-md border border-rose-300 bg-white px-4 py-2 font-semibold hover:bg-rose-100">إعادة المحاولة</button>
+      <button type="button" onClick={onRetry} className="mt-3 min-h-11 rounded-lg border border-rose-300 bg-white px-4 py-2 font-bold transition-colors hover:bg-rose-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-700">
+        إعادة المحاولة
+      </button>
     </div>
+  );
+}
+
+function EmptyState({
+  title,
+  description,
+  actionLabel,
+  actionTo,
+  compact = false,
+}: {
+  title: string;
+  description: string;
+  actionLabel: string;
+  actionTo: string;
+  compact?: boolean;
+}) {
+  return (
+    <section className={`rounded-xl border border-dashed border-slate-300 bg-white text-center ${compact ? 'px-5 py-8' : 'px-6 py-12'}`}>
+      <h2 className="font-black text-slate-900">{title}</h2>
+      <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-slate-600">{description}</p>
+      <Link to={actionTo} className="mt-5 inline-flex min-h-11 items-center justify-center rounded-lg bg-[var(--teacher-primary)] px-4 py-2 text-sm font-black text-white transition-colors hover:bg-[var(--teacher-primary-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--teacher-primary)]">
+        {actionLabel}
+      </Link>
+    </section>
   );
 }

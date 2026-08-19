@@ -287,7 +287,7 @@ export default function PlayPage() {
             </div>
             <div>
               <p className="text-sm font-black text-[var(--student-violet)]">كل شيء جاهز</p>
-              <h1 className="mt-2 text-balance text-3xl font-black text-[var(--student-ink)] sm:text-4xl">أنت جاهز، {stage.displayName}!</h1>
+              <h1 className="mt-2 text-balance text-3xl font-black text-[var(--student-ink)] sm:text-4xl">أنت جاهز، <bdi>{stage.displayName}</bdi>!</h1>
               <p dir="auto" className="mt-3 text-lg font-black text-slate-700">{stage.session.title}</p>
             </div>
           </div>
@@ -1060,7 +1060,7 @@ function ResultView({ joinCode, attemptId }: { joinCode: string; attemptId: stri
                   {finished ? 'النتيجة' : 'محاولتك قيد التنفيذ'}
                 </p>
                 <h1 className="mt-2 text-balance text-3xl font-black text-[var(--student-ink)] sm:text-4xl">
-                  {attemptResult.passed ? `أحسنت يا ${attemptResult.displayName}!` : attemptResult.displayName}
+                  {attemptResult.passed ? <>أحسنت يا <bdi>{attemptResult.displayName}</bdi>!</> : <bdi>{attemptResult.displayName}</bdi>}
                 </h1>
                 {attemptResult.passed != null ? (
                   <p className={`mt-3 text-base font-bold leading-7 ${attemptResult.passed ? 'text-emerald-900' : 'text-slate-700'}`}>

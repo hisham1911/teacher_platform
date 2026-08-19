@@ -93,7 +93,8 @@ describe('SurveyBuilderPage', () => {
 
     renderPage();
 
-    expect(await screen.findByText('المتوسط:')).toBeInTheDocument();
+    expect(await screen.findByText('متوسط التقييم')).toBeInTheDocument();
+    expect(screen.getByText('4.5 / 5')).toBeInTheDocument();
     expect(screen.getByText('مناسب')).toBeInTheDocument();
     expect(screen.getByText('اختبار واضح')).toBeInTheDocument();
   });

@@ -15,10 +15,13 @@ vi.mock('../../../data/api-client/endpoints', async (importOriginal) => {
       listAttempts: vi.fn(),
       exportSessionCsv: vi.fn(),
     },
+    sessionsApi: { ...actual.sessionsApi, get: vi.fn() },
+    certificatesApi: { ...actual.certificatesApi, list: vi.fn() },
+    surveysApi: { ...actual.surveysApi, list: vi.fn(), getResults: vi.fn() },
   };
 });
 
-const { reportsApi } = await import('../../../data/api-client/endpoints');
+const { certificatesApi, reportsApi, sessionsApi, surveysApi } = await import('../../../data/api-client/endpoints');
 const getSessionReportMock = vi.mocked(reportsApi.getSessionReport);
 const listAttemptsMock = vi.mocked(reportsApi.listAttempts);
 
@@ -98,6 +101,24 @@ describe('SessionReportPage', () => {
       totalItems: 1,
       totalPages: 1,
     });
+    vi.mocked(sessionsApi.get).mockResolvedValue({
+      id: 'session-1', quizId: 'quiz-1', quizTitle: report.quizTitle, quizVersionId: 'version-1', quizVersionNumber: 1,
+      joinCode: 'JOIN123', mode: 'SelfPaced', status: 'Finished', label: report.sessionLabel,
+      activatedAt: report.activatedAt, finishedAt: report.finishedAt, createdAt: report.activatedAt!, updatedAt: report.finishedAt!, version: 1, participants: [],
+    });
+    vi.mocked(certificatesApi.list).mockResolvedValue([{
+      id: 'certificate-1', attemptId: 'attempt-1', certificateNumber: 'CERT-1', studentName: 'مريم',
+      quizTitle: report.quizTitle, percentage: 100, status: 'Ready', issuedAt: report.finishedAt!, failureReason: null,
+      publicUrl: 'https://example.test/certificate/token-1',
+    }]);
+    vi.mocked(surveysApi.list).mockResolvedValue([{
+      id: 'survey-1', quizId: 'quiz-1', quizTitle: report.quizTitle, title: 'رأيك في الاختبار', status: 'Published',
+      questionCount: 1, responseCount: 1, publishedAt: report.finishedAt, updatedAt: report.finishedAt!,
+    }]);
+    vi.mocked(surveysApi.getResults).mockResolvedValue({
+      surveyId: 'survey-1', title: 'رأيك في الاختبار', responseCount: 1,
+      questions: [{ id: 'survey-question-1', sortOrder: 0, questionType: 'ShortText', prompt: 'رأيك', answerCount: 1, ratingAverage: null, ratingDistribution: [], optionResults: [], textResponses: ['تجربة واضحة'] }],
+    });
   });
 
   it('يعرض ملخصًا فعليًا وتحليل الأسئلة ورابط تفاصيل المحاولة', async () => {
@@ -108,12 +129,16 @@ describe('SessionReportPage', () => {
     );
 
     expect(screen.getByText('75%')).toBeInTheDocument();
-    expect(screen.getByText('Choose the correct answer')).toBeInTheDocument();
-    expect(screen.getByText('أداء متوسط')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'مريم' })).toHaveAttribute(
+    expect(screen.getAllByText('Choose the correct answer').length).toBeGreaterThan(1);
+    expect(screen.getAllByText('أداء متوسط').length).toBeGreaterThan(1);
+    expect(screen.getByText('ذاتي الإيقاع')).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: 'عرض التفاصيل' })[0]).toHaveAttribute(
       'href',
       '/dashboard/attempts/attempt-1?sessionId=session-1&quizId=quiz-1',
     );
+    expect(screen.getAllByRole('link', { name: 'عرض الشهادة' })[0]).toHaveAttribute('href', '/dashboard/certificates?certificateId=certificate-1');
+    expect(await screen.findByRole('heading', { name: 'آراء الطلاب' })).toBeInTheDocument();
+    expect(await screen.findByText('تجربة واضحة')).toBeInTheDocument();
   });
 
   it('يعرض حالة فراغ مفيدة عندما لا توجد محاولات', async () => {
@@ -127,7 +152,7 @@ describe('SessionReportPage', () => {
 
     renderPage();
 
-    expect(await screen.findByText('لا توجد محاولات بعد')).toBeInTheDocument();
-    expect(screen.getByText('ستظهر النتائج هنا بعد أن يبدأ الطلاب الاختبار.')).toBeInTheDocument();
+    expect(await screen.findByText('لا توجد نتائج بعد')).toBeInTheDocument();
+    expect(screen.getByText('ستظهر نتائج الطلاب هنا بعد بدء الاختبار.')).toBeInTheDocument();
   });
 });

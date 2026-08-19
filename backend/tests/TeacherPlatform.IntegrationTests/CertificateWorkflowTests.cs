@@ -60,6 +60,16 @@ public sealed class CertificateWorkflowTests : IClassFixture<TestWebApplicationF
         Assert.Equal(HttpStatusCode.OK, publicFile.StatusCode);
         Assert.Equal("application/pdf", publicFile.Content.Headers.ContentType?.MediaType);
 
+        var teacherListResponse = await client.SendAsync(TenantRequest(
+            HttpMethod.Get,
+            $"/api/v1/tenants/{teacher.TenantId}/certificates",
+            teacher));
+        Assert.Equal(HttpStatusCode.OK, teacherListResponse.StatusCode);
+        var teacherCertificate = Assert.Single(await ReadJsonAsync<JsonElement[]>(teacherListResponse));
+        Assert.Equal(certificate.GetProperty("publicUrl").GetString(), teacherCertificate.GetProperty("publicUrl").GetString());
+        Assert.DoesNotContain(teacherCertificate.EnumerateObject(), property =>
+            property.Name is "publicTokenHash" or "publicTokenProtected" or "fileObjectKey");
+
         await using var scope = _factory.Services.CreateAsyncScope();
         scope.ServiceProvider.GetRequiredService<TenantContext>().SetResolved(teacher.TenantId);
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();

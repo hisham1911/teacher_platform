@@ -52,6 +52,7 @@ public sealed class CertificateListItemResponse
     public string Status { get; set; } = string.Empty;
     public DateTime IssuedAt { get; set; }
     public string? FailureReason { get; set; }
+    public string? PublicUrl { get; set; }
 }
 
 public sealed class PlayerCertificateResponse

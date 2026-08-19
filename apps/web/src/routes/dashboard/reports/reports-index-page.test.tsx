@@ -39,13 +39,16 @@ describe('ReportsIndexPage', () => {
     renderPage();
 
     expect(await screen.findByText('الحصة الأولى')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'عرض التقرير' })).toHaveAttribute('href', '/dashboard/reports/session-1?quizId=quiz-1');
+    expect(screen.getAllByText('اختبار العلوم').length).toBeGreaterThan(1);
+    expect(screen.getByText('ذاتي الإيقاع')).toBeInTheDocument();
+    expect(screen.getByText('3')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'فتح التقرير' })).toHaveAttribute('href', '/dashboard/reports/session-1?quizId=quiz-1');
   });
 
   it('يشرح الخطوة التالية عندما لا توجد اختبارات', async () => {
     vi.mocked(quizzesApi.list).mockResolvedValue({ items: [], page: 1, pageSize: 100, totalItems: 0, totalPages: 0 });
     renderPage();
-    expect(await screen.findByText('لا توجد اختبارات بعد')).toBeInTheDocument();
+    expect(await screen.findByText('لا توجد نتائج بعد')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'إنشاء اختبار' })).toBeInTheDocument();
     expect(sessionsApi.list).not.toHaveBeenCalled();
   });

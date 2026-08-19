@@ -12,10 +12,11 @@ vi.mock('../../../data/api-client/endpoints', async (importOriginal) => {
       ...actual.reportsApi,
       getAttempt: vi.fn(),
     },
+    certificatesApi: { ...actual.certificatesApi, list: vi.fn() },
   };
 });
 
-const { reportsApi } = await import('../../../data/api-client/endpoints');
+const { certificatesApi, reportsApi } = await import('../../../data/api-client/endpoints');
 const getAttemptMock = vi.mocked(reportsApi.getAttempt);
 
 function renderPage() {
@@ -67,15 +68,21 @@ describe('AttemptDetailPage', () => {
         },
       ],
     });
+    vi.mocked(certificatesApi.list).mockResolvedValue([{
+      id: 'certificate-1', attemptId: 'attempt-1', certificateNumber: 'CERT-1', studentName: 'مريم',
+      quizTitle: 'اختبار اللغة', percentage: 80, status: 'Ready', issuedAt: '2026-08-09T08:02:00Z', failureReason: null,
+      publicUrl: 'https://example.test/certificate/token-1',
+    }]);
   });
 
   it('يعرض النتيجة وإجابة كل سؤال كما صححها الخادم', async () => {
     renderPage();
 
-    expect(await screen.findByRole('heading', { name: 'محاولة مريم' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'نتيجة مريم' })).toBeInTheDocument();
     expect(screen.getByText('80%')).toBeInTheDocument();
     expect(screen.getByText('Complete the sentence')).toBeInTheDocument();
     expect(screen.getByText('went')).toBeInTheDocument();
     expect(screen.getByText('صحيحة')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'عرض الشهادة' })).toHaveAttribute('href', '/dashboard/certificates?certificateId=certificate-1');
   });
 });

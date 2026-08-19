@@ -5,6 +5,7 @@ import { Button } from '../../../components/ui/button';
 import { FormField, SelectInput, TextArea, TextInput } from '../../../components/ui/form-field';
 import { ButtonSpinner } from '../../../components/ui/spinner';
 import { surveysApi } from '../../../data/api-client/endpoints';
+import { SurveyResultsSummary } from '../../../features/surveys/survey-results-summary';
 import { HttpError } from '../../../data/api-client/http-error';
 import { getActiveTenantId } from '../../../lib/auth/session';
 import type {
@@ -244,7 +245,7 @@ export default function SurveyBuilderPage() {
       ) : null}
 
       {published ? (
-        <SurveyResultsSection
+        <SurveyResultsSummary
           isPending={resultsQuery.isPending}
           isError={resultsQuery.isError}
           results={resultsQuery.data}
@@ -459,68 +460,6 @@ export default function SurveyBuilderPage() {
           </div>
         </footer>
       ) : null}
-    </div>
-  );
-}
-
-function SurveyResultsSection({
-  isPending,
-  isError,
-  results,
-  onRetry,
-}: {
-  isPending: boolean;
-  isError: boolean;
-  results: import('../../../types/surveys').SurveyResults | undefined;
-  onRetry: () => void;
-}) {
-  return (
-    <section aria-labelledby="survey-results" className="rounded-xl border border-slate-200 bg-white p-5">
-      <h2 id="survey-results" className="text-lg font-semibold text-slate-900">نتائج الاستبيان</h2>
-      {isPending ? <p role="status" className="mt-3 animate-pulse rounded-lg bg-slate-100 p-4 text-sm text-slate-600">جارٍ تجميع الردود…</p> : null}
-      {isError ? (
-        <div role="alert" className="mt-3 rounded-lg bg-rose-50 p-4 text-sm text-rose-800">
-          <p>تعذر تحميل نتائج الاستبيان.</p>
-          <button type="button" onClick={onRetry} className="mt-3 min-h-11 rounded-md border border-rose-300 bg-white px-4 py-2 font-semibold">إعادة المحاولة</button>
-        </div>
-      ) : null}
-      {results?.responseCount === 0 ? <p className="mt-3 text-sm text-slate-600">لم تصل ردود بعد. ستظهر الملخصات هنا تلقائيًا.</p> : null}
-      {results && results.responseCount > 0 ? (
-        <ol className="mt-4 divide-y divide-slate-200">
-          {results.questions.map((question) => (
-            <li key={question.id} className="py-5 first:pt-0 last:pb-0">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <h3 className="font-semibold text-slate-900">{question.sortOrder + 1}. {question.prompt}</h3>
-                <span className="text-xs text-slate-500">{question.answerCount} إجابة</span>
-              </div>
-              {question.questionType === 'Rating' ? (
-                <div className="mt-3 space-y-2">
-                  <p className="text-sm text-slate-700">المتوسط: <strong>{question.ratingAverage?.toFixed(2) ?? '—'} من 5</strong></p>
-                  {question.ratingDistribution.map((entry) => <ResultBar key={entry.value} label={`${entry.value} نجوم`} count={entry.count} percentage={entry.percentage} />)}
-                </div>
-              ) : null}
-              {question.questionType === 'SingleChoice' ? (
-                <div className="mt-3 space-y-2">{question.optionResults.map((option) => <ResultBar key={option.optionId} label={option.optionText} count={option.count} percentage={option.percentage} />)}</div>
-              ) : null}
-              {question.questionType === 'ShortText' ? (
-                question.textResponses.length > 0
-                  ? <ul className="mt-3 space-y-2">{question.textResponses.map((response, index) => <li key={`${question.id}-${index}`} className="rounded-lg bg-slate-50 p-3 text-sm text-slate-700">{response}</li>)}</ul>
-                  : <p className="mt-3 text-sm text-slate-500">لا توجد إجابات نصية.</p>
-              ) : null}
-            </li>
-          ))}
-        </ol>
-      ) : null}
-    </section>
-  );
-}
-
-function ResultBar({ label, count, percentage }: { label: string; count: number; percentage: number }) {
-  return (
-    <div className="grid grid-cols-[minmax(7rem,1fr)_minmax(8rem,2fr)_auto] items-center gap-2 text-sm">
-      <span className="truncate text-slate-700">{label}</span>
-      <span className="h-2 overflow-hidden rounded-full bg-slate-100" aria-hidden="true"><span className="block h-full rounded-full bg-sky-600" style={{ width: `${percentage}%` }} /></span>
-      <span dir="ltr" className="tabular-nums text-slate-600">{count} ({Math.round(percentage)}%)</span>
     </div>
   );
 }

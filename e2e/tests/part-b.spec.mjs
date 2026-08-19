@@ -73,15 +73,25 @@ test('survives API restart + finish + result + F5 (Part B)', async ({ page }) =>
   await expect(page.getByText('اجتزت الاختبار بنجاح')).toBeVisible();
   await expect(page.getByPlaceholder('اكتب اسمك هنا')).not.toBeVisible();
 
-  // المعلم يسجل الدخول ويرى النتيجة الفعلية ويصدر CSV من شاشة التقرير.
+  // المعلم يسجل الدخول ويصل إلى الجلسة من فهرس التقارير بدل الاعتماد على رابط داخلي مباشر.
   await page.goto('/auth/login');
   await page.getByLabel('البريد الإلكتروني').fill(email);
   await page.getByLabel('كلمة المرور').fill('SecurePassword123!');
   await page.getByRole('button', { name: 'تسجيل الدخول' }).click();
-  await expect(page).toHaveURL(/\/dashboard$/);
-  await page.goto(`/dashboard/reports/${sessionId}?quizId=${quizId}`);
+  await expect(page).toHaveURL(/\/dashboard$/, { timeout: 15_000 });
+  await page.goto('/dashboard/reports');
+  await expect(page.getByRole('heading', { name: 'النتائج والتقارير' })).toBeVisible();
+  await page.getByRole('combobox', { name: 'الاختبار' }).selectOption(quizId);
+  await page.locator(`a[href="/dashboard/reports/${sessionId}?quizId=${quizId}"]`).click();
   await expect(page.getByRole('heading', { name: 'تقرير اختبار E2E' })).toBeVisible();
-  await expect(page.getByText('طالب E2E')).toBeVisible();
+  const studentRow = page.getByRole('row').filter({ hasText: 'طالب E2E' });
+  await expect(studentRow).toBeVisible();
+
+  // التقرير يعرض ملخص الجلسة، نتيجة الطالب، والاستبيان الحقيقي المرتبط بالاختبار.
+  await expect(page.getByRole('heading', { name: 'نتائج الطلاب' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'آراء الطلاب' })).toBeVisible();
+  await expect(page.getByText('وضوح الأسئلة')).toBeVisible();
+
   const downloadPromise = page.waitForEvent('download');
   await page.getByRole('button', { name: 'تصدير CSV' }).click();
   const download = await downloadPromise;
@@ -89,6 +99,21 @@ test('survives API restart + finish + result + F5 (Part B)', async ({ page }) =>
   const csvPath = await download.path();
   if (!csvPath) throw new Error('CSV download path is missing.');
   expect(readFileSync(csvPath, 'utf8')).toContain('طالب E2E');
+
+  // تفاصيل الطالب تبقى مرتبطة بالتقرير وتعرض الإجابات التي صححها الخادم.
+  await studentRow.getByRole('link', { name: 'عرض التفاصيل' }).click();
+  await expect(page.getByRole('heading', { name: 'نتيجة طالب E2E' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'تفاصيل الإجابات' })).toBeVisible();
+  await page.getByRole('link', { name: 'العودة إلى التقرير' }).click();
+
+  // شهادة الطالب الناجح تُفتح كـBlob preview، والرابط العام موصوف بوضوح كرابط شهادة.
+  const refreshedStudentRow = page.getByRole('row').filter({ hasText: 'طالب E2E' });
+  await refreshedStudentRow.getByRole('link', { name: 'عرض الشهادة' }).click();
+  await expect(page.getByRole('heading', { name: 'الشهادات' })).toBeVisible();
+  const preview = page.getByTitle('معاينة الشهادة');
+  await expect(preview).toBeVisible();
+  expect(await preview.getAttribute('src')).toMatch(/^blob:/);
+  await expect(page.getByRole('button', { name: 'نسخ رابط الشهادة' })).toBeVisible();
   console.log('[part-b] PASS — survived API restart + auto-restore result across F5');
 });
 

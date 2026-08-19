@@ -92,12 +92,12 @@ public sealed class CertificateService
     public async Task<IReadOnlyList<CertificateListItemResponse>> ListAsync(CancellationToken cancellationToken)
     {
         RequireTenantId();
-        return await _db.Certificates
+        var certificates = await _db.Certificates
             .AsNoTracking()
             .OrderByDescending(certificate => certificate.IssuedAt)
             .Take(500)
-            .Select(certificate => MapListItem(certificate))
             .ToListAsync(cancellationToken);
+        return certificates.Select(MapListItem).ToList();
     }
 
     public async Task<(ServiceResultException? Error, CertificateListItemResponse? Result)> RetryAsync(
@@ -278,7 +278,7 @@ public sealed class CertificateService
         };
     }
 
-    private static CertificateListItemResponse MapListItem(Certificate certificate) => new()
+    private CertificateListItemResponse MapListItem(Certificate certificate) => new()
     {
         Id = certificate.Id,
         AttemptId = certificate.AttemptId,
@@ -288,7 +288,8 @@ public sealed class CertificateService
         Percentage = certificate.Percentage,
         Status = certificate.Status.ToString(),
         IssuedAt = certificate.IssuedAt,
-        FailureReason = certificate.FailureReason
+        FailureReason = certificate.FailureReason,
+        PublicUrl = GetPublicUrl(certificate)
     };
 
     private static OutboxMessage BuildOutbox(Guid certificateId, DateTime now) => new()

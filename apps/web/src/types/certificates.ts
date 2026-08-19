@@ -34,6 +34,7 @@ export interface CertificateListItem {
   status: CertificateStatus;
   issuedAt: string;
   failureReason: string | null;
+  publicUrl: string | null;
 }
 
 export interface PlayerCertificate {

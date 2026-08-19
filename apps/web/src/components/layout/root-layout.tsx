@@ -27,6 +27,9 @@ function isTeacherNavActive(pathname: string, target: string) {
   if (target === '/dashboard/quizzes') {
     return pathname.startsWith(target) && pathname !== '/dashboard/quizzes/new';
   }
+  if (target === '/dashboard/reports') {
+    return pathname.startsWith(target) || pathname.startsWith('/dashboard/attempts/');
+  }
   return pathname.startsWith(target);
 }
 
