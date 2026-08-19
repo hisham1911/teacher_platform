@@ -58,3 +58,8 @@ e2e/playwright-report/
 e2e/state.json
 e2e/storage*.json
 e2e/*.log
+
+# Deployment environment files — commit examples only
+ops/deploy/*.env*
+!ops/deploy/*.env.example
+ops/deploy/*.secrets*

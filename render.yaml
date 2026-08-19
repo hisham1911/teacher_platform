@@ -1,0 +1,131 @@
+services:
+  - type: web
+    name: teacher-platform-api
+    runtime: docker
+    branch: deploy/render-supabase-vercel
+    region: frankfurt
+    plan: starter
+    autoDeployTrigger: off
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /health/ready
+    preDeployCommand: /app/efbundle
+    maxShutdownDelaySeconds: 60
+    numInstances: 1
+    disk:
+      name: teacher-platform-data
+      mountPath: /var/data/teacher-platform
+      sizeGB: 1
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ConnectionStrings__DefaultConnection
+        sync: false
+      - key: Jwt__Issuer
+        sync: false
+      - key: Jwt__Audience
+        sync: false
+      - key: Jwt__SigningKey
+        generateValue: true
+      - key: Jwt__AccessTokenMinutes
+        value: "15"
+      - key: Jwt__ClockSkewMinutes
+        value: "1"
+      - key: Auth__RefreshTokenDays
+        value: "30"
+      - key: Auth__UseSecureCookie
+        value: "true"
+      - key: Auth__CookieSameSite
+        value: None
+      - key: Auth__TrustedOrigins__0
+        sync: false
+      - key: Auth__WebBaseUrl
+        sync: false
+      - key: IdentityLockout__MaxFailedAccessAttempts
+        value: "5"
+      - key: IdentityLockout__DefaultLockoutMinutes
+        value: "15"
+      - key: Cors__AllowedOrigins__0
+        sync: false
+      - key: DataProtection__ApplicationName
+        value: TeacherPlatform
+      - key: DataProtection__KeysDirectory
+        value: /var/data/teacher-platform/data-protection
+      - key: RateLimiting__PermitLimit
+        value: "20"
+      - key: RateLimiting__WindowSeconds
+        value: "60"
+      - key: Logging__LogLevel__Default
+        value: Information
+      - key: Logging__LogLevel__Microsoft.AspNetCore
+        value: Warning
+      - key: QuizLimits__MaxQuizzesPerTenant
+        value: "100"
+      - key: QuizLimits__MaxQuestionsPerQuiz
+        value: "200"
+      - key: QuizLimits__MaxPublishedQuizzesPerTenant
+        value: "50"
+      - key: Session__GraceWindowSeconds
+        value: "10"
+      - key: Session__GuestTokenDays
+        value: "30"
+      - key: Session__JoinCodeLength
+        value: "8"
+      - key: Session__MaxParticipantsPerSession
+        value: "500"
+      - key: Session__LiveDefaultQuestionSeconds
+        value: "30"
+      - key: Session__LiveTokenMinutes
+        value: "5"
+      - key: Session__LiveMonitorIntervalSeconds
+        value: "1"
+      - key: Mail__Provider
+        value: Smtp
+      - key: Mail__Host
+        sync: false
+      - key: Mail__Port
+        sync: false
+      - key: Mail__Username
+        sync: false
+      - key: Mail__Password
+        sync: false
+      - key: Mail__Security
+        value: StartTls
+      - key: Mail__FromAddress
+        sync: false
+      - key: Mail__FromName
+        value: Teacher Platform
+      - key: Storage__Provider
+        value: S3
+      - key: Storage__Endpoint
+        sync: false
+      - key: Storage__Bucket
+        sync: false
+      - key: Storage__AccessKey
+        sync: false
+      - key: Storage__SecretKey
+        sync: false
+      - key: Storage__Region
+        sync: false
+      - key: Storage__ForcePathStyle
+        value: "true"
+      - key: Storage__DownloadUrlExpiryMinutes
+        value: "5"
+      - key: Storage__ImageMaxBytes
+        value: "5242880"
+      - key: Storage__AudioMaxBytes
+        value: "20971520"
+      - key: Certificates__QuestPdfLicense
+        sync: false
+      - key: Certificates__LinuxFontFamily
+        value: DejaVu Sans
+      - key: Certificates__ParentShareDays
+        value: "7"
+      - key: Certificates__WorkerPollSeconds
+        value: "5"
+      - key: Certificates__MaxProcessingAttempts
+        value: "5"
+      - key: Certificates__ProcessingLockSeconds
+        value: "60"
+      - key: SeedRoles
+        value: "true"
