@@ -46,4 +46,4 @@ COPY --from=build /out/efbundle ./efbundle
 ENV ASPNETCORE_ENVIRONMENT=Production
 EXPOSE 10000
 
-CMD ["sh", "-c", "exec dotnet TeacherPlatform.Api.dll --urls http://0.0.0.0:${PORT:-10000}"]
+CMD ["sh", "-c", "/app/efbundle && exec dotnet TeacherPlatform.Api.dll --urls http://0.0.0.0:${PORT:-10000}"]
