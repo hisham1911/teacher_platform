@@ -1,11 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 
 interface LiveCountdownProps {
   closesAt: string | null;
+  startedAt?: string | null;
   serverNow: string;
 }
 
-export function LiveCountdown({ closesAt, serverNow }: LiveCountdownProps) {
+export function LiveCountdown({ closesAt, startedAt = null, serverNow }: LiveCountdownProps) {
   const clockOffset = useMemo(
     () => new Date(serverNow).getTime() - Date.now(),
     [serverNow],
@@ -22,16 +23,20 @@ export function LiveCountdown({ closesAt, serverNow }: LiveCountdownProps) {
 
   const remainingMs = Math.max(0, new Date(closesAt).getTime() - (now + clockOffset));
   const remainingSeconds = Math.ceil(remainingMs / 1_000);
+  const totalMs = startedAt ? Math.max(1, new Date(closesAt).getTime() - new Date(startedAt).getTime()) : null;
+  const remainingRatio = totalMs ? Math.min(1, remainingMs / totalMs) : 1;
+  const urgency = remainingSeconds <= 5 ? 'critical' : remainingSeconds <= 10 ? 'warning' : 'normal';
+  const style = { '--live-timer-progress': `${remainingRatio * 360}deg` } as CSSProperties;
 
   return (
-    <span
+    <div
       role="timer"
       aria-label={`متبقٍ ${remainingSeconds} ثانية`}
-      className={`inline-flex min-w-20 justify-center rounded-full px-3 py-1 font-mono text-2xl font-black tabular-nums ${
-        remainingSeconds <= 5 ? 'bg-rose-100 text-rose-700' : 'bg-sky-100 text-sky-800'
-      }`}>
-      {remainingSeconds}
-    </span>
+      data-urgency={urgency}
+      style={style}
+      className="live-timer">
+      <span className="relative z-10 font-mono text-4xl font-black tabular-nums text-white">{remainingSeconds}</span>
+      <span className="relative z-10 mt-1 text-xs font-bold text-slate-300">ثانية</span>
+    </div>
   );
 }
-

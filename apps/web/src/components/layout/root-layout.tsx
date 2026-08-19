@@ -35,17 +35,19 @@ export function RootLayout({ children }: { children: ReactNode }) {
   const location = useLocation();
   const session = useSessionSnapshot();
   const activeTenantId = getActiveTenantId();
+  const isFocusedLiveHost = location.pathname.startsWith('/dashboard/sessions/') && location.pathname.endsWith('/live');
+  const isFocusedExperience = location.pathname.startsWith('/play/') || isFocusedLiveHost;
 
   const { data: workspaces } = useQuery({
     queryKey: ['tenants', 'mine'],
     queryFn: ({ signal }) => tenantsApi.listMine(signal),
-    enabled: Boolean(session.user),
+    enabled: Boolean(session.user && !isFocusedExperience),
     retry: false,
   });
 
   const activeWorkspace = workspaces?.find((workspace) => workspace.id === activeTenantId) ?? null;
 
-  if (location.pathname.startsWith('/play/')) {
+  if (isFocusedExperience) {
     return <div className="min-h-dvh" dir="rtl">{children}</div>;
   }
 

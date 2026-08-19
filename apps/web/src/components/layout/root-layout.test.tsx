@@ -52,6 +52,28 @@ describe('RootLayout', () => {
     expect(screen.queryByText('منصة المعلم — إدارة الاختبارات والنتائج')).not.toBeInTheDocument();
   });
 
+  it('يعرض Live Host في وضع تركيز بلا تنقل أو Footer المعلم', () => {
+    establishSession({
+      accessToken: 'token', accessTokenExpiresAtMs: Date.now() + 10_000,
+      user: { id: 'u1', email: 'teacher@example.test', fullName: 'معلمة', emailConfirmed: true, platformRoles: [] },
+      activeWorkspace: { id: 'tenant-1', name: 'مدرستي', slug: 'school', role: 'Owner', status: 'Active' },
+    });
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const view = render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={['/dashboard/sessions/session-1/live']}>
+          <RootLayout><div>واجهة المضيف المستقلة</div></RootLayout>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    expect(screen.getByText('واجهة المضيف المستقلة')).toBeInTheDocument();
+    expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
+    expect(screen.queryByText('منصة المعلم — مساحة عمل تعليمية واضحة')).not.toBeInTheDocument();
+    view.unmount();
+    clearSession();
+  });
+
   it('يعرض التقارير وقائمة موبايل رأسية للمستخدم المسجل', async () => {
     establishSession({
       accessToken: 'token', accessTokenExpiresAtMs: Date.now() + 10_000,

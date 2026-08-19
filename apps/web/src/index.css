@@ -23,6 +23,12 @@
   --student-violet-soft: oklch(0.955 0.035 292);
   --student-orange: oklch(0.76 0.16 67);
   --student-orange-soft: oklch(0.965 0.045 72);
+  --live-bg: oklch(0.135 0.025 244);
+  --live-surface: oklch(0.19 0.03 232);
+  --live-surface-raised: oklch(0.225 0.032 222);
+  --live-border: oklch(0.36 0.045 210);
+  --live-emerald: oklch(0.78 0.16 165);
+  --live-amber: oklch(0.82 0.16 82);
 }
 
 body {
@@ -51,6 +57,82 @@ body {
 .quiz-builder-layout {
   display: grid;
   gap: 1.5rem;
+}
+
+.live-host-shell {
+  background: var(--live-bg);
+  color: oklch(0.96 0.01 220);
+}
+
+.live-surface {
+  border: 1px solid var(--live-border);
+  border-radius: 1rem;
+  background: var(--live-surface);
+}
+
+.live-timer {
+  --live-timer-color: var(--live-emerald);
+  position: relative;
+  display: flex;
+  height: 9rem;
+  width: 9rem;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: conic-gradient(var(--live-timer-color) var(--live-timer-progress), oklch(0.28 0.025 230) 0);
+  transition: background-color 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.live-timer::before {
+  position: absolute;
+  inset: 0.55rem;
+  border-radius: inherit;
+  background: var(--live-bg);
+  content: '';
+}
+
+.live-timer[data-urgency='warning'] {
+  --live-timer-color: var(--live-amber);
+}
+
+.live-timer[data-urgency='critical'] {
+  --live-timer-color: oklch(0.68 0.2 25);
+}
+
+.live-media-preview p {
+  color: oklch(0.86 0.02 220);
+}
+
+.live-media-preview img {
+  border-color: var(--live-border);
+  background: white;
+}
+
+.live-enter {
+  animation: live-enter 200ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.live-status-pulse {
+  animation: live-status-pulse 1800ms ease-in-out infinite;
+}
+
+@keyframes live-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes live-status-pulse {
+  50% {
+    opacity: 0.45;
+  }
 }
 
 @media (min-width: 64rem) {
@@ -110,7 +192,14 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .student-enter {
+  .student-enter,
+  .live-enter,
+  .live-status-pulse {
     animation: none;
+  }
+
+  .live-timer,
+  .live-host-shell * {
+    transition-duration: 0.01ms !important;
   }
 }

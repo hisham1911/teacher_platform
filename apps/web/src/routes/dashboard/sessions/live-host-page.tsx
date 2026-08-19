@@ -1,21 +1,12 @@
 import { useCallback, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useParams, useSearchParams } from 'react-router';
-import { Button } from '../../../components/ui/button';
-import { ButtonSpinner } from '../../../components/ui/spinner';
 import { liveApi, sessionsApi } from '../../../data/api-client/endpoints';
 import { HttpError } from '../../../data/api-client/http-error';
-import { LiveCountdown } from '../../../features/live/live-countdown';
 import { useLiveConnection } from '../../../features/live/use-live-connection';
 import { getActiveTenantId } from '../../../lib/auth/session';
 import type { LiveControlRequest, LiveSessionState } from '../../../types/live';
-
-const PHASE_LABELS = {
-  Lobby: 'قاعة الانتظار',
-  QuestionOpen: 'السؤال مفتوح',
-  QuestionClosed: 'عرض النتائج',
-  Finished: 'انتهت المسابقة',
-} as const;
+import { LiveHostStatusScreen, LiveHostView } from './live-host-ui';
 
 export default function LiveHostPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -25,6 +16,7 @@ export default function LiveHostPage() {
   const queryClient = useQueryClient();
   const [durationSeconds, setDurationSeconds] = useState(30);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');
 
   const stateQuery = useQuery({
     queryKey: ['live-state', tenantId, quizId, sessionId],
@@ -74,128 +66,62 @@ export default function LiveHostPage() {
     },
   });
 
+  function onDurationChange(value: number) {
+    setDurationSeconds(Math.min(300, Math.max(5, value)));
+  }
+
+  async function onCopyStudentUrl(url: string) {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopyState('copied');
+      window.setTimeout(() => setCopyState('idle'), 2_000);
+    } catch {
+      setCopyState('failed');
+    }
+  }
+
   if (!tenantId) {
     return null;
   }
   if (!quizId) {
-    return <p role="alert" className="rounded-lg bg-rose-50 p-3 text-sm text-rose-700">معرّف الاختبار مفقود من الرابط.</p>;
+    return (
+      <LiveHostStatusScreen>
+        <p role="alert" className="text-base font-bold text-rose-200">رابط المسابقة غير مكتمل.</p>
+        <Link to="/dashboard/quizzes" className="mt-5 inline-flex min-h-11 items-center text-sm font-bold text-emerald-200 hover:text-emerald-100">العودة إلى الاختبارات</Link>
+      </LiveHostStatusScreen>
+    );
   }
   if (stateQuery.isLoading || sessionQuery.isLoading) {
-    return <p className="text-sm text-slate-500">جارٍ تجهيز لوحة البث…</p>;
+    return <LiveHostStatusScreen><p role="status" className="text-base font-bold">جارٍ تجهيز المسابقة المباشرة…</p></LiveHostStatusScreen>;
   }
   if (!stateQuery.data || !sessionQuery.data) {
-    return <p role="alert" className="rounded-lg bg-rose-50 p-3 text-sm text-rose-700">تعذر فتح المسابقة المباشرة.</p>;
+    return (
+      <LiveHostStatusScreen>
+        <p role="alert" className="text-base font-bold text-rose-200">تعذر فتح المسابقة المباشرة.</p>
+        <button type="button" onClick={() => void Promise.all([stateQuery.refetch(), sessionQuery.refetch()])} className="mt-5 inline-flex min-h-11 items-center rounded-lg border border-white/15 px-5 text-sm font-bold text-white hover:bg-white/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300">إعادة المحاولة</button>
+      </LiveHostStatusScreen>
+    );
   }
 
   const state = stateQuery.data;
   const session = sessionQuery.data;
-  const canOpen = state.sessionStatus === 'Active' && (state.phase === 'Lobby' || state.phase === 'QuestionClosed')
-    && state.currentQuestionIndex + 1 < state.totalQuestions;
-  const canFinish = state.sessionStatus === 'Active' && state.phase !== 'QuestionOpen';
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-5">
-      <header className="overflow-hidden rounded-2xl bg-slate-950 p-5 text-white shadow-xl">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-sm font-semibold text-sky-300">إدارة المسابقة المباشرة</p>
-            <h1 className="mt-1 text-2xl font-black">{session.label ?? session.quizTitle}</h1>
-            <p className="mt-1 text-sm text-slate-300">رمز الانضمام <span dir="ltr" className="font-mono text-lg font-bold text-white">{session.joinCode}</span></p>
-          </div>
-          <div className="flex items-center gap-2 text-xs">
-            <span className={`h-2.5 w-2.5 rounded-full ${connectionStatus === 'connected' ? 'bg-emerald-400' : 'bg-amber-400'}`} />
-            {connectionStatus === 'connected' ? 'متصل لحظيًا' : 'التحديث الدوري يعمل'}
-          </div>
-        </div>
-        <div className="mt-5 flex flex-wrap items-end justify-between gap-4 border-t border-slate-800 pt-5">
-          <div>
-            <p className="text-sm text-slate-400">الحالة</p>
-            <p className="text-xl font-bold">{PHASE_LABELS[state.phase]}</p>
-          </div>
-          {state.phase === 'QuestionOpen' ? <LiveCountdown closesAt={state.questionClosesAt} serverNow={state.serverNow} /> : null}
-          <div className="flex gap-5 text-center">
-            <Metric value={state.participantCount} label="مشارك" />
-            <Metric value={state.attemptCount} label="بدأ" />
-            <Metric value={state.answeredCount} label="أجاب" />
-          </div>
-        </div>
-      </header>
-
-      {actionError ? <p role="alert" className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">{actionError}</p> : null}
-
-      <section className="grid gap-5 lg:grid-cols-[1.5fr_1fr]">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          {state.currentQuestion ? (
-            <>
-              <p className="text-sm font-bold text-sky-700">السؤال {state.currentQuestion.index + 1} من {state.totalQuestions}</p>
-              <h2 className="mt-2 text-xl font-bold leading-8 text-slate-950">{state.currentQuestion.prompt}</h2>
-              <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                {state.currentQuestion.options.map((option, index) => (
-                  <div key={option.optionId} className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm font-medium text-slate-800">
-                    <span className="me-2 text-sky-700">{index + 1}.</span>{option.optionText}
-                  </div>
-                ))}
-              </div>
-            </>
-          ) : (
-            <div className="flex min-h-52 flex-col items-center justify-center text-center">
-              <p className="text-lg font-bold text-slate-900">الطلاب يرون قاعة الانتظار</p>
-              <p className="mt-1 text-sm text-slate-500">افتح السؤال الأول عندما يصبح الجميع جاهزًا.</p>
-            </div>
-          )}
-        </div>
-
-        <aside className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="font-bold text-slate-900">لوحة الترتيب</h2>
-          {state.leaderboard.length === 0 ? (
-            <p className="mt-4 text-sm text-slate-500">تظهر الدرجات بعد إغلاق السؤال.</p>
-          ) : (
-            <ol className="mt-3 space-y-2">
-              {state.leaderboard.map((entry) => (
-                <li key={`${entry.rank}-${entry.displayName}`} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-sm">
-                  <span><b className="me-2 text-sky-700">#{entry.rank}</b>{entry.displayName}</span>
-                  <span dir="ltr" className="font-mono font-bold">{entry.score}</span>
-                </li>
-              ))}
-            </ol>
-          )}
-        </aside>
-      </section>
-
-      <section aria-label="أوامر المسابقة" className="sticky bottom-3 flex flex-wrap items-end gap-3 rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-xl backdrop-blur">
-        {(state.phase === 'Lobby' || state.phase === 'QuestionClosed') && state.sessionStatus === 'Active' ? (
-          <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
-            مدة السؤال بالثواني
-            <input
-              aria-label="مدة السؤال بالثواني"
-              type="number"
-              min={5}
-              max={300}
-              value={durationSeconds}
-              onChange={(event) => setDurationSeconds(Math.min(300, Math.max(5, Number(event.target.value))))}
-              className="min-h-11 w-28 rounded-md border border-slate-300 px-3 text-base text-slate-900"
-            />
-            <span className="max-w-48 text-[11px] font-normal leading-4 text-slate-500">تُطبّق المدة عند فتح السؤال التالي.</span>
-          </label>
-        ) : null}
-        {canOpen ? (
-          <Button onClick={() => controlMutation.mutate('open')} disabled={controlMutation.isPending}>
-            {controlMutation.isPending ? <ButtonSpinner /> : null}
-            {state.currentQuestionIndex < 0 ? 'فتح السؤال الأول' : 'فتح السؤال التالي'}
-          </Button>
-        ) : null}
-        {state.phase === 'QuestionOpen' ? (
-          <Button variant="secondary" onClick={() => controlMutation.mutate('close')} disabled={controlMutation.isPending}>إغلاق السؤال الآن</Button>
-        ) : null}
-        {canFinish ? (
-          <Button variant="danger" onClick={() => controlMutation.mutate('finish')} disabled={controlMutation.isPending}>إنهاء المسابقة</Button>
-        ) : null}
-        <Link to={`/dashboard/sessions/${session.id}?quizId=${quizId}`} className="min-h-11 rounded-md px-3 py-2 text-sm text-slate-600 hover:bg-slate-100">تفاصيل الجلسة</Link>
-      </section>
-    </div>
+    <LiveHostView
+      state={state}
+      session={session}
+      tenantId={tenantId}
+      quizId={quizId}
+      connectionStatus={connectionStatus}
+      durationSeconds={durationSeconds}
+      copyState={copyState}
+      actionError={actionError}
+      isPending={controlMutation.isPending}
+      onDurationChange={onDurationChange}
+      onCopyStudentUrl={(url) => void onCopyStudentUrl(url)}
+      onOpen={() => controlMutation.mutate('open')}
+      onClose={() => controlMutation.mutate('close')}
+      onFinish={() => controlMutation.mutate('finish')}
+    />
   );
-}
-
-function Metric({ value, label }: { value: number; label: string }) {
-  return <div><p className="text-2xl font-black tabular-nums">{value}</p><p className="text-xs text-slate-400">{label}</p></div>;
 }
