@@ -75,6 +75,7 @@ const startResponse: StartAttemptResponse = {
   serverNow: new Date().toISOString(),
   totalQuestions: 2,
   currentQuestionIndex: 0,
+  scoreSoFar: 0,
   status: 'InProgress',
 };
 

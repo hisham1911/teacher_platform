@@ -2,7 +2,7 @@
 
 import type { QuestionType } from './questions';
 
-export type SessionMode = 'SelfPaced' | 'Live';
+export type SessionMode = 'SelfPaced' | 'Live' | 'ProgressiveChallenge';
 
 export type SessionStatus = 'Scheduled' | 'Active' | 'Finished' | 'Cancelled';
 
@@ -101,6 +101,8 @@ export interface StartAttemptResponse {
   serverNow: string;
   totalQuestions: number;
   currentQuestionIndex: number;
+  /** مجموع نقاط الإجابات المسجلة حتى الآن — لاستئناف عرض النقاط بعد التحديث. */
+  scoreSoFar: number;
   status: AttemptStatus;
 }
 
@@ -176,6 +178,7 @@ export const SESSION_STATUS_LABELS: Record<SessionStatus, string> = {
 export const SESSION_MODE_LABELS: Record<SessionMode, string> = {
   SelfPaced: 'ذاتي الإيقاع',
   Live: 'مباشر',
+  ProgressiveChallenge: 'التحدي المتدرج',
 };
 
 export const ATTEMPT_STATUS_LABELS: Record<AttemptStatus, string> = {
