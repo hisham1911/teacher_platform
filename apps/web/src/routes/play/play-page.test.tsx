@@ -464,4 +464,98 @@ describe('PlayPage', () => {
     expect(startAttemptMock).not.toHaveBeenCalled();
     expect(localStorage.length).toBe(0);
   });
+
+  it('يعرض شاشة استعداد التحدي المتدرج بعد الانضمام ثم يبدأ من المستوى الأول', async () => {
+    const challengeSession: PlayerSession = { ...activeSession, mode: 'ProgressiveChallenge' };
+    getSessionMock.mockResolvedValue(challengeSession);
+    joinMock.mockResolvedValue(joinResponse);
+    startAttemptMock.mockResolvedValue({ ...startResponse, scoreSoFar: 0 });
+    vi.mocked(playerApi.getCurrentQuestion).mockResolvedValue({
+      quizVersionItemId: 'q-1',
+      index: 0,
+      totalQuestions: 2,
+      questionType: 'MultipleChoice',
+      prompt: 'مستوى أول',
+      points: 5,
+      isRequired: true,
+      mediaAssetId: null,
+      options: [
+        { optionId: 'opt-1', optionText: 'أ' },
+        { optionId: 'opt-2', optionText: 'ب' },
+      ],
+      alreadyAnswered: false,
+      deadlineAt: null,
+      serverNow: new Date().toISOString(),
+    });
+
+    renderPage();
+
+    await waitFor(() => screen.getByRole('button', { name: 'ابدأ الاختبار' }));
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'متحدٍّ جديد' } });
+    fireEvent.click(screen.getByRole('button', { name: 'ابدأ الاختبار' }));
+
+    // شاشة استعداد مخصصة للتحدي قبل البدء
+    expect(await screen.findByTestId('challenge-ready')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'ابدأ التحدي' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'ابدأ التحدي' }));
+
+    expect(await screen.findByTestId('challenge-level-indicator')).toHaveTextContent('المستوى 1 / 2');
+    expect(startAttemptMock).toHaveBeenCalledWith('JOIN123');
+  });
+
+  it('يستأنف محاولة تحدٍ متدرج قائمة مباشرة من المستوى المحفوظ', async () => {
+    const challengeSession: PlayerSession = { ...activeSession, mode: 'ProgressiveChallenge' };
+    getSessionMock.mockResolvedValue(challengeSession);
+    getCurrentPlayerMock.mockResolvedValue({ ...joinResponse, attemptId: 'a-9', attemptStatus: 'InProgress' });
+    startAttemptMock.mockResolvedValue({ ...startResponse, attemptId: 'a-9', currentQuestionIndex: 1, scoreSoFar: 5 });
+    vi.mocked(playerApi.getCurrentQuestion).mockResolvedValue({
+      quizVersionItemId: 'q-2',
+      index: 1,
+      totalQuestions: 2,
+      questionType: 'TrueFalse',
+      prompt: 'مستوى ثانٍ',
+      points: 5,
+      isRequired: true,
+      mediaAssetId: null,
+      options: [
+        { optionId: 'opt-3', optionText: 'صح' },
+        { optionId: 'opt-4', optionText: 'خطأ' },
+      ],
+      alreadyAnswered: false,
+      deadlineAt: null,
+      serverNow: new Date().toISOString(),
+    });
+
+    renderPage();
+
+    expect(await screen.findByTestId('challenge-level-indicator')).toHaveTextContent('المستوى 2 / 2');
+    expect(screen.getByTestId('challenge-score-indicator')).toHaveTextContent('النقاط: 5');
+    expect(screen.getByRole('heading', { name: 'مستوى ثانٍ' })).toBeInTheDocument();
+  });
+
+  it('يعرض نتيجة التحدي المتدرج للمحاولة المنتهية بدل نتيجة الاختبار العادية', async () => {
+    const challengeSession: PlayerSession = { ...activeSession, mode: 'ProgressiveChallenge' };
+    getSessionMock.mockResolvedValue(challengeSession);
+    getCurrentPlayerMock.mockResolvedValue({ ...joinResponse, attemptId: 'a-9', attemptStatus: 'Finished' });
+    vi.mocked(playerApi.getResult).mockResolvedValue({
+      attemptId: 'a-9',
+      status: 'Finished',
+      displayName: 'متحدٍ سابق',
+      score: 5,
+      maxScore: 10,
+      percentage: 50,
+      passed: false,
+      durationMs: 60_000,
+      answeredCount: 1,
+      totalQuestions: 2,
+      startedAt: new Date().toISOString(),
+      finishedAt: new Date().toISOString(),
+    });
+
+    renderPage();
+
+    expect(await screen.findByTestId('challenge-result-banner')).toBeInTheDocument();
+    expect(screen.getByTestId('challenge-reached-level')).toHaveTextContent('وصلت إلى المستوى 1 من 2');
+    expect(screen.queryByText('لم تصل إلى درجة النجاح هذه المرة')).not.toBeInTheDocument();
+  });
 });

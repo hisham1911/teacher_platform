@@ -26,12 +26,15 @@ export function ProgressivePlayerView({
   quizTitle,
   clockSync,
   onFinished,
+  autoAdvanceMs = FEEDBACK_MS,
 }: {
   joinCode: string;
   attempt: StartAttemptResponse;
   quizTitle: string;
   clockSync: (serverNow: string) => void;
   onFinished: (attemptId: string) => void;
+  /** للاختبارات فقط — يقصّر مهلة الانتقال التلقائي بعد التغذية الراجعة. */
+  autoAdvanceMs?: number;
 }) {
   const [questionIndex, setQuestionIndex] = useState(attempt.currentQuestionIndex);
   const [score, setScore] = useState(attempt.scoreSoFar);
@@ -82,7 +85,7 @@ export function ProgressivePlayerView({
       } else {
         setQuestionIndex((index) => index + 1);
       }
-    }, FEEDBACK_MS);
+    }, autoAdvanceMs);
   }
 
   const answerMutation = useMutation({
@@ -98,7 +101,7 @@ export function ProgressivePlayerView({
       } else if (saved.isCorrect === false) {
         // إجابة خاطئة — الخادم أنهى التحدي فورًا
         setFeedback('wrong');
-        advanceTimer.current = window.setTimeout(goToResult, FEEDBACK_MS + 600);
+        advanceTimer.current = window.setTimeout(goToResult, autoAdvanceMs + 600);
       }
     },
     onError: (error) => {
