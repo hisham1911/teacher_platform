@@ -6,7 +6,8 @@ namespace TeacherPlatform.Domain.Sessions;
 /// <summary>
 /// جلسة اختبار — تمثل إتاحة اختبار منشور للطلاب عبر رمز انضمام.
 /// تثبّت QuizVersionId المنشورة لحظة الإنشاء فلا يتأثر المحتوى بتعديلات لاحقة.
-/// يدعم SelfPaced وLive؛ حالة Live التفصيلية محفوظة في LiveSessionState.
+/// يدعم SelfPaced وLive وProgressiveChallenge؛ حالة Live التفصيلية محفوظة في LiveSessionState،
+/// أما ProgressiveChallenge فتشتق تقدم اللاعب من Attempt.CurrentQuestionIndex وAttemptAnswers بلا جداول إضافية.
 /// </summary>
 public sealed class QuizSession : ITenantEntity
 {
@@ -57,7 +58,14 @@ public sealed class QuizSession : ITenantEntity
 public enum SessionMode
 {
     SelfPaced = 1,
-    Live = 2
+    Live = 2,
+
+    /// <summary>
+    /// تحدٍّ متدرج فردي: ترتيب أسئلة النسخة هو سلم المستويات؛ الإجابة الصحيحة تنقل
+    /// الطالب للمستوى التالي والخاطئة تنهي محاولته فورًا. لا حالة إضافية —
+    /// التقدم مشتق من CurrentQuestionIndex وعدد الإجابات.
+    /// </summary>
+    ProgressiveChallenge = 3
 }
 
 public enum SessionStatus

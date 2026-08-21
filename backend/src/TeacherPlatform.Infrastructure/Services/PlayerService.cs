@@ -276,7 +276,7 @@ public sealed class PlayerService
             Status = AttemptStatus.InProgress,
             CurrentQuestionIndex = 0,
             StartedAt = now,
-            DeadlineAt = session.Mode == SessionMode.SelfPaced &&
+            DeadlineAt = session.Mode is SessionMode.SelfPaced or SessionMode.ProgressiveChallenge &&
                          version.TimeMode == QuizTimeMode.TotalTime && version.TimeLimitSeconds.HasValue
                 ? now.AddSeconds(version.TimeLimitSeconds.Value)
                 : null,
@@ -338,8 +338,8 @@ public sealed class PlayerService
 
         var now = _clock.UtcNow;
 
-        // تسوية عند الطلب: انتهاء الوقت الكلي في SelfPaced فقط.
-        if (session!.Mode == SessionMode.SelfPaced &&
+        // تسوية عند الطلب: انتهاء الوقت الكلي في SelfPaced وProgressiveChallenge.
+        if (session!.Mode is SessionMode.SelfPaced or SessionMode.ProgressiveChallenge &&
             attempt.Status == AttemptStatus.InProgress && IsPastDeadline(attempt.DeadlineAt, now))
         {
             await FinalizeAttemptAsync(session!, attempt, version, now, timedOut: true, cancellationToken);
@@ -362,7 +362,8 @@ public sealed class PlayerService
             return (new ServiceResultException("Conflict", "No live question is accepting answers."), null);
         }
 
-        var orderedItems = session.Mode == SessionMode.Live
+        // ProgressiveChallenge: الترتيب صارم حسب SortOrder — ترتيب الأسئلة هو سلم المستويات.
+        var orderedItems = session.Mode is SessionMode.Live or SessionMode.ProgressiveChallenge
             ? version.Items.OrderBy(item => item.SortOrder).ToList()
             : OrderItems(version, attempt.ShuffleSeed);
         if (orderedItems.Count == 0)
@@ -371,7 +372,7 @@ public sealed class PlayerService
         }
 
         // تسوية Per-Question: إن تجاوز الطالب نافذة السؤال الحالي + السماح نُنهي المحاولة TimedOut
-        if (session.Mode == SessionMode.SelfPaced &&
+        if (session.Mode is SessionMode.SelfPaced or SessionMode.ProgressiveChallenge &&
             version.TimeMode == QuizTimeMode.PerQuestion && version.TimeLimitSeconds.HasValue)
         {
             var questionDeadline = attempt.StartedAt.AddSeconds((attempt.CurrentQuestionIndex + 1) * (double)version.TimeLimitSeconds.Value);
@@ -467,7 +468,7 @@ public sealed class PlayerService
 
         var now = _clock.UtcNow;
 
-        if (session!.Mode == SessionMode.SelfPaced &&
+        if (session!.Mode is SessionMode.SelfPaced or SessionMode.ProgressiveChallenge &&
             attempt.Status == AttemptStatus.InProgress && IsPastDeadline(attempt.DeadlineAt, now))
         {
             await FinalizeAttemptAsync(session!, attempt, version, now, timedOut: true, cancellationToken);
@@ -534,6 +535,19 @@ public sealed class PlayerService
             }
         }
 
+        // ProgressiveChallenge: الترتيب صارم — يُسمح بالإجابة على مستوى السؤال الحالي فقط.
+        var orderedItems = session.Mode is SessionMode.Live or SessionMode.ProgressiveChallenge
+            ? version.Items.OrderBy(current => current.SortOrder).ToList()
+            : OrderItems(version, attempt.ShuffleSeed);
+        var answeredIndex = orderedItems.FindIndex(i => i.Id == item.Id);
+        if (session.Mode == SessionMode.ProgressiveChallenge &&
+            answeredIndex != attempt.CurrentQuestionIndex)
+        {
+            return (new ServiceResultException(
+                "NotCurrentLevel",
+                "Only the current challenge level accepts an answer."), null);
+        }
+
         var scoring = AnswerScorer.Score(
             questionVersion.QuestionType,
             questionVersion.ConfigJson,
@@ -554,11 +568,6 @@ public sealed class PlayerService
             CreatedAt = now,
             UpdatedAt = now
         };
-
-        var orderedItems = session.Mode == SessionMode.Live
-            ? version.Items.OrderBy(current => current.SortOrder).ToList()
-            : OrderItems(version, attempt.ShuffleSeed);
-        var answeredIndex = orderedItems.FindIndex(i => i.Id == item.Id);
 
         try
         {
@@ -597,6 +606,14 @@ public sealed class PlayerService
             }
 
             return (new ServiceResultException("AnswerConflict", "A different answer was already submitted for this question."), null);
+        }
+
+        // ProgressiveChallenge: الإجابة الخاطئة تنهي التحدي فورًا، والإجابة الصحيحة على
+        // آخر مستوى تُكمله. التقييم النهائي بنفس قواعد FinalizeAttemptAsync الحالية.
+        if (session.Mode == SessionMode.ProgressiveChallenge &&
+            (!scoring.IsCorrect || answeredIndex >= orderedItems.Count - 1))
+        {
+            await FinalizeEndedChallengeAsync(session, attempt, version, now, cancellationToken);
         }
 
         return (null, new SubmitAnswerResponse
@@ -1290,6 +1307,40 @@ public sealed class PlayerService
         attempt.FinishedAt = now;
         attempt.UpdatedAt = now;
         await _db.SaveChangesAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// إنهاء تحدٍّ متدرج انتهى (إجابة خاطئة أو إكمال آخر مستوى) بعد حفظ الإجابة.
+    /// سباق محتمل مع إنهاء متزامن (finish يدوي أو تسوية زمنية): عند تعارض xmin نعيد
+    /// التحميل؛ إن كانت المحاولة منتهية بالفعل فالسباق أنجز الإنهاء ونكتفي.
+    /// </summary>
+    private async Task FinalizeEndedChallengeAsync(
+        QuizSession session,
+        Attempt attempt,
+        QuizVersion version,
+        DateTime now,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            await FinalizeAttemptAsync(session, attempt, version, now, timedOut: false, cancellationToken);
+            return;
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            _db.ChangeTracker.Clear();
+        }
+
+        var reloaded = await _db.Attempts
+            .IgnoreQueryFilters()
+            .Include(a => a.Answers)
+            .SingleOrDefaultAsync(
+                a => a.Id == attempt.Id && a.SessionId == session.Id && a.TenantId == session.TenantId,
+                cancellationToken);
+        if (reloaded is not null && reloaded.Status == AttemptStatus.InProgress)
+        {
+            await FinalizeAttemptAsync(session, reloaded, version, _clock.UtcNow, timedOut: false, cancellationToken);
+        }
     }
 
     private StartAttemptResponse BuildStartAttemptResponse(Attempt attempt, QuizVersion version)

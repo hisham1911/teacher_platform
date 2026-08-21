@@ -53,6 +53,8 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
                     "AnswerConflict" => StatusCodes.Status409Conflict,
                     "SessionNotActive" => StatusCodes.Status409Conflict,
                     "AttemptFinished" => StatusCodes.Status409Conflict,
+                    "NotCurrentLevel" => StatusCodes.Status409Conflict,
+                    "UnsupportedQuestionTypesForMode" => StatusCodes.Status409Conflict,
                     "AttemptNotCompleted" => StatusCodes.Status409Conflict,
                     "SurveyAlreadySubmitted" => StatusCodes.Status409Conflict,
                     "SurveyPublished" => StatusCodes.Status409Conflict,

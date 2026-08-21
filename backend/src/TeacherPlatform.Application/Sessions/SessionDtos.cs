@@ -6,8 +6,8 @@ namespace TeacherPlatform.Application.Sessions;
 
 public sealed class CreateSessionRequest
 {
-    /// <summary>SelfPaced أو Live.</summary>
-    [Required, RegularExpression("SelfPaced|Live")]
+    /// <summary>SelfPaced أو Live أو ProgressiveChallenge.</summary>
+    [Required, RegularExpression("SelfPaced|Live|ProgressiveChallenge")]
     public string Mode { get; set; } = "SelfPaced";
 
     [StringLength(200)]
