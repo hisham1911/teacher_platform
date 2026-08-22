@@ -246,6 +246,7 @@ public sealed class PlayerService
 
         var existing = await _db.Attempts
             .IgnoreQueryFilters()
+            .Include(a => a.Answers)
             .AsNoTracking()
             .FirstOrDefaultAsync(
                 a => a.SessionId == session.Id && a.ParticipantId == participant!.Id && a.TenantId == session.TenantId,
@@ -296,6 +297,7 @@ public sealed class PlayerService
             _db.ChangeTracker.Clear();
             var raced = await _db.Attempts
                 .IgnoreQueryFilters()
+                .Include(a => a.Answers)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(
                     a => a.SessionId == session.Id && a.ParticipantId == participant.Id && a.TenantId == session.TenantId,
@@ -1353,6 +1355,7 @@ public sealed class PlayerService
             ServerNow = _clock.UtcNow,
             TotalQuestions = version.Items.Count,
             CurrentQuestionIndex = attempt.CurrentQuestionIndex,
+            ScoreSoFar = attempt.Answers.Sum(a => a.ScoreAwarded ?? 0m),
             Status = attempt.Status.ToString()
         };
     }

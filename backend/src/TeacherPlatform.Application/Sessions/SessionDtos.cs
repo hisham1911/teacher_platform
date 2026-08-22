@@ -118,6 +118,9 @@ public sealed class StartAttemptResponse
     public DateTime ServerNow { get; set; }
     public int TotalQuestions { get; set; }
     public int CurrentQuestionIndex { get; set; }
+
+    /// <summary>مجموع نقاط الإجابات المسجلة حتى الآن — يستأنف به اللاعب نقاطه بعد التحديث.</summary>
+    public decimal ScoreSoFar { get; set; }
     public string Status { get; set; } = string.Empty;
 }
 
