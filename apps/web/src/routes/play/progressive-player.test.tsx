@@ -124,7 +124,7 @@ describe('ProgressivePlayerView', () => {
     );
 
     await screen.findByRole('heading', { name: 'سؤال المستوى 1' });
-    fireEvent.click(screen.getAllByTestId('challenge-option')[1]);
+    fireEvent.click(screen.getAllByTestId('challenge-option')[1]!);
     fireEvent.click(screen.getByTestId('challenge-lock-answer'));
 
     await waitFor(() =>
@@ -155,7 +155,7 @@ describe('ProgressivePlayerView', () => {
     );
 
     await screen.findByRole('heading', { name: 'سؤال المستوى 1' });
-    fireEvent.click(screen.getAllByTestId('challenge-option')[0]);
+    fireEvent.click(screen.getAllByTestId('challenge-option')[0]!);
     fireEvent.click(screen.getByTestId('challenge-lock-answer'));
 
     expect(await screen.findByTestId('challenge-feedback-correct')).toBeInTheDocument();
@@ -188,7 +188,7 @@ describe('ProgressivePlayerView', () => {
     );
 
     await screen.findByRole('heading', { name: 'سؤال المستوى 3' });
-    fireEvent.click(screen.getAllByTestId('challenge-option')[0]);
+    fireEvent.click(screen.getAllByTestId('challenge-option')[0]!);
     fireEvent.click(screen.getByTestId('challenge-lock-answer'));
 
     expect(await screen.findByTestId('challenge-feedback-wrong')).toBeInTheDocument();
@@ -217,7 +217,7 @@ describe('ProgressivePlayerView', () => {
     );
 
     await screen.findByRole('heading', { name: 'سؤال المستوى 3' });
-    fireEvent.click(screen.getAllByTestId('challenge-option')[0]);
+    fireEvent.click(screen.getAllByTestId('challenge-option')[0]!);
     fireEvent.click(screen.getByTestId('challenge-lock-answer'));
 
     expect(await screen.findByTestId('challenge-feedback-correct')).toBeInTheDocument();

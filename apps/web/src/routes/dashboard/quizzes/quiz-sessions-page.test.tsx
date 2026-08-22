@@ -3,7 +3,8 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { HttpError } from '../../../data/api-client/http-error';
-import type { PagedResponse, SessionDetail } from '../../../types/sessions';
+import type { PagedResponse } from '../../../types/questions';
+import type { SessionDetail } from '../../../types/sessions';
 import QuizSessionsPage from './quiz-sessions-page';
 
 vi.mock('../../../data/api-client/endpoints', async (importOriginal) => {
