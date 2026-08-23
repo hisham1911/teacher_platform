@@ -353,6 +353,7 @@ export default function PlayPage() {
         attempt={stage.attempt}
         quizTitle={stage.session.title}
         clockSync={clock.sync}
+        clockNow={clock.now}
         onFinished={(attemptId) => {
           void queryClient.invalidateQueries({ queryKey: ['player-result', joinCode, attemptId] });
           setStage({ kind: 'result', attemptId, session: stage.session });

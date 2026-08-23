@@ -340,9 +340,8 @@ public sealed class PlayerService
 
         var now = _clock.UtcNow;
 
-        // تسوية عند الطلب: انتهاء الوقت الكلي في SelfPaced وProgressiveChallenge.
-        if (session!.Mode is SessionMode.SelfPaced or SessionMode.ProgressiveChallenge &&
-            attempt.Status == AttemptStatus.InProgress && IsPastDeadline(attempt.DeadlineAt, now))
+        var attemptDeadline = GetAttemptDeadline(session!, attempt, version);
+        if (attempt.Status == AttemptStatus.InProgress && IsPastDeadline(attemptDeadline, now))
         {
             await FinalizeAttemptAsync(session!, attempt, version, now, timedOut: true, cancellationToken);
             return (new ServiceResultException("AttemptFinished", "Attempt time has expired."), null);
@@ -353,7 +352,7 @@ public sealed class PlayerService
             return (new ServiceResultException("AttemptFinished", "Attempt is already finished."), null);
         }
 
-        var liveState = session.Mode == SessionMode.Live
+        var liveState = session!.Mode == SessionMode.Live
             ? await LoadLiveStateAsync(session, cancellationToken)
             : null;
         if (session.Mode == SessionMode.Live &&
@@ -373,17 +372,6 @@ public sealed class PlayerService
             return (new ServiceResultException("NotFound", "Quiz version has no questions."), null);
         }
 
-        // تسوية Per-Question: إن تجاوز الطالب نافذة السؤال الحالي + السماح نُنهي المحاولة TimedOut
-        if (session.Mode is SessionMode.SelfPaced or SessionMode.ProgressiveChallenge &&
-            version.TimeMode == QuizTimeMode.PerQuestion && version.TimeLimitSeconds.HasValue)
-        {
-            var questionDeadline = attempt.StartedAt.AddSeconds((attempt.CurrentQuestionIndex + 1) * (double)version.TimeLimitSeconds.Value);
-            if (IsPastDeadline(questionDeadline, now))
-            {
-                await FinalizeAttemptAsync(session!, attempt, version, now, timedOut: true, cancellationToken);
-                return (new ServiceResultException("AttemptFinished", "Attempt time has expired."), null);
-            }
-        }
 
         var index = session.Mode == SessionMode.Live
             ? liveState!.CurrentQuestionIndex
@@ -408,15 +396,9 @@ public sealed class PlayerService
                 a => a.AttemptId == attempt.Id && a.QuizVersionItemId == item.Id && a.TenantId == session!.TenantId,
                 cancellationToken);
 
-        DateTime? deadlineAt = session.Mode == SessionMode.Live
+        var deadlineAt = session.Mode == SessionMode.Live
             ? liveState!.QuestionClosesAt
-            : version.TimeMode switch
-            {
-                QuizTimeMode.TotalTime => attempt.DeadlineAt,
-                QuizTimeMode.PerQuestion when version.TimeLimitSeconds.HasValue =>
-                    attempt.StartedAt.AddSeconds((index + 1) * (double)version.TimeLimitSeconds.Value),
-                _ => null
-            };
+            : attemptDeadline;
 
         return (null, new PlayerQuestionResponse
         {
@@ -470,18 +452,6 @@ public sealed class PlayerService
 
         var now = _clock.UtcNow;
 
-        if (session!.Mode is SessionMode.SelfPaced or SessionMode.ProgressiveChallenge &&
-            attempt.Status == AttemptStatus.InProgress && IsPastDeadline(attempt.DeadlineAt, now))
-        {
-            await FinalizeAttemptAsync(session!, attempt, version, now, timedOut: true, cancellationToken);
-            return (new ServiceResultException("AttemptFinished", "Attempt time has expired."), null);
-        }
-
-        if (attempt.Status != AttemptStatus.InProgress)
-        {
-            return (new ServiceResultException("AttemptFinished", "Attempt is already finished."), null);
-        }
-
         var item = version.Items.FirstOrDefault(i => i.Id == request.QuizVersionItemId);
         if (item?.QuestionVersion is null)
         {
@@ -515,7 +485,7 @@ public sealed class PlayerService
                 {
                     AttemptId = attempt.Id,
                     QuizVersionItemId = item.Id,
-                    IsCorrect = session.Mode == SessionMode.Live ? null : existingAnswer.IsCorrect ?? false,
+                    IsCorrect = session!.Mode == SessionMode.Live ? null : existingAnswer.IsCorrect ?? false,
                     ScoreAwarded = session.Mode == SessionMode.Live ? null : existingAnswer.ScoreAwarded ?? 0m,
                     Revision = attempt.Revision,
                     ServerNow = now
@@ -525,8 +495,20 @@ public sealed class PlayerService
             return (new ServiceResultException("AnswerConflict", "A different answer was already submitted for this question."), null);
         }
 
+        if (attempt.Status != AttemptStatus.InProgress)
+        {
+            return (new ServiceResultException("AttemptFinished", "Attempt is already finished."), null);
+        }
+
+        var attemptDeadline = GetAttemptDeadline(session!, attempt, version);
+        if (IsPastDeadline(attemptDeadline, now))
+        {
+            await FinalizeAttemptAsync(session!, attempt, version, now, timedOut: true, cancellationToken);
+            return (new ServiceResultException("AttemptFinished", "Attempt time has expired."), null);
+        }
+
         LiveSessionState? liveState = null;
-        if (session.Mode == SessionMode.Live)
+        if (session!.Mode == SessionMode.Live)
         {
             liveState = await LoadLiveStateAsync(session, cancellationToken);
             if (liveState?.Phase != LiveSessionPhase.QuestionOpen ||
@@ -571,9 +553,13 @@ public sealed class PlayerService
             UpdatedAt = now
         };
 
+        var endsProgressiveChallenge = session.Mode == SessionMode.ProgressiveChallenge &&
+            (!scoring.IsCorrect || answeredIndex >= orderedItems.Count - 1);
+
         try
         {
             using var bootstrap = _tenantContext.BeginBootstrap(session.TenantId);
+            answer.Attempt = attempt;
             _db.AttemptAnswers.Add(answer);
             attempt.Revision++;
             if (answeredIndex >= 0 && answeredIndex == attempt.CurrentQuestionIndex)
@@ -582,6 +568,12 @@ public sealed class PlayerService
             }
 
             attempt.UpdatedAt = now;
+            if (endsProgressiveChallenge)
+            {
+                attempt.Status = AttemptStatus.Finished;
+                ApplyAttemptFinalization(session, attempt, version, now);
+            }
+
             await _db.SaveChangesAsync(cancellationToken);
         }
         catch (DbUpdateException)
@@ -608,14 +600,6 @@ public sealed class PlayerService
             }
 
             return (new ServiceResultException("AnswerConflict", "A different answer was already submitted for this question."), null);
-        }
-
-        // ProgressiveChallenge: الإجابة الخاطئة تنهي التحدي فورًا، والإجابة الصحيحة على
-        // آخر مستوى تُكمله. التقييم النهائي بنفس قواعد FinalizeAttemptAsync الحالية.
-        if (session.Mode == SessionMode.ProgressiveChallenge &&
-            (!scoring.IsCorrect || answeredIndex >= orderedItems.Count - 1))
-        {
-            await FinalizeEndedChallengeAsync(session, attempt, version, now, cancellationToken);
         }
 
         return (null, new SubmitAnswerResponse
@@ -668,7 +652,7 @@ public sealed class PlayerService
 
         for (var finalizeAttempt = 0; finalizeAttempt < 2; finalizeAttempt++)
         {
-            var timedOut = IsPastDeadline(attempt.DeadlineAt, now);
+            var timedOut = IsPastDeadline(GetAttemptDeadline(session!, attempt, version), now);
             try
             {
                 await FinalizeAttemptAsync(session!, attempt, version, now, timedOut, cancellationToken);
@@ -873,20 +857,21 @@ public sealed class PlayerService
         }
 
         // المحاولة يجب أن تخص صاحب الرمز — تمنع استعراض وسائط محاولات الآخرين.
-        var attemptExists = await _db.Attempts
+        var attempt = await _db.Attempts
             .IgnoreQueryFilters()
-            .AnyAsync(
+            .AsNoTracking()
+            .SingleOrDefaultAsync(
                 a => a.Id == attemptId &&
                      a.SessionId == session!.Id &&
                      a.ParticipantId == participant!.Id &&
                      a.TenantId == session.TenantId,
                 cancellationToken);
-        if (!attemptExists)
+        if (attempt is null)
         {
             return (new ServiceResultException("NotFound", "Attempt not found."), null);
         }
 
-        Guid? liveCurrentItemId = null;
+        Guid? restrictedItemId = null;
         if (session!.Mode == SessionMode.Live)
         {
             var liveState = await LoadLiveStateAsync(session, cancellationToken);
@@ -894,16 +879,35 @@ public sealed class PlayerService
             {
                 return (new ServiceResultException("NotFound", "Media not found."), null);
             }
-            liveCurrentItemId = liveState.CurrentQuizVersionItemId;
+            restrictedItemId = liveState.CurrentQuizVersionItemId;
+        }
+        else if (session.Mode == SessionMode.ProgressiveChallenge)
+        {
+            if (attempt.Status != AttemptStatus.InProgress)
+            {
+                return (new ServiceResultException("NotFound", "Media not found."), null);
+            }
+
+            restrictedItemId = await _db.QuizVersionItems
+                .IgnoreQueryFilters()
+                .Where(i => i.QuizVersionId == session.QuizVersionId && i.TenantId == session.TenantId)
+                .OrderBy(i => i.SortOrder)
+                .Skip(attempt.CurrentQuestionIndex)
+                .Select(i => (Guid?)i.Id)
+                .FirstOrDefaultAsync(cancellationToken);
+            if (restrictedItemId is null)
+            {
+                return (new ServiceResultException("NotFound", "Media not found."), null);
+            }
         }
 
-        // الوسيط يجب أن يكون مرتبطًا بسؤال مسموح ضمن النسخة؛ Live يقصره على السؤال المفتوح.
+        // الوسيط يجب أن يكون مرتبطًا بسؤال مسموح ضمن النسخة؛ Live وProgressive يقصرانه على السؤال الحالي.
         var isReferenced = await _db.QuizVersionItems
             .IgnoreQueryFilters()
             .AnyAsync(
                 i => i.QuizVersionId == session!.QuizVersionId &&
                      i.TenantId == session.TenantId &&
-                     (liveCurrentItemId == null || i.Id == liveCurrentItemId) &&
+                     (restrictedItemId == null || i.Id == restrictedItemId) &&
                      i.QuestionVersion != null &&
                      i.QuestionVersion.MediaAssetId == mediaId,
                 cancellationToken);
@@ -1276,6 +1280,22 @@ public sealed class PlayerService
         }
     }
 
+    private static DateTime? GetAttemptDeadline(QuizSession session, Attempt attempt, QuizVersion version)
+    {
+        if (session.Mode is not (SessionMode.SelfPaced or SessionMode.ProgressiveChallenge) ||
+            !version.TimeLimitSeconds.HasValue)
+        {
+            return null;
+        }
+
+        return version.TimeMode switch
+        {
+            QuizTimeMode.TotalTime => attempt.DeadlineAt,
+            QuizTimeMode.PerQuestion => attempt.UpdatedAt.AddSeconds(version.TimeLimitSeconds.Value),
+            _ => null
+        };
+    }
+
     private bool IsPastDeadline(DateTime? deadlineAt, DateTime now)
     {
         return deadlineAt.HasValue &&
@@ -1293,56 +1313,35 @@ public sealed class PlayerService
         bool timedOut,
         CancellationToken cancellationToken)
     {
+        using var bootstrap = _tenantContext.BeginBootstrap(session.TenantId);
+        attempt.Status = timedOut ? AttemptStatus.TimedOut : AttemptStatus.Finished;
+        ApplyAttemptFinalization(session, attempt, version, now);
+        await _db.SaveChangesAsync(cancellationToken);
+    }
+
+    private static void ApplyAttemptFinalization(
+        QuizSession session,
+        Attempt attempt,
+        QuizVersion version,
+        DateTime now)
+    {
         var score = attempt.Answers.Sum(a => a.ScoreAwarded ?? 0m);
         var maxScore = (decimal)version.Items.Sum(i => i.Points);
         var percentage = maxScore > 0m
             ? Math.Round(score / maxScore * 100m, 2, MidpointRounding.AwayFromZero)
             : 0m;
+        var completedProgressiveChallenge = session.Mode != SessionMode.ProgressiveChallenge ||
+            (attempt.Status == AttemptStatus.Finished &&
+             attempt.Answers.Count == version.Items.Count &&
+             attempt.Answers.All(answer => answer.IsCorrect == true));
 
-        using var bootstrap = _tenantContext.BeginBootstrap(session.TenantId);
-        attempt.Status = timedOut ? AttemptStatus.TimedOut : AttemptStatus.Finished;
         attempt.Score = score;
         attempt.MaxScore = maxScore;
         attempt.Percentage = percentage;
-        attempt.Passed = percentage >= version.PassingPercentage;
+        attempt.Passed = completedProgressiveChallenge && percentage >= version.PassingPercentage;
         attempt.DurationMs = (long)(now - attempt.StartedAt).TotalMilliseconds;
         attempt.FinishedAt = now;
         attempt.UpdatedAt = now;
-        await _db.SaveChangesAsync(cancellationToken);
-    }
-
-    /// <summary>
-    /// إنهاء تحدٍّ متدرج انتهى (إجابة خاطئة أو إكمال آخر مستوى) بعد حفظ الإجابة.
-    /// سباق محتمل مع إنهاء متزامن (finish يدوي أو تسوية زمنية): عند تعارض xmin نعيد
-    /// التحميل؛ إن كانت المحاولة منتهية بالفعل فالسباق أنجز الإنهاء ونكتفي.
-    /// </summary>
-    private async Task FinalizeEndedChallengeAsync(
-        QuizSession session,
-        Attempt attempt,
-        QuizVersion version,
-        DateTime now,
-        CancellationToken cancellationToken)
-    {
-        try
-        {
-            await FinalizeAttemptAsync(session, attempt, version, now, timedOut: false, cancellationToken);
-            return;
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            _db.ChangeTracker.Clear();
-        }
-
-        var reloaded = await _db.Attempts
-            .IgnoreQueryFilters()
-            .Include(a => a.Answers)
-            .SingleOrDefaultAsync(
-                a => a.Id == attempt.Id && a.SessionId == session.Id && a.TenantId == session.TenantId,
-                cancellationToken);
-        if (reloaded is not null && reloaded.Status == AttemptStatus.InProgress)
-        {
-            await FinalizeAttemptAsync(session, reloaded, version, _clock.UtcNow, timedOut: false, cancellationToken);
-        }
     }
 
     private StartAttemptResponse BuildStartAttemptResponse(Attempt attempt, QuizVersion version)

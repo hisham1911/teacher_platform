@@ -176,8 +176,18 @@ public class ProgressiveChallengeTests : IClassFixture<TestWebApplicationFactory
     // ---------- Quiz/session setup helpers ----------
 
     /// <summary>اختبار منشور بعناصر بالنقاط المحددة بالترتيب.</summary>
+    private static Task<Guid> CreatePublishedQuizAsync(
+        HttpClient client, string accessToken, Guid tenantId, string slug, params Guid[] questionIds) =>
+        CreatePublishedQuizAsync(client, accessToken, tenantId, slug, questionIds, null, null);
+
     private static async Task<Guid> CreatePublishedQuizAsync(
-        HttpClient client, string accessToken, Guid tenantId, string slug, params Guid[] questionIds)
+        HttpClient client,
+        string accessToken,
+        Guid tenantId,
+        string slug,
+        IReadOnlyCollection<Guid> questionIds,
+        string? timeMode,
+        int? timeLimitSeconds)
     {
         var createResponse = await client.SendAsync(WithAccessToken(new HttpRequestMessage(HttpMethod.Post,
             $"/api/v1/tenants/{tenantId}/quizzes")
@@ -199,12 +209,40 @@ public class ProgressiveChallengeTests : IClassFixture<TestWebApplicationFactory
 
         var draftResponse = await client.SendAsync(WithAccessToken(new HttpRequestMessage(HttpMethod.Get,
             $"/api/v1/tenants/{tenantId}/quizzes/{quizId}/draft"), accessToken));
-        var baseVersion = (await ReadJson<JsonElement>(draftResponse)).GetProperty("version").GetUInt32();
+        var draft = await ReadJson<JsonElement>(draftResponse);
+        if (timeMode is not null)
+        {
+            var updateResponse = await client.SendAsync(WithAccessToken(new HttpRequestMessage(HttpMethod.Put,
+                $"/api/v1/tenants/{tenantId}/quizzes/{quizId}/draft")
+            {
+                Content = Json(new
+                {
+                    title = "تحدي متدرج",
+                    description = "وصف",
+                    instructions = "تعليمات",
+                    passingPercentage = 50,
+                    timeMode,
+                    timeLimitSeconds,
+                    shuffleQuestions = false,
+                    shuffleOptions = false,
+                    theme = new
+                    {
+                        template = "default",
+                        primaryColor = "#2563eb",
+                        secondaryColor = "#7c3aed",
+                        backgroundColor = "#ffffff"
+                    },
+                    baseVersion = draft.GetProperty("version").GetUInt32()
+                })
+            }, accessToken));
+            Assert.Equal(HttpStatusCode.OK, updateResponse.StatusCode);
+            draft = await ReadJson<JsonElement>(updateResponse);
+        }
 
         var publishResponse = await client.SendAsync(WithAccessToken(new HttpRequestMessage(HttpMethod.Post,
             $"/api/v1/tenants/{tenantId}/quizzes/{quizId}/publish")
         {
-            Content = Json(new { baseVersion })
+            Content = Json(new { baseVersion = draft.GetProperty("version").GetUInt32() })
         }, accessToken));
         Assert.Equal(HttpStatusCode.OK, publishResponse.StatusCode);
 
@@ -215,7 +253,25 @@ public class ProgressiveChallengeTests : IClassFixture<TestWebApplicationFactory
         HttpClient client, string accessToken, Guid tenantId, string slug, params Guid[] questionIds)
     {
         var quizId = await CreatePublishedQuizAsync(client, accessToken, tenantId, slug, questionIds);
+        return await ActivateChallengeAsync(client, accessToken, tenantId, quizId);
+    }
 
+    private static async Task<(Guid QuizId, Guid SessionId, string JoinCode)> NewPerQuestionChallengeAsync(
+        HttpClient client,
+        string accessToken,
+        Guid tenantId,
+        string slug,
+        IReadOnlyCollection<Guid> questionIds,
+        int timeLimitSeconds)
+    {
+        var quizId = await CreatePublishedQuizAsync(
+            client, accessToken, tenantId, slug, questionIds, "PerQuestion", timeLimitSeconds);
+        return await ActivateChallengeAsync(client, accessToken, tenantId, quizId);
+    }
+
+    private static async Task<(Guid QuizId, Guid SessionId, string JoinCode)> ActivateChallengeAsync(
+        HttpClient client, string accessToken, Guid tenantId, Guid quizId)
+    {
         var sessionResponse = await client.SendAsync(WithAccessToken(new HttpRequestMessage(HttpMethod.Post,
             $"/api/v1/tenants/{tenantId}/quizzes/{quizId}/sessions")
         {
@@ -362,6 +418,19 @@ public class ProgressiveChallengeTests : IClassFixture<TestWebApplicationFactory
     {
         var question = await GetCurrentQuestionAsync(client, joinCode, attemptId, guestToken);
         return question.GetProperty("index").GetInt32();
+    }
+
+    private async Task BackdateAttemptAsync(Guid tenantId, Guid attemptId)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var tenantContext = scope.ServiceProvider.GetRequiredService<TenantContext>();
+        tenantContext.SetResolved(tenantId);
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        await db.Attempts
+            .Where(attempt => attempt.Id == attemptId)
+            .ExecuteUpdateAsync(update => update.SetProperty(
+                attempt => attempt.UpdatedAt,
+                DateTime.UtcNow.AddMinutes(-2)));
     }
 
     // ---------- الاختبارات: الإنشاء والقيود ----------
@@ -551,24 +620,80 @@ public class ProgressiveChallengeTests : IClassFixture<TestWebApplicationFactory
         Assert.Equal(HttpStatusCode.Conflict, finalQuestion.StatusCode);
     }
 
+    [Fact]
+    public async Task PerQuestion_Deadline_Blocks_Direct_Submit_Refresh_And_Finish()
+    {
+        var client = NewClient();
+        var token = await RegisterConfirmLogin(_factory, client);
+        var tenantId = await CreateTenantFor(client, token);
+        var bankId = await CreateBankFor(client, token, tenantId);
+        var questions = new[]
+        {
+            await CreateMcQuestionAsync(client, token, tenantId, bankId, "المستوى المؤقت الأول"),
+            await CreateMcQuestionAsync(client, token, tenantId, bankId, "المستوى المؤقت الثاني")
+        };
+        var (_, _, joinCode) = await NewPerQuestionChallengeAsync(
+            client, token, tenantId, $"pc-time-{Guid.NewGuid():N}"[..20], questions, timeLimitSeconds: 30);
+
+        var (_, directToken) = await JoinAsync(NewClient(), joinCode, "إرسال مباشر متأخر");
+        var directAttempt = (await StartAttemptAsync(client, joinCode, directToken)).GetProperty("attemptId").GetGuid();
+        var accepted = await SubmitOptionAsync(client, joinCode, directAttempt, directToken, optionIndex: 0);
+        var secondQuestion = await GetCurrentQuestionAsync(client, joinCode, directAttempt, directToken);
+        var fullInterval = secondQuestion.GetProperty("deadlineAt").GetDateTime() -
+            accepted.GetProperty("serverNow").GetDateTime();
+        Assert.InRange(fullInterval.TotalSeconds, 29.9, 30.1);
+
+        await BackdateAttemptAsync(tenantId, directAttempt);
+        var directLate = await client.SendAsync(PlayerRequest(HttpMethod.Post,
+            $"/api/v1/player/sessions/{joinCode}/attempts/{directAttempt}/answers", directToken,
+            new
+            {
+                quizVersionItemId = secondQuestion.GetProperty("quizVersionItemId").GetGuid(),
+                answerJson = JsonSerializer.Serialize(new
+                {
+                    optionId = secondQuestion.GetProperty("options")[0].GetProperty("optionId").GetGuid()
+                }, JsonOptions)
+            }));
+        Assert.Equal(HttpStatusCode.Conflict, directLate.StatusCode);
+        Assert.Equal("AttemptFinished", (await ReadJson<JsonElement>(directLate)).GetProperty("title").GetString());
+        var directResult = await GetResultAsync(client, joinCode, directAttempt, directToken);
+        Assert.Equal("TimedOut", directResult.GetProperty("status").GetString());
+        Assert.Equal(1, directResult.GetProperty("answeredCount").GetInt32());
+        Assert.Equal(5m, directResult.GetProperty("score").GetDecimal());
+
+        var (_, refreshToken) = await JoinAsync(NewClient(), joinCode, "تحديث متأخر");
+        var refreshAttempt = (await StartAttemptAsync(client, joinCode, refreshToken)).GetProperty("attemptId").GetGuid();
+        await BackdateAttemptAsync(tenantId, refreshAttempt);
+        var refresh = await client.SendAsync(PlayerRequest(HttpMethod.Get,
+            $"/api/v1/player/sessions/{joinCode}/attempts/{refreshAttempt}/current-question", refreshToken));
+        Assert.Equal(HttpStatusCode.Conflict, refresh.StatusCode);
+        Assert.Equal("TimedOut", (await GetResultAsync(client, joinCode, refreshAttempt, refreshToken))
+            .GetProperty("status").GetString());
+
+        var (_, finishToken) = await JoinAsync(NewClient(), joinCode, "إنهاء متأخر");
+        var finishAttempt = (await StartAttemptAsync(client, joinCode, finishToken)).GetProperty("attemptId").GetGuid();
+        await BackdateAttemptAsync(tenantId, finishAttempt);
+        var finish = await client.SendAsync(PlayerRequest(HttpMethod.Post,
+            $"/api/v1/player/sessions/{joinCode}/attempts/{finishAttempt}/finish", finishToken));
+        Assert.Equal(HttpStatusCode.OK, finish.StatusCode);
+        Assert.Equal("TimedOut", (await ReadJson<JsonElement>(finish)).GetProperty("status").GetString());
+    }
+
     // ---------- الاختبارات: بوابات الحماية ----------
 
     [Fact]
-    public async Task Stale_Level_Submission_Returns_NotCurrentLevel()
+    public async Task Future_Level_Submission_Returns_NotCurrentLevel_WithoutMutation()
     {
         var client = NewClient();
         var token = await RegisterConfirmLogin(_factory, client);
         var tenantId = await CreateTenantFor(client, token);
         var (_, sessionId, joinCode) = await NewThreeLevelChallengeAsync(client, token, tenantId, $"pc-gate-{Guid.NewGuid():N}"[..20]);
 
-        var (_, guestToken) = await JoinAsync(NewClient(), joinCode, "عميل متخلف");
-        var attemptPayload = await StartAttemptAsync(client, joinCode, guestToken);
-        var attemptId = attemptPayload.GetProperty("attemptId").GetGuid();
+        var (_, guestToken) = await JoinAsync(NewClient(), joinCode, "متجاوز المستويات");
+        var attemptId = (await StartAttemptAsync(client, joinCode, guestToken)).GetProperty("attemptId").GetGuid();
 
-        // محاكاة انحراف حالة العميل عن الخادم: الخادم تقدَّم لمستوى ثانٍ بينما
-        // العميل ما زال يحمل معرف سؤال المستوى الأول وخياراته — يجب رفض إرساله القديم.
-        Guid staleItemId;
-        Guid staleValidOptionId;
+        Guid futureItemId;
+        Guid futureValidOptionId;
         await using (var scope = _factory.Services.CreateAsyncScope())
         {
             var tenantContext = scope.ServiceProvider.GetRequiredService<TenantContext>();
@@ -576,37 +701,36 @@ public class ProgressiveChallengeTests : IClassFixture<TestWebApplicationFactory
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var sessionVersionId = await db.QuizSessions
                 .AsNoTracking()
-                .Where(s => s.Id == sessionId)
-                .Select(s => s.QuizVersionId)
+                .Where(session => session.Id == sessionId)
+                .Select(session => session.QuizVersionId)
                 .SingleAsync();
-            var firstItem = await db.QuizVersionItems
+            var futureItem = await db.QuizVersionItems
                 .AsNoTracking()
-                .Include(i => i.QuestionVersion!)
-                    .ThenInclude(q => q.Options)
-                .OrderBy(i => i.SortOrder)
-                .FirstAsync(i => i.QuizVersionId == sessionVersionId);
-            staleItemId = firstItem.Id;
-            staleValidOptionId = firstItem.QuestionVersion!.Options.OrderBy(o => o.SortOrder).First().Id;
-
-            var dbAttempt = await db.Attempts.SingleAsync(a => a.Id == attemptId);
-            dbAttempt.CurrentQuestionIndex = 1;
-            await db.SaveChangesAsync();
+                .Include(item => item.QuestionVersion!)
+                    .ThenInclude(question => question.Options)
+                .Where(item => item.QuizVersionId == sessionVersionId)
+                .OrderBy(item => item.SortOrder)
+                .Skip(1)
+                .FirstAsync();
+            futureItemId = futureItem.Id;
+            futureValidOptionId = futureItem.QuestionVersion!.Options.OrderBy(option => option.SortOrder).First().Id;
         }
 
         var response = await client.SendAsync(PlayerRequest(HttpMethod.Post,
             $"/api/v1/player/sessions/{joinCode}/attempts/{attemptId}/answers", guestToken,
-            new { quizVersionItemId = staleItemId, answerJson = JsonSerializer.Serialize(new { optionId = staleValidOptionId }, JsonOptions) }));
+            new
+            {
+                quizVersionItemId = futureItemId,
+                answerJson = JsonSerializer.Serialize(new { optionId = futureValidOptionId }, JsonOptions)
+            }));
 
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
-        var error = await ReadJson<JsonElement>(response);
-        Assert.Equal("NotCurrentLevel", error.GetProperty("title").GetString());
-
-        // والمحاولة ما زالت قائمة دون أي إجابة مسجلة
-        var stillInProgress = await GetResultRawAsync(client, joinCode, attemptId, guestToken);
-        Assert.Equal(HttpStatusCode.OK, stillInProgress.StatusCode);
-        var state = await ReadJson<JsonElement>(stillInProgress);
+        Assert.Equal("NotCurrentLevel", (await ReadJson<JsonElement>(response)).GetProperty("title").GetString());
+        var state = await GetResultAsync(client, joinCode, attemptId, guestToken);
         Assert.Equal("InProgress", state.GetProperty("status").GetString());
         Assert.Equal(0, state.GetProperty("answeredCount").GetInt32());
+        Assert.Equal(JsonValueKind.Null, state.GetProperty("score").ValueKind);
+        Assert.Equal(0, await CurrentLevelAsync(client, joinCode, attemptId, guestToken));
     }
 
     [Fact]
@@ -620,30 +744,59 @@ public class ProgressiveChallengeTests : IClassFixture<TestWebApplicationFactory
         var (_, guestToken) = await JoinAsync(NewClient(), joinCode, "معيد الإرسال");
         var attemptId = (await StartAttemptAsync(client, joinCode, guestToken)).GetProperty("attemptId").GetGuid();
 
-        // أول إرسال صحيح: 5 نقاط
+        // أول إرسال صحيح: الحقول العميلية الإضافية لا تغيّر التصحيح أو النقاط الخادمية.
         var firstQuestion = await GetCurrentQuestionAsync(client, joinCode, attemptId, guestToken);
         Assert.Equal(0, firstQuestion.GetProperty("index").GetInt32());
         var correctOptionId = firstQuestion.GetProperty("options")[0].GetProperty("optionId").GetString();
         var firstItemId = firstQuestion.GetProperty("quizVersionItemId").GetGuid();
         var firstResponse = await client.SendAsync(PlayerRequest(HttpMethod.Post,
             $"/api/v1/player/sessions/{joinCode}/attempts/{attemptId}/answers", guestToken,
-            new { quizVersionItemId = firstItemId, answerJson = JsonSerializer.Serialize(new { optionId = correctOptionId }, JsonOptions) }));
+            new
+            {
+                quizVersionItemId = firstItemId,
+                answerJson = JsonSerializer.Serialize(new { optionId = correctOptionId }, JsonOptions),
+                isCorrect = false,
+                scoreAwarded = 999_999
+            }));
         firstResponse.EnsureSuccessStatusCode();
         var firstSaved = await ReadJson<JsonElement>(firstResponse);
+        Assert.True(firstSaved.GetProperty("isCorrect").GetBoolean());
         Assert.Equal(5m, firstSaved.GetProperty("scoreAwarded").GetDecimal());
 
-        // إعادة الإرسال بنفس الحمولة بعد التقدم (شبكة متقطعة): Idempotent — نفس النتيجة ولا مضاعفة
+        // إعادة مستوى قديم بنفس الحمولة Idempotent ولا تضاعف النقاط.
         var replayResponse = await client.SendAsync(PlayerRequest(HttpMethod.Post,
             $"/api/v1/player/sessions/{joinCode}/attempts/{attemptId}/answers", guestToken,
             new { quizVersionItemId = firstItemId, answerJson = JsonSerializer.Serialize(new { optionId = correctOptionId }, JsonOptions) }));
         Assert.Equal(HttpStatusCode.OK, replayResponse.StatusCode);
-        var replayed = await ReadJson<JsonElement>(replayResponse);
-        Assert.True(replayed.GetProperty("isCorrect").GetBoolean());
-        Assert.Equal(5m, replayed.GetProperty("scoreAwarded").GetDecimal());
+        Assert.Equal(5m, (await ReadJson<JsonElement>(replayResponse)).GetProperty("scoreAwarded").GetDecimal());
 
-        // نكمل بقية المستويات: لو احتُسبت إعادة الإرسال لكانت النقاط أكبر من 15
         await SubmitOptionAsync(client, joinCode, attemptId, guestToken, optionIndex: 0);
-        await SubmitOptionAsync(client, joinCode, attemptId, guestToken, optionIndex: 0);
+        var finalQuestion = await GetCurrentQuestionAsync(client, joinCode, attemptId, guestToken);
+        var finalItemId = finalQuestion.GetProperty("quizVersionItemId").GetGuid();
+        var finalCorrectOptionId = finalQuestion.GetProperty("options")[0].GetProperty("optionId").GetString();
+        var finalWrongOptionId = finalQuestion.GetProperty("options")[1].GetProperty("optionId").GetString();
+        var finalAnswerJson = JsonSerializer.Serialize(new { optionId = finalCorrectOptionId }, JsonOptions);
+        var terminal = await client.SendAsync(PlayerRequest(HttpMethod.Post,
+            $"/api/v1/player/sessions/{joinCode}/attempts/{attemptId}/answers", guestToken,
+            new { quizVersionItemId = finalItemId, answerJson = finalAnswerJson }));
+        Assert.Equal(HttpStatusCode.OK, terminal.StatusCode);
+
+        // إعادة الإجابة النهائية بعد إنهاء المحاولة تبقى Idempotent، والمختلفة تتعارض.
+        var terminalReplay = await client.SendAsync(PlayerRequest(HttpMethod.Post,
+            $"/api/v1/player/sessions/{joinCode}/attempts/{attemptId}/answers", guestToken,
+            new { quizVersionItemId = finalItemId, answerJson = finalAnswerJson }));
+        Assert.Equal(HttpStatusCode.OK, terminalReplay.StatusCode);
+        Assert.Equal(5m, (await ReadJson<JsonElement>(terminalReplay)).GetProperty("scoreAwarded").GetDecimal());
+
+        var conflictingReplay = await client.SendAsync(PlayerRequest(HttpMethod.Post,
+            $"/api/v1/player/sessions/{joinCode}/attempts/{attemptId}/answers", guestToken,
+            new
+            {
+                quizVersionItemId = finalItemId,
+                answerJson = JsonSerializer.Serialize(new { optionId = finalWrongOptionId }, JsonOptions)
+            }));
+        Assert.Equal(HttpStatusCode.Conflict, conflictingReplay.StatusCode);
+        Assert.Equal("AnswerConflict", (await ReadJson<JsonElement>(conflictingReplay)).GetProperty("title").GetString());
 
         var result = await GetResultAsync(client, joinCode, attemptId, guestToken);
         Assert.Equal(15m, result.GetProperty("score").GetDecimal());
@@ -704,6 +857,10 @@ public class ProgressiveChallengeTests : IClassFixture<TestWebApplicationFactory
         var attemptB = (await StartAttemptAsync(playerB, joinCode, tokenB)).GetProperty("attemptId").GetGuid();
         Assert.NotEqual(attemptA, attemptB);
 
+        var crossAttempt = await playerA.SendAsync(PlayerRequest(HttpMethod.Get,
+            $"/api/v1/player/sessions/{joinCode}/attempts/{attemptB}/current-question", tokenA));
+        Assert.Equal(HttpStatusCode.NotFound, crossAttempt.StatusCode);
+
         // الأول يجيب صحيحًا ويصعد
         var savedA = await SubmitOptionAsync(playerA, joinCode, attemptA, tokenA, optionIndex: 0);
         Assert.True(savedA.GetProperty("isCorrect").GetBoolean());
@@ -749,6 +906,11 @@ public class ProgressiveChallengeTests : IClassFixture<TestWebApplicationFactory
         Assert.Equal("Listening", question.GetProperty("questionType").GetString());
         Assert.False(question.GetProperty("mediaAssetId").ValueKind is JsonValueKind.Null or JsonValueKind.Undefined);
 
+        // وسيط السؤال متاح أثناء كونه المستوى الحالي فقط.
+        var mediaResponse = await client.SendAsync(PlayerRequest(HttpMethod.Get,
+            $"/api/v1/player/sessions/{joinCode}/attempts/{attemptId}/media/{audioId}", guestToken));
+        Assert.Equal(HttpStatusCode.OK, mediaResponse.StatusCode);
+
         var saved = await SubmitOptionAsync(client, joinCode, attemptId, guestToken, optionIndex: 0);
         Assert.True(saved.GetProperty("isCorrect").GetBoolean());
 
@@ -757,10 +919,45 @@ public class ProgressiveChallengeTests : IClassFixture<TestWebApplicationFactory
         Assert.Equal("Finished", result.GetProperty("status").GetString());
         Assert.True(result.GetProperty("passed").GetBoolean());
 
-        // وسيط السؤال متاح للطالب صاحب الرمز عبر مسار الوسائط المحمي
-        var mediaResponse = await client.SendAsync(PlayerRequest(HttpMethod.Get,
+        var mediaAfterFinish = await client.SendAsync(PlayerRequest(HttpMethod.Get,
             $"/api/v1/player/sessions/{joinCode}/attempts/{attemptId}/media/{audioId}", guestToken));
-        Assert.Equal(HttpStatusCode.OK, mediaResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, mediaAfterFinish.StatusCode);
+    }
+
+    [Fact]
+    public async Task Future_Level_Media_Is_Blocked_Until_Level_Becomes_Current()
+    {
+        var client = NewClient();
+        var token = await RegisterConfirmLogin(_factory, client);
+        var tenantId = await CreateTenantFor(client, token);
+        var bankId = await CreateBankFor(client, token, tenantId);
+        var first = await CreateMcQuestionAsync(client, token, tenantId, bankId, "مستوى بلا وسيط");
+        var futureAudioId = await UploadAudioAsync(client, token, tenantId);
+        var futureListening = await CreateQuestionAsync(
+            client,
+            token,
+            tenantId,
+            bankId,
+            "Listening",
+            "استمع في المستوى الثاني",
+            new object[] { new { text = "صحيح", isCorrect = true }, new { text = "خطأ", isCorrect = false } },
+            mediaAssetId: futureAudioId);
+        var (_, _, joinCode) = await NewChallengeAsync(
+            client, token, tenantId, $"pc-media-{Guid.NewGuid():N}"[..20], first, futureListening);
+
+        var (_, guestToken) = await JoinAsync(NewClient(), joinCode, "مستمع فضولي");
+        var attemptId = (await StartAttemptAsync(client, joinCode, guestToken)).GetProperty("attemptId").GetGuid();
+
+        var blocked = await client.SendAsync(PlayerRequest(HttpMethod.Get,
+            $"/api/v1/player/sessions/{joinCode}/attempts/{attemptId}/media/{futureAudioId}", guestToken));
+        Assert.Equal(HttpStatusCode.NotFound, blocked.StatusCode);
+
+        await SubmitOptionAsync(client, joinCode, attemptId, guestToken, optionIndex: 0);
+        var revealed = await GetCurrentQuestionAsync(client, joinCode, attemptId, guestToken);
+        Assert.Equal(futureAudioId, revealed.GetProperty("mediaAssetId").GetGuid());
+        var allowed = await client.SendAsync(PlayerRequest(HttpMethod.Get,
+            $"/api/v1/player/sessions/{joinCode}/attempts/{attemptId}/media/{futureAudioId}", guestToken));
+        Assert.Equal(HttpStatusCode.OK, allowed.StatusCode);
     }
 
     // ---------- الاختبارات: التقارير ----------
@@ -879,11 +1076,17 @@ public class ProgressiveChallengeTests : IClassFixture<TestWebApplicationFactory
         var certificateState = await ReadJson<JsonElement>(certificate);
         Assert.Contains(certificateState.GetProperty("status").GetString(), new[] { "Pending", "Ready" });
 
-        // تشغيل خاسر: لا شهادة
+        // خطأ المستوى الأخير يفشل التحدي حتى لو تجاوزت درجتا أول مستويين عتبة 50%.
         var (_, _, losingCode) = await NewThreeLevelChallengeAsync(client, token, tenantId, $"pc-cert-l-{Guid.NewGuid():N}"[..20]);
-        var (_, loserToken) = await JoinAsync(NewClient(), losingCode, "الخاسر");
+        var (_, loserToken) = await JoinAsync(NewClient(), losingCode, "الخاسر في النهاية");
         var loserAttempt = (await StartAttemptAsync(client, losingCode, loserToken)).GetProperty("attemptId").GetGuid();
+        await SubmitOptionAsync(client, losingCode, loserAttempt, loserToken, optionIndex: 0);
+        await SubmitOptionAsync(client, losingCode, loserAttempt, loserToken, optionIndex: 0);
         await SubmitOptionAsync(client, losingCode, loserAttempt, loserToken, optionIndex: 1);
+        var losingResult = await GetResultAsync(client, losingCode, loserAttempt, loserToken);
+        Assert.Equal(10m, losingResult.GetProperty("score").GetDecimal());
+        Assert.True(losingResult.GetProperty("percentage").GetDecimal() >= 50m);
+        Assert.False(losingResult.GetProperty("passed").GetBoolean());
 
         var refused = await client.SendAsync(PlayerRequest(HttpMethod.Post,
             $"/api/v1/player/sessions/{losingCode}/attempts/{loserAttempt}/certificate", loserToken));

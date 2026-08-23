@@ -17,14 +17,41 @@ import { StudentAudioPlayer } from './student-audio-player';
 
 /** مهلة عرض التغذية الراجعة قبل الانتقال التلقائي (ملّي ثانية). */
 const FEEDBACK_MS = 1400;
+const systemNow = () => new Date();
 
 type FeedbackPhase = 'none' | 'correct' | 'wrong';
+
+function useDeadlineCountdown(deadlineAt: string | null | undefined, now: () => Date): number | null {
+  const [remaining, setRemaining] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!deadlineAt) {
+      setRemaining(null);
+      return;
+    }
+
+    const deadline = Date.parse(deadlineAt);
+    const tick = () => setRemaining(Math.max(0, Math.ceil((deadline - now().getTime()) / 1000)));
+    tick();
+    const interval = window.setInterval(tick, 250);
+    return () => window.clearInterval(interval);
+  }, [deadlineAt, now]);
+
+  return remaining;
+}
+
+function formatRemaining(seconds: number): string {
+  const minutes = Math.floor(seconds / 60);
+  const remainder = seconds % 60;
+  return `${minutes}:${remainder.toString().padStart(2, '0')}`;
+}
 
 export function ProgressivePlayerView({
   joinCode,
   attempt,
   quizTitle,
   clockSync,
+  clockNow = systemNow,
   onFinished,
   autoAdvanceMs = FEEDBACK_MS,
 }: {
@@ -32,6 +59,7 @@ export function ProgressivePlayerView({
   attempt: StartAttemptResponse;
   quizTitle: string;
   clockSync: (serverNow: string) => void;
+  clockNow?: () => Date;
   onFinished: (attemptId: string) => void;
   /** للاختبارات فقط — يقصّر مهلة الانتقال التلقائي بعد التغذية الراجعة. */
   autoAdvanceMs?: number;
@@ -51,6 +79,7 @@ export function ProgressivePlayerView({
   });
 
   const question = questionQuery.data;
+  const remaining = useDeadlineCountdown(question?.deadlineAt, clockNow);
 
   // إعادة الضبط عند وصول سؤال جديد (استئناف/تقدم)
   useEffect(() => {
@@ -87,6 +116,27 @@ export function ProgressivePlayerView({
       }
     }, autoAdvanceMs);
   }
+
+  const finishMutation = useMutation({
+    mutationFn: () => playerApi.finish(joinCode, attempt.attemptId),
+    onSuccess: goToResult,
+    onError: (error) => {
+      if (error instanceof HttpError && error.status === 409) {
+        goToResult();
+        return;
+      }
+      setActionError('انتهى الوقت، لكن تعذر عرض النتيجة. أعد المحاولة.');
+    },
+  });
+
+  useEffect(() => {
+    if (remaining === 0 && !finishMutation.isPending && !finishMutation.isSuccess) {
+      clearAdvanceTimer();
+      finishMutation.mutate();
+    }
+    // يبدأ طلب الإنهاء مرة واحدة عند وصول عداد الخادم إلى الصفر.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [remaining]);
 
   const answerMutation = useMutation({
     mutationFn: (payload: { quizVersionItemId: string; answerJson: string }) =>
@@ -161,12 +211,12 @@ export function ProgressivePlayerView({
 
   const levelNumber = question.index + 1;
   const totalLevels = question.totalQuestions;
-  const isLocked = feedback !== 'none' || answerMutation.isPending;
+  const isLocked = feedback !== 'none' || answerMutation.isPending || finishMutation.isPending || remaining === 0;
 
   return (
     <ProgressiveShell>
       <div className="mx-auto flex min-h-dvh w-full max-w-6xl flex-col gap-4 px-4 pb-8 pt-4 sm:px-6">
-        <ProgressiveTopBar quizTitle={quizTitle} level={levelNumber} totalLevels={totalLevels} score={score} />
+        <ProgressiveTopBar quizTitle={quizTitle} level={levelNumber} totalLevels={totalLevels} score={score} remaining={remaining} />
 
         <div className="flex flex-1 gap-6 lg:flex-row-reverse">
           {/* سلم المستويات — سطح المكتب فقط */}
@@ -237,6 +287,11 @@ export function ProgressivePlayerView({
               </button>
 
               <div aria-live="polite" className="mt-4 flex min-h-8 justify-center">
+                {remaining === 0 ? (
+                  <p role="status" className="challenge-feedback-bad" data-testid="challenge-feedback-timeout">
+                    انتهى وقت المستوى — جارٍ تثبيت النتيجة
+                  </p>
+                ) : null}
                 {feedback === 'correct' && !answerMutation.isPending ? (
                   <p role="status" className="challenge-feedback-ok" data-testid="challenge-feedback-correct">
                     إجابة صحيحة ✓ صعود للمستوى التالي…
@@ -290,11 +345,13 @@ function ProgressiveTopBar({
   level,
   totalLevels,
   score,
+  remaining,
 }: {
   quizTitle: string;
   level: number;
   totalLevels: number;
   score: number;
+  remaining: number | null;
 }) {
   const progressPercentage = totalLevels > 0 ? Math.min(100, Math.round(((level - 1) / totalLevels) * 100)) : 0;
   return (
@@ -307,6 +364,14 @@ function ProgressiveTopBar({
         <p className="whitespace-nowrap rounded-full bg-white/10 px-3 py-1 text-xs font-black text-[var(--challenge-accent)]" data-testid="challenge-score-indicator">
           النقاط: {score}
         </p>
+        {remaining != null ? (
+          <p
+            className="whitespace-nowrap rounded-full bg-white/10 px-3 py-1 text-xs font-black text-sky-100"
+            data-testid="challenge-time-indicator"
+            aria-label={`الوقت المتبقي ${formatRemaining(remaining)}`}>
+            الوقت: <span dir="ltr">{formatRemaining(remaining)}</span>
+          </p>
+        ) : null}
       </div>
       <div
         role="progressbar"
@@ -437,7 +502,12 @@ export function ProgressiveResultView({ joinCode, attemptId }: { joinCode: strin
   }
 
   const attemptResult: AttemptResult = resultQuery.data;
-  const completedAll = attemptResult.answeredCount >= attemptResult.totalQuestions;
+  const timedOut = attemptResult.status === 'TimedOut';
+  const completedAll =
+    attemptResult.status === 'Finished' &&
+    attemptResult.passed === true &&
+    attemptResult.answeredCount >= attemptResult.totalQuestions &&
+    attemptResult.score === attemptResult.maxScore;
   const percentage =
     attemptResult.percentage == null ? null : Math.min(100, Math.max(0, Math.round(attemptResult.percentage)));
 
@@ -454,14 +524,14 @@ export function ProgressiveResultView({ joinCode, attemptId }: { joinCode: strin
               className={`mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full text-4xl font-black ${
                 completedAll ? 'bg-[var(--challenge-accent)] text-slate-950' : 'bg-white/10 text-rose-300'
               }`}>
-              {completedAll ? '★' : '✕'}
+              {completedAll ? '★' : timedOut ? '⌛' : '✕'}
             </div>
             <h1 className="text-balance text-3xl font-black text-white sm:text-4xl">
-              {completedAll ? 'أكملت التحدي!' : 'انتهى التحدي'}
+              {completedAll ? 'أكملت التحدي!' : timedOut ? 'انتهى الوقت' : 'انتهى التحدي'}
             </h1>
             {!completedAll ? (
               <p className="mt-3 text-lg font-bold text-sky-200" data-testid="challenge-reached-level">
-                وصلت إلى المستوى {attemptResult.answeredCount} من {attemptResult.totalQuestions}
+                {timedOut ? 'توقف التحدي عند المستوى' : 'وصلت إلى المستوى'} {Math.min(attemptResult.answeredCount + (timedOut ? 1 : 0), attemptResult.totalQuestions)} من {attemptResult.totalQuestions}
               </p>
             ) : null}
             <p className="mt-2 text-sm font-semibold text-sky-300">أحسنت يا <bdi>{attemptResult.displayName}</bdi></p>

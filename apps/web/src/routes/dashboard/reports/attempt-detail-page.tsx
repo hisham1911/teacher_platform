@@ -5,7 +5,7 @@ import { certificatesApi, reportsApi } from '../../../data/api-client/endpoints'
 import { HttpError } from '../../../data/api-client/http-error';
 import { getActiveTenantId } from '../../../lib/auth/session';
 import type { CertificateListItem } from '../../../types/certificates';
-import { ATTEMPT_STATUS_LABELS } from '../../../types/sessions';
+import { ATTEMPT_STATUS_LABELS, SESSION_MODE_LABELS } from '../../../types/sessions';
 
 export default function AttemptDetailPage() {
   const { attemptId } = useParams<{ attemptId: string }>();
@@ -67,7 +67,14 @@ export default function AttemptDetailPage() {
         <div className="flex flex-col gap-4 border-b border-slate-200 p-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 id="attempt-summary-heading" className="text-lg font-black text-[var(--teacher-ink)]">النتيجة</h2>
-            <p className="mt-1 text-sm text-[var(--teacher-muted)]">{ATTEMPT_STATUS_LABELS[attempt.status]}</p>
+            <p className="mt-1 text-sm text-[var(--teacher-muted)]">
+              {ATTEMPT_STATUS_LABELS[attempt.status]} · {SESSION_MODE_LABELS[attempt.mode]}
+            </p>
+            {attempt.mode === 'ProgressiveChallenge' && attempt.maxLevelReached != null && attempt.totalLevels != null ? (
+              <p className="mt-2 text-sm font-bold text-[var(--teacher-primary-strong)]" data-testid="challenge-attempt-progress">
+                وصل إلى المستوى {attempt.maxLevelReached} من {attempt.totalLevels}
+              </p>
+            ) : null}
           </div>
           <AttemptOutcome passed={attempt.passed} />
         </div>

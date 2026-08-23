@@ -13,6 +13,7 @@ vi.mock('../../data/api-client/endpoints', async (importOriginal) => {
       ...actual.playerApi,
       getCurrentQuestion: vi.fn(),
       submitAnswer: vi.fn(),
+      finish: vi.fn(),
       getResult: vi.fn(),
       getSurvey: vi.fn(),
       issueCertificate: vi.fn(),
@@ -25,6 +26,7 @@ vi.mock('../../data/api-client/endpoints', async (importOriginal) => {
 const { playerApi } = await import('../../data/api-client/endpoints');
 const getCurrentQuestionMock = vi.mocked(playerApi.getCurrentQuestion);
 const submitAnswerMock = vi.mocked(playerApi.submitAnswer);
+const finishMock = vi.mocked(playerApi.finish);
 const getResultMock = vi.mocked(playerApi.getResult);
 
 function renderView(ui: React.ReactElement) {
@@ -224,6 +226,41 @@ describe('ProgressivePlayerView', () => {
     await waitFor(() => expect(onFinished).toHaveBeenCalledWith('a-1'), { timeout: 2000 });
   });
 
+  it('ينهي محاولة المستوى عند انتهاء مهلة السؤال ولا يسمح بإجابة متأخرة', async () => {
+    getCurrentQuestionMock.mockResolvedValue({
+      ...makeQuestion(1),
+      deadlineAt: '2026-08-23T12:00:00Z',
+      serverNow: '2026-08-23T12:00:01Z',
+    });
+    finishMock.mockResolvedValue({
+      attemptId: 'a-1',
+      status: 'TimedOut',
+      score: 5,
+      maxScore: 15,
+      percentage: 33.33,
+      passed: false,
+      durationMs: 30_000,
+      finishedAt: '2026-08-23T12:00:01Z',
+    });
+
+    renderView(
+      <ProgressivePlayerView
+        joinCode="JOIN123"
+        attempt={makeAttempt({ currentQuestionIndex: 1, scoreSoFar: 5 })}
+        quizTitle="تحدي الجمع"
+        clockSync={clockSync}
+        clockNow={() => new Date('2026-08-23T12:00:01Z')}
+        onFinished={onFinished}
+        autoAdvanceMs={0}
+      />,
+    );
+
+    expect(await screen.findByTestId('challenge-feedback-timeout')).toHaveTextContent('انتهى وقت المستوى');
+    await waitFor(() => expect(finishMock).toHaveBeenCalledWith('JOIN123', 'a-1'));
+    expect(screen.getByTestId('challenge-lock-answer')).toBeDisabled();
+    await waitFor(() => expect(onFinished).toHaveBeenCalledWith('a-1'));
+  });
+
   it('يرفض زر التثبيت قبل اختيار إجابة', async () => {
     getCurrentQuestionMock.mockResolvedValue(makeQuestion(0));
     renderView(
@@ -269,6 +306,23 @@ describe('ProgressiveResultView', () => {
     expect(await screen.findByTestId('challenge-result-banner')).toHaveTextContent('انتهى التحدي');
     expect(screen.getByTestId('challenge-reached-level')).toHaveTextContent('وصلت إلى المستوى 3 من 10');
     expect(screen.getByText('15 / 50')).toBeInTheDocument();
+  });
+
+  it('لا يعرض الفوز عند الخطأ في المستوى الأخير حتى لو تجاوزت النتيجة درجة النجاح', async () => {
+    getResultMock.mockResolvedValue(makeResult({ answeredCount: 10, passed: false, percentage: 90, score: 45, maxScore: 50 }));
+    renderView(<ProgressiveResultView joinCode="JOIN123" attemptId="a-1" />);
+
+    expect(await screen.findByTestId('challenge-result-banner')).toHaveTextContent('انتهى التحدي');
+    expect(screen.queryByText('أكملت التحدي!')).not.toBeInTheDocument();
+    expect(screen.getByTestId('challenge-reached-level')).toHaveTextContent('وصلت إلى المستوى 10 من 10');
+  });
+
+  it('يعرض حالة انتهاء الوقت والمستوى الذي توقفت عنده المحاولة', async () => {
+    getResultMock.mockResolvedValue(makeResult({ status: 'TimedOut', answeredCount: 3, passed: false, percentage: 30, score: 15 }));
+    renderView(<ProgressiveResultView joinCode="JOIN123" attemptId="a-1" />);
+
+    expect(await screen.findByTestId('challenge-result-banner')).toHaveTextContent('انتهى الوقت');
+    expect(screen.getByTestId('challenge-reached-level')).toHaveTextContent('توقف التحدي عند المستوى 4 من 10');
   });
 
   it('يعرض شاشة الفوز عند إكمال جميع المستويات', async () => {
