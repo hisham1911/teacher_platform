@@ -20,6 +20,7 @@ import { QUESTION_TYPE_LABELS } from '../../types/questions';
 import { PlayerSurveyAction, PlayerSurveyPanel } from './player-survey-panel';
 import { PlayerDeliveryPanel } from './player-delivery-panel';
 import { StudentAudioPlayer } from './student-audio-player';
+import { ProgressivePlayerView, ProgressiveResultView, ProgressiveShell } from './progressive-player';
 import { QuestionProgress, StudentButton, StudentError, StudentLearningVisual, StudentLoading, StudentShell } from './student-ui';
 
 /**
@@ -35,7 +36,9 @@ type PlayerStage =
   | { kind: 'ready'; session: PlayerSession; displayName: string; attemptId: string | null }
   | { kind: 'live'; session: PlayerSession; displayName: string; attemptId: string | null }
   | { kind: 'playing'; attempt: StartAttemptResponse; session: PlayerSession }
-  | { kind: 'result'; attemptId: string }
+  | { kind: 'challenge-ready'; session: PlayerSession; displayName: string; attemptId: string | null }
+  | { kind: 'challenge'; attempt: StartAttemptResponse; session: PlayerSession }
+  | { kind: 'result'; attemptId: string; session: PlayerSession | null }
   | { kind: 'unavailable'; message: string };
 
 /** انحراف ساعة الخادم عن ساعة العميل — يُحدَّث مع كل استجابة تحمل serverNow */
@@ -137,9 +140,15 @@ export default function PlayPage() {
     } else if (playerState.attemptId && (playerState.attemptStatus === 'Finished' || playerState.attemptStatus === 'TimedOut')) {
       // محاولة منتهية — نعرض النتيجة مباشرة دون شاشة استعداد
       void queryClient.invalidateQueries({ queryKey: ['player-result', joinCode, playerState.attemptId] });
-      setStage({ kind: 'result', attemptId: playerState.attemptId });
+      setStage({ kind: 'result', attemptId: playerState.attemptId, session });
     } else if (session.status === 'Active' && session.mode === 'Live') {
       setStage({ kind: 'live', session, displayName: playerState.displayName, attemptId: playerState.attemptId });
+    } else if (session.mode === 'ProgressiveChallenge') {
+      setStage((prev) =>
+        prev.kind === 'join' || prev.kind === 'ready' || prev.kind === 'challenge-ready'
+          ? { kind: 'challenge-ready', session: prev.session, displayName: playerState.displayName, attemptId: playerState.attemptId }
+          : prev,
+      );
     } else {
       setStage((prev) =>
         prev.kind === 'join' || prev.kind === 'ready'
@@ -186,7 +195,12 @@ export default function PlayPage() {
     onSuccess: (attempt) => {
       clock.sync(attempt.serverNow);
       setActionError(null);
-      setStage({ kind: 'playing', attempt, session: sessionQuery.data! });
+      const session = sessionQuery.data!;
+      if (session.mode === 'ProgressiveChallenge') {
+        setStage({ kind: 'challenge', attempt, session });
+      } else {
+        setStage({ kind: 'playing', attempt, session });
+      }
     },
     onError: (error) => {
       if (error instanceof HttpError && error.status === 409) {
@@ -322,7 +336,27 @@ export default function PlayPage() {
         clockNow={clock.now}
         onFinished={(attemptId) => {
           void queryClient.invalidateQueries({ queryKey: ['player-result', joinCode, attemptId] });
-          setStage({ kind: 'result', attemptId });
+          setStage({ kind: 'result', attemptId, session: stage.session });
+        }}
+      />
+    );
+  }
+
+  if (stage.kind === 'challenge-ready') {
+    return <ChallengeReadyView displayName={stage.displayName} session={stage.session} hasAttempt={stage.attemptId != null} onStart={() => startMutation.mutate()} starting={startMutation.isPending} error={actionError} />;
+  }
+
+  if (stage.kind === 'challenge') {
+    return (
+      <ProgressivePlayerView
+        joinCode={joinCode!}
+        attempt={stage.attempt}
+        quizTitle={stage.session.title}
+        clockSync={clock.sync}
+        clockNow={clock.now}
+        onFinished={(attemptId) => {
+          void queryClient.invalidateQueries({ queryKey: ['player-result', joinCode, attemptId] });
+          setStage({ kind: 'result', attemptId, session: stage.session });
         }}
       />
     );
@@ -339,7 +373,65 @@ export default function PlayPage() {
     );
   }
 
+  if (stage.session?.mode === 'ProgressiveChallenge') {
+    return <ProgressiveResultView joinCode={joinCode!} attemptId={stage.attemptId} />;
+  }
+
   return <ResultView joinCode={joinCode!} attemptId={stage.attemptId} />;
+}
+
+// ─── شاشة استعداد التحدي المتدرج ───────────────────────────────────────────
+
+function ChallengeReadyView({
+  displayName,
+  session,
+  hasAttempt,
+  onStart,
+  starting,
+  error,
+}: {
+  displayName: string;
+  session: PlayerSession;
+  hasAttempt: boolean;
+  onStart: () => void;
+  starting: boolean;
+  error: string | null;
+}) {
+  return (
+    <ProgressiveShell>
+      <div className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col items-center justify-center px-4 py-10">
+        <section className="challenge-panel challenge-enter w-full p-6 text-center sm:p-10" data-testid="challenge-ready">
+          <p className="text-sm font-black tracking-wide text-[var(--challenge-accent)]">التحدي المتدرج</p>
+          <h1 className="mt-3 text-balance text-3xl font-black text-white sm:text-4xl">
+            أهلًا بك، <bdi>{displayName}</bdi>!
+          </h1>
+          <p dir="auto" className="mt-3 text-base font-bold text-sky-200">{session.title}</p>
+
+          <dl className="mx-auto mt-6 flex max-w-md items-stretch justify-center divide-x divide-x-reverse divide-white/10 rounded-xl bg-white/[0.06] py-4">
+            <div className="min-w-0 flex-1 px-3"><dt className="text-xs font-bold text-sky-300">المستويات</dt><dd dir="ltr" className="mt-1 text-lg font-black text-white">{session.questionCount}</dd></div>
+            <div className="min-w-0 flex-1 px-3"><dt className="text-xs font-bold text-sky-300">النقاط</dt><dd dir="ltr" className="mt-1 text-lg font-black text-white">{session.totalPoints}</dd></div>
+            <div className="min-w-0 flex-1 px-3"><dt className="text-xs font-bold text-sky-300">النجاح</dt><dd dir="ltr" className="mt-1 text-lg font-black text-[var(--challenge-accent)]">{session.passingPercentage}%</dd></div>
+          </dl>
+
+          <p className="mx-auto mt-5 max-w-md rounded-xl bg-white/[0.06] p-4 text-sm font-semibold leading-7 text-sky-100">
+            الإجابة الصحيحة تنقلك للمستوى التالي، والإجابة الخاطئة تنهي التحدي.
+            {hasAttempt ? ' سنُعيدك إلى آخر مستوى وصلت إليه.' : ''} رتّب المعلم الأسئلة من الأسهل إلى الأصعب.
+          </p>
+
+          {error ? <p role="alert" className="mx-auto mt-4 max-w-md rounded-xl bg-rose-500/15 p-3 text-sm font-bold text-rose-200">{error}</p> : null}
+
+          <button
+            type="button"
+            onClick={onStart}
+            disabled={starting}
+            className="mt-7 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[var(--challenge-accent)] px-8 text-base font-black text-slate-950 transition-transform duration-200 hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-55 motion-reduce:transition-none sm:w-72">
+            {starting ? <ButtonSpinner /> : null}
+            {starting ? 'جارٍ البدء…' : hasAttempt ? 'استئناف التحدي' : 'ابدأ التحدي'}
+          </button>
+        </section>
+      </div>
+    </ProgressiveShell>
+  );
 }
 
 // ─── المسابقة المباشرة ─────────────────────────────────────────────────────

@@ -191,11 +191,110 @@ body {
   }
 }
 
+/* ─── التحدي المتدرج — هوية داكنة أصلية ─── */
+
+.challenge-shell {
+  --challenge-accent: oklch(0.88 0.17 95);
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(ellipse at 15% 0%, oklch(0.32 0.09 250 / 0.55), transparent 42rem),
+    radial-gradient(ellipse at 85% 100%, oklch(0.28 0.08 300 / 0.45), transparent 40rem),
+    linear-gradient(180deg, oklch(0.16 0.04 258), oklch(0.12 0.035 262));
+  color: white;
+}
+
+.challenge-panel {
+  border: 1px solid oklch(1 0 0 / 0.12);
+  border-radius: 1.25rem;
+  background: oklch(0.22 0.05 255 / 0.72);
+  box-shadow: 0 10px 30px rgb(2 6 23 / 0.45);
+  backdrop-filter: blur(6px);
+}
+
+.challenge-enter {
+  animation: challenge-enter 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.challenge-flash-ok {
+  animation: challenge-flash-ok 700ms ease-out 1;
+}
+
+.challenge-flash-bad {
+  animation: challenge-flash-bad 700ms ease-out 1;
+}
+
+.challenge-feedback-ok,
+.challenge-feedback-bad {
+  border-radius: 0.75rem;
+  padding: 0.5rem 1rem;
+  text-align: center;
+  font-weight: 900;
+}
+
+.challenge-feedback-ok {
+  background: oklch(0.45 0.13 160 / 0.3);
+  color: oklch(0.86 0.15 160);
+}
+
+.challenge-feedback-bad {
+  background: oklch(0.45 0.19 20 / 0.3);
+  color: oklch(0.85 0.12 20);
+}
+
+.challenge-result-win {
+  background: radial-gradient(circle at 50% 0%, oklch(0.5 0.11 90 / 0.35), transparent 75%);
+}
+
+.challenge-result-lose {
+  background: radial-gradient(circle at 50% 0%, oklch(0.4 0.1 20 / 0.3), transparent 75%);
+}
+
+@keyframes challenge-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes challenge-flash-ok {
+  0% {
+    box-shadow: 0 0 0 3px oklch(0.7 0.17 160 / 0.9), 0 10px 30px rgb(2 6 23 / 0.45);
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent, 0 10px 30px rgb(2 6 23 / 0.45);
+  }
+}
+
+@keyframes challenge-flash-bad {
+  0% {
+    box-shadow: 0 0 0 3px oklch(0.62 0.2 22 / 0.9), 0 10px 30px rgb(2 6 23 / 0.45);
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent, 0 10px 30px rgb(2 6 23 / 0.45);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .student-enter,
   .live-enter,
-  .live-status-pulse {
+  .live-status-pulse,
+  .challenge-enter,
+  .challenge-flash-ok,
+  .challenge-flash-bad {
     animation: none;
+  }
+
+  .challenge-flash-ok {
+    box-shadow: 0 0 0 2px oklch(0.7 0.17 160 / 0.7);
+  }
+
+  .challenge-flash-bad {
+    box-shadow: 0 0 0 2px oklch(0.62 0.2 22 / 0.7);
   }
 
   .live-timer,

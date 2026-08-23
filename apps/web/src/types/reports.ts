@@ -1,4 +1,4 @@
-import type { AttemptStatus, SessionStatus } from './sessions';
+import type { AttemptStatus, SessionMode, SessionStatus } from './sessions';
 
 export type DifficultySignal =
   | 'InsufficientData'
@@ -39,6 +39,7 @@ export interface SessionReport {
   quizTitle: string;
   sessionLabel: string | null;
   sessionStatus: SessionStatus;
+  sessionMode: SessionMode;
   activatedAt: string | null;
   finishedAt: string | null;
   summary: SessionReportSummary;
@@ -54,6 +55,8 @@ export interface ReportAttemptListItem {
   maxScore: number | null;
   percentage: number | null;
   passed: boolean | null;
+  mode: SessionMode;
+  maxLevelReached: number | null;
   durationMs: number | null;
   startedAt: string;
   finishedAt: string | null;
@@ -86,6 +89,9 @@ export interface AttemptDetail {
   maxScore: number | null;
   percentage: number | null;
   passed: boolean | null;
+  mode: SessionMode;
+  maxLevelReached: number | null;
+  totalLevels: number | null;
   durationMs: number | null;
   startedAt: string;
   finishedAt: string | null;

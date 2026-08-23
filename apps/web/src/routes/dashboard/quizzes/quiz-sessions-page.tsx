@@ -49,6 +49,13 @@ export default function QuizSessionsPage() {
       if (error instanceof HttpError && error.status === 400) {
         const body = error.body as { title?: string; detail?: string } | null;
         setCreateError(body?.detail ?? 'تعذر إنشاء الجلسة. تأكد من نشر الاختبار أولًا.');
+      } else if (error instanceof HttpError && error.status === 409) {
+        const body = error.body as { title?: string; detail?: string } | null;
+        setCreateError(
+          body?.title === 'UnsupportedQuestionTypesForMode'
+            ? 'التحدي المتدرج يدعم أسئلة الاختيار من متعدد وصح/خطأ والاستماع فقط. أعد نشر نسخة خالية من أسئلة الإجابة القصيرة والترتيب أولًا.'
+            : body?.detail ?? 'تعذر إنشاء الجلسة. تحقق من حالة الاختبار.',
+        );
       } else if (error instanceof HttpError && error.status === 403) {
         setCreateError('ليس لديك صلاحية إدارة جلسات هذا الاختبار.');
       } else if (error instanceof HttpError && error.status === 404) {
@@ -125,14 +132,27 @@ export default function QuizSessionsPage() {
           </FormField>
           <FormField id="session-mode" label="نمط الجلسة">
             {({ id }) => (
-              <select
-                id={id}
-                value={mode}
-                onChange={(event) => setMode(event.target.value as SessionMode)}
-                className="min-h-11 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-sky-600 focus:outline-none focus:ring-2 focus:ring-sky-200">
-                <option value="SelfPaced">ذاتي الإيقاع — كل طالب يتقدم منفردًا</option>
-                <option value="Live">مباشر — المعلم يفتح الأسئلة للجميع</option>
-              </select>
+              <>
+                <select
+                  id={id}
+                  value={mode}
+                  onChange={(event) => setMode(event.target.value as SessionMode)}
+                  className="min-h-11 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-sky-600 focus:outline-none focus:ring-2 focus:ring-sky-200">
+                  <option value="SelfPaced">ذاتي الإيقاع — كل طالب يتقدم منفردًا</option>
+                  <option value="Live">مباشر — المعلم يفتح الأسئلة للجميع</option>
+                  <option value="ProgressiveChallenge">التحدي المتدرج — الصحيح يصعد والخطأ ينهي</option>
+                </select>
+                {mode === 'ProgressiveChallenge' ? (
+                  <div className="mt-2 flex flex-col gap-1.5 text-xs leading-6">
+                    <p className="text-slate-600">
+                      تجربة فردية متدرجة؛ الإجابة الصحيحة تنقل الطالب للمستوى التالي، والإجابة الخاطئة تنهي التحدي.
+                    </p>
+                    <p role="note" className="rounded-lg bg-amber-50 p-2.5 font-semibold text-amber-900">
+                      رتّب أسئلة الاختبار من الأسهل إلى الأصعب للحصول على أفضل تجربة.
+                    </p>
+                  </div>
+                ) : null}
+              </>
             )}
           </FormField>
           {createError ? (
