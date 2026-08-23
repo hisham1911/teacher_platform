@@ -31,6 +31,7 @@ const report: SessionReport = {
   quizTitle: 'اختبار الوحدة الأولى',
   sessionLabel: 'المجموعة الصباحية',
   sessionStatus: 'Finished',
+  sessionMode: 'SelfPaced',
   activatedAt: '2026-08-09T08:00:00Z',
   finishedAt: '2026-08-09T09:00:00Z',
   summary: {
@@ -91,6 +92,8 @@ describe('SessionReportPage', () => {
           maxScore: 10,
           percentage: 100,
           passed: true,
+          mode: 'SelfPaced',
+          maxLevelReached: null,
           durationMs: 90_000,
           startedAt: '2026-08-09T08:00:00Z',
           finishedAt: '2026-08-09T08:01:30Z',
@@ -139,6 +142,45 @@ describe('SessionReportPage', () => {
     expect(screen.getAllByRole('link', { name: 'عرض الشهادة' })[0]).toHaveAttribute('href', '/dashboard/certificates?certificateId=certificate-1');
     expect(await screen.findByRole('heading', { name: 'آراء الطلاب' })).toBeInTheDocument();
     expect(await screen.findByText('تجربة واضحة')).toBeInTheDocument();
+  });
+
+  it('يعرض نمط التحدي والمستوى الذي وصل إليه الطالب', async () => {
+    getSessionReportMock.mockResolvedValue({
+      ...report,
+      sessionMode: 'ProgressiveChallenge',
+      questions: [
+        ...report.questions,
+        { ...report.questions[0]!, quizVersionItemId: 'item-2', questionVersionId: 'version-2', sortOrder: 1 },
+      ],
+    });
+    listAttemptsMock.mockResolvedValue({
+      items: [
+        {
+          attemptId: 'attempt-progressive',
+          participantId: 'participant-progressive',
+          displayName: 'متحدية',
+          status: 'Finished',
+          score: 5,
+          maxScore: 10,
+          percentage: 50,
+          passed: false,
+          mode: 'ProgressiveChallenge',
+          maxLevelReached: 2,
+          durationMs: 45_000,
+          startedAt: '2026-08-09T08:00:00Z',
+          finishedAt: '2026-08-09T08:00:45Z',
+        },
+      ],
+      page: 1,
+      pageSize: 20,
+      totalItems: 1,
+      totalPages: 1,
+    });
+
+    renderPage();
+
+    expect(await screen.findByText('التحدي المتدرج')).toBeInTheDocument();
+    expect(screen.getAllByTestId('challenge-report-progress')[0]).toHaveTextContent('المستوى 2 من 2');
   });
 
   it('يعرض حالة فراغ مفيدة عندما لا توجد محاولات', async () => {

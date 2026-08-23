@@ -7,6 +7,9 @@ public sealed class SessionReportResponse
     public string QuizTitle { get; set; } = string.Empty;
     public string? SessionLabel { get; set; }
     public string SessionStatus { get; set; } = string.Empty;
+
+    /// <summary>نمط الجلسة — SelfPaced / Live / ProgressiveChallenge.</summary>
+    public string SessionMode { get; set; } = string.Empty;
     public DateTime? ActivatedAt { get; set; }
     public DateTime? FinishedAt { get; set; }
     public SessionReportSummaryResponse Summary { get; set; } = new();
@@ -52,6 +55,15 @@ public sealed class AttemptListItemResponse
     public decimal? MaxScore { get; set; }
     public decimal? Percentage { get; set; }
     public bool? Passed { get; set; }
+
+    /// <summary>نمط الجلسة — SelfPaced / Live / ProgressiveChallenge.</summary>
+    public string Mode { get; set; } = string.Empty;
+
+    /// <summary>
+    /// أعلى مستوى وصل إليه اللاعب في التحدي المتدرج (عدد الإجابات المسجلة)؛
+    /// null في بقية الأنماط. إجمالي المستويات = عدد أسئلة النسخة المنشورة.
+    /// </summary>
+    public int? MaxLevelReached { get; set; }
     public long? DurationMs { get; set; }
     public DateTime StartedAt { get; set; }
     public DateTime? FinishedAt { get; set; }
@@ -71,6 +83,15 @@ public sealed class AttemptDetailResponse
     public decimal? MaxScore { get; set; }
     public decimal? Percentage { get; set; }
     public bool? Passed { get; set; }
+
+    /// <summary>نمط الجلسة — SelfPaced / Live / ProgressiveChallenge.</summary>
+    public string Mode { get; set; } = string.Empty;
+
+    /// <summary>أعلى مستوى وصل إليه اللاعب في التحدي المتدرج؛ null في بقية الأنماط.</summary>
+    public int? MaxLevelReached { get; set; }
+
+    /// <summary>إجمالي المستويات في التحدي المتدرج؛ null في بقية الأنماط.</summary>
+    public int? TotalLevels { get; set; }
     public long? DurationMs { get; set; }
     public DateTime StartedAt { get; set; }
     public DateTime? FinishedAt { get; set; }

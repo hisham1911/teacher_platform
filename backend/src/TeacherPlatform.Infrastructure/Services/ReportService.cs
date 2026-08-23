@@ -44,6 +44,7 @@ public sealed class ReportService
                 QuizTitle = s.Quiz != null ? s.Quiz.Title : string.Empty,
                 s.Label,
                 s.Status,
+                s.Mode,
                 s.ActivatedAt,
                 s.FinishedAt,
                 ParticipantCount = s.Participants.Count
@@ -149,6 +150,7 @@ public sealed class ReportService
             QuizTitle = session.QuizTitle,
             SessionLabel = session.Label,
             SessionStatus = session.Status.ToString(),
+            SessionMode = session.Mode.ToString(),
             ActivatedAt = session.ActivatedAt,
             FinishedAt = session.FinishedAt,
             Summary = new SessionReportSummaryResponse
@@ -203,6 +205,10 @@ public sealed class ReportService
                 MaxScore = a.MaxScore,
                 Percentage = a.Percentage,
                 Passed = a.Passed,
+                Mode = a.Session != null ? a.Session.Mode.ToString() : string.Empty,
+                MaxLevelReached = a.Session != null && a.Session.Mode == SessionMode.ProgressiveChallenge
+                    ? a.Answers.Count
+                    : null,
                 DurationMs = a.DurationMs,
                 StartedAt = a.StartedAt,
                 FinishedAt = a.FinishedAt
@@ -235,7 +241,8 @@ public sealed class ReportService
                 QuizId = a.Session != null ? a.Session.QuizId : Guid.Empty,
                 QuizVersionId = a.Session != null ? a.Session.QuizVersionId : Guid.Empty,
                 QuizTitle = a.Session != null && a.Session.Quiz != null ? a.Session.Quiz.Title : string.Empty,
-                SessionLabel = a.Session != null ? a.Session.Label : null
+                SessionLabel = a.Session != null ? a.Session.Label : null,
+                Mode = a.Session != null ? a.Session.Mode : default(SessionMode?)
             })
             .SingleOrDefaultAsync(cancellationToken);
 
@@ -301,6 +308,9 @@ public sealed class ReportService
             MaxScore = attempt.Entity.MaxScore,
             Percentage = attempt.Entity.Percentage,
             Passed = attempt.Entity.Passed,
+            Mode = attempt.Mode?.ToString() ?? string.Empty,
+            MaxLevelReached = attempt.Mode == SessionMode.ProgressiveChallenge ? answers.Count : null,
+            TotalLevels = attempt.Mode == SessionMode.ProgressiveChallenge ? items.Count : null,
             DurationMs = attempt.Entity.DurationMs,
             StartedAt = attempt.Entity.StartedAt,
             FinishedAt = attempt.Entity.FinishedAt,
@@ -317,7 +327,7 @@ public sealed class ReportService
         var session = await _db.QuizSessions
             .AsNoTracking()
             .Where(s => s.Id == sessionId)
-            .Select(s => new { s.Id, QuizTitle = s.Quiz != null ? s.Quiz.Title : "session" })
+            .Select(s => new { s.Id, s.Mode, QuizTitle = s.Quiz != null ? s.Quiz.Title : "session" })
             .SingleOrDefaultAsync(cancellationToken);
 
         if (session is null)
@@ -337,6 +347,7 @@ public sealed class ReportService
                 a.MaxScore,
                 a.Percentage,
                 a.Passed,
+                MaxLevelReached = session.Mode == SessionMode.ProgressiveChallenge ? a.Answers.Count : (int?)null,
                 a.DurationMs,
                 a.StartedAt,
                 a.FinishedAt
@@ -344,7 +355,7 @@ public sealed class ReportService
             .ToListAsync(cancellationToken);
 
         var csv = new StringBuilder();
-        csv.AppendLine("Participant,Status,Score,MaxScore,Percentage,Passed,DurationSeconds,StartedAtUtc,FinishedAtUtc");
+        csv.AppendLine("Participant,Status,Score,MaxScore,Percentage,Passed,MaxLevelReached,DurationSeconds,StartedAtUtc,FinishedAtUtc");
 
         foreach (var attempt in attempts)
         {
@@ -356,6 +367,7 @@ public sealed class ReportService
                 FormatDecimal(attempt.MaxScore),
                 FormatDecimal(attempt.Percentage),
                 attempt.Passed?.ToString() ?? string.Empty,
+                attempt.MaxLevelReached?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
                 attempt.DurationMs.HasValue
                     ? (attempt.DurationMs.Value / 1000m).ToString("0.###", CultureInfo.InvariantCulture)
                     : string.Empty,

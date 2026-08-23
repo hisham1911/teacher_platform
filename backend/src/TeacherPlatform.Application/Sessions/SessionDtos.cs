@@ -6,8 +6,8 @@ namespace TeacherPlatform.Application.Sessions;
 
 public sealed class CreateSessionRequest
 {
-    /// <summary>SelfPaced أو Live.</summary>
-    [Required, RegularExpression("SelfPaced|Live")]
+    /// <summary>SelfPaced أو Live أو ProgressiveChallenge.</summary>
+    [Required, RegularExpression("SelfPaced|Live|ProgressiveChallenge")]
     public string Mode { get; set; } = "SelfPaced";
 
     [StringLength(200)]
@@ -118,6 +118,9 @@ public sealed class StartAttemptResponse
     public DateTime ServerNow { get; set; }
     public int TotalQuestions { get; set; }
     public int CurrentQuestionIndex { get; set; }
+
+    /// <summary>مجموع نقاط الإجابات المسجلة حتى الآن — يستأنف به اللاعب نقاطه بعد التحديث.</summary>
+    public decimal ScoreSoFar { get; set; }
     public string Status { get; set; } = string.Empty;
 }
 

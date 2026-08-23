@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useParams, useSearchParams } from 'react-router';
 import { Button } from '../../../components/ui/button';
-import { certificatesApi, reportsApi, sessionsApi, surveysApi } from '../../../data/api-client/endpoints';
+import { certificatesApi, reportsApi, surveysApi } from '../../../data/api-client/endpoints';
 import { SurveyResultsSummary } from '../../../features/surveys/survey-results-summary';
 import { HttpError } from '../../../data/api-client/http-error';
 import { getActiveTenantId } from '../../../lib/auth/session';
@@ -37,12 +37,7 @@ export default function SessionReportPage() {
     enabled: Boolean(tenantId && sessionId),
     retry: false,
   });
-  const sessionQuery = useQuery({
-    queryKey: ['session-detail', tenantId, quizId, sessionId, 'report'],
-    queryFn: ({ signal }) => sessionsApi.get(tenantId!, quizId!, sessionId!, signal),
-    enabled: Boolean(tenantId && quizId && sessionId),
-    retry: false,
-  });
+
   const certificatesQuery = useQuery({
     queryKey: ['certificates', tenantId],
     queryFn: ({ signal }) => certificatesApi.list(tenantId!, signal),
@@ -111,7 +106,7 @@ export default function SessionReportPage() {
           <h1 className="mt-2 text-balance text-2xl font-black text-[var(--teacher-ink)]">تقرير {report.quizTitle}</h1>
           <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-[var(--teacher-muted)]">
             <span className="font-bold text-slate-800">{report.sessionLabel ?? 'جلسة بدون عنوان'}</span>
-            {sessionQuery.data ? <span>{SESSION_MODE_LABELS[sessionQuery.data.mode]}</span> : null}
+            <span>{SESSION_MODE_LABELS[report.sessionMode]}</span>
             <span>{SESSION_STATUS_LABELS[report.sessionStatus]}</span>
             {reportDate ? <time dateTime={reportDate}>{formatDate(reportDate)}</time> : null}
           </div>
@@ -176,6 +171,7 @@ export default function SessionReportPage() {
             sessionId={report.sessionId}
             quizId={report.quizId}
             certificatesByAttempt={certificatesByAttempt}
+            totalLevels={report.questions.length}
           />
         )}
 
@@ -212,12 +208,16 @@ function AttemptsList({
   sessionId,
   quizId,
   certificatesByAttempt,
+  totalLevels,
 }: {
   attempts: ReportAttemptListItem[];
   sessionId: string;
   quizId: string;
   certificatesByAttempt: Map<string, CertificateListItem>;
+  totalLevels: number;
 }) {
+  const showsChallengeProgress = attempts.some((attempt) => attempt.mode === 'ProgressiveChallenge');
+
   return (
     <div className="teacher-surface overflow-hidden">
       <div className="hidden md:block">
@@ -228,6 +228,7 @@ function AttemptsList({
               <th className="px-3 py-3 text-start font-bold">الدرجة</th>
               <th className="px-3 py-3 text-start font-bold">النسبة</th>
               <th className="px-3 py-3 text-start font-bold">النتيجة</th>
+              {showsChallengeProgress ? <th className="px-3 py-3 text-start font-bold">المستوى</th> : null}
               <th className="px-3 py-3 text-start font-bold">المدة</th>
               <th className="px-3 py-3 text-start font-bold">الشهادة</th>
               <th className="px-4 py-3 text-start font-bold"><span className="sr-only">الإجراء</span></th>
@@ -240,6 +241,11 @@ function AttemptsList({
                 <td className="px-3 py-4 text-slate-700" dir="ltr">{formatScore(attempt)}</td>
                 <td className="px-3 py-4 font-bold text-slate-800" dir="ltr">{formatPercentage(attempt.percentage)}</td>
                 <td className="px-3 py-4"><AttemptOutcome attempt={attempt} /></td>
+                {showsChallengeProgress ? (
+                  <td className="px-3 py-4 text-slate-700">
+                    <ChallengeProgress attempt={attempt} totalLevels={totalLevels} />
+                  </td>
+                ) : null}
                 <td className="px-3 py-4 text-slate-600">{formatDuration(attempt.durationMs)}</td>
                 <td className="px-3 py-4"><CertificateHandoff certificate={certificatesByAttempt.get(attempt.attemptId)} /></td>
                 <td className="px-4 py-4 text-end"><AttemptDetailsLink attemptId={attempt.attemptId} sessionId={sessionId} quizId={quizId} /></td>
@@ -256,9 +262,10 @@ function AttemptsList({
               <div className="min-w-0"><p className="truncate font-black text-slate-900">{attempt.displayName}</p><p className="mt-1 text-sm text-slate-500">{ATTEMPT_STATUS_LABELS[attempt.status]}</p></div>
               <AttemptOutcome attempt={attempt} />
             </div>
-            <dl className="mt-4 grid grid-cols-3 gap-3 rounded-xl bg-slate-50 p-3 text-sm">
+            <dl className={`mt-4 grid gap-3 rounded-xl bg-slate-50 p-3 text-sm ${showsChallengeProgress ? 'grid-cols-2' : 'grid-cols-3'}`}>
               <div><dt className="text-slate-500">الدرجة</dt><dd className="mt-1 font-bold text-slate-900" dir="ltr">{formatScore(attempt)}</dd></div>
               <div><dt className="text-slate-500">النسبة</dt><dd className="mt-1 font-bold text-slate-900" dir="ltr">{formatPercentage(attempt.percentage)}</dd></div>
+              {showsChallengeProgress ? <div><dt className="text-slate-500">المستوى</dt><dd className="mt-1 font-bold text-slate-900"><ChallengeProgress attempt={attempt} totalLevels={totalLevels} /></dd></div> : null}
               <div><dt className="text-slate-500">المدة</dt><dd className="mt-1 font-bold text-slate-900">{formatDuration(attempt.durationMs)}</dd></div>
             </dl>
             <div className="mt-4 flex flex-col gap-3">
@@ -270,6 +277,11 @@ function AttemptsList({
       </ul>
     </div>
   );
+}
+
+function ChallengeProgress({ attempt, totalLevels }: { attempt: ReportAttemptListItem; totalLevels: number }) {
+  if (attempt.mode !== 'ProgressiveChallenge' || attempt.maxLevelReached == null) return <span>—</span>;
+  return <span data-testid="challenge-report-progress">المستوى {attempt.maxLevelReached} من {totalLevels}</span>;
 }
 
 function AttemptOutcome({ attempt }: { attempt: ReportAttemptListItem }) {

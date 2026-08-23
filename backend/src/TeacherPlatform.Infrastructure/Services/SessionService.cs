@@ -6,6 +6,7 @@ using TeacherPlatform.Application.Questions;
 using TeacherPlatform.Application.Sessions;
 using TeacherPlatform.Application.Tenancy;
 using TeacherPlatform.Domain.Quizzes;
+using TeacherPlatform.Domain.Questions;
 using TeacherPlatform.Domain.Sessions;
 using TeacherPlatform.Infrastructure.Persistence;
 
@@ -65,7 +66,7 @@ public sealed class SessionService
 
         if (!Enum.TryParse<SessionMode>(request.Mode, ignoreCase: true, out var mode))
         {
-            return (new ServiceResultException("Validation", "Mode must be SelfPaced or Live."), null);
+            return (new ServiceResultException("Validation", "Mode must be SelfPaced, Live or ProgressiveChallenge."), null);
         }
 
         var quiz = await _db.Quizzes
@@ -79,6 +80,26 @@ public sealed class SessionService
         if (quiz.CurrentPublishedVersionId is not Guid publishedVersionId)
         {
             return (new ServiceResultException("Conflict", "Quiz has no published version. Publish the quiz before creating a session."), null);
+        }
+
+        // التحدّي المتدرج يقتصر على أنواع الأسئلة ذات الخيارات (اختيار متعدد/صح وخطأ/استماع)
+        // لأن الإجابة الخاطئة تنهي التحدي فورًا — النصية والترتيب تجعل التجربة رديئة هنا.
+        if (mode == SessionMode.ProgressiveChallenge)
+        {
+            var hasUnsupportedType = await _db.QuizVersionItems
+                .AsNoTracking()
+                .Where(i => i.QuizVersionId == publishedVersionId)
+                .AnyAsync(
+                    i => i.QuestionVersion == null ||
+                         i.QuestionVersion.QuestionType == QuestionType.ShortAnswer ||
+                         i.QuestionVersion.QuestionType == QuestionType.Ordering,
+                    cancellationToken);
+            if (hasUnsupportedType)
+            {
+                return (new ServiceResultException(
+                    "UnsupportedQuestionTypesForMode",
+                    "Progressive Challenge supports Multiple Choice, True/False and Listening questions only. Remove short answer and ordering questions from the published version first."), null);
+            }
         }
 
         var now = _clock.UtcNow;

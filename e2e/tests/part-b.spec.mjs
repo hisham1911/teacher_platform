@@ -113,7 +113,8 @@ test('survives API restart + finish + result + F5 (Part B)', async ({ page }) =>
   const preview = page.getByTitle('معاينة الشهادة');
   await expect(preview).toBeVisible();
   expect(await preview.getAttribute('src')).toMatch(/^blob:/);
-  await expect(page.getByRole('button', { name: 'نسخ رابط الشهادة' })).toBeVisible();
+  const studentCertificateRow = page.getByRole('row').filter({ hasText: 'طالب E2E' });
+  await expect(studentCertificateRow.getByRole('button', { name: 'نسخ رابط الشهادة' })).toBeVisible();
   console.log('[part-b] PASS — survived API restart + auto-restore result across F5');
 });
 
