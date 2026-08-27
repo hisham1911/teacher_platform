@@ -8,21 +8,23 @@ import { clearSession, getActiveTenantId, setActiveWorkspaceId } from '../../lib
 
 const studioNavItems: Array<{ to: string; label: string; icon: TeacherIconName }> = [
   { to: '/dashboard', label: 'الرئيسية', icon: 'home' },
-  { to: '/dashboard/activities/new', label: 'إنشاء نشاط', icon: 'create' },
-  { to: '/dashboard/questions', label: 'بنك الأسئلة', icon: 'questions' },
-  { to: '/dashboard/quizzes', label: 'الأنشطة', icon: 'quizzes' },
+  { to: '/dashboard/quizzes', label: 'المحتوى', icon: 'quizzes' },
   { to: '/dashboard/reports', label: 'النتائج', icon: 'reports' },
   { to: '/dashboard/certificates', label: 'الشهادات', icon: 'certificate' },
   { to: '/dashboard/settings', label: 'الإعدادات', icon: 'settings' },
 ];
 
-const mobilePrimaryNav = [studioNavItems[0]!, studioNavItems[1]!, studioNavItems[2]!, studioNavItems[4]!];
+const mobilePrimaryNav: Array<{ to: string; label: string; icon: TeacherIconName }> = [
+  { to: '/dashboard', label: 'الرئيسية', icon: 'home' },
+  { to: '/dashboard/activities/new', label: 'إنشاء', icon: 'create' },
+  { to: '/dashboard/quizzes', label: 'المحتوى', icon: 'quizzes' },
+  { to: '/dashboard/reports', label: 'النتائج', icon: 'reports' },
+];
 
 function isStudioNavActive(pathname: string, target: string) {
   if (target === '/dashboard') return pathname === target;
   if (target === '/dashboard/activities/new') return pathname.startsWith('/dashboard/activities/');
-  if (target === '/dashboard/questions') return pathname.startsWith('/dashboard/questions');
-  if (target === '/dashboard/quizzes') return pathname.startsWith('/dashboard/quizzes');
+  if (target === '/dashboard/quizzes') return pathname.startsWith('/dashboard/quizzes') || pathname.startsWith('/dashboard/questions');
   if (target === '/dashboard/reports') return pathname.startsWith(target) || pathname.startsWith('/dashboard/attempts/');
   return pathname.startsWith(target);
 }
@@ -44,6 +46,7 @@ export function RootLayout({ children }: { children: ReactNode }) {
 
   const activeWorkspace = workspaces?.find((workspace) => workspace.id === activeTenantId) ?? null;
   const isPlatformAdmin = Boolean(session.user?.platformRoles.includes('PlatformAdmin'));
+  const isCreatingActivity = location.pathname.startsWith('/dashboard/activities/');
 
   if (isFocusedExperience) return <div className="min-h-dvh" dir="rtl">{children}</div>;
 
@@ -89,26 +92,44 @@ export function RootLayout({ children }: { children: ReactNode }) {
       <div className="mx-auto flex min-h-dvh w-full max-w-screen-2xl">
         <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-l border-violet-100 bg-white/95 px-4 py-5 lg:flex">
           <EnglishSparkBrand to="/dashboard" />
-          <div className="mt-6 border-y border-slate-100 py-4">
-            <p className="truncate text-sm font-black text-[var(--teacher-ink)]">{session.user.fullName}</p>
-            <p className="mt-1 text-xs font-bold text-violet-700">English Spark Studio</p>
-            {workspaces && workspaces.length > 0 ? (
-              <label className="mt-4 flex flex-col gap-1.5 text-xs font-semibold text-[var(--teacher-muted)]">
-                <span className="inline-flex items-center gap-1.5"><TeacherIcon name="workspace" className="h-4 w-4" />مساحة العمل</span>
-                <select value={activeWorkspace?.id ?? ''} onChange={(event) => onWorkspaceChange(event.target.value)} className="min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-800 focus:border-violet-600 focus:outline-2 focus:outline-violet-200">
-                  {workspaces.map((workspace) => <option key={workspace.id} value={workspace.id}>{workspace.name}</option>)}
-                </select>
-              </label>
-            ) : null}
-            <Link to="/platform" className={`mt-4 flex min-h-12 items-center gap-3 rounded-xl border px-3 text-sm font-black ${isPlatformAdmin ? 'border-amber-200 bg-amber-50 text-amber-950 hover:bg-amber-100' : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'}`}>
-              <span aria-hidden="true">{isPlatformAdmin ? '⚙️' : '🔒'}</span>
-              <span><span className="block">إدارة المنصة</span><span className={`block text-[10px] font-bold ${isPlatformAdmin ? 'text-amber-700' : 'text-slate-500'}`}>{isPlatformAdmin ? 'العملاء · الخطط · الاستخدام' : 'يتطلب صلاحية PlatformAdmin'}</span></span>
-            </Link>
-          </div>
+
+          {workspaces && workspaces.length > 0 ? (
+            <label className="mt-6 block rounded-2xl border border-slate-100 bg-slate-50/80 p-3 text-xs font-semibold text-[var(--teacher-muted)]">
+              <span className="mb-1.5 inline-flex items-center gap-1.5"><TeacherIcon name="workspace" className="h-4 w-4" />مساحة العمل</span>
+              <select value={activeWorkspace?.id ?? ''} onChange={(event) => onWorkspaceChange(event.target.value)} className="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-800 focus:border-violet-600 focus:outline-2 focus:outline-violet-200">
+                {workspaces.map((workspace) => <option key={workspace.id} value={workspace.id}>{workspace.name}</option>)}
+              </select>
+            </label>
+          ) : null}
+
+          <Link
+            to="/dashboard/activities/new"
+            className={`mt-4 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl px-4 text-sm font-black shadow-sm transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-700 ${isCreatingActivity ? 'bg-violet-800 text-white ring-4 ring-violet-100' : 'bg-violet-700 text-white hover:bg-violet-800'}`}>
+            <TeacherIcon name="create" />
+            إنشاء نشاط جديد
+          </Link>
 
           <StudioNavigation pathname={location.pathname} />
 
-          <div className="mt-auto border-t border-slate-100 pt-4">
+          <details className="group mt-3 border-t border-slate-100 pt-3">
+            <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between rounded-xl px-3 text-sm font-bold text-slate-500 hover:bg-slate-50 hover:text-slate-800 marker:content-none">
+              <span className="inline-flex items-center gap-2"><TeacherIcon name="questions" />أدوات إضافية</span>
+              <span aria-hidden="true" className="text-xs transition-transform group-open:rotate-180">⌄</span>
+            </summary>
+            <div className="mt-1 space-y-1 pr-2">
+              <Link to="/dashboard/questions" className="flex min-h-10 items-center gap-2 rounded-lg px-3 text-xs font-bold text-slate-600 hover:bg-violet-50 hover:text-violet-800">بنك الأسئلة</Link>
+            </div>
+          </details>
+
+          <div className="mt-auto space-y-2 border-t border-slate-100 pt-4">
+            <div className="px-3 pb-1">
+              <p className="truncate text-sm font-black text-[var(--teacher-ink)]">{session.user.fullName}</p>
+              <p className="mt-0.5 text-[11px] font-bold text-slate-400">English Spark Studio</p>
+            </div>
+            <Link to="/platform" className={`flex min-h-11 items-center gap-2 rounded-xl px-3 text-xs font-black ${isPlatformAdmin ? 'bg-amber-50 text-amber-950 hover:bg-amber-100' : 'text-slate-500 hover:bg-slate-50'}`}>
+              <span aria-hidden="true">{isPlatformAdmin ? '⚙️' : '🔒'}</span>
+              <span>{isPlatformAdmin ? 'إدارة المنصة' : 'إدارة المنصة · صلاحية خاصة'}</span>
+            </Link>
             <button type="button" onClick={() => void onLogout()} className="inline-flex min-h-11 w-full items-center gap-2 rounded-xl px-3 text-sm font-semibold text-slate-600 hover:bg-rose-50 hover:text-rose-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-700"><TeacherIcon name="logout" />تسجيل الخروج</button>
           </div>
         </aside>
@@ -118,13 +139,13 @@ export function RootLayout({ children }: { children: ReactNode }) {
             <div className="flex min-h-16 items-center justify-between gap-3 px-4">
               <EnglishSparkBrand to="/dashboard" compact />
               <details key={location.pathname} className="group relative">
-                <summary aria-label="فتح القائمة الإضافية" className="inline-flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-3 text-sm font-bold text-violet-900 marker:content-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-700"><span className="hidden sm:inline">المزيد</span><span aria-hidden="true" className="text-xl leading-none">•••</span></summary>
+                <summary aria-label="فتح القائمة الإضافية" className="inline-flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-xl border border-violet-100 bg-white px-3 text-sm font-bold text-slate-700 shadow-sm marker:content-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-700"><span className="hidden sm:inline">المزيد</span><span aria-hidden="true" className="text-xl leading-none">•••</span></summary>
                 <div className="fixed inset-x-3 top-16 z-50 max-h-[calc(100dvh-9rem)] overflow-y-auto rounded-2xl border border-violet-100 bg-white p-3 shadow-xl">
                   {workspaces && workspaces.length > 0 ? <label className="mb-3 flex flex-col gap-1.5 text-xs font-semibold text-slate-600">مساحة العمل<select value={activeWorkspace?.id ?? ''} onChange={(event) => onWorkspaceChange(event.target.value)} className="min-h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-800">{workspaces.map((workspace) => <option key={workspace.id} value={workspace.id}>{workspace.name}</option>)}</select></label> : null}
-                  <Link to="/dashboard/quizzes" className="inline-flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-bold text-slate-700 hover:bg-violet-50"><TeacherIcon name="quizzes" />الأنشطة</Link>
+                  <Link to="/dashboard/questions" className="inline-flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-bold text-slate-700 hover:bg-violet-50"><TeacherIcon name="questions" />بنك الأسئلة</Link>
                   <Link to="/dashboard/certificates" className="inline-flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-bold text-slate-700 hover:bg-violet-50"><TeacherIcon name="certificate" />الشهادات</Link>
                   <Link to="/dashboard/settings" className="inline-flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-bold text-slate-700 hover:bg-violet-50"><TeacherIcon name="settings" />الإعدادات</Link>
-                  <Link to="/platform" className={`mt-2 inline-flex min-h-12 w-full items-center gap-3 rounded-xl border px-3 text-sm font-black ${isPlatformAdmin ? 'border-amber-200 bg-amber-50 text-amber-950' : 'border-slate-200 bg-slate-50 text-slate-700'}`}><span aria-hidden="true">{isPlatformAdmin ? '⚙️' : '🔒'}</span><span>إدارة المنصة{!isPlatformAdmin ? <span className="mr-2 text-[10px] font-bold text-slate-500">صلاحية خاصة</span> : null}</span></Link>
+                  <Link to="/platform" className={`mt-2 inline-flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-black ${isPlatformAdmin ? 'bg-amber-50 text-amber-950' : 'bg-slate-50 text-slate-600'}`}><span aria-hidden="true">{isPlatformAdmin ? '⚙️' : '🔒'}</span><span>إدارة المنصة{!isPlatformAdmin ? <span className="mr-2 text-[10px] font-bold text-slate-500">صلاحية خاصة</span> : null}</span></Link>
                   <button type="button" onClick={() => void onLogout()} className="mt-2 inline-flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-semibold text-rose-700 hover:bg-rose-50"><TeacherIcon name="logout" />تسجيل الخروج</button>
                 </div>
               </details>
@@ -145,11 +166,11 @@ function EnglishSparkBrand({ to, compact = false }: { to: string; compact?: bool
 }
 
 function StudioNavigation({ pathname }: { pathname: string }) {
-  return <nav className="mt-4 flex flex-col gap-1" aria-label="التنقل الرئيسي">{studioNavItems.map((item) => { const isActive = isStudioNavActive(pathname, item.to); return <Link key={item.to} to={item.to} aria-current={isActive ? 'page' : undefined} className={`inline-flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-bold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-700 ${isActive ? 'bg-violet-100 text-violet-900' : 'text-slate-600 hover:bg-violet-50 hover:text-violet-900'}`}><TeacherIcon name={item.icon} />{item.label}</Link>; })}</nav>;
+  return <nav className="mt-4 flex flex-col gap-1" aria-label="التنقل الرئيسي">{studioNavItems.map((item) => { const isActive = isStudioNavActive(pathname, item.to); return <Link key={item.to} to={item.to} aria-current={isActive ? 'page' : undefined} className={`inline-flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-bold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-700 ${isActive ? 'bg-violet-50 text-violet-900' : 'text-slate-600 hover:bg-violet-50 hover:text-violet-900'}`}><TeacherIcon name={item.icon} />{item.label}</Link>; })}</nav>;
 }
 
 function MobileStudioNavigation({ pathname }: { pathname: string }) {
-  return <nav aria-label="التنقل السريع" className="fixed inset-x-0 bottom-0 z-40 border-t border-violet-100 bg-white/96 px-2 pb-[max(0.4rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-12px_30px_rgb(76_29_149/0.08)] backdrop-blur-xl lg:hidden"><div className="mx-auto grid max-w-lg grid-cols-4 gap-1">{mobilePrimaryNav.map((item) => { const isActive = isStudioNavActive(pathname, item.to); return <Link key={item.to} to={item.to} aria-current={isActive ? 'page' : undefined} className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl px-1 text-[11px] font-black transition-colors ${isActive ? 'bg-violet-50 text-violet-800' : 'text-slate-500 hover:bg-violet-50 hover:text-violet-800'}`}><TeacherIcon name={item.icon} className="h-5 w-5" /><span>{item.label === 'إنشاء نشاط' ? 'إنشاء' : item.label === 'بنك الأسئلة' ? 'البنك' : item.label}</span></Link>; })}</div></nav>;
+  return <nav aria-label="التنقل السريع" className="fixed inset-x-0 bottom-0 z-40 border-t border-violet-100 bg-white/96 px-2 pb-[max(0.4rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-12px_30px_rgb(76_29_149/0.08)] backdrop-blur-xl lg:hidden"><div className="mx-auto grid max-w-lg grid-cols-4 gap-1">{mobilePrimaryNav.map((item) => { const isActive = isStudioNavActive(pathname, item.to); return <Link key={item.to} to={item.to} aria-current={isActive ? 'page' : undefined} className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl px-1 text-[11px] font-black transition-colors ${isActive ? 'bg-violet-50 text-violet-800' : 'text-slate-500 hover:bg-violet-50 hover:text-violet-800'}`}><TeacherIcon name={item.icon} className="h-5 w-5" /><span>{item.label}</span></Link>; })}</div></nav>;
 }
 
 function PublicFooter() {
