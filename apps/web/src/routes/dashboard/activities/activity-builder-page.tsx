@@ -27,13 +27,13 @@ export default function ActivityBuilderPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const tenantId = getActiveTenantId();
+  const tenantId = getActiveTenantId() ?? '';
   const mode = parseActivityMode(searchParams.get('mode'));
   const modeDefinition = getActivityModeDefinition(mode);
 
   const draftQuery = useQuery({
     queryKey: ['quiz-draft', tenantId, activityQuizId],
-    queryFn: ({ signal }) => quizzesApi.getDraft(tenantId!, activityQuizId, signal),
+    queryFn: ({ signal }) => quizzesApi.getDraft(tenantId, activityQuizId, signal),
     enabled: Boolean(tenantId && activityQuizId),
     staleTime: 0,
   });
@@ -48,8 +48,8 @@ export default function ActivityBuilderPage() {
 
   const launchMutation = useMutation({
     mutationFn: async () => {
-      const latest = await quizzesApi.getDraft(tenantId!, activityQuizId);
-      return launchActivity({ tenantId: tenantId!, quizId: activityQuizId, mode, draft: latest });
+      const latest = await quizzesApi.getDraft(tenantId, activityQuizId);
+      return launchActivity({ tenantId, quizId: activityQuizId, mode, draft: latest });
     },
     onSuccess: (result) => {
       navigate(`/dashboard/activities/${activityQuizId}/ready?sessionId=${result.session.id}&mode=${mode}`);
