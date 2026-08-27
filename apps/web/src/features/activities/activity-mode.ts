@@ -26,15 +26,17 @@ const PROGRESSIVE_QUESTION_TYPES: readonly QuestionType[] = [
   'Listening',
 ];
 
+const PROGRESSIVE_MODE: ActivityModeDefinition = {
+  mode: 'ProgressiveChallenge',
+  title: 'التحدي المتدرج',
+  description: 'كل إجابة صحيحة تصعد بالطالب مستوى، وأول خطأ ينهي التحدي.',
+  badge: 'الأكثر تشويقًا',
+  recommendedFor: 'مراجعة المفردات والتدرج من السهل إلى الصعب',
+  allowedQuestionTypes: PROGRESSIVE_QUESTION_TYPES,
+};
+
 export const ACTIVITY_MODES: readonly ActivityModeDefinition[] = [
-  {
-    mode: 'ProgressiveChallenge',
-    title: 'التحدي المتدرج',
-    description: 'كل إجابة صحيحة تصعد بالطالب مستوى، وأول خطأ ينهي التحدي.',
-    badge: 'الأكثر تشويقًا',
-    recommendedFor: 'مراجعة المفردات والتدرج من السهل إلى الصعب',
-    allowedQuestionTypes: PROGRESSIVE_QUESTION_TYPES,
-  },
+  PROGRESSIVE_MODE,
   {
     mode: 'SelfPaced',
     title: 'اختبار فردي',
@@ -58,7 +60,7 @@ export function parseActivityMode(value: string | null | undefined): ActivityMod
 }
 
 export function getActivityModeDefinition(mode: ActivityMode): ActivityModeDefinition {
-  return ACTIVITY_MODES.find((definition) => definition.mode === mode) ?? ACTIVITY_MODES[0];
+  return ACTIVITY_MODES.find((definition) => definition.mode === mode) ?? PROGRESSIVE_MODE;
 }
 
 export function isQuestionTypeAllowedForActivity(mode: ActivityMode, questionType: QuestionType): boolean {
