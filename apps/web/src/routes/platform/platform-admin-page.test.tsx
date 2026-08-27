@@ -38,8 +38,7 @@ describe('PlatformAdminPage', () => {
     expect(screen.getByLabelText('أسئلة/نشاط')).toHaveValue(200);
     expect(screen.getByLabelText('التخزين (م.ب)')).toHaveValue(5120);
 
-    const planSelect = screen.getByRole('combobox', { name: 'خطة Maryam Academy' });
-    fireEvent.change(planSelect, { target: { value: 'plan-1' } });
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'plan-1' } });
     fireEvent.click(screen.getByRole('button', { name: 'تفعيل الخطة' }));
 
     await waitFor(() => expect(platformApi.activateSubscription).toHaveBeenCalledWith('tenant-1', 'plan-1'));
