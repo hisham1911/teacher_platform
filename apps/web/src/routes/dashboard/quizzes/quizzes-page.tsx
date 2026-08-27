@@ -40,8 +40,8 @@ export default function QuizzesPage() {
     },
     onError: (error) => {
       setArchiveError(error instanceof HttpError && error.status === 403
-        ? 'ليس لديك صلاحية أرشفة هذا المحتوى.'
-        : 'تعذر الأرشفة. أعد المحاولة.');
+        ? 'لا توجد صلاحية لأرشفة هذا المحتوى.'
+        : 'تعذر الأرشفة. حاول مرة أخرى.');
     },
   });
 
@@ -54,7 +54,7 @@ export default function QuizzesPage() {
   }
 
   function onArchive(quizId: string, title: string) {
-    if (window.confirm(`هل أنت متأكد من أرشفة "${title}"؟`)) archiveMutation.mutate(quizId);
+    if (window.confirm(`تأكيد أرشفة "${title}"؟`)) archiveMutation.mutate(quizId);
   }
 
   return (
@@ -63,14 +63,14 @@ export default function QuizzesPage() {
         <div>
           <p className="text-xs font-black uppercase tracking-[0.16em] text-violet-700">English Spark Studio</p>
           <h1 className="mt-1 text-2xl font-black text-slate-950">المحتوى</h1>
-          <p className="mt-1 text-sm leading-6 text-slate-600">كل الأنشطة والاختبارات التي أنشأتِها في مكان واحد.</p>
+          <p className="mt-1 text-sm leading-6 text-slate-600">كل الأنشطة والاختبارات في مساحة العمل، في مكان واحد.</p>
         </div>
         <Button onClick={() => navigate('/dashboard/activities/new')}>+ نشاط جديد</Button>
       </header>
 
       <form onSubmit={onSearchSubmit} className="teacher-surface flex flex-wrap items-end gap-2 p-4" role="search">
         <FormField id="quiz-search" label="بحث بالاسم">
-          {(props) => <TextInput {...props} value={searchInput} onChange={(e) => setSearchInput(e.target.value)} placeholder="ابحثي في المحتوى…" />}
+          {(props) => <TextInput {...props} value={searchInput} onChange={(e) => setSearchInput(e.target.value)} placeholder="البحث في المحتوى…" />}
         </FormField>
         <div className="flex flex-col gap-1">
           <label htmlFor="quiz-status" className="text-sm font-medium text-slate-700">الحالة</label>
@@ -84,12 +84,12 @@ export default function QuizzesPage() {
 
       {archiveError ? <p role="alert" className="rounded-lg bg-rose-50 p-3 text-sm text-rose-700">{archiveError}</p> : null}
       {isLoading && !data ? <p className="text-sm text-slate-500">جارٍ تحميل المحتوى…</p> : null}
-      {isError ? <p role="alert" className="rounded-lg bg-rose-50 p-3 text-sm text-rose-700">تعذر تحميل المحتوى. تأكد من اتصالك ثم أعد المحاولة.</p> : null}
+      {isError ? <p role="alert" className="rounded-lg bg-rose-50 p-3 text-sm text-rose-700">تعذر تحميل المحتوى. تحقق من الاتصال ثم حاول مرة أخرى.</p> : null}
 
       {data && data.items.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-violet-200 bg-violet-50/50 p-10 text-center">
           <p className="text-base font-black text-slate-900">{search || statusFilter ? 'لا توجد نتائج مطابقة.' : 'لا يوجد محتوى بعد.'}</p>
-          <p className="mt-2 text-sm text-slate-600">ابدئي بنشاط صغير، وسيظهر هنا تلقائيًا.</p>
+          <p className="mt-2 text-sm text-slate-600">نشاط صغير هو بداية مناسبة، وسيظهر هنا تلقائيًا.</p>
           {!search && !statusFilter ? <Button onClick={() => navigate('/dashboard/activities/new')}>إنشاء أول نشاط</Button> : null}
         </div>
       ) : null}
