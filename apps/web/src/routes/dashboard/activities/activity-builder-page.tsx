@@ -23,6 +23,7 @@ const QUESTION_ACTIONS: Array<{ type: QuestionType; title: string; description: 
 
 export default function ActivityBuilderPage() {
   const { quizId } = useParams<{ quizId: string }>();
+  const activityQuizId = quizId ?? '';
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -31,31 +32,31 @@ export default function ActivityBuilderPage() {
   const modeDefinition = getActivityModeDefinition(mode);
 
   const draftQuery = useQuery({
-    queryKey: ['quiz-draft', tenantId, quizId],
-    queryFn: ({ signal }) => quizzesApi.getDraft(tenantId!, quizId!, signal),
-    enabled: Boolean(tenantId && quizId),
+    queryKey: ['quiz-draft', tenantId, activityQuizId],
+    queryFn: ({ signal }) => quizzesApi.getDraft(tenantId!, activityQuizId, signal),
+    enabled: Boolean(tenantId && activityQuizId),
     staleTime: 0,
   });
 
   const itemMutation = useMutation({
     mutationFn: (operation: () => Promise<QuizDraft>) => operation(),
     onSuccess: (updated) => {
-      queryClient.setQueryData(['quiz-draft', tenantId, quizId], updated);
+      queryClient.setQueryData(['quiz-draft', tenantId, activityQuizId], updated);
       void queryClient.invalidateQueries({ queryKey: ['quizzes', tenantId] });
     },
   });
 
   const launchMutation = useMutation({
     mutationFn: async () => {
-      const latest = await quizzesApi.getDraft(tenantId!, quizId!);
-      return launchActivity({ tenantId: tenantId!, quizId: quizId!, mode, draft: latest });
+      const latest = await quizzesApi.getDraft(tenantId!, activityQuizId);
+      return launchActivity({ tenantId: tenantId!, quizId: activityQuizId, mode, draft: latest });
     },
     onSuccess: (result) => {
-      navigate(`/dashboard/activities/${quizId}/ready?sessionId=${result.session.id}&mode=${mode}`);
+      navigate(`/dashboard/activities/${activityQuizId}/ready?sessionId=${result.session.id}&mode=${mode}`);
     },
   });
 
-  if (!tenantId) return null;
+  if (!tenantId || !activityQuizId) return null;
 
   if (draftQuery.isLoading) {
     return <div role="status" className="teacher-surface animate-pulse p-6 text-sm text-slate-600">جارٍ تجهيز مساحة النشاط…</div>;
@@ -73,11 +74,11 @@ export default function ActivityBuilderPage() {
   const draft = draftQuery.data;
   const unsupportedItems = draft.items.filter((item) => !isQuestionTypeAllowedForActivity(mode, item.questionType));
   const canLaunch = draft.items.length > 0 && unsupportedItems.length === 0 && !itemMutation.isPending && !launchMutation.isPending;
-  const returnTo = `/dashboard/activities/${quizId}/build?mode=${mode}`;
+  const returnTo = `/dashboard/activities/${activityQuizId}/build?mode=${mode}`;
   const visibleQuestionActions = QUESTION_ACTIONS.filter((action) => isQuestionTypeAllowedForActivity(mode, action.type));
 
   function questionPath(type: QuestionType) {
-    const query = new URLSearchParams({ type, quizId: quizId!, returnTo });
+    const query = new URLSearchParams({ type, quizId: activityQuizId, returnTo });
     return `/dashboard/questions/new?${query.toString()}`;
   }
 
@@ -87,11 +88,11 @@ export default function ActivityBuilderPage() {
     const target = direction === 'up' ? index - 1 : index + 1;
     if (index < 0 || target < 0 || target >= orderedItemIds.length) return;
     [orderedItemIds[index], orderedItemIds[target]] = [orderedItemIds[target]!, orderedItemIds[index]!];
-    itemMutation.mutate(() => quizzesApi.reorderItems(tenantId, quizId!, { orderedItemIds }));
+    itemMutation.mutate(() => quizzesApi.reorderItems(tenantId, activityQuizId, { orderedItemIds }));
   }
 
   function removeItem(itemId: string) {
-    itemMutation.mutate(() => quizzesApi.removeItem(tenantId, quizId!, itemId));
+    itemMutation.mutate(() => quizzesApi.removeItem(tenantId, activityQuizId, itemId));
   }
 
   return (
@@ -105,7 +106,7 @@ export default function ActivityBuilderPage() {
               <h1 dir="auto" className="mt-1 text-3xl font-black">{draft.title}</h1>
               <p className="mt-2 max-w-2xl text-sm leading-7 text-violet-100">{modeDefinition.title} · {modeDefinition.description}</p>
             </div>
-            <Link to={`/dashboard/quizzes/${quizId}/edit`} className="inline-flex min-h-11 items-center justify-center rounded-xl bg-white/10 px-4 text-sm font-bold text-white hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
+            <Link to={`/dashboard/quizzes/${activityQuizId}/edit`} className="inline-flex min-h-11 items-center justify-center rounded-xl bg-white/10 px-4 text-sm font-bold text-white hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
               إعدادات متقدمة
             </Link>
           </div>
