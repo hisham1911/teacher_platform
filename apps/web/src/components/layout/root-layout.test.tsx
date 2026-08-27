@@ -74,7 +74,7 @@ describe('RootLayout', () => {
     clearSession();
   });
 
-  it('يعرض النتائج وقائمة الموبايل للمستخدم المسجل', async () => {
+  it('يعرض النتائج والتنقل السريع للمستخدم المسجل', async () => {
     establishSession({
       accessToken: 'token', accessTokenExpiresAtMs: Date.now() + 10_000,
       user: { id: 'u1', email: 'teacher@example.test', fullName: 'معلمة', emailConfirmed: true, platformRoles: [] },
@@ -83,7 +83,8 @@ describe('RootLayout', () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const view = render(<QueryClientProvider client={queryClient}><MemoryRouter initialEntries={['/dashboard/attempts/attempt-1']}><RootLayout><div>محتوى</div></RootLayout></MemoryRouter></QueryClientProvider>);
 
-    expect(screen.getByText('القائمة')).toBeInTheDocument();
+    expect(screen.getByText('المزيد')).toBeInTheDocument();
+    expect(screen.getByRole('navigation', { name: 'التنقل السريع' })).toBeInTheDocument();
     expect(screen.getAllByRole('link', { name: 'النتائج' })).toHaveLength(2);
     expect(screen.getAllByRole('link', { name: 'النتائج' })[0]).toHaveAttribute('href', '/dashboard/reports');
     expect(screen.getAllByRole('link', { name: 'النتائج' }).every((link) => link.getAttribute('aria-current') === 'page')).toBe(true);
