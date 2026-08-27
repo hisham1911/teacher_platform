@@ -28,6 +28,8 @@ const QUESTION_ACTIONS: Array<{ type: QuestionType; title: string; description: 
   { type: 'ShortAnswer', title: 'إجابة قصيرة', description: 'إجابة نصية أو إكمال فراغ', icon: 'short-answer' },
 ];
 
+type AddMode = 'choose' | 'new' | 'bank';
+
 export default function ActivityBuilderPage() {
   const { quizId } = useParams<{ quizId: string }>();
   const activityQuizId = quizId ?? '';
@@ -38,7 +40,7 @@ export default function ActivityBuilderPage() {
   const mode = parseActivityMode(searchParams.get('mode'));
   const modeDefinition = getActivityModeDefinition(mode);
 
-  const [bankOpen, setBankOpen] = useState(true);
+  const [addMode, setAddMode] = useState<AddMode>('choose');
   const [bankId, setBankId] = useState('');
   const [bankSearch, setBankSearch] = useState('');
   const [bankType, setBankType] = useState('');
@@ -56,7 +58,7 @@ export default function ActivityBuilderPage() {
   const banksQuery = useQuery({
     queryKey: ['question-banks', tenantId],
     queryFn: ({ signal }) => questionBanksApi.list(tenantId, signal),
-    enabled: Boolean(tenantId),
+    enabled: Boolean(tenantId && addMode === 'bank'),
   });
 
   const questionFilters = useMemo(() => ({
@@ -71,7 +73,7 @@ export default function ActivityBuilderPage() {
   const bankQuestionsQuery = useQuery({
     queryKey: ['activity-question-bank', tenantId, questionFilters],
     queryFn: ({ signal }) => questionsApi.list(tenantId, questionFilters, signal),
-    enabled: Boolean(tenantId && bankOpen),
+    enabled: Boolean(tenantId && addMode === 'bank'),
     placeholderData: (previous) => previous,
   });
 
@@ -164,57 +166,65 @@ export default function ActivityBuilderPage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-5 pb-44 lg:space-y-6 lg:pb-28">
-      <header className="teacher-surface overflow-hidden">
-        <div className="bg-gradient-to-br from-violet-800 via-violet-700 to-indigo-700 p-5 text-white sm:p-6">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <Link to="/dashboard" className="inline-flex min-h-11 items-center text-sm font-bold text-violet-100 hover:text-white">→ الرئيسية</Link>
-                <span className="rounded-full bg-white/12 px-3 py-1 text-xs font-black text-white">خطوة 2 من 2</span>
-              </div>
-              <p className="mt-2 text-xs font-black uppercase tracking-[0.18em] text-amber-200">English Spark Studio</p>
-              <h1 dir="auto" className="mt-1 text-2xl font-black sm:text-3xl">{draft.title}</h1>
-              <p className="mt-2 max-w-2xl text-sm leading-7 text-violet-100">{modeDefinition.title} · إضافة الأسئلة ثم تجهيز النشاط للمشاركة.</p>
+      <div className="flex items-center justify-between gap-3">
+        <Link to="/dashboard" className="inline-flex min-h-11 items-center rounded-xl px-2 text-sm font-bold text-slate-500 hover:bg-white hover:text-violet-800">→ الرئيسية</Link>
+        <Link to={`/dashboard/quizzes/${activityQuizId}/edit`} className="inline-flex min-h-11 items-center rounded-xl px-3 text-xs font-black text-slate-500 hover:bg-slate-100 hover:text-slate-800">إعدادات متقدمة</Link>
+      </div>
+
+      <header className="teacher-surface p-5 sm:p-7">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+          <div className="min-w-0">
+            <p className="text-xs font-black tracking-[0.17em] text-violet-700">الخطوة 2 · الأسئلة</p>
+            <h1 dir="auto" className="mt-2 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">{draft.title}</h1>
+            <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-black">
+              <span className="rounded-full bg-violet-100 px-3 py-1.5 text-violet-800">{modeDefinition.title}</span>
+              <span className="rounded-full bg-slate-100 px-3 py-1.5 text-slate-600">{draft.items.length} سؤال</span>
+              <span className={`rounded-full px-3 py-1.5 ${itemMutation.isPending || addSelectedMutation.isPending ? 'bg-amber-100 text-amber-900' : 'bg-emerald-100 text-emerald-800'}`}>{itemMutation.isPending || addSelectedMutation.isPending ? 'جارٍ الحفظ…' : 'محفوظ ✓'}</span>
             </div>
-            <Link to={`/dashboard/quizzes/${activityQuizId}/edit`} className="inline-flex min-h-11 items-center justify-center rounded-xl border border-white/15 bg-white/10 px-4 text-sm font-bold text-white hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">خيارات متقدمة</Link>
           </div>
-        </div>
-        <div className="grid grid-cols-3 gap-px bg-slate-200">
-          <SummaryStat label="الأسئلة" value={String(draft.items.length)} />
-          <SummaryStat label="اللعب" value={modeDefinition.title} />
-          <SummaryStat label="الحفظ" value={itemMutation.isPending || addSelectedMutation.isPending ? 'يحفظ…' : 'تم ✓'} />
+          <BuilderProgress />
         </div>
       </header>
 
       {mode === 'ProgressiveChallenge' ? (
-        <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-7 text-amber-950">
-          <p className="font-black">💡 ترتيب الأسئلة يصنع رحلة التحدي</p>
-          <p className="mt-1">السؤال الأول هو المستوى الأول، ثم يرتفع مستوى الصعوبة تدريجيًا. الأنواع غير المتوافقة لن يمكن إضافتها من البنك.</p>
+        <section className="flex gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-7 text-amber-950">
+          <span aria-hidden="true" className="text-xl">💡</span>
+          <div><p className="font-black">ابدأ بالسهل ثم ارفع الصعوبة</p><p className="mt-0.5">ترتيب الأسئلة هو ترتيب مستويات التحدي، وأول خطأ ينهي الرحلة.</p></div>
         </section>
       ) : null}
 
-      <section className="grid gap-3 md:grid-cols-3" aria-label="طرق إضافة الأسئلة">
-        <button type="button" onClick={() => setBankOpen(false)} className="teacher-surface group p-5 text-right transition hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-md motion-reduce:transform-none">
-          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-100 text-violet-700"><TeacherIcon name="create" /></span>
-          <h2 className="mt-4 text-lg font-black text-slate-950">إنشاء سؤال جديد</h2>
-          <p className="mt-1 text-sm leading-7 text-slate-600">مناسب لسؤال أو سؤالين أثناء بناء النشاط.</p>
-        </button>
-        <button type="button" onClick={() => setBankOpen(true)} className={`teacher-surface group p-5 text-right transition hover:-translate-y-0.5 hover:shadow-md motion-reduce:transform-none ${bankOpen ? 'border-violet-300 ring-2 ring-violet-100' : ''}`}>
-          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700"><TeacherIcon name="questions" /></span>
-          <h2 className="mt-4 text-lg font-black text-slate-950">اختيار من بنك الأسئلة</h2>
-          <p className="mt-1 text-sm leading-7 text-slate-600">إعادة استخدام مجموعة أسئلة دفعة واحدة بدون إعادة كتابة.</p>
-        </button>
-        <Link to={`/dashboard/activities/${activityQuizId}/bulk?mode=${mode}`} className="teacher-surface group p-5 transition hover:-translate-y-0.5 hover:border-amber-300 hover:shadow-md motion-reduce:transform-none">
-          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-100 text-amber-800"><TeacherIcon name="quizzes" /></span>
-          <h2 className="mt-4 text-lg font-black text-slate-950">إضافة مجموعة أسئلة</h2>
-          <p className="mt-1 text-sm leading-7 text-slate-600">Paste من Excel أو Google Sheets أو CSV ثم حفظ المجموعة مرة واحدة.</p>
-        </Link>
+      <section aria-labelledby="add-questions-heading">
+        <div className="mb-3">
+          <h2 id="add-questions-heading" className="text-xl font-black text-slate-950">كيف تريد إضافة الأسئلة؟</h2>
+          <p className="mt-1 text-sm text-slate-500">اختر طريقة واحدة الآن. لن نعرض باقي الأدوات إلا عندما تحتاجها.</p>
+        </div>
+        <div className="grid gap-3 md:grid-cols-3">
+          <button type="button" aria-pressed={addMode === 'new'} onClick={() => setAddMode('new')} className={`group rounded-2xl border-2 p-5 text-right transition hover:-translate-y-0.5 hover:shadow-md motion-reduce:transform-none ${addMode === 'new' ? 'border-violet-500 bg-violet-50 shadow-sm' : 'border-slate-200 bg-white hover:border-violet-300'}`}>
+            <span className={`flex h-11 w-11 items-center justify-center rounded-xl ${addMode === 'new' ? 'bg-violet-700 text-white' : 'bg-violet-100 text-violet-700'}`}><TeacherIcon name="create" /></span>
+            <h3 className="mt-4 text-lg font-black text-slate-950">سؤال جديد</h3>
+            <p className="mt-1 text-sm leading-7 text-slate-600">لو ستكتب سؤالًا أو سؤالين الآن.</p>
+          </button>
+          <button type="button" aria-pressed={addMode === 'bank'} onClick={() => setAddMode('bank')} className={`group rounded-2xl border-2 p-5 text-right transition hover:-translate-y-0.5 hover:shadow-md motion-reduce:transform-none ${addMode === 'bank' ? 'border-emerald-500 bg-emerald-50/60 shadow-sm' : 'border-slate-200 bg-white hover:border-emerald-300'}`}>
+            <span className={`flex h-11 w-11 items-center justify-center rounded-xl ${addMode === 'bank' ? 'bg-emerald-700 text-white' : 'bg-emerald-100 text-emerald-700'}`}><TeacherIcon name="questions" /></span>
+            <h3 className="mt-4 text-lg font-black text-slate-950">من بنك الأسئلة</h3>
+            <p className="mt-1 text-sm leading-7 text-slate-600">اختر عدة أسئلة موجودة وأضفها مرة واحدة.</p>
+          </button>
+          <Link to={`/dashboard/activities/${activityQuizId}/bulk?mode=${mode}`} className="group rounded-2xl border-2 border-slate-200 bg-white p-5 transition hover:-translate-y-0.5 hover:border-amber-300 hover:shadow-md motion-reduce:transform-none">
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-100 text-amber-800"><TeacherIcon name="quizzes" /></span>
+            <h3 className="mt-4 text-lg font-black text-slate-950">مجموعة جاهزة</h3>
+            <p className="mt-1 text-sm leading-7 text-slate-600">الصق من Excel أو Sheets، أو ارفع CSV.</p>
+          </Link>
+        </div>
       </section>
 
-      {!bankOpen ? (
+      {addMode === 'choose' ? (
+        <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 px-5 py-8 text-center text-sm font-semibold text-slate-500">اختر إحدى الطرق بالأعلى، وسيظهر لك الجزء المطلوب فقط.</div>
+      ) : null}
+
+      {addMode === 'new' ? (
         <section className="teacher-surface p-4 sm:p-6" aria-labelledby="quick-add-heading">
           <div className="flex flex-wrap items-end justify-between gap-3">
-            <div><h2 id="quick-add-heading" className="text-xl font-black text-slate-950">إنشاء سؤال جديد</h2><p className="mt-1 text-sm leading-6 text-slate-600">اختيار النوع، وبعد الحفظ يتم الرجوع للنشاط تلقائيًا.</p></div>
+            <div><h2 id="quick-add-heading" className="text-xl font-black text-slate-950">اختر نوع السؤال</h2><p className="mt-1 text-sm leading-6 text-slate-600">بعد الحفظ ستعود للنشاط تلقائيًا.</p></div>
             {mode === 'ProgressiveChallenge' ? <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-black text-violet-800">الأنواع المناسبة للتحدي فقط</span> : null}
           </div>
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -226,24 +236,29 @@ export default function ActivityBuilderPage() {
             ))}
           </div>
         </section>
-      ) : (
+      ) : null}
+
+      {addMode === 'bank' ? (
         <section className="teacher-surface overflow-hidden" aria-labelledby="bank-picker-heading">
           <div className="border-b border-slate-100 p-4 sm:p-6">
             <div className="flex flex-wrap items-end justify-between gap-3">
-              <div><h2 id="bank-picker-heading" className="text-xl font-black text-slate-950">بنك الأسئلة</h2><p className="mt-1 text-sm text-slate-600">حدد عدة أسئلة ثم أضفها للنشاط في خطوة واحدة.</p></div>
-              <Link to="/dashboard/questions" className="inline-flex min-h-11 items-center rounded-xl border border-slate-200 px-4 text-sm font-black text-slate-700 hover:border-violet-300 hover:text-violet-800">إدارة البنك</Link>
+              <div><h2 id="bank-picker-heading" className="text-xl font-black text-slate-950">اختر من البنك</h2><p className="mt-1 text-sm text-slate-600">يمكن تحديد أكثر من سؤال وإضافتها دفعة واحدة.</p></div>
+              <Link to="/dashboard/questions" className="inline-flex min-h-11 items-center rounded-xl px-3 text-sm font-black text-slate-500 hover:bg-slate-50 hover:text-violet-800">إدارة البنك</Link>
             </div>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <label className="flex flex-col gap-1.5 text-sm font-bold text-slate-700">البنك<select value={bankId} onChange={(event) => { setBankId(event.target.value); setBankPage(1); setSelectedQuestionIds([]); }} className="min-h-11 rounded-xl border border-slate-300 bg-white px-3"><option value="">كل البنوك</option>{(banksQuery.data ?? []).map((bank) => <option key={bank.id} value={bank.id}>{bank.name} ({bank.questionCount})</option>)}</select></label>
-              <label className="flex flex-col gap-1.5 text-sm font-bold text-slate-700">بحث<input value={bankSearch} onChange={(event) => { setBankSearch(event.target.value); setBankPage(1); }} placeholder="كلمة من السؤال…" className="min-h-11 rounded-xl border border-slate-300 bg-white px-3" /></label>
-              <label className="flex flex-col gap-1.5 text-sm font-bold text-slate-700">النوع<select value={bankType} onChange={(event) => { setBankType(event.target.value); setBankPage(1); }} className="min-h-11 rounded-xl border border-slate-300 bg-white px-3"><option value="">كل الأنواع</option>{Object.entries(QUESTION_TYPE_LABELS).filter(([type]) => isQuestionTypeAllowedForActivity(mode, type as QuestionType)).map(([type, label]) => <option key={type} value={type}>{label}</option>)}</select></label>
-              <label className="flex flex-col gap-1.5 text-sm font-bold text-slate-700">الصعوبة<select value={bankDifficulty} onChange={(event) => { setBankDifficulty(event.target.value); setBankPage(1); }} className="min-h-11 rounded-xl border border-slate-300 bg-white px-3"><option value="">كل المستويات</option>{Object.entries(DIFFICULTY_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
-            </div>
+            <details className="mt-4 rounded-xl border border-slate-200 bg-slate-50/50">
+              <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between px-4 text-sm font-black text-slate-700 marker:content-none"><span>بحث وفلترة</span><span aria-hidden="true">⌄</span></summary>
+              <div className="grid gap-3 border-t border-slate-200 p-4 sm:grid-cols-2 lg:grid-cols-4">
+                <label className="flex flex-col gap-1.5 text-sm font-bold text-slate-700">البنك<select value={bankId} onChange={(event) => { setBankId(event.target.value); setBankPage(1); setSelectedQuestionIds([]); }} className="min-h-11 rounded-xl border border-slate-300 bg-white px-3"><option value="">كل البنوك</option>{(banksQuery.data ?? []).map((bank) => <option key={bank.id} value={bank.id}>{bank.name} ({bank.questionCount})</option>)}</select></label>
+                <label className="flex flex-col gap-1.5 text-sm font-bold text-slate-700">بحث<input value={bankSearch} onChange={(event) => { setBankSearch(event.target.value); setBankPage(1); }} placeholder="كلمة من السؤال…" className="min-h-11 rounded-xl border border-slate-300 bg-white px-3" /></label>
+                <label className="flex flex-col gap-1.5 text-sm font-bold text-slate-700">النوع<select value={bankType} onChange={(event) => { setBankType(event.target.value); setBankPage(1); }} className="min-h-11 rounded-xl border border-slate-300 bg-white px-3"><option value="">كل الأنواع</option>{Object.entries(QUESTION_TYPE_LABELS).filter(([type]) => isQuestionTypeAllowedForActivity(mode, type as QuestionType)).map(([type, label]) => <option key={type} value={type}>{label}</option>)}</select></label>
+                <label className="flex flex-col gap-1.5 text-sm font-bold text-slate-700">الصعوبة<select value={bankDifficulty} onChange={(event) => { setBankDifficulty(event.target.value); setBankPage(1); }} className="min-h-11 rounded-xl border border-slate-300 bg-white px-3"><option value="">كل المستويات</option>{Object.entries(DIFFICULTY_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+              </div>
+            </details>
           </div>
 
           {bankQuestionsQuery.isLoading && !bankQuestionsQuery.data ? <p className="p-6 text-sm text-slate-500">جارٍ تحميل بنك الأسئلة…</p> : null}
           {bankQuestionsQuery.isError ? <p role="alert" className="m-4 rounded-xl bg-rose-50 p-4 text-sm font-bold text-rose-800">تعذر تحميل بنك الأسئلة.</p> : null}
-          {bankQuestions.length === 0 && !bankQuestionsQuery.isLoading ? <div className="p-8 text-center"><p className="text-sm text-slate-600">لا توجد أسئلة مطابقة. يمكن إنشاء سؤال جديد أو تغيير المرشحات.</p><Button className="mt-4" onClick={() => setBankOpen(false)}>إنشاء سؤال</Button></div> : null}
+          {bankQuestions.length === 0 && !bankQuestionsQuery.isLoading ? <div className="p-8 text-center"><p className="text-sm text-slate-600">لا توجد أسئلة مطابقة. أنشئ سؤالًا جديدًا أو افتح الفلاتر.</p><Button className="mt-4" onClick={() => setAddMode('new')}>إنشاء سؤال</Button></div> : null}
 
           {bankQuestions.length > 0 ? (
             <>
@@ -260,7 +275,7 @@ export default function ActivityBuilderPage() {
                     <li key={question.id} className={`px-4 py-4 sm:px-6 ${!allowed ? 'bg-rose-50/50' : selected ? 'bg-violet-50/50' : ''}`}>
                       <label className={`flex gap-3 ${alreadyAdded || !allowed ? 'cursor-default opacity-65' : 'cursor-pointer'}`}>
                         <input type="checkbox" className="mt-1 h-5 w-5 shrink-0 accent-violet-700" checked={selected} disabled={alreadyAdded || !allowed} onChange={() => toggleSelected(question.id)} />
-                        <span className="min-w-0 flex-1"><span dir="auto" className="block text-base font-black leading-7 text-slate-950">{question.prompt}</span><span className="mt-1 flex flex-wrap gap-2 text-xs font-bold"><span className="rounded-full bg-slate-100 px-2 py-1 text-slate-700">{QUESTION_TYPE_LABELS[question.questionType]}</span><span className="rounded-full bg-amber-50 px-2 py-1 text-amber-900">{DIFFICULTY_LABELS[question.difficulty as QuestionDifficulty]}</span>{alreadyAdded ? <span className="rounded-full bg-emerald-100 px-2 py-1 text-emerald-800">مضاف بالفعل ✓</span> : null}{!allowed ? <span className="rounded-full bg-rose-100 px-2 py-1 text-rose-800">غير متوافق مع طريقة اللعب</span> : null}</span></span>
+                        <span className="min-w-0 flex-1"><span dir="auto" className="block text-base font-black leading-7 text-slate-950">{question.prompt}</span><span className="mt-1 flex flex-wrap gap-2 text-xs font-bold"><span className="rounded-full bg-slate-100 px-2 py-1 text-slate-700">{QUESTION_TYPE_LABELS[question.questionType]}</span><span className="rounded-full bg-amber-50 px-2 py-1 text-amber-900">{DIFFICULTY_LABELS[question.difficulty as QuestionDifficulty]}</span>{alreadyAdded ? <span className="rounded-full bg-emerald-100 px-2 py-1 text-emerald-800">مضاف بالفعل ✓</span> : null}{!allowed ? <span className="rounded-full bg-rose-100 px-2 py-1 text-rose-800">غير متوافق مع التجربة</span> : null}</span></span>
                       </label>
                     </li>
                   );
@@ -273,14 +288,14 @@ export default function ActivityBuilderPage() {
             </>
           ) : null}
         </section>
-      )}
+      ) : null}
 
       <section className="teacher-surface overflow-hidden" aria-labelledby="activity-questions-heading">
         <div className="border-b border-slate-100 px-4 py-4 sm:px-5">
-          <div className="flex items-center justify-between gap-3"><div><h2 id="activity-questions-heading" className="text-xl font-black text-slate-950">أسئلة النشاط</h2><p className="mt-1 text-sm text-slate-600">{draft.items.length === 0 ? 'أضف أول سؤال للبدء.' : 'يمكن تغيير الترتيب بالسهمين.'}</p></div>{draft.items.length > 0 ? <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-800">{draft.items.length} سؤال</span> : null}</div>
+          <div className="flex items-center justify-between gap-3"><div><h2 id="activity-questions-heading" className="text-xl font-black text-slate-950">أسئلة النشاط</h2><p className="mt-1 text-sm text-slate-600">{draft.items.length === 0 ? 'أضف أول سؤال للبدء.' : 'رتّب الأسئلة كما تريد أن يراها الطلاب.'}</p></div>{draft.items.length > 0 ? <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-800">{draft.items.length} سؤال</span> : null}</div>
         </div>
         {draft.items.length === 0 ? (
-          <div className="px-5 py-10 text-center"><span aria-hidden="true" className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-100 text-violet-700"><TeacherIcon name="questions" className="h-7 w-7" /></span><h3 className="mt-4 text-lg font-black text-slate-950">ابدأ بأول سؤال</h3><p className="mx-auto mt-2 max-w-lg text-sm leading-7 text-slate-600">يمكن الإنشاء من الصفر، إعادة الاستخدام من البنك، أو لصق مجموعة كاملة من Excel.</p></div>
+          <div className="px-5 py-10 text-center"><span aria-hidden="true" className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-100 text-violet-700"><TeacherIcon name="questions" className="h-7 w-7" /></span><h3 className="mt-4 text-lg font-black text-slate-950">النشاط ينتظر أول سؤال</h3><p className="mx-auto mt-2 max-w-lg text-sm leading-7 text-slate-600">اختر طريقة الإضافة من الأعلى. لن تحتاج فتح أي شاشة تقنية أخرى.</p></div>
         ) : (
           <ol className="divide-y divide-slate-100">
             {draft.items.map((item, index) => {
@@ -295,15 +310,25 @@ export default function ActivityBuilderPage() {
       {addSelectedMutation.isError ? <ErrorNotice error={addSelectedMutation.error} fallback="تعذر إضافة الأسئلة المحددة. لم يتم حذف أي سؤال من البنك." /> : null}
       {launchMutation.isError ? <ErrorNotice error={launchMutation.error} fallback="تعذر تجهيز رابط الطلاب. الأسئلة محفوظة ويمكن المحاولة مرة أخرى." /> : null}
 
-      <div className="fixed inset-x-3 bottom-20 z-30 mx-auto max-w-3xl rounded-2xl border border-violet-100 bg-white/95 p-3 shadow-[0_20px_50px_rgb(76_29_149/0.2)] backdrop-blur lg:bottom-4">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-sm font-black text-slate-950">{draft.items.length === 0 ? 'أضف سؤالًا واحدًا على الأقل' : `${draft.items.length} سؤال جاهز`}</p>{unsupportedItems.length > 0 ? <p className="text-xs font-bold text-rose-700">يوجد {unsupportedItems.length} سؤال غير متوافق مع طريقة اللعب الحالية.</p> : <p className="text-xs text-slate-500">عند التجهيز سيتم النشر وإنشاء الرابط تلقائيًا.</p>}</div><Button disabled={!canLaunch} onClick={() => launchMutation.mutate()}>{launchMutation.isPending ? 'جارٍ تجهيز النشاط…' : 'النشاط جاهز — مشاركة'}</Button></div>
+      <div className="fixed inset-x-3 bottom-20 z-30 mx-auto max-w-3xl rounded-2xl border border-violet-100 bg-white/96 p-3 shadow-[0_20px_50px_rgb(76_29_149/0.2)] backdrop-blur lg:bottom-4">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-sm font-black text-slate-950">{draft.items.length === 0 ? 'أضف سؤالًا واحدًا على الأقل' : `${draft.items.length} سؤال جاهز`}</p>{unsupportedItems.length > 0 ? <p className="text-xs font-bold text-rose-700">يوجد {unsupportedItems.length} سؤال غير متوافق مع التجربة الحالية.</p> : <p className="text-xs text-slate-500">الخطوة التالية: تجهيز النشاط ثم معاينته ومشاركة الرابط.</p>}</div><Button disabled={!canLaunch} onClick={() => launchMutation.mutate()}>{launchMutation.isPending ? 'جارٍ تجهيز النشاط…' : 'التالي: تجهيز ومشاركة'}</Button></div>
       </div>
     </div>
   );
 }
 
-function SummaryStat({ label, value }: { label: string; value: string }) {
-  return <div className="bg-white px-3 py-3 text-center"><p className="text-[10px] font-bold text-slate-500 sm:text-xs">{label}</p><p className="mt-1 truncate text-xs font-black text-slate-950 sm:text-sm">{value}</p></div>;
+function BuilderProgress() {
+  return (
+    <ol className="grid w-full max-w-sm grid-cols-3 gap-1.5" aria-label="مراحل إنشاء النشاط">
+      <ProgressItem label="الفكرة" done />
+      <ProgressItem label="الأسئلة" active />
+      <ProgressItem label="المشاركة" />
+    </ol>
+  );
+}
+
+function ProgressItem({ label, active = false, done = false }: { label: string; active?: boolean; done?: boolean }) {
+  return <li className={`rounded-xl px-2 py-2 text-center text-[11px] font-black ${active ? 'bg-violet-700 text-white' : done ? 'bg-emerald-50 text-emerald-800' : 'bg-slate-100 text-slate-400'}`}>{done ? '✓ ' : ''}{label}</li>;
 }
 
 function ErrorNotice({ error, fallback }: { error: unknown; fallback: string }) {
