@@ -31,7 +31,7 @@ export default function StudentJoinPage() {
         <div className="relative mx-auto max-w-4xl">
           <header className="text-center">
             <span className="inline-flex rounded-full border border-white/12 bg-white/[0.07] px-3 py-1 text-[11px] font-black tracking-[0.18em] text-amber-200">ENGLISH SPARK</span>
-            <h1 className="mt-4 text-balance text-3xl font-black leading-tight sm:text-5xl">رمز واحد، والمغامرة تبدأ.</h1>
+            <h1 className="mt-4 text-balance text-3xl font-black leading-tight sm:text-5xl">جاهز للانطلاق؟ رمز واحد، والمغامرة تبدأ.</h1>
             <p className="mx-auto mt-3 max-w-xl text-sm font-semibold leading-7 text-violet-100 sm:text-base">لا حساب ولا كلمة مرور. أدخل رمز النشاط فقط، ثم اكتب اسمك وابدأ.</p>
           </header>
 
