@@ -48,8 +48,8 @@ export const ACTIVITY_MODES: readonly ActivityModeDefinition[] = [
   {
     mode: 'Live',
     title: 'مسابقة مباشرة',
-    description: 'المعلم يفتح الأسئلة للجميع أثناء الحصة ويتابع التفاعل لحظيًا.',
-    badge: 'للفصل',
+    description: 'يتم فتح الأسئلة للجميع أثناء اللقاء ومتابعة التفاعل لحظيًا.',
+    badge: 'للمجموعة',
     recommendedFor: 'الحصص والمسابقات الجماعية',
     allowedQuestionTypes: ALL_QUESTION_TYPES,
   },
