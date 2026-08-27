@@ -9,6 +9,8 @@ import { getActiveTenantId } from '../../../lib/auth/session';
 import { QuestionForm, type QuestionFormValue } from '../../../features/questions/question-form';
 import type { CreateQuestionRequest, QuestionType } from '../../../types/questions';
 
+const DEFAULT_ACTIVITY_BANK_NAME = 'English Spark';
+
 export default function QuestionNewPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -47,7 +49,35 @@ export default function QuestionNewPage() {
   });
 
   const createQuestionMutation = useMutation({
-    mutationFn: (payload: CreateQuestionRequest) => questionsApi.create(tenantId!, payload),
+    mutationFn: async (value: QuestionFormValue) => {
+      let bankId = selectedBankId;
+
+      if (!bankId && isActivityFlow) {
+        const bank = await questionBanksApi.create(tenantId!, { name: DEFAULT_ACTIVITY_BANK_NAME });
+        bankId = bank.id;
+        setSelectedBankId(bank.id);
+        await queryClient.invalidateQueries({ queryKey: ['question-banks', tenantId] });
+      }
+
+      if (!bankId) {
+        throw new MissingQuestionBankError();
+      }
+
+      const payload: CreateQuestionRequest = {
+        bankId,
+        questionType: value.questionType,
+        prompt: value.prompt,
+        explanation: value.explanation,
+        difficulty: value.difficulty,
+        language: value.language,
+        mediaAssetId: value.mediaAssetId,
+        tags: value.tags,
+        options: value.options,
+        acceptedAnswers: value.acceptedAnswers.length > 0 ? value.acceptedAnswers : undefined,
+      };
+
+      return questionsApi.create(tenantId!, payload);
+    },
     onSuccess: async (question) => {
       await queryClient.invalidateQueries({ queryKey: ['questions', tenantId] });
       await queryClient.invalidateQueries({ queryKey: ['question-banks', tenantId] });
@@ -58,14 +88,16 @@ export default function QuestionNewPage() {
           queryClient.setQueryData(['quiz-draft', tenantId, quizId], updatedDraft);
           navigate(returnTo, { replace: true });
         } catch {
-          setFormError(`تم إنشاء السؤال في بنك الأسئلة، لكن تعذر إضافته إلى ${isActivityFlow ? 'النشاط' : 'الاختبار'}. ارجع إلى المنشئ وأضفه من بنك الأسئلة.`);
+          setFormError(`تم إنشاء السؤال، لكن تعذر إضافته إلى ${isActivityFlow ? 'النشاط' : 'الاختبار'}. ارجع إلى المنشئ وحاول إضافته مرة أخرى.`);
         }
         return;
       }
       navigate(`/dashboard/questions/${question.id}/preview`, { replace: true });
     },
     onError: (error) => {
-      if (error instanceof HttpError) {
+      if (error instanceof MissingQuestionBankError) {
+        setFormError('اختر بنك أسئلة أولاً.');
+      } else if (error instanceof HttpError) {
         const body = error.body as { title?: string; detail?: string } | null;
         setFormError(
           body?.detail && body.detail.length > 0
@@ -78,11 +110,10 @@ export default function QuestionNewPage() {
     },
   });
 
-  if (!tenantId) {
-    return null;
-  }
+  if (!tenantId) return null;
 
   const canCreateBank = !isLoadingBanks;
+  const canShowQuestionForm = isActivityFlow ? !isLoadingBanks : Boolean(selectedBankId);
 
   function onBankSubmit(event: FormEvent) {
     event.preventDefault();
@@ -95,93 +126,83 @@ export default function QuestionNewPage() {
   }
 
   function onSubmitForm(value: QuestionFormValue) {
-    if (!selectedBankId) {
-      setFormError('اختر بنك أسئلة أولاً.');
-      return;
-    }
-
     setFormError(null);
-    createQuestionMutation.mutate({
-      bankId: selectedBankId,
-      questionType: value.questionType,
-      prompt: value.prompt,
-      explanation: value.explanation,
-      difficulty: value.difficulty,
-      language: value.language,
-      mediaAssetId: value.mediaAssetId,
-      tags: value.tags,
-      options: value.options,
-      acceptedAnswers: value.acceptedAnswers.length > 0 ? value.acceptedAnswers : undefined,
-    });
+    createQuestionMutation.mutate(value);
   }
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
-      <header className="flex items-center justify-between gap-3">
-        <div>
-          {isActivityFlow ? <p className="text-xs font-black uppercase tracking-[0.16em] text-violet-700">English Spark Studio</p> : null}
-          <h1 className="mt-1 text-2xl font-black text-slate-900">{returnTo ? `إضافة سؤال إلى ${isActivityFlow ? 'النشاط' : 'الاختبار'}` : 'سؤال جديد'}</h1>
-          <p className="mt-1 text-base leading-7 text-slate-600">اختر بنك الأسئلة، ثم اكتب السؤال وإجابته الصحيحة.</p>
+      <header className="rounded-3xl border border-violet-100 bg-white p-5 shadow-sm sm:p-7">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            {isActivityFlow ? <p className="text-xs font-black uppercase tracking-[0.16em] text-violet-700">English Spark Studio · إضافة سؤال</p> : null}
+            <h1 className="mt-2 text-2xl font-black text-slate-950 sm:text-3xl">{returnTo ? `أضيفي سؤالًا إلى ${isActivityFlow ? 'النشاط' : 'الاختبار'}` : 'سؤال جديد'}</h1>
+            <p className="mt-2 text-base leading-7 text-slate-600">{isActivityFlow ? 'اكتبي السؤال والإجابة الصحيحة فقط. سنحفظه ونرجعك للنشاط تلقائيًا.' : 'اختر بنك الأسئلة، ثم اكتب السؤال وإجابته الصحيحة.'}</p>
+          </div>
+          <Link
+            to={returnTo ?? '/dashboard/questions'}
+            className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl border border-violet-100 bg-violet-50 px-4 text-sm font-bold text-violet-800 hover:bg-violet-100">
+            {returnTo ? `العودة إلى ${isActivityFlow ? 'النشاط' : 'منشئ الاختبار'}` : 'عودة للقائمة'}
+          </Link>
         </div>
-        <Link
-          to={returnTo ?? '/dashboard/questions'}
-          className="inline-flex min-h-11 items-center rounded-md px-3 py-2 text-sm font-bold text-slate-600 hover:bg-slate-100">
-          {returnTo ? `العودة إلى ${isActivityFlow ? 'النشاط' : 'منشئ الاختبار'}` : 'عودة للقائمة'}
-        </Link>
       </header>
 
-      <section className="rounded-xl border border-slate-200 bg-white p-4">
-        <FormField id="bank-picker" label="بنك الأسئلة">
-          {(props) => (
-            <div className="flex flex-col gap-2">
-              <select
-                {...props}
-                id="bank-picker"
-                className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm"
-                value={selectedBankId}
-                onChange={(e) => setSelectedBankId(e.target.value)}>
-                <option value="">— اختر بنكًا —</option>
-                {(banks ?? []).map((bank) => (
-                  <option key={bank.id} value={bank.id}>
-                    {bank.name} ({bank.questionCount})
-                  </option>
-                ))}
-              </select>
-              {(banks ?? []).length === 0 && !isLoadingBanks ? (
-                <p className="text-sm text-amber-700">لا توجد بنوك بعد — أنشئ واحدًا أدناه ليتمكن الحفظ.</p>
-              ) : null}
-            </div>
-          )}
-        </FormField>
-
-        {(banks ?? []).length === 0 || selectedBankId === '' ? (
-          <form onSubmit={onBankSubmit} className="mt-3 flex flex-wrap items-end gap-2 rounded-lg border border-dashed border-slate-300 bg-slate-50/40 p-3">
-            <FormField id="new-bank-inline" label="إنشاء بنك جديد" error={bankError}>
-              {(props) => (
-                <TextInput
+      {!isActivityFlow ? (
+        <section className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+          <FormField id="bank-picker" label="بنك الأسئلة">
+            {(props) => (
+              <div className="flex flex-col gap-2">
+                <select
                   {...props}
-                  value={newBankName}
-                  onChange={(e) => setNewBankName(e.target.value)}
-                  maxLength={120}
-                  placeholder="مثال: مفردات English Spark"
-                  disabled={!canCreateBank}
-                />
-              )}
-            </FormField>
-            <Button type="submit" variant="secondary" disabled={createBankMutation.isPending}>
-              {createBankMutation.isPending ? 'جارٍ الإنشاء…' : 'إنشاء واختياره'}
-            </Button>
-          </form>
-        ) : null}
-      </section>
+                  id="bank-picker"
+                  className="min-h-13 rounded-xl border border-slate-300 bg-white px-4 text-base"
+                  value={selectedBankId}
+                  onChange={(e) => setSelectedBankId(e.target.value)}>
+                  <option value="">— اختر بنكًا —</option>
+                  {(banks ?? []).map((bank) => (
+                    <option key={bank.id} value={bank.id}>
+                      {bank.name} ({bank.questionCount})
+                    </option>
+                  ))}
+                </select>
+                {(banks ?? []).length === 0 && !isLoadingBanks ? (
+                  <p className="text-sm text-amber-700">لا توجد بنوك بعد — أنشئ واحدًا أدناه ليتمكن الحفظ.</p>
+                ) : null}
+              </div>
+            )}
+          </FormField>
+
+          {(banks ?? []).length === 0 || selectedBankId === '' ? (
+            <form onSubmit={onBankSubmit} className="mt-3 flex flex-wrap items-end gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-50/40 p-3">
+              <FormField id="new-bank-inline" label="إنشاء بنك جديد" error={bankError}>
+                {(props) => (
+                  <TextInput
+                    {...props}
+                    value={newBankName}
+                    onChange={(e) => setNewBankName(e.target.value)}
+                    maxLength={120}
+                    placeholder="مثال: مفردات English Spark"
+                    disabled={!canCreateBank}
+                  />
+                )}
+              </FormField>
+              <Button type="submit" variant="secondary" disabled={createBankMutation.isPending}>
+                {createBankMutation.isPending ? 'جارٍ الإنشاء…' : 'إنشاء واختياره'}
+              </Button>
+            </form>
+          ) : null}
+        </section>
+      ) : isLoadingBanks ? (
+        <div role="status" className="h-24 animate-pulse rounded-2xl bg-violet-100/60" aria-label="جارٍ تجهيز نموذج السؤال" />
+      ) : null}
 
       {formError ? (
-        <p role="alert" className="rounded-lg bg-rose-50 p-3 text-sm text-rose-700">
+        <p role="alert" className="rounded-xl border border-rose-100 bg-rose-50 p-4 text-sm font-semibold leading-6 text-rose-700">
           {formError}
         </p>
       ) : null}
 
-      {selectedBankId ? (
+      {canShowQuestionForm ? (
         <QuestionForm
           tenantId={tenantId}
           initialValue={{ questionType: initialQuestionType }}
@@ -192,6 +213,13 @@ export default function QuestionNewPage() {
       ) : null}
     </div>
   );
+}
+
+class MissingQuestionBankError extends Error {
+  constructor() {
+    super('Question bank is required');
+    this.name = 'MissingQuestionBankError';
+  }
 }
 
 function isSafeDashboardReturnPath(value: string | null): value is string {
