@@ -15,6 +15,8 @@ const teacherNavItems: Array<{ to: string; label: string; icon: TeacherIconName 
   { to: '/dashboard/settings', label: 'الإعدادات', icon: 'settings' },
 ];
 
+const mobilePrimaryNav = teacherNavItems.slice(0, 4);
+
 function isTeacherNavActive(pathname: string, target: string) {
   if (target === '/dashboard') return pathname === target;
   if (target === '/dashboard/activities/new') return pathname.startsWith('/dashboard/activities/');
@@ -64,7 +66,6 @@ export function RootLayout({ children }: { children: ReactNode }) {
 
   if (!session.user) {
     const onLoginPage = location.pathname === '/auth/login';
-    const onSignupPage = location.pathname === '/auth/signup';
 
     return (
       <div className="spark-public-shell flex min-h-dvh flex-col" dir="rtl">
@@ -78,7 +79,6 @@ export function RootLayout({ children }: { children: ReactNode }) {
               ) : (
                 <Link to="/auth/login" className="inline-flex min-h-11 items-center justify-center rounded-xl bg-violet-700 px-4 text-sm font-black text-white shadow-sm hover:bg-violet-800">دخول المعلمة</Link>
               )}
-              {onSignupPage ? null : null}
             </nav>
           </div>
         </header>
@@ -126,11 +126,11 @@ export function RootLayout({ children }: { children: ReactNode }) {
             <div className="flex min-h-16 items-center justify-between gap-3 px-4">
               <EnglishSparkBrand to="/dashboard" compact />
               <details key={location.pathname} className="group relative">
-                <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-3 text-sm font-bold text-violet-900 marker:content-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-700">
-                  القائمة
-                  <span aria-hidden="true" className="text-lg leading-none">≡</span>
+                <summary aria-label="فتح القائمة الإضافية" className="inline-flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-3 text-sm font-bold text-violet-900 marker:content-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-700">
+                  <span className="hidden sm:inline">المزيد</span>
+                  <span aria-hidden="true" className="text-xl leading-none">•••</span>
                 </summary>
-                <div className="fixed inset-x-3 top-16 z-50 max-h-[calc(100dvh-5rem)] overflow-y-auto rounded-2xl border border-violet-100 bg-white p-3 shadow-xl">
+                <div className="fixed inset-x-3 top-16 z-50 max-h-[calc(100dvh-9rem)] overflow-y-auto rounded-2xl border border-violet-100 bg-white p-3 shadow-xl">
                   {workspaces && workspaces.length > 0 ? (
                     <label className="mb-3 flex flex-col gap-1.5 text-xs font-semibold text-slate-600">
                       مساحة العمل
@@ -139,9 +139,11 @@ export function RootLayout({ children }: { children: ReactNode }) {
                       </select>
                     </label>
                   ) : null}
-                  <TeacherNavigation pathname={location.pathname} isPlatformAdmin={session.user.platformRoles.includes('PlatformAdmin')} />
-                  <Link to="/dashboard/questions" className="mt-2 inline-flex min-h-11 w-full items-center gap-2 rounded-xl px-3 text-sm font-semibold text-slate-500 hover:bg-violet-50"><TeacherIcon name="questions" />بنك الأسئلة المتقدم</Link>
-                  <button type="button" onClick={() => void onLogout()} className="mt-2 inline-flex min-h-11 w-full items-center gap-2 rounded-xl px-3 text-sm font-semibold text-rose-700 hover:bg-rose-50">
+                  <Link to="/dashboard/certificates" className="inline-flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-bold text-slate-700 hover:bg-violet-50"><TeacherIcon name="certificate" />الشهادات</Link>
+                  <Link to="/dashboard/settings" className="inline-flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-bold text-slate-700 hover:bg-violet-50"><TeacherIcon name="settings" />الإعدادات</Link>
+                  <Link to="/dashboard/questions" className="inline-flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-semibold text-slate-500 hover:bg-violet-50"><TeacherIcon name="questions" />بنك الأسئلة المتقدم</Link>
+                  {session.user.platformRoles.includes('PlatformAdmin') ? <Link to="/platform" className="inline-flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-semibold text-slate-600 hover:bg-violet-50"><TeacherIcon name="settings" />إدارة المنصة</Link> : null}
+                  <button type="button" onClick={() => void onLogout()} className="mt-2 inline-flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-semibold text-rose-700 hover:bg-rose-50">
                     <TeacherIcon name="logout" />تسجيل الخروج
                   </button>
                 </div>
@@ -149,10 +151,11 @@ export function RootLayout({ children }: { children: ReactNode }) {
             </div>
           </header>
 
-          <main id="main-content" className="mx-auto w-full max-w-7xl flex-1 px-4 py-5 sm:px-6 sm:py-7 lg:px-8 lg:py-8">{children}</main>
-          <footer className="border-t border-violet-100 px-4 py-4 text-center text-xs text-slate-500">
+          <main id="main-content" className="mx-auto w-full max-w-7xl flex-1 px-4 py-5 pb-24 sm:px-6 sm:py-7 sm:pb-24 lg:px-8 lg:py-8">{children}</main>
+          <footer className="hidden border-t border-violet-100 px-4 py-4 text-center text-xs text-slate-500 lg:block">
             English Spark — Learn • Play • Explore
           </footer>
+          <MobileTeacherNavigation pathname={location.pathname} />
         </div>
       </div>
     </div>
@@ -196,6 +199,24 @@ function TeacherNavigation({ pathname, isPlatformAdmin }: { pathname: string; is
           <TeacherIcon name="settings" />إدارة المنصة
         </Link>
       ) : null}
+    </nav>
+  );
+}
+
+function MobileTeacherNavigation({ pathname }: { pathname: string }) {
+  return (
+    <nav aria-label="التنقل السريع" className="fixed inset-x-0 bottom-0 z-40 border-t border-violet-100 bg-white/96 px-2 pb-[max(0.4rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-12px_30px_rgb(76_29_149/0.08)] backdrop-blur-xl lg:hidden">
+      <div className="mx-auto grid max-w-lg grid-cols-4 gap-1">
+        {mobilePrimaryNav.map((item) => {
+          const isActive = isTeacherNavActive(pathname, item.to);
+          return (
+            <Link key={item.to} to={item.to} aria-current={isActive ? 'page' : undefined} className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl px-1 text-[11px] font-black transition-colors ${isActive ? 'bg-violet-50 text-violet-800' : 'text-slate-500 hover:bg-violet-50 hover:text-violet-800'}`}>
+              <TeacherIcon name={item.icon} className="h-5 w-5" />
+              <span>{item.label === 'إنشاء نشاط' ? 'إنشاء' : item.label}</span>
+            </Link>
+          );
+        })}
+      </div>
     </nav>
   );
 }
