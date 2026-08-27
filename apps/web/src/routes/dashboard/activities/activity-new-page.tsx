@@ -44,45 +44,105 @@ export default function ActivityNewPage() {
     <div className="mx-auto max-w-5xl pb-8">
       <div className="flex items-center justify-between gap-3">
         <Link to="/dashboard" className="inline-flex min-h-11 items-center rounded-xl px-2 text-sm font-bold text-slate-500 hover:bg-white hover:text-violet-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-700">→ الرئيسية</Link>
-        <span className="rounded-full border border-violet-100 bg-white px-3 py-1.5 text-xs font-black text-violet-700 shadow-sm">خطوة 1 من 2</span>
+        <p className="text-xs font-black text-slate-400">إنشاء نشاط</p>
       </div>
 
-      <header className="mt-4 rounded-3xl border border-violet-100 bg-gradient-to-br from-white via-white to-violet-50 p-5 shadow-sm sm:p-7">
-        <p className="text-xs font-black uppercase tracking-[0.16em] text-violet-700">English Spark Studio</p>
-        <h1 className="mt-2 text-3xl font-black text-slate-950 sm:text-4xl">إنشاء تجربة جديدة</h1>
-        <p className="mt-3 max-w-2xl text-base leading-8 text-slate-600">اختيار طريقة اللعب، كتابة اسم واضح، ثم إضافة الأسئلة. تفاصيل النشر والجلسات تعمل في الخلفية بدون خطوات تقنية إضافية.</p>
+      <header className="mt-4 text-center sm:text-right">
+        <p className="text-xs font-black tracking-[0.18em] text-violet-700">ENGLISH SPARK STUDIO</p>
+        <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">ابدأ بالفكرة فقط.</h1>
+        <p className="mx-auto mt-3 max-w-2xl text-base leading-8 text-slate-600 sm:mx-0">اسم للنشاط وطريقة تجربة الطلاب. الباقي سنمشي فيه خطوة بخطوة بدون إعدادات نشر معقدة.</p>
       </header>
 
-      <form onSubmit={onSubmit} className="mt-6 space-y-6">
-        <fieldset className="teacher-surface p-4 sm:p-6">
-          <legend className="px-2 text-lg font-black text-slate-950">طريقة اللعب</legend>
-          <p className="px-2 text-sm leading-6 text-slate-500">ابدأ بالخيار المقترح أو اختر ما يناسب التجربة.</p>
-          <div className="mt-4 grid gap-3 lg:grid-cols-3">
+      <WizardProgress />
+
+      <form onSubmit={onSubmit} className="mt-6 space-y-5">
+        <section className="teacher-surface p-5 sm:p-7" aria-labelledby="activity-name-heading">
+          <div className="flex items-start gap-4">
+            <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-violet-100 text-lg font-black text-violet-800">1</span>
+            <div className="min-w-0 flex-1">
+              <h2 id="activity-name-heading" className="text-xl font-black text-slate-950">ما اسم النشاط؟</h2>
+              <p className="mt-1 text-sm leading-6 text-slate-500">اسم بسيط سيظهر لك وللطلاب.</p>
+              <label htmlFor="activity-title" className="sr-only">اسم بسيط وواضح</label>
+              <input
+                id="activity-title"
+                value={title}
+                onChange={(event) => setTitle(event.target.value)}
+                required
+                maxLength={200}
+                autoFocus
+                placeholder="مثال: تحدي كلمات الفضاء"
+                className="mt-5 min-h-16 w-full rounded-2xl border-2 border-slate-200 bg-slate-50 px-4 text-lg font-black text-slate-950 transition placeholder:text-slate-400 focus:border-violet-500 focus:bg-white focus:outline-4 focus:outline-violet-100"
+              />
+            </div>
+          </div>
+        </section>
+
+        <fieldset className="teacher-surface p-5 sm:p-7">
+          <legend className="sr-only">اختر تجربة الطلاب</legend>
+          <div className="flex items-start gap-4">
+            <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-lg font-black text-amber-900">2</span>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-xl font-black text-slate-950">كيف تريد أن يعيش الطلاب النشاط؟</h2>
+              <p className="mt-1 text-sm leading-6 text-slate-500">اختر الأقرب لفكرتك. يمكن الدخول للتفاصيل المتقدمة لاحقًا فقط عند الحاجة.</p>
+            </div>
+          </div>
+
+          <div className="mt-5 grid gap-3 lg:grid-cols-3">
             {ACTIVITY_MODES.map((definition) => {
               const selected = mode === definition.mode;
               const isRecommended = definition.mode === 'ProgressiveChallenge';
+              const icon = definition.mode === 'Live' ? 'play' : definition.mode === 'ProgressiveChallenge' ? 'certificate' : 'quizzes';
               return (
-                <label key={definition.mode} className={`relative cursor-pointer rounded-2xl border p-4 transition-all focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-violet-700 sm:p-5 ${selected ? 'border-violet-500 bg-violet-50 shadow-[0_10px_30px_rgb(109_40_217/0.08)]' : 'border-slate-200 bg-white hover:border-violet-300 hover:bg-violet-50/40'}`}>
+                <label key={definition.mode} className={`relative flex cursor-pointer flex-col rounded-2xl border-2 p-4 transition-all focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-violet-700 sm:p-5 ${selected ? 'border-violet-600 bg-violet-50 shadow-[0_12px_34px_rgb(109_40_217/0.1)]' : 'border-slate-200 bg-white hover:border-violet-300'}`}>
                   <input type="radio" name="activity-mode" value={definition.mode} checked={selected} onChange={() => setMode(definition.mode)} className="sr-only" />
-                  <div className="flex items-start justify-between gap-3"><span aria-hidden="true" className={`flex h-11 w-11 items-center justify-center rounded-xl ${selected ? 'bg-violet-700 text-white' : 'bg-slate-100 text-slate-600'}`}><TeacherIcon name={definition.mode === 'Live' ? 'play' : definition.mode === 'ProgressiveChallenge' ? 'certificate' : 'quizzes'} /></span><div className="flex items-center gap-2">{isRecommended ? <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-black text-amber-900">مقترح</span> : null}<span aria-hidden="true" className={`flex h-6 w-6 items-center justify-center rounded-full border text-xs font-black ${selected ? 'border-violet-700 bg-violet-700 text-white' : 'border-slate-300 text-transparent'}`}>✓</span></div></div>
-                  <h2 className="mt-4 text-lg font-black text-slate-950">{definition.title}</h2><p className="mt-2 text-sm leading-6 text-slate-600">{definition.description}</p><p className="mt-4 border-t border-slate-100 pt-3 text-xs font-bold leading-5 text-slate-500">{definition.recommendedFor}</p>
+                  <div className="flex items-start justify-between gap-3">
+                    <span aria-hidden="true" className={`flex h-11 w-11 items-center justify-center rounded-xl ${selected ? 'bg-violet-700 text-white' : 'bg-slate-100 text-slate-600'}`}><TeacherIcon name={icon} /></span>
+                    <div className="flex items-center gap-2">
+                      {isRecommended ? <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-black text-amber-900">ابدأ من هنا</span> : null}
+                      <span aria-hidden="true" className={`flex h-6 w-6 items-center justify-center rounded-full border text-xs font-black ${selected ? 'border-violet-700 bg-violet-700 text-white' : 'border-slate-300 text-transparent'}`}>✓</span>
+                    </div>
+                  </div>
+                  <h3 className="mt-4 text-lg font-black text-slate-950">{definition.title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">{definition.description}</p>
+                  <p className="mt-auto pt-4 text-xs font-bold leading-5 text-slate-400">مناسب لـ {definition.recommendedFor}</p>
                 </label>
               );
             })}
           </div>
         </fieldset>
 
-        <section className="teacher-surface p-5 sm:p-6" aria-labelledby="activity-name-heading">
-          <div className="max-w-3xl"><h2 id="activity-name-heading" className="text-lg font-black text-slate-950">اسم النشاط</h2><p className="mt-1 text-sm text-slate-500">هذا هو الاسم الذي سيظهر داخل Studio وللطلاب.</p><label htmlFor="activity-title" className="mt-5 block text-sm font-bold text-slate-700">اسم بسيط وواضح</label><input id="activity-title" value={title} onChange={(event) => setTitle(event.target.value)} required maxLength={200} placeholder="مثال: تحدي كلمات الفضاء" className="mt-2 min-h-14 w-full rounded-xl border border-slate-300 bg-white px-4 text-base font-bold text-slate-950 shadow-sm transition focus:border-violet-500 focus:outline-2 focus:outline-violet-200" /></div>
-        </section>
-
         {error ? <p role="alert" className="rounded-xl border border-rose-100 bg-rose-50 p-4 text-sm font-semibold text-rose-800">{error}</p> : null}
 
-        <div className="sticky bottom-20 z-30 rounded-2xl border border-violet-100 bg-white/95 p-3 shadow-[0_12px_40px_rgb(76_29_149/0.12)] backdrop-blur lg:bottom-4">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"><p className="px-2 text-sm font-semibold text-slate-500">الخطوة التالية: إضافة الأسئلة من الصفر، من البنك، أو كمجموعة.</p><div className="flex flex-col gap-2 sm:flex-row"><Link to="/dashboard/quizzes/new" className="inline-flex min-h-12 items-center justify-center rounded-xl px-4 text-sm font-bold text-slate-500 hover:bg-slate-50 hover:text-slate-800">خيارات متقدمة</Link><button type="submit" disabled={!title.trim() || createMutation.isPending} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-violet-700 px-6 text-sm font-black text-white shadow-sm transition hover:bg-violet-800 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-700 disabled:cursor-not-allowed disabled:opacity-50">{createMutation.isPending ? 'جارٍ إنشاء النشاط…' : 'التالي: إضافة الأسئلة'}{!createMutation.isPending ? <span aria-hidden="true">←</span> : null}</button></div></div>
+        <div className="sticky bottom-20 z-30 rounded-2xl border border-violet-100 bg-white/96 p-3 shadow-[0_18px_50px_rgb(76_29_149/0.14)] backdrop-blur lg:bottom-4">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <p className="px-2 text-sm font-semibold text-slate-500">التالي: أضف الأسئلة بالطريقة الأسهل لك.</p>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Link to="/dashboard/quizzes/new" className="inline-flex min-h-12 items-center justify-center rounded-xl px-4 text-sm font-bold text-slate-500 hover:bg-slate-50 hover:text-slate-800">إعدادات متقدمة</Link>
+              <button type="submit" disabled={!title.trim() || createMutation.isPending} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-violet-700 px-6 text-sm font-black text-white shadow-sm transition hover:bg-violet-800 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-700 disabled:cursor-not-allowed disabled:opacity-50">{createMutation.isPending ? 'جارٍ إنشاء النشاط…' : 'التالي: إضافة الأسئلة'}{!createMutation.isPending ? <span aria-hidden="true">←</span> : null}</button>
+            </div>
+          </div>
         </div>
       </form>
     </div>
+  );
+}
+
+function WizardProgress() {
+  return (
+    <ol className="mt-6 grid grid-cols-3 gap-2" aria-label="مراحل إنشاء النشاط">
+      <ProgressItem number="1" label="الفكرة" active />
+      <ProgressItem number="2" label="الأسئلة" />
+      <ProgressItem number="3" label="المشاركة" />
+    </ol>
+  );
+}
+
+function ProgressItem({ number, label, active = false }: { number: string; label: string; active?: boolean }) {
+  return (
+    <li className={`flex min-h-11 items-center justify-center gap-2 rounded-xl border px-2 text-xs font-black ${active ? 'border-violet-200 bg-violet-50 text-violet-800' : 'border-slate-100 bg-white text-slate-400'}`}>
+      <span aria-hidden="true" className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] ${active ? 'bg-violet-700 text-white' : 'bg-slate-100 text-slate-500'}`}>{number}</span>
+      {label}
+    </li>
   );
 }
 
