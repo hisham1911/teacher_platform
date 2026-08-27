@@ -7,6 +7,7 @@ import { RequirePlatformAdmin } from '../features/auth/require-platform-admin';
 import { RequireTenant } from '../features/auth/require-tenant';
 
 const HomePage = lazy(() => import('../routes/public/home-page'));
+const StudentJoinPage = lazy(() => import('../routes/public/student-join-page'));
 const PublicQuizPage = lazy(() => import('../routes/public/public-quiz-page'));
 const PublicResultPage = lazy(() => import('../routes/public/public-result-page'));
 const PublicCertificatePage = lazy(() => import('../routes/public/public-certificate-page'));
@@ -65,6 +66,7 @@ export const router = createBrowserRouter([
     ),
     children: [
       { path: '/', element: <HomePage /> },
+      { path: '/join', element: <StudentJoinPage /> },
       { path: '/privacy', element: <PrivacyPage /> },
       { path: '/terms', element: <TermsPage /> },
       { path: '/auth/login', element: <LoginPage /> },
