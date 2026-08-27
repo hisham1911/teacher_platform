@@ -14,7 +14,6 @@ const studioNavItems: Array<{ to: string; label: string; icon: TeacherIconName }
   { to: '/dashboard/reports', label: 'النتائج', icon: 'reports' },
   { to: '/dashboard/certificates', label: 'الشهادات', icon: 'certificate' },
   { to: '/dashboard/settings', label: 'الإعدادات', icon: 'settings' },
-  { to: '/platform', label: 'إدارة المنصة', icon: 'settings' },
 ];
 
 const mobilePrimaryNav = [studioNavItems[0]!, studioNavItems[1]!, studioNavItems[2]!, studioNavItems[4]!];
