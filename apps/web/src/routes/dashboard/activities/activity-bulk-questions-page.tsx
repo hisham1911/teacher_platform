@@ -24,15 +24,16 @@ export default function ActivityBulkQuestionsPage() {
   const rows = useMemo(() => parseBulkQuestionRows(raw, { mode, enforceActivityCompatibility: attachToActivity }), [raw, mode, attachToActivity]);
   const validRows = rows.filter((row) => row.errors.length === 0);
   const invalidRows = rows.length - validRows.length;
+  const resolvedBankId = bankId || banksQuery.data?.[0]?.id || '';
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      if (!tenantId || !bankId) throw new Error('missing-context');
+      if (!tenantId || !resolvedBankId) throw new Error('missing-context');
       const createdIds: string[] = [];
       const failedRows: number[] = [];
       for (const row of validRows) {
         try {
-          const created = await questionsApi.create(tenantId, bulkQuestionRowToRequest(row, bankId));
+          const created = await questionsApi.create(tenantId, bulkQuestionRowToRequest(row, resolvedBankId));
           createdIds.push(created.id);
           if (quizId) await quizzesApi.addItem(tenantId, quizId, { questionId: created.id });
         } catch {
@@ -53,7 +54,6 @@ export default function ActivityBulkQuestionsPage() {
 
   if (!tenantId) return null;
   const banks = banksQuery.data ?? [];
-  const selectedBankId = bankId || banks[0]?.id || '';
   const backPath = quizId ? `/dashboard/activities/${quizId}/build?mode=${mode}` : '/dashboard/questions';
 
   async function onFileSelected(file: File | null) {
@@ -91,7 +91,7 @@ export default function ActivityBulkQuestionsPage() {
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]">
           <label className="flex flex-col gap-2 text-sm font-bold text-slate-800">البيانات<textarea dir="auto" value={raw} onChange={(event) => { setRaw(event.target.value); setResultMessage(null); }} rows={12} className="min-h-72 rounded-2xl border border-slate-300 bg-white p-4 font-mono text-sm leading-7 focus:border-violet-600 focus:outline-2 focus:outline-violet-200" /></label>
           <div className="space-y-4">
-            <label className="flex flex-col gap-2 text-sm font-bold text-slate-800">حفظ داخل بنك<select value={selectedBankId} onChange={(event) => setBankId(event.target.value)} className="min-h-12 rounded-xl border border-slate-300 bg-white px-3 text-sm">{banks.map((bank) => <option key={bank.id} value={bank.id}>{bank.name}</option>)}</select></label>
+            <label className="flex flex-col gap-2 text-sm font-bold text-slate-800">حفظ داخل بنك<select value={resolvedBankId} onChange={(event) => setBankId(event.target.value)} className="min-h-12 rounded-xl border border-slate-300 bg-white px-3 text-sm">{banks.map((bank) => <option key={bank.id} value={bank.id}>{bank.name}</option>)}</select></label>
             {banks.length === 0 && !banksQuery.isLoading ? <p className="rounded-xl bg-amber-50 p-3 text-sm font-bold text-amber-900">أنشئ بنك أسئلة أولًا من صفحة بنك الأسئلة، ثم ارجع هنا.</p> : null}
             <div className="grid gap-2">
               <label className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-xl border border-violet-200 bg-white px-4 text-sm font-black text-violet-800 hover:bg-violet-50">رفع CSV / TSV<input type="file" accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values,text/plain" className="sr-only" onChange={(event) => void onFileSelected(event.target.files?.[0] ?? null)} /></label>
@@ -110,7 +110,7 @@ export default function ActivityBulkQuestionsPage() {
       </section>
 
       {resultMessage ? <p role="status" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm font-bold text-amber-950">{resultMessage}</p> : null}
-      <div className="sticky bottom-20 z-20 rounded-2xl border border-violet-100 bg-white/95 p-3 shadow-xl backdrop-blur lg:bottom-4"><div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"><p className="text-sm font-bold text-slate-600">سيتم إنشاء {validRows.length} سؤالًا{attachToActivity ? ' وإضافتها للنشاط الحالي' : ' داخل البنك المحدد'}.</p><Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending || validRows.length === 0 || invalidRows > 0 || !selectedBankId}>{saveMutation.isPending ? <ButtonSpinner /> : null}{saveMutation.isPending ? 'جارٍ حفظ المجموعة…' : `حفظ ${validRows.length} سؤالًا`}</Button></div></div>
+      <div className="sticky bottom-20 z-20 rounded-2xl border border-violet-100 bg-white/95 p-3 shadow-xl backdrop-blur lg:bottom-4"><div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"><p className="text-sm font-bold text-slate-600">سيتم إنشاء {validRows.length} سؤالًا{attachToActivity ? ' وإضافتها للنشاط الحالي' : ' داخل البنك المحدد'}.</p><Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending || validRows.length === 0 || invalidRows > 0 || !resolvedBankId}>{saveMutation.isPending ? <ButtonSpinner /> : null}{saveMutation.isPending ? 'جارٍ حفظ المجموعة…' : `حفظ ${validRows.length} سؤالًا`}</Button></div></div>
     </div>
   );
 }
