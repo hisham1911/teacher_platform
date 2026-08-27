@@ -121,7 +121,7 @@ describe('PlayPage', () => {
     renderPage();
 
     await waitFor(() =>
-      expect(screen.getByText('الجلسة لم تُفعَّل بعد. انتظر المعلم.')).toBeInTheDocument(),
+      expect(screen.getByText('الجلسة لم تُفعَّل بعد. انتظر بدء النشاط.')).toBeInTheDocument(),
     );
     expect(screen.queryByRole('button', { name: 'ابدأ الاختبار' })).not.toBeInTheDocument();
   });
