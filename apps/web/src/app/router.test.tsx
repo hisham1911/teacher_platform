@@ -50,7 +50,7 @@ describe('router — Phase 1', () => {
 
   it('يعرض الصفحة الرئيسية على /', async () => {
     await renderRoute('/');
-    await expectHeading(/منصة المعلم|الاختبارات/);
+    await expectHeading('تعلم • العب • استكشف');
   });
 
   it('يعرض صفحة تسجيل الدخول على /auth/login', async () => {
