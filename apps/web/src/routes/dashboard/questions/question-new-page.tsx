@@ -45,7 +45,7 @@ export default function QuestionNewPage() {
       setBankError(null);
       await queryClient.invalidateQueries({ queryKey: ['question-banks', tenantId] });
     },
-    onError: () => setBankError('تعذر إنشاء البنك. ربما لا تمتلك الصلاحية الكافية.'),
+    onError: () => setBankError('تعذر إنشاء البنك. قد تكون صلاحية إنشاء البنوك غير متاحة لهذا الحساب.'),
   });
 
   const createQuestionMutation = useMutation({
@@ -86,7 +86,7 @@ export default function QuestionNewPage() {
           queryClient.setQueryData(['quiz-draft', tenantId, quizId], updatedDraft);
           navigate(returnTo, { replace: true });
         } catch {
-          setFormError(`تم إنشاء السؤال، لكن تعذر إضافته إلى ${isActivityFlow ? 'النشاط' : 'الاختبار'}. ارجع إلى المنشئ وحاول إضافته مرة أخرى.`);
+          setFormError(`تم إنشاء السؤال، لكن تعذر إضافته إلى ${isActivityFlow ? 'النشاط' : 'الاختبار'}. يمكن الرجوع إلى المنشئ ومحاولة إضافته مرة أخرى.`);
         }
         return;
       }
@@ -94,7 +94,7 @@ export default function QuestionNewPage() {
     },
     onError: (error) => {
       if (error instanceof MissingQuestionBankError) {
-        setFormError('اختر بنك أسئلة أولاً.');
+        setFormError('يجب اختيار بنك أسئلة أولًا.');
       } else if (error instanceof HttpError) {
         const body = error.body as { title?: string; detail?: string } | null;
         setFormError(
@@ -103,7 +103,7 @@ export default function QuestionNewPage() {
             : `فشل الإنشاء. الحالة: ${error.status}`,
         );
       } else {
-        setFormError('تعذر إنشاء السؤال. أعد المحاولة.');
+        setFormError('تعذر إنشاء السؤال. حاول مرة أخرى.');
       }
     },
   });
@@ -134,8 +134,8 @@ export default function QuestionNewPage() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             {isActivityFlow ? <p className="text-xs font-black uppercase tracking-[0.16em] text-violet-700">English Spark Studio · إضافة سؤال</p> : null}
-            <h1 className="mt-2 text-2xl font-black text-slate-950 sm:text-3xl">{returnTo ? `أضيفي سؤالًا إلى ${isActivityFlow ? 'النشاط' : 'الاختبار'}` : 'سؤال جديد'}</h1>
-            <p className="mt-2 text-base leading-7 text-slate-600">{isActivityFlow ? 'اكتبي السؤال والإجابة الصحيحة فقط. سنحفظه ونرجعك للنشاط تلقائيًا.' : 'اختر بنك الأسئلة، ثم اكتب السؤال وإجابته الصحيحة.'}</p>
+            <h1 className="mt-2 text-2xl font-black text-slate-950 sm:text-3xl">{returnTo ? `إضافة سؤال إلى ${isActivityFlow ? 'النشاط' : 'الاختبار'}` : 'سؤال جديد'}</h1>
+            <p className="mt-2 text-base leading-7 text-slate-600">{isActivityFlow ? 'كتابة السؤال والإجابة الصحيحة تكفي. يتم الحفظ والعودة إلى النشاط تلقائيًا.' : 'اختيار بنك الأسئلة ثم كتابة السؤال وإجابته الصحيحة.'}</p>
           </div>
           <Link
             to={returnTo ?? '/dashboard/questions'}
@@ -164,7 +164,7 @@ export default function QuestionNewPage() {
                   ))}
                 </select>
                 {(banks ?? []).length === 0 && !isLoadingBanks ? (
-                  <p className="text-sm text-amber-700">لا توجد بنوك بعد — أنشئ واحدًا أدناه ليتمكن الحفظ.</p>
+                  <p className="text-sm text-amber-700">لا توجد بنوك بعد — إنشاء بنك أولًا مطلوب للحفظ.</p>
                 ) : null}
               </div>
             )}
