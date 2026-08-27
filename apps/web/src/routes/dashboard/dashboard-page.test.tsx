@@ -64,7 +64,7 @@ afterEach(() => {
 });
 
 describe('DashboardPage', () => {
-  it('يعرض المهام الأساسية وأحدث الاختبارات الفعلية بلا بيانات زائفة', async () => {
+  it('يعرض المهام الأساسية وأحدث الأنشطة الفعلية بلا بيانات زائفة', async () => {
     establishSession({
       accessToken: 'tok',
       accessTokenExpiresAtMs: Date.now() + 100_000,
@@ -74,11 +74,11 @@ describe('DashboardPage', () => {
 
     renderDashboard();
 
-    // انتظر حتى تكتمل بيانات الـworkspaces ويُحسم الـactive
-    expect(await screen.findByRole('heading', { name: 'مرحبًا، معلمة تجريبية' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /إنشاء اختبار جديد/ })).toHaveAttribute('href', '/dashboard/quizzes/new');
-    expect(screen.getByRole('link', { name: /تشغيل اختبار/ })).toHaveAttribute('href', '/dashboard/quizzes');
-    expect(screen.getByRole('link', { name: /عرض النتائج والتقارير/ })).toHaveAttribute('href', '/dashboard/reports');
+    // الواجهة تعرض الاسم الأول فقط ضمن التحية.
+    expect(await screen.findByRole('heading', { name: /^مرحبًا، معلمة/ })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'إنشاء نشاط جديد' })).toHaveAttribute('href', '/dashboard/activities/new');
+    expect(screen.getByRole('link', { name: /إدارة المحتوى/ })).toHaveAttribute('href', '/dashboard/quizzes');
+    expect(screen.getByRole('link', { name: /النتائج/ })).toHaveAttribute('href', '/dashboard/reports');
     expect(await screen.findByText('اختبار قواعد')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'متابعة التحرير' })).toHaveAttribute('href', '/dashboard/quizzes/q1/edit');
 
