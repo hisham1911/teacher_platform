@@ -6,10 +6,7 @@ import ActivityNewPage from './activity-new-page';
 
 vi.mock('../../../data/api-client/endpoints', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../data/api-client/endpoints')>();
-  return {
-    ...actual,
-    quizzesApi: { ...actual.quizzesApi, create: vi.fn() },
-  };
+  return { ...actual, quizzesApi: { ...actual.quizzesApi, create: vi.fn() } };
 });
 
 const { quizzesApi } = await import('../../../data/api-client/endpoints');
@@ -21,7 +18,7 @@ describe('ActivityNewPage', () => {
     window.localStorage.setItem('teacher-platform:active-tenant-id', 'tenant-1');
   });
 
-  it('يبدأ بالتحدي المتدرج وينقل المعلمة للمنشئ البسيط بعد تسمية النشاط', async () => {
+  it('يبدأ بالتحدي المتدرج وينتقل للمنشئ البسيط بعد تسمية النشاط', async () => {
     createQuizMock.mockResolvedValue({
       id: 'quiz-1', title: 'تحدي كلمات الفضاء', slug: 'spark-generated', description: null,
       status: 'Draft', currentDraftVersionId: 'draft-1', currentPublishedVersionId: null,
@@ -30,25 +27,13 @@ describe('ActivityNewPage', () => {
     });
 
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    render(
-      <QueryClientProvider client={queryClient}>
-        <MemoryRouter initialEntries={['/dashboard/activities/new']}>
-          <Routes>
-            <Route path="/dashboard/activities/new" element={<ActivityNewPage />} />
-            <Route path="/dashboard/activities/:quizId/build" element={<p>المنشئ البسيط</p>} />
-          </Routes>
-        </MemoryRouter>
-      </QueryClientProvider>,
-    );
+    render(<QueryClientProvider client={queryClient}><MemoryRouter initialEntries={['/dashboard/activities/new']}><Routes><Route path="/dashboard/activities/new" element={<ActivityNewPage />} /><Route path="/dashboard/activities/:quizId/build" element={<p>المنشئ البسيط</p>} /></Routes></MemoryRouter></QueryClientProvider>);
 
     expect(screen.getByRole('radio', { name: /التحدي المتدرج/ })).toBeChecked();
-    fireEvent.change(screen.getByLabelText('اكتبي اسمًا بسيطًا'), { target: { value: 'تحدي كلمات الفضاء' } });
-    fireEvent.click(screen.getByRole('button', { name: /التالي: أضيفي الأسئلة/ }));
+    fireEvent.change(screen.getByLabelText('اسم بسيط وواضح'), { target: { value: 'تحدي كلمات الفضاء' } });
+    fireEvent.click(screen.getByRole('button', { name: /التالي: إضافة الأسئلة/ }));
 
-    await waitFor(() => expect(createQuizMock).toHaveBeenCalledWith(
-      'tenant-1',
-      expect.objectContaining({ title: 'تحدي كلمات الفضاء', slug: expect.any(String) }),
-    ));
+    await waitFor(() => expect(createQuizMock).toHaveBeenCalledWith('tenant-1', expect.objectContaining({ title: 'تحدي كلمات الفضاء', slug: expect.any(String) })));
     expect(await screen.findByText('المنشئ البسيط')).toBeInTheDocument();
   });
 });
