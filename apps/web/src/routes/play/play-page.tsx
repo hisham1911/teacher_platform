@@ -108,7 +108,7 @@ export default function PlayPage() {
         // الاستعادة بعد F5 من السيرفر عبر الكوكي فقط — بدون حفظ الاسم في localStorage
         restoreMutation.mutate();
       } else if (session.status === 'Scheduled') {
-        setStage({ kind: 'unavailable', message: 'الجلسة لم تُفعَّل بعد. انتظر المعلم.' });
+        setStage({ kind: 'unavailable', message: 'الجلسة لم تُفعَّل بعد. انتظر بدء النشاط.' });
       } else if (session.status === 'Finished') {
         setStage({ kind: 'unavailable', message: 'انتهت هذه الجلسة.' });
         restoreMutation.mutate();
@@ -121,7 +121,7 @@ export default function PlayPage() {
         kind: 'unavailable',
         message:
           e instanceof HttpError && e.status === 404
-            ? 'رمز الانضمام غير صحيح. تأكد من الرمز مع معلمك.'
+            ? 'رمز الانضمام غير صحيح. تأكد من رمز النشاط.'
             : 'تعذر الاتصال. تحقق من الإنترنت ثم أعد تحميل الصفحة.',
       });
     }
@@ -415,7 +415,7 @@ function ChallengeReadyView({
 
           <p className="mx-auto mt-5 max-w-md rounded-xl bg-white/[0.06] p-4 text-sm font-semibold leading-7 text-sky-100">
             الإجابة الصحيحة تنقلك للمستوى التالي، والإجابة الخاطئة تنهي التحدي.
-            {hasAttempt ? ' سنُعيدك إلى آخر مستوى وصلت إليه.' : ''} رتّب المعلم الأسئلة من الأسهل إلى الأصعب.
+            {hasAttempt ? ' سنُعيدك إلى آخر مستوى وصلت إليه.' : ''} تم ترتيب الأسئلة من الأسهل إلى الأصعب.
           </p>
 
           {error ? <p role="alert" className="mx-auto mt-4 max-w-md rounded-xl bg-rose-500/15 p-3 text-sm font-bold text-rose-200">{error}</p> : null}
@@ -545,7 +545,7 @@ function LivePlayerView({
         <div className="rounded-2xl border border-sky-200 bg-sky-50 p-7 text-center">
           <div className="mx-auto mb-4 h-3 w-3 animate-pulse rounded-full bg-sky-600" />
           <h2 className="text-lg font-bold text-slate-950">أنت داخل قاعة الانتظار</h2>
-          <p className="mt-2 text-sm text-slate-600">سيظهر السؤال هنا عندما يفتحه المعلم. لا تغلق الصفحة.</p>
+          <p className="mt-2 text-sm text-slate-600">سيظهر السؤال هنا عند فتحه. لا تغلق الصفحة.</p>
           <p className="mt-4 text-xs text-sky-800">انضم {state.participantCount} مشارك</p>
         </div>
       ) : null}
@@ -589,7 +589,7 @@ function LivePlayerView({
         <div className="space-y-4">
           <div className="rounded-2xl bg-slate-950 p-6 text-center text-white">
             <h2 className="text-xl font-black">أُغلق السؤال</h2>
-            <p className="mt-1 text-sm text-slate-300">انتظر السؤال التالي من المعلم.</p>
+            <p className="mt-1 text-sm text-slate-300">انتظر السؤال التالي.</p>
           </div>
           <Leaderboard state={state} />
         </div>
@@ -893,7 +893,7 @@ function QuestionMedia({
         <audio controls preload="metadata" src={url} onError={() => setPlaybackFailed(true)} className="w-full" data-testid="question-media-audio">
           المتصفح لا يدعم تشغيل الصوت.
         </audio>
-        {playbackFailed ? <p role="alert" className="mt-2 rounded-lg bg-rose-50 p-3 text-sm text-rose-700">تعذر تشغيل الصوت. أعد تحميل الصفحة، وإن استمرت المشكلة فأبلغ المعلم.</p> : null}
+        {playbackFailed ? <p role="alert" className="mt-2 rounded-lg bg-rose-50 p-3 text-sm text-rose-700">تعذر تشغيل الصوت. أعد تحميل الصفحة، وإن استمرت المشكلة فأبلغ مسؤول النشاط.</p> : null}
       </div>
     );
   }
