@@ -50,7 +50,7 @@ export default function QuestionNewPage() {
 
   const createQuestionMutation = useMutation({
     mutationFn: async (value: QuestionFormValue) => {
-      let bankId = selectedBankId;
+      let bankId = selectedBankId || banks?.[0]?.id || '';
 
       if (!bankId && isActivityFlow) {
         const bank = await questionBanksApi.create(tenantId!, { name: DEFAULT_ACTIVITY_BANK_NAME });
@@ -59,9 +59,7 @@ export default function QuestionNewPage() {
         await queryClient.invalidateQueries({ queryKey: ['question-banks', tenantId] });
       }
 
-      if (!bankId) {
-        throw new MissingQuestionBankError();
-      }
+      if (!bankId) throw new MissingQuestionBankError();
 
       const payload: CreateQuestionRequest = {
         bankId,
