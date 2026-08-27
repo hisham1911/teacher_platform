@@ -39,18 +39,18 @@ export default function DashboardPage() {
     return (
       <section className="teacher-surface mx-auto max-w-2xl p-8 text-center">
         <TeacherIcon name="workspace" className="mx-auto h-10 w-10 text-violet-700" />
-        <h1 className="mt-4 text-2xl font-black text-[var(--teacher-ink)]">جهّزي مساحة English Spark</h1>
-        <p className="mx-auto mt-2 max-w-lg text-base leading-7 text-[var(--teacher-muted)]">المساحة تجمع أنشطتك وأسئلتك ونتائج الطلاب في مكان واحد.</p>
+        <h1 className="mt-4 text-2xl font-black text-[var(--teacher-ink)]">تجهيز مساحة English Spark</h1>
+        <p className="mx-auto mt-2 max-w-lg text-base leading-7 text-[var(--teacher-muted)]">المساحة تجمع الأنشطة والأسئلة ونتائج الطلاب في مكان واحد.</p>
         <button type="button" onClick={() => navigate('/onboarding')} className="mt-5 min-h-11 rounded-xl bg-violet-700 px-5 py-2 text-sm font-bold text-white hover:bg-violet-800">إنشاء مساحة العمل</button>
       </section>
     );
   }
 
   if (!activeWorkspace) {
-    return <p className="teacher-surface p-5 text-sm text-slate-700">اختاري مساحة العمل من القائمة للمتابعة.</p>;
+    return <p className="teacher-surface p-5 text-sm text-slate-700">اختيار مساحة العمل من القائمة مطلوب للمتابعة.</p>;
   }
 
-  const firstName = session.user?.fullName?.trim().split(/\s+/)[0] ?? 'مريم';
+  const firstName = session.user?.fullName?.trim().split(/\s+/)[0] ?? 'مرحبًا';
 
   return (
     <div className="flex flex-col gap-9">
@@ -60,7 +60,7 @@ export default function DashboardPage() {
         <div className="relative max-w-3xl">
           <p className="text-sm font-black text-amber-200">{activeWorkspace.name} · English Spark Studio</p>
           <h1 className="mt-3 text-3xl font-black sm:text-4xl">مرحبًا، {firstName} 👋</h1>
-          <p className="mt-3 text-lg leading-8 text-violet-100">ماذا تريدين أن تفعلي اليوم؟ ابدئي بالنشاط، ونحن نتولى خطوات النشر والرابط خلف الكواليس.</p>
+          <p className="mt-3 text-lg leading-8 text-violet-100">المهمة التالية تبدأ من هنا: إنشاء النشاط، ثم تتولى English Spark خطوات النشر وتجهيز الرابط خلف الكواليس.</p>
           <Link to="/dashboard/activities/new" className="mt-6 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-white px-6 text-sm font-black text-violet-800 shadow-sm hover:bg-violet-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
             <TeacherIcon name="create" />إنشاء نشاط جديد
           </Link>
@@ -72,15 +72,15 @@ export default function DashboardPage() {
           to="/dashboard/activities/new"
           icon="create"
           title="إنشاء نشاط"
-          description="اختاري طريقة اللعب، أضيفي الأسئلة، وخذي رابط الطلاب مباشرة."
-          action="ابدئي الآن"
+          description="اختيار طريقة اللعب، إضافة الأسئلة، والحصول على رابط الطلاب مباشرة."
+          action="بدء الإنشاء"
           tone="violet"
         />
         <TaskAction
           to="/dashboard/quizzes"
           icon="quizzes"
           title="إدارة المحتوى"
-          description="راجعي الأنشطة السابقة أو افتحي الأدوات المتقدمة عند الحاجة."
+          description="مراجعة الأنشطة السابقة أو فتح الأدوات المتقدمة عند الحاجة."
           action="فتح المحتوى"
           tone="white"
         />
@@ -88,7 +88,7 @@ export default function DashboardPage() {
           to="/dashboard/reports"
           icon="reports"
           title="النتائج"
-          description="تابعي المحاولات والدرجات والتقدم من شاشة واحدة."
+          description="متابعة المحاولات والدرجات والتقدم من شاشة واحدة."
           action="مشاهدة النتائج"
           tone="amber"
         />
@@ -97,8 +97,8 @@ export default function DashboardPage() {
       <section aria-labelledby="recent-activities-heading">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 id="recent-activities-heading" className="text-xl font-black text-[var(--teacher-ink)]">آخر ما عملتِ عليه</h2>
-            <p className="mt-1 text-sm text-[var(--teacher-muted)]">ارجعي بسرعة إلى أحدث الأنشطة والمحتوى.</p>
+            <h2 id="recent-activities-heading" className="text-xl font-black text-[var(--teacher-ink)]">آخر عمل</h2>
+            <p className="mt-1 text-sm text-[var(--teacher-muted)]">وصول سريع إلى أحدث الأنشطة والمحتوى.</p>
           </div>
           <div className="flex items-center gap-3">
             {recentQuizzesQuery.data ? <span className="text-sm font-bold tabular-nums text-slate-600">{recentQuizzesQuery.data.totalItems} نشاط</span> : null}
@@ -112,13 +112,13 @@ export default function DashboardPage() {
           </div>
         ) : null}
 
-        {recentQuizzesQuery.isError ? <div role="alert" className="mt-4 rounded-xl bg-amber-50 p-4 text-sm text-amber-900">تعذر تحميل أحدث الأنشطة. يمكنك فتح المحتوى للمتابعة.</div> : null}
+        {recentQuizzesQuery.isError ? <div role="alert" className="mt-4 rounded-xl bg-amber-50 p-4 text-sm text-amber-900">تعذر تحميل أحدث الأنشطة. يمكن فتح المحتوى للمتابعة.</div> : null}
 
         {recentQuizzesQuery.data?.items.length === 0 ? (
           <div className="teacher-surface mt-4 py-10 text-center">
             <span aria-hidden="true" className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-100 text-2xl text-violet-700">✦</span>
-            <p className="mt-4 text-base font-black text-slate-900">جاهزة لأول Spark؟</p>
-            <p className="mt-1 text-sm text-[var(--teacher-muted)]">ابدئي بنشاط صغير من خمس أسئلة لتجربة المسار الجديد.</p>
+            <p className="mt-4 text-base font-black text-slate-900">أول Spark جاهز للانطلاق</p>
+            <p className="mt-1 text-sm text-[var(--teacher-muted)]">نشاط صغير من خمس أسئلة يكفي لتجربة المسار الجديد.</p>
             <Link to="/dashboard/activities/new" className="mt-4 inline-flex min-h-11 items-center rounded-xl bg-violet-700 px-5 text-sm font-bold text-white hover:bg-violet-800">إنشاء أول نشاط</Link>
           </div>
         ) : null}
@@ -133,8 +133,8 @@ export default function DashboardPage() {
       <section className="rounded-2xl border border-violet-100 bg-violet-50/60 p-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="font-black text-violet-950">تحتاجين الأدوات القديمة؟</h2>
-            <p className="mt-1 text-sm leading-6 text-violet-900/75">بنك الأسئلة والمنشئ المتقدم وإعدادات النشر ما زالت موجودة للمستخدم المتقدم.</p>
+            <h2 className="font-black text-violet-950">أدوات متقدمة</h2>
+            <p className="mt-1 text-sm leading-6 text-violet-900/75">بنك الأسئلة والمنشئ المتقدم وإعدادات النشر متاحة عند الحاجة.</p>
           </div>
           <Link to="/dashboard/questions" className="inline-flex min-h-11 items-center justify-center rounded-xl border border-violet-200 bg-white px-4 text-sm font-bold text-violet-800">فتح بنك الأسئلة</Link>
         </div>
