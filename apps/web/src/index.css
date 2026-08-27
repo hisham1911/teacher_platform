@@ -3,15 +3,20 @@
 :root {
   font-family: 'Segoe UI', Tahoma, system-ui, sans-serif;
   font-kerning: normal;
-  --teacher-bg: oklch(0.975 0.008 174);
+  --spark-violet: oklch(0.51 0.22 292);
+  --spark-violet-strong: oklch(0.43 0.2 292);
+  --spark-violet-soft: oklch(0.965 0.028 292);
+  --spark-amber: oklch(0.8 0.16 78);
+  --spark-ink: oklch(0.22 0.03 256);
+  --teacher-bg: oklch(0.978 0.009 292);
   --teacher-surface: oklch(1 0 0);
-  --teacher-ink: oklch(0.24 0.025 245);
+  --teacher-ink: var(--spark-ink);
   --teacher-muted: oklch(0.47 0.025 245);
-  --teacher-primary: oklch(0.47 0.12 163);
-  --teacher-primary-strong: oklch(0.39 0.105 163);
-  --teacher-primary-soft: oklch(0.95 0.035 163);
-  --teacher-violet: oklch(0.55 0.17 292);
-  --teacher-violet-soft: oklch(0.96 0.03 292);
+  --teacher-primary: var(--spark-violet);
+  --teacher-primary-strong: var(--spark-violet-strong);
+  --teacher-primary-soft: var(--spark-violet-soft);
+  --teacher-violet: var(--spark-violet);
+  --teacher-violet-soft: var(--spark-violet-soft);
   --teacher-orange-soft: oklch(0.965 0.04 72);
   --student-bg: oklch(0.978 0.008 174);
   --student-surface: oklch(1 0 0);
@@ -35,15 +40,48 @@ body {
   @apply bg-slate-50 text-slate-900 antialiased;
 }
 
+.spark-public-shell {
+  background:
+    radial-gradient(circle at 12% 8%, oklch(0.94 0.055 78 / 0.34), transparent 22rem),
+    radial-gradient(circle at 90% 12%, oklch(0.94 0.05 292 / 0.5), transparent 24rem),
+    linear-gradient(180deg, oklch(0.995 0.004 292), oklch(0.975 0.01 292));
+}
+
+.spark-auth-card {
+  border: 1px solid oklch(0.91 0.018 292);
+  border-radius: 1.5rem;
+  background: rgb(255 255 255 / 0.94);
+  box-shadow: 0 22px 60px rgb(76 29 149 / 0.1);
+  backdrop-filter: blur(12px);
+}
+
+.spark-brand-mark {
+  position: relative;
+  isolation: isolate;
+  box-shadow: 0 10px 24px rgb(109 40 217 / 0.22);
+}
+
+.spark-brand-mark::after {
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgb(255 255 255 / 0.34);
+  border-radius: inherit;
+  content: '';
+  pointer-events: none;
+}
+
 .teacher-app {
-  background: var(--teacher-bg);
+  background:
+    radial-gradient(circle at 82% 0%, oklch(0.95 0.028 292 / 0.58), transparent 30rem),
+    var(--teacher-bg);
   color: var(--teacher-ink);
 }
 
 .teacher-surface {
   border: 1px solid oklch(0.91 0.012 245);
-  border-radius: 0.875rem;
+  border-radius: 1rem;
   background: var(--teacher-surface);
+  box-shadow: 0 2px 10px rgb(76 29 149 / 0.035);
 }
 
 .teacher-focus {
