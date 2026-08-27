@@ -7,64 +7,41 @@ import { clearSession, establishSession } from '../../lib/auth/session';
 
 vi.mock('../../data/api-client/endpoints', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../data/api-client/endpoints')>();
-  return {
-    ...actual,
-    tenantsApi: { ...actual.tenantsApi, listMine: vi.fn().mockResolvedValue([]) },
-  };
+  return { ...actual, tenantsApi: { ...actual.tenantsApi, listMine: vi.fn().mockResolvedValue([]) } };
 });
 
 const { tenantsApi } = await import('../../data/api-client/endpoints');
 
 describe('RootLayout', () => {
-  it('يعرض روابط التنقل الأساسية للزائر', () => {
+  it('يعرض روابط التنقل المحايدة للزائر', () => {
     clearSession();
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    render(
-      <QueryClientProvider client={queryClient}>
-        <MemoryRouter>
-          <RootLayout>
-            <div>محتوى</div>
-          </RootLayout>
-        </MemoryRouter>
-      </QueryClientProvider>,
-    );
+    render(<QueryClientProvider client={queryClient}><MemoryRouter><RootLayout><div>محتوى</div></RootLayout></MemoryRouter></QueryClientProvider>);
 
     expect(screen.getByRole('link', { name: 'English Spark' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'الرئيسية' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'دخول المعلمة' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'تسجيل الدخول' })).toBeInTheDocument();
     expect(screen.getByText('محتوى')).toBeInTheDocument();
   });
 
-  it('يعرض Player بلا تنقل أو Footer المعلم', () => {
+  it('يعرض Player بلا تنقل أو Footer Studio', () => {
     clearSession();
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    render(
-      <QueryClientProvider client={queryClient}>
-        <MemoryRouter initialEntries={['/play/JOIN123']}>
-          <RootLayout><div>واجهة الطالب المستقلة</div></RootLayout>
-        </MemoryRouter>
-      </QueryClientProvider>,
-    );
+    render(<QueryClientProvider client={queryClient}><MemoryRouter initialEntries={['/play/JOIN123']}><RootLayout><div>واجهة الطالب المستقلة</div></RootLayout></MemoryRouter></QueryClientProvider>);
 
     expect(screen.getByText('واجهة الطالب المستقلة')).toBeInTheDocument();
     expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
     expect(screen.queryByText('English Spark — Learn • Play • Explore')).not.toBeInTheDocument();
   });
 
-  it('يعرض Live Host في وضع تركيز بلا تنقل أو Footer المعلم', () => {
+  it('يعرض Live Host في وضع تركيز بلا تنقل أو Footer Studio', () => {
     establishSession({
       accessToken: 'token', accessTokenExpiresAtMs: Date.now() + 10_000,
-      user: { id: 'u1', email: 'teacher@example.test', fullName: 'معلمة', emailConfirmed: true, platformRoles: [] },
-      activeWorkspace: { id: 'tenant-1', name: 'مدرستي', slug: 'school', role: 'Owner', status: 'Active' },
+      user: { id: 'u1', email: 'creator@example.test', fullName: 'صانع محتوى', emailConfirmed: true, platformRoles: [] },
+      activeWorkspace: { id: 'tenant-1', name: 'مساحتي', slug: 'workspace', role: 'Owner', status: 'Active' },
     });
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    const view = render(
-      <QueryClientProvider client={queryClient}>
-        <MemoryRouter initialEntries={['/dashboard/sessions/session-1/live']}>
-          <RootLayout><div>واجهة المضيف المستقلة</div></RootLayout>
-        </MemoryRouter>
-      </QueryClientProvider>,
-    );
+    const view = render(<QueryClientProvider client={queryClient}><MemoryRouter initialEntries={['/dashboard/sessions/session-1/live']}><RootLayout><div>واجهة المضيف المستقلة</div></RootLayout></MemoryRouter></QueryClientProvider>);
 
     expect(screen.getByText('واجهة المضيف المستقلة')).toBeInTheDocument();
     expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
@@ -76,8 +53,8 @@ describe('RootLayout', () => {
   it('يعرض النتائج والتنقل السريع للمستخدم المسجل', async () => {
     establishSession({
       accessToken: 'token', accessTokenExpiresAtMs: Date.now() + 10_000,
-      user: { id: 'u1', email: 'teacher@example.test', fullName: 'معلمة', emailConfirmed: true, platformRoles: [] },
-      activeWorkspace: { id: 'tenant-1', name: 'مدرستي', slug: 'school', role: 'Owner', status: 'Active' },
+      user: { id: 'u1', email: 'creator@example.test', fullName: 'صانع محتوى', emailConfirmed: true, platformRoles: [] },
+      activeWorkspace: { id: 'tenant-1', name: 'مساحتي', slug: 'workspace', role: 'Owner', status: 'Active' },
     });
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const view = render(<QueryClientProvider client={queryClient}><MemoryRouter initialEntries={['/dashboard/attempts/attempt-1']}><RootLayout><div>محتوى</div></RootLayout></MemoryRouter></QueryClientProvider>);
