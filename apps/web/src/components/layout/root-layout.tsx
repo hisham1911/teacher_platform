@@ -14,6 +14,7 @@ const studioNavItems: Array<{ to: string; label: string; icon: TeacherIconName }
   { to: '/dashboard/reports', label: 'النتائج', icon: 'reports' },
   { to: '/dashboard/certificates', label: 'الشهادات', icon: 'certificate' },
   { to: '/dashboard/settings', label: 'الإعدادات', icon: 'settings' },
+  { to: '/platform', label: 'إدارة المنصة', icon: 'settings' },
 ];
 
 const mobilePrimaryNav = [studioNavItems[0]!, studioNavItems[1]!, studioNavItems[2]!, studioNavItems[4]!];
@@ -100,11 +101,10 @@ export function RootLayout({ children }: { children: ReactNode }) {
                 </select>
               </label>
             ) : null}
-            {isPlatformAdmin ? (
-              <Link to="/platform" className="mt-4 flex min-h-12 items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-3 text-sm font-black text-amber-950 hover:bg-amber-100">
-                <span aria-hidden="true">⚙️</span><span><span className="block">إدارة المنصة</span><span className="block text-[10px] font-bold text-amber-700">العملاء · الخطط · الاستخدام</span></span>
-              </Link>
-            ) : null}
+            <Link to="/platform" className={`mt-4 flex min-h-12 items-center gap-3 rounded-xl border px-3 text-sm font-black ${isPlatformAdmin ? 'border-amber-200 bg-amber-50 text-amber-950 hover:bg-amber-100' : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'}`}>
+              <span aria-hidden="true">{isPlatformAdmin ? '⚙️' : '🔒'}</span>
+              <span><span className="block">إدارة المنصة</span><span className={`block text-[10px] font-bold ${isPlatformAdmin ? 'text-amber-700' : 'text-slate-500'}`}>{isPlatformAdmin ? 'العملاء · الخطط · الاستخدام' : 'يتطلب صلاحية PlatformAdmin'}</span></span>
+            </Link>
           </div>
 
           <StudioNavigation pathname={location.pathname} />
@@ -125,7 +125,7 @@ export function RootLayout({ children }: { children: ReactNode }) {
                   <Link to="/dashboard/quizzes" className="inline-flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-bold text-slate-700 hover:bg-violet-50"><TeacherIcon name="quizzes" />الأنشطة</Link>
                   <Link to="/dashboard/certificates" className="inline-flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-bold text-slate-700 hover:bg-violet-50"><TeacherIcon name="certificate" />الشهادات</Link>
                   <Link to="/dashboard/settings" className="inline-flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-bold text-slate-700 hover:bg-violet-50"><TeacherIcon name="settings" />الإعدادات</Link>
-                  {isPlatformAdmin ? <Link to="/platform" className="mt-2 inline-flex min-h-12 w-full items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-3 text-sm font-black text-amber-950"><span aria-hidden="true">⚙️</span>إدارة المنصة</Link> : null}
+                  <Link to="/platform" className={`mt-2 inline-flex min-h-12 w-full items-center gap-3 rounded-xl border px-3 text-sm font-black ${isPlatformAdmin ? 'border-amber-200 bg-amber-50 text-amber-950' : 'border-slate-200 bg-slate-50 text-slate-700'}`}><span aria-hidden="true">{isPlatformAdmin ? '⚙️' : '🔒'}</span><span>إدارة المنصة{!isPlatformAdmin ? <span className="mr-2 text-[10px] font-bold text-slate-500">صلاحية خاصة</span> : null}</span></Link>
                   <button type="button" onClick={() => void onLogout()} className="mt-2 inline-flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-semibold text-rose-700 hover:bg-rose-50"><TeacherIcon name="logout" />تسجيل الخروج</button>
                 </div>
               </details>
