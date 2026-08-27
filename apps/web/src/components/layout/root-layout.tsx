@@ -1,15 +1,10 @@
 import type { ReactNode } from 'react';
-import { Link, NavLink, useLocation, useNavigate } from 'react-router';
+import { Link, useLocation, useNavigate } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { TeacherIcon, type TeacherIconName } from '../ui/teacher-icon';
 import { authApi, tenantsApi } from '../../data/api-client/endpoints';
 import { useSessionSnapshot } from '../../features/auth/use-session';
 import { clearSession, getActiveTenantId, setActiveWorkspaceId } from '../../lib/auth/session';
-
-const publicNavLinkClass = ({ isActive }: { isActive: boolean }) =>
-  `inline-flex min-h-11 items-center rounded-lg px-3 py-2 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-700 ${
-    isActive ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-  }`;
 
 const teacherNavItems: Array<{ to: string; label: string; icon: TeacherIconName }> = [
   { to: '/dashboard', label: 'الرئيسية', icon: 'home' },
@@ -68,19 +63,26 @@ export function RootLayout({ children }: { children: ReactNode }) {
   }
 
   if (!session.user) {
+    const onLoginPage = location.pathname === '/auth/login';
+    const onSignupPage = location.pathname === '/auth/signup';
+
     return (
-      <div className="flex min-h-screen flex-col bg-white" dir="rtl">
-        <header className="border-b border-slate-200 bg-white">
-          <div className="mx-auto flex min-h-16 w-full max-w-6xl flex-col items-stretch justify-between gap-2 px-4 py-2 sm:flex-row sm:items-center sm:gap-4 sm:py-0">
+      <div className="spark-public-shell flex min-h-dvh flex-col" dir="rtl">
+        <header className="sticky top-0 z-40 border-b border-violet-100/80 bg-white/88 backdrop-blur-xl">
+          <div className="mx-auto flex min-h-16 w-full max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
             <EnglishSparkBrand to="/" compact />
-            <nav className="flex w-full items-center gap-1 sm:w-auto" aria-label="التنقل الرئيسي">
-              <NavLink to="/" end className={publicNavLinkClass}>الرئيسية</NavLink>
-              <NavLink to="/auth/login" className={publicNavLinkClass}>دخول المعلمة</NavLink>
-              <NavLink to="/auth/signup" className={publicNavLinkClass}>إنشاء حساب</NavLink>
+            <nav className="flex items-center gap-2" aria-label="التنقل الرئيسي">
+              <Link to="/" className="hidden min-h-11 items-center rounded-xl px-3 text-sm font-bold text-slate-600 hover:bg-white hover:text-violet-800 sm:inline-flex">الرئيسية</Link>
+              {onLoginPage ? (
+                <Link to="/auth/signup" className="inline-flex min-h-11 items-center justify-center rounded-xl border border-violet-200 bg-white px-4 text-sm font-black text-violet-800 shadow-sm hover:bg-violet-50">إنشاء حساب</Link>
+              ) : (
+                <Link to="/auth/login" className="inline-flex min-h-11 items-center justify-center rounded-xl bg-violet-700 px-4 text-sm font-black text-white shadow-sm hover:bg-violet-800">دخول المعلمة</Link>
+              )}
+              {onSignupPage ? null : null}
             </nav>
           </div>
         </header>
-        <main id="main-content" className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
+        <main id="main-content" className="mx-auto w-full max-w-7xl flex-1 px-4 py-5 sm:px-6 sm:py-9">{children}</main>
         <PublicFooter />
       </div>
     );
@@ -89,7 +91,7 @@ export function RootLayout({ children }: { children: ReactNode }) {
   return (
     <div className="teacher-app min-h-dvh" dir="rtl">
       <div className="mx-auto flex min-h-dvh w-full max-w-screen-2xl">
-        <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-l border-slate-200 bg-white px-4 py-5 lg:flex">
+        <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-l border-violet-100 bg-white/95 px-4 py-5 lg:flex">
           <EnglishSparkBrand to="/dashboard" />
           <div className="mt-6 border-y border-slate-100 py-4">
             <p className="truncate text-sm font-black text-[var(--teacher-ink)]">{session.user.fullName}</p>
@@ -100,7 +102,7 @@ export function RootLayout({ children }: { children: ReactNode }) {
                 <select
                   value={activeWorkspace?.id ?? ''}
                   onChange={(event) => onWorkspaceChange(event.target.value)}
-                  className="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-800 focus:border-violet-600 focus:outline-2 focus:outline-violet-200">
+                  className="min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-800 focus:border-violet-600 focus:outline-2 focus:outline-violet-200">
                   {workspaces.map((workspace) => <option key={workspace.id} value={workspace.id}>{workspace.name}</option>)}
                 </select>
               </label>
@@ -110,36 +112,36 @@ export function RootLayout({ children }: { children: ReactNode }) {
           <TeacherNavigation pathname={location.pathname} isPlatformAdmin={session.user.platformRoles.includes('PlatformAdmin')} />
 
           <div className="mt-auto border-t border-slate-100 pt-4">
-            <Link to="/dashboard/questions" className="inline-flex min-h-11 w-full items-center gap-2 rounded-lg px-3 text-sm font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-700">
+            <Link to="/dashboard/questions" className="inline-flex min-h-11 w-full items-center gap-2 rounded-xl px-3 text-sm font-semibold text-slate-500 hover:bg-violet-50 hover:text-violet-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-700">
               <TeacherIcon name="questions" />بنك الأسئلة المتقدم
             </Link>
-            <button type="button" onClick={() => void onLogout()} className="inline-flex min-h-11 w-full items-center gap-2 rounded-lg px-3 text-sm font-semibold text-slate-600 hover:bg-rose-50 hover:text-rose-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-700">
+            <button type="button" onClick={() => void onLogout()} className="inline-flex min-h-11 w-full items-center gap-2 rounded-xl px-3 text-sm font-semibold text-slate-600 hover:bg-rose-50 hover:text-rose-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-700">
               <TeacherIcon name="logout" />تسجيل الخروج
             </button>
           </div>
         </aside>
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-40 border-b border-slate-200 bg-white lg:hidden">
+          <header className="sticky top-0 z-40 border-b border-violet-100 bg-white/95 backdrop-blur lg:hidden">
             <div className="flex min-h-16 items-center justify-between gap-3 px-4">
               <EnglishSparkBrand to="/dashboard" compact />
               <details key={location.pathname} className="group relative">
-                <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-lg border border-slate-300 px-3 text-sm font-bold text-slate-700 marker:content-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-700">
+                <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-3 text-sm font-bold text-violet-900 marker:content-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-700">
                   القائمة
                   <span aria-hidden="true" className="text-lg leading-none">≡</span>
                 </summary>
-                <div className="fixed inset-x-3 top-16 z-50 max-h-[calc(100dvh-5rem)] overflow-y-auto rounded-xl border border-slate-200 bg-white p-3 shadow-md">
+                <div className="fixed inset-x-3 top-16 z-50 max-h-[calc(100dvh-5rem)] overflow-y-auto rounded-2xl border border-violet-100 bg-white p-3 shadow-xl">
                   {workspaces && workspaces.length > 0 ? (
                     <label className="mb-3 flex flex-col gap-1.5 text-xs font-semibold text-slate-600">
                       مساحة العمل
-                      <select value={activeWorkspace?.id ?? ''} onChange={(event) => onWorkspaceChange(event.target.value)} className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-800">
+                      <select value={activeWorkspace?.id ?? ''} onChange={(event) => onWorkspaceChange(event.target.value)} className="min-h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-800">
                         {workspaces.map((workspace) => <option key={workspace.id} value={workspace.id}>{workspace.name}</option>)}
                       </select>
                     </label>
                   ) : null}
                   <TeacherNavigation pathname={location.pathname} isPlatformAdmin={session.user.platformRoles.includes('PlatformAdmin')} />
-                  <Link to="/dashboard/questions" className="mt-2 inline-flex min-h-11 w-full items-center gap-2 rounded-lg px-3 text-sm font-semibold text-slate-500 hover:bg-slate-100"><TeacherIcon name="questions" />بنك الأسئلة المتقدم</Link>
-                  <button type="button" onClick={() => void onLogout()} className="mt-2 inline-flex min-h-11 w-full items-center gap-2 rounded-lg px-3 text-sm font-semibold text-rose-700 hover:bg-rose-50">
+                  <Link to="/dashboard/questions" className="mt-2 inline-flex min-h-11 w-full items-center gap-2 rounded-xl px-3 text-sm font-semibold text-slate-500 hover:bg-violet-50"><TeacherIcon name="questions" />بنك الأسئلة المتقدم</Link>
+                  <button type="button" onClick={() => void onLogout()} className="mt-2 inline-flex min-h-11 w-full items-center gap-2 rounded-xl px-3 text-sm font-semibold text-rose-700 hover:bg-rose-50">
                     <TeacherIcon name="logout" />تسجيل الخروج
                   </button>
                 </div>
@@ -147,8 +149,8 @@ export function RootLayout({ children }: { children: ReactNode }) {
             </div>
           </header>
 
-          <main id="main-content" className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">{children}</main>
-          <footer className="border-t border-slate-200 px-4 py-4 text-center text-xs text-slate-500">
+          <main id="main-content" className="mx-auto w-full max-w-7xl flex-1 px-4 py-5 sm:px-6 sm:py-7 lg:px-8 lg:py-8">{children}</main>
+          <footer className="border-t border-violet-100 px-4 py-4 text-center text-xs text-slate-500">
             English Spark — Learn • Play • Explore
           </footer>
         </div>
@@ -160,10 +162,10 @@ export function RootLayout({ children }: { children: ReactNode }) {
 function EnglishSparkBrand({ to, compact = false }: { to: string; compact?: boolean }) {
   return (
     <Link to={to} className="inline-flex min-h-11 items-center gap-2.5 text-base font-black text-slate-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-700">
-      <span aria-hidden="true" className={`${compact ? 'h-9 w-9 text-lg' : 'h-10 w-10 text-xl'} flex items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 via-amber-500 to-violet-700 text-white shadow-sm`}>✦</span>
+      <span aria-hidden="true" className={`spark-brand-mark ${compact ? 'h-10 w-10 text-xl' : 'h-11 w-11 text-2xl'} flex items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 via-fuchsia-500 to-violet-700 text-white`}>✦</span>
       <span className="leading-tight">
         <span className="block tracking-wide">English Spark</span>
-        {!compact ? <span className="block text-[10px] font-bold tracking-[0.18em] text-violet-600">LEARN • PLAY • EXPLORE</span> : null}
+        {!compact ? <span className="block text-[9px] font-black tracking-[0.19em] text-violet-600">LEARN • PLAY • EXPLORE</span> : null}
       </span>
     </Link>
   );
@@ -181,8 +183,8 @@ function TeacherNavigation({ pathname, isPlatformAdmin }: { pathname: string; is
             aria-current={isActive ? 'page' : undefined}
             className={`inline-flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-bold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-700 ${
               isActive
-                ? 'bg-violet-50 text-violet-800'
-                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                ? 'bg-violet-100 text-violet-900'
+                : 'text-slate-600 hover:bg-violet-50 hover:text-violet-900'
             }`}>
             <TeacherIcon name={item.icon} />
             {item.label}
@@ -190,7 +192,7 @@ function TeacherNavigation({ pathname, isPlatformAdmin }: { pathname: string; is
         );
       })}
       {isPlatformAdmin ? (
-        <Link to="/platform" className="inline-flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-bold text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-700">
+        <Link to="/platform" className="inline-flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-bold text-slate-600 hover:bg-violet-50 hover:text-violet-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-700">
           <TeacherIcon name="settings" />إدارة المنصة
         </Link>
       ) : null}
@@ -200,12 +202,12 @@ function TeacherNavigation({ pathname, isPlatformAdmin }: { pathname: string; is
 
 function PublicFooter() {
   return (
-    <footer className="border-t border-slate-200 bg-white">
-      <div className="mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-3 px-4 py-4 text-xs text-slate-500 sm:flex-row">
-        <span>English Spark — تعلم بطريقة أخف وأكثر تفاعلًا</span>
+    <footer className="border-t border-violet-100/80 bg-white/70 backdrop-blur">
+      <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-3 px-4 py-4 text-xs text-slate-500 sm:px-6">
+        <span className="font-semibold">English Spark</span>
         <nav aria-label="روابط السياسات" className="flex items-center gap-4">
-          <Link className="min-h-11 content-center hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-700" to="/privacy">الخصوصية</Link>
-          <Link className="min-h-11 content-center hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-700" to="/terms">الشروط</Link>
+          <Link className="min-h-11 content-center hover:text-violet-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-700" to="/privacy">الخصوصية</Link>
+          <Link className="min-h-11 content-center hover:text-violet-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-700" to="/terms">الشروط</Link>
         </nav>
       </div>
     </footer>
