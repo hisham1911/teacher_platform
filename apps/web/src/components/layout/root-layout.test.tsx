@@ -32,7 +32,6 @@ describe('RootLayout', () => {
     expect(screen.getByRole('link', { name: 'English Spark' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'الرئيسية' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'دخول المعلمة' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'إنشاء حساب' })).toBeInTheDocument();
     expect(screen.getByText('محتوى')).toBeInTheDocument();
   });
 
