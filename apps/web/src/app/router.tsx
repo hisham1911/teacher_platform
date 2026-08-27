@@ -87,6 +87,7 @@ export const router = createBrowserRouter([
               { path: '/dashboard/activities/:quizId/ready', element: <ActivityReadyPage /> },
               { path: '/dashboard/settings', element: <SettingsPage /> },
               { path: '/dashboard/questions', element: <QuestionsPage /> },
+              { path: '/dashboard/questions/bulk', element: <ActivityBulkQuestionsPage /> },
               { path: '/dashboard/questions/new', element: <QuestionNewPage /> },
               { path: '/dashboard/questions/:questionId/edit', element: <QuestionEditPage /> },
               { path: '/dashboard/questions/:questionId/preview', element: <QuestionPreviewPage /> },
