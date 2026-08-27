@@ -29,9 +29,9 @@ describe('RootLayout', () => {
       </QueryClientProvider>,
     );
 
-    expect(screen.getByRole('link', { name: 'منصة المعلم' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'English Spark' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'الرئيسية' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'تسجيل الدخول' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'دخول المعلمة' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'إنشاء حساب' })).toBeInTheDocument();
     expect(screen.getByText('محتوى')).toBeInTheDocument();
   });
@@ -49,7 +49,7 @@ describe('RootLayout', () => {
 
     expect(screen.getByText('واجهة الطالب المستقلة')).toBeInTheDocument();
     expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
-    expect(screen.queryByText('منصة المعلم — إدارة الاختبارات والنتائج')).not.toBeInTheDocument();
+    expect(screen.queryByText('English Spark — Learn • Play • Explore')).not.toBeInTheDocument();
   });
 
   it('يعرض Live Host في وضع تركيز بلا تنقل أو Footer المعلم', () => {
@@ -69,12 +69,12 @@ describe('RootLayout', () => {
 
     expect(screen.getByText('واجهة المضيف المستقلة')).toBeInTheDocument();
     expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
-    expect(screen.queryByText('منصة المعلم — مساحة عمل تعليمية واضحة')).not.toBeInTheDocument();
+    expect(screen.queryByText('English Spark — Learn • Play • Explore')).not.toBeInTheDocument();
     view.unmount();
     clearSession();
   });
 
-  it('يعرض التقارير وقائمة موبايل رأسية للمستخدم المسجل', async () => {
+  it('يعرض النتائج وقائمة الموبايل للمستخدم المسجل', async () => {
     establishSession({
       accessToken: 'token', accessTokenExpiresAtMs: Date.now() + 10_000,
       user: { id: 'u1', email: 'teacher@example.test', fullName: 'معلمة', emailConfirmed: true, platformRoles: [] },
@@ -83,10 +83,10 @@ describe('RootLayout', () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const view = render(<QueryClientProvider client={queryClient}><MemoryRouter initialEntries={['/dashboard/attempts/attempt-1']}><RootLayout><div>محتوى</div></RootLayout></MemoryRouter></QueryClientProvider>);
 
-    expect(screen.getByText('القائمة الرئيسية')).toBeInTheDocument();
-    expect(screen.getAllByRole('link', { name: 'النتائج والتقارير' })).toHaveLength(2);
-    expect(screen.getAllByRole('link', { name: 'النتائج والتقارير' })[0]).toHaveAttribute('href', '/dashboard/reports');
-    expect(screen.getAllByRole('link', { name: 'النتائج والتقارير' }).every((link) => link.getAttribute('aria-current') === 'page')).toBe(true);
+    expect(screen.getByText('القائمة')).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: 'النتائج' })).toHaveLength(2);
+    expect(screen.getAllByRole('link', { name: 'النتائج' })[0]).toHaveAttribute('href', '/dashboard/reports');
+    expect(screen.getAllByRole('link', { name: 'النتائج' }).every((link) => link.getAttribute('aria-current') === 'page')).toBe(true);
     await waitFor(() => expect(tenantsApi.listMine).toHaveBeenCalled());
     await waitFor(() => expect(queryClient.isFetching()).toBe(0));
     view.unmount();
