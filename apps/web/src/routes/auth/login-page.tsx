@@ -75,8 +75,8 @@ export default function LoginPage() {
         <span aria-hidden="true" className="absolute -bottom-20 right-0 h-72 w-72 rounded-full bg-amber-300/15 blur-3xl" />
         <div className="relative">
           <span className="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-black text-amber-200">ENGLISH SPARK STUDIO</span>
-          <h2 className="mt-6 text-4xl font-black leading-tight">أنشئي النشاط.<br />واتركي الباقي علينا.</h2>
-          <p className="mt-4 max-w-md text-base leading-8 text-violet-100">واجهة أبسط للمعلمة، من إنشاء الأسئلة حتى رابط الطلاب، بدون مصطلحات تقنية أو خطوات نشر معقدة.</p>
+          <h2 className="mt-6 text-4xl font-black leading-tight">أنشئ النشاط.<br />واترك الباقي علينا.</h2>
+          <p className="mt-4 max-w-md text-base leading-8 text-violet-100">واجهة أبسط لصناعة المحتوى، من إنشاء الأسئلة حتى رابط الطلاب، بدون مصطلحات تقنية أو خطوات نشر معقدة.</p>
         </div>
         <div className="relative grid gap-3 text-sm font-bold text-violet-100">
           <SparkBenefit icon="✦" text="أنشطة ومسابقات من مكان واحد" />
@@ -91,14 +91,14 @@ export default function LoginPage() {
             <span aria-hidden="true" className="spark-brand-mark flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 via-fuchsia-500 to-violet-700 text-2xl text-white">✦</span>
             <div>
               <p className="text-xs font-black tracking-[0.12em] text-violet-700">ENGLISH SPARK</p>
-              <p className="text-sm font-bold text-slate-500">Teacher Studio</p>
+              <p className="text-sm font-bold text-slate-500">Content Studio</p>
             </div>
           </div>
 
           <div className="mt-7 lg:mt-0">
             <p className="text-sm font-black text-violet-700">مرحبًا بعودتك 👋</p>
             <h1 className="mt-2 text-3xl font-black text-slate-950 sm:text-4xl">تسجيل الدخول</h1>
-            <p className="mt-3 text-base leading-7 text-slate-600">ادخلي لمساحة English Spark وابدئي نشاطك التالي بسهولة.</p>
+            <p className="mt-3 text-base leading-7 text-slate-600">ادخل إلى مساحة English Spark وابدأ نشاطك التالي بسهولة.</p>
           </div>
 
           <form onSubmit={onSubmit} className="mt-8 flex flex-col gap-5" noValidate>
