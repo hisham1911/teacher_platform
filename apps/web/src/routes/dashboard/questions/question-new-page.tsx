@@ -16,7 +16,8 @@ export default function QuestionNewPage() {
   const tenantId = getActiveTenantId();
   const quizId = searchParams.get('quizId');
   const returnToParam = searchParams.get('returnTo');
-  const returnTo = returnToParam?.startsWith('/dashboard/quizzes/') ? returnToParam : null;
+  const returnTo = isSafeDashboardReturnPath(returnToParam) ? returnToParam : null;
+  const isActivityFlow = returnTo?.startsWith('/dashboard/activities/') ?? false;
   const initialQuestionType = parseQuestionType(searchParams.get('type'));
 
   const [selectedBankId, setSelectedBankId] = useState('');
@@ -57,7 +58,7 @@ export default function QuestionNewPage() {
           queryClient.setQueryData(['quiz-draft', tenantId, quizId], updatedDraft);
           navigate(returnTo, { replace: true });
         } catch {
-          setFormError('تم إنشاء السؤال في بنك الأسئلة، لكن تعذر إضافته إلى الاختبار. ارجع إلى المنشئ وأضفه من بنك الأسئلة.');
+          setFormError(`تم إنشاء السؤال في بنك الأسئلة، لكن تعذر إضافته إلى ${isActivityFlow ? 'النشاط' : 'الاختبار'}. ارجع إلى المنشئ وأضفه من بنك الأسئلة.`);
         }
         return;
       }
@@ -118,13 +119,14 @@ export default function QuestionNewPage() {
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
       <header className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-black text-slate-900">{returnTo ? 'إضافة سؤال إلى الاختبار' : 'سؤال جديد'}</h1>
+          {isActivityFlow ? <p className="text-xs font-black uppercase tracking-[0.16em] text-violet-700">English Spark Studio</p> : null}
+          <h1 className="mt-1 text-2xl font-black text-slate-900">{returnTo ? `إضافة سؤال إلى ${isActivityFlow ? 'النشاط' : 'الاختبار'}` : 'سؤال جديد'}</h1>
           <p className="mt-1 text-base leading-7 text-slate-600">اختر بنك الأسئلة، ثم اكتب السؤال وإجابته الصحيحة.</p>
         </div>
         <Link
           to={returnTo ?? '/dashboard/questions'}
           className="inline-flex min-h-11 items-center rounded-md px-3 py-2 text-sm font-bold text-slate-600 hover:bg-slate-100">
-          {returnTo ? 'العودة إلى منشئ الاختبار' : 'عودة للقائمة'}
+          {returnTo ? `العودة إلى ${isActivityFlow ? 'النشاط' : 'منشئ الاختبار'}` : 'عودة للقائمة'}
         </Link>
       </header>
 
@@ -161,7 +163,7 @@ export default function QuestionNewPage() {
                   value={newBankName}
                   onChange={(e) => setNewBankName(e.target.value)}
                   maxLength={120}
-                  placeholder="مثال: قواعد المستوى الثاني"
+                  placeholder="مثال: مفردات English Spark"
                   disabled={!canCreateBank}
                 />
               )}
@@ -183,13 +185,18 @@ export default function QuestionNewPage() {
         <QuestionForm
           tenantId={tenantId}
           initialValue={{ questionType: initialQuestionType }}
-          submitLabel={returnTo ? 'حفظ وإضافة للاختبار' : 'إنشاء السؤال'}
+          submitLabel={returnTo ? `حفظ وإضافة إلى ${isActivityFlow ? 'النشاط' : 'الاختبار'}` : 'إنشاء السؤال'}
           isPending={createQuestionMutation.isPending}
           onSubmit={onSubmitForm}
         />
       ) : null}
     </div>
   );
+}
+
+function isSafeDashboardReturnPath(value: string | null): value is string {
+  if (!value) return false;
+  return value.startsWith('/dashboard/quizzes/') || value.startsWith('/dashboard/activities/');
 }
 
 function parseQuestionType(value: string | null): QuestionType {
