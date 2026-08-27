@@ -53,57 +53,61 @@ export default function DashboardPage() {
   const firstName = session.user?.fullName?.trim().split(/\s+/)[0] ?? 'مرحبًا';
 
   return (
-    <div className="flex flex-col gap-9">
-      <header className="relative overflow-hidden rounded-3xl bg-gradient-to-l from-violet-700 via-indigo-700 to-slate-900 px-6 py-8 text-white sm:px-8 sm:py-10">
-        <span aria-hidden="true" className="absolute -left-12 -top-16 h-48 w-48 rounded-full bg-amber-300/15 blur-2xl" />
-        <span aria-hidden="true" className="absolute -bottom-20 right-1/3 h-56 w-56 rounded-full bg-fuchsia-300/10 blur-3xl" />
-        <div className="relative max-w-3xl">
-          <p className="text-sm font-black text-amber-200">{activeWorkspace.name} · English Spark Studio</p>
-          <h1 className="mt-3 text-3xl font-black sm:text-4xl">مرحبًا، {firstName} 👋</h1>
-          <p className="mt-3 text-lg leading-8 text-violet-100">المهمة التالية تبدأ من هنا: إنشاء النشاط، ثم تتولى English Spark خطوات النشر وتجهيز الرابط خلف الكواليس.</p>
-          <Link to="/dashboard/activities/new" className="mt-6 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-white px-6 text-sm font-black text-violet-800 shadow-sm hover:bg-violet-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
-            <TeacherIcon name="create" />إنشاء نشاط جديد
-          </Link>
+    <div className="flex flex-col gap-8">
+      <header className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-sm font-black text-violet-700">{activeWorkspace.name}</p>
+          <h1 className="mt-1 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">مرحبًا، {firstName} 👋</h1>
+          <p className="mt-2 text-sm leading-7 text-slate-500">ابدأ بالمهمة التي تريد إنجازها، واترك التفاصيل التقنية لـ English Spark.</p>
         </div>
+        {recentQuizzesQuery.data ? <span className="w-fit rounded-full bg-slate-100 px-3 py-1.5 text-xs font-black text-slate-600">{recentQuizzesQuery.data.totalItems} نشاط محفوظ</span> : null}
       </header>
 
-      <section aria-label="المهام الرئيسية" className="grid gap-4 md:grid-cols-3">
-        <TaskAction
-          to="/dashboard/activities/new"
-          icon="create"
-          title="إنشاء نشاط"
-          description="اختيار طريقة اللعب، إضافة الأسئلة، والحصول على رابط الطلاب مباشرة."
-          action="بدء الإنشاء"
-          tone="violet"
-        />
-        <TaskAction
-          to="/dashboard/quizzes"
-          icon="quizzes"
-          title="إدارة المحتوى"
-          description="مراجعة الأنشطة السابقة أو فتح الأدوات المتقدمة عند الحاجة."
-          action="فتح المحتوى"
-          tone="white"
-        />
-        <TaskAction
-          to="/dashboard/reports"
-          icon="reports"
-          title="النتائج"
-          description="متابعة المحاولات والدرجات والتقدم من شاشة واحدة."
-          action="مشاهدة النتائج"
-          tone="amber"
-        />
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)]" aria-label="ابدأ من هنا">
+        <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-violet-800 via-indigo-800 to-slate-950 p-6 text-white shadow-[0_24px_70px_rgb(76_29_149/0.18)] sm:p-8">
+          <span aria-hidden="true" className="absolute -left-16 -top-20 h-64 w-64 rounded-full bg-fuchsia-400/15 blur-3xl" />
+          <span aria-hidden="true" className="absolute -bottom-24 right-1/3 h-64 w-64 rounded-full bg-amber-300/10 blur-3xl" />
+          <div className="relative max-w-2xl">
+            <span className="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-black text-amber-200">أسرع طريق للطلاب</span>
+            <h2 className="mt-4 text-3xl font-black leading-tight sm:text-4xl">نشاط جديد في دقائق، لا في سلسلة شاشات.</h2>
+            <p className="mt-3 max-w-xl text-base leading-8 text-violet-100">اختر طريقة اللعب، أضف أسئلتك، ثم خذ الرابط الجاهز للمشاركة. النشر والجلسة يتمان خلف الكواليس.</p>
+            <Link to="/dashboard/activities/new" className="mt-6 inline-flex min-h-13 items-center justify-center gap-2 rounded-xl bg-white px-6 text-sm font-black text-violet-900 shadow-sm transition hover:-translate-y-0.5 hover:bg-violet-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white motion-reduce:transform-none">
+              <TeacherIcon name="create" />إنشاء نشاط جديد
+            </Link>
+          </div>
+        </div>
+
+        <div className="teacher-surface p-5 sm:p-6">
+          <p className="text-xs font-black tracking-[0.16em] text-violet-700">المسار المختصر</p>
+          <h2 className="mt-1 text-xl font-black text-slate-950">من الفكرة إلى الرابط</h2>
+          <ol className="mt-5 space-y-4">
+            <FlowStep number="1" title="اختر طريقة اللعب" description="فردي، مباشر أو تحدٍ متدرج." />
+            <FlowStep number="2" title="أضف الأسئلة" description="جديد، من البنك، أو دفعة واحدة." />
+            <FlowStep number="3" title="شارك الرابط" description="معاينة ثم نسخ الرابط للطلاب." last />
+          </ol>
+        </div>
+      </section>
+
+      <section className="grid gap-3 sm:grid-cols-2" aria-label="اختصارات">
+        <Link to="/dashboard/quizzes" className="teacher-surface group flex min-h-28 items-center gap-4 p-4 transition hover:border-violet-200 hover:shadow-md">
+          <span aria-hidden="true" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-violet-100 text-violet-700"><TeacherIcon name="quizzes" /></span>
+          <span className="min-w-0"><span className="block text-base font-black text-slate-950">إدارة المحتوى</span><span className="mt-1 block text-sm leading-6 text-slate-500">كل الأنشطة السابقة في مكان واحد.</span></span>
+          <span aria-hidden="true" className="mr-auto text-lg font-black text-violet-500 transition-transform group-hover:-translate-x-1 motion-reduce:transform-none">←</span>
+        </Link>
+        <Link to="/dashboard/reports" className="teacher-surface group flex min-h-28 items-center gap-4 p-4 transition hover:border-amber-200 hover:shadow-md">
+          <span aria-hidden="true" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-800"><TeacherIcon name="reports" /></span>
+          <span className="min-w-0"><span className="block text-base font-black text-slate-950">النتائج</span><span className="mt-1 block text-sm leading-6 text-slate-500">الدرجات والمحاولات والتقدم.</span></span>
+          <span aria-hidden="true" className="mr-auto text-lg font-black text-amber-600 transition-transform group-hover:-translate-x-1 motion-reduce:transform-none">←</span>
+        </Link>
       </section>
 
       <section aria-labelledby="recent-activities-heading">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 id="recent-activities-heading" className="text-xl font-black text-[var(--teacher-ink)]">آخر عمل</h2>
-            <p className="mt-1 text-sm text-[var(--teacher-muted)]">وصول سريع إلى أحدث الأنشطة والمحتوى.</p>
+            <h2 id="recent-activities-heading" className="text-xl font-black text-[var(--teacher-ink)]">آخر الأنشطة</h2>
+            <p className="mt-1 text-sm text-[var(--teacher-muted)]">تابع من المكان الذي توقفت عنده.</p>
           </div>
-          <div className="flex items-center gap-3">
-            {recentQuizzesQuery.data ? <span className="text-sm font-bold tabular-nums text-slate-600">{recentQuizzesQuery.data.totalItems} نشاط</span> : null}
-            <Link to="/dashboard/quizzes" className="inline-flex min-h-11 items-center text-sm font-bold text-violet-700 hover:underline">عرض الكل ←</Link>
-          </div>
+          <Link to="/dashboard/quizzes" className="inline-flex min-h-11 items-center text-sm font-black text-violet-700 hover:underline">عرض كل المحتوى ←</Link>
         </div>
 
         {recentQuizzesQuery.isLoading ? (
@@ -117,8 +121,8 @@ export default function DashboardPage() {
         {recentQuizzesQuery.data?.items.length === 0 ? (
           <div className="teacher-surface mt-4 py-10 text-center">
             <span aria-hidden="true" className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-100 text-2xl text-violet-700">✦</span>
-            <p className="mt-4 text-base font-black text-slate-900">أول Spark جاهز للانطلاق</p>
-            <p className="mt-1 text-sm text-[var(--teacher-muted)]">نشاط صغير من خمس أسئلة يكفي لتجربة المسار الجديد.</p>
+            <p className="mt-4 text-base font-black text-slate-900">ابدأ بأول Spark</p>
+            <p className="mt-1 text-sm text-[var(--teacher-muted)]">خمس أسئلة تكفي لتجربة المسار كاملًا.</p>
             <Link to="/dashboard/activities/new" className="mt-4 inline-flex min-h-11 items-center rounded-xl bg-violet-700 px-5 text-sm font-bold text-white hover:bg-violet-800">إنشاء أول نشاط</Link>
           </div>
         ) : null}
@@ -130,39 +134,27 @@ export default function DashboardPage() {
         ) : null}
       </section>
 
-      <section className="rounded-2xl border border-violet-100 bg-violet-50/60 p-5">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="font-black text-violet-950">أدوات متقدمة</h2>
-            <p className="mt-1 text-sm leading-6 text-violet-900/75">بنك الأسئلة والمنشئ المتقدم وإعدادات النشر متاحة عند الحاجة.</p>
-          </div>
-          <Link to="/dashboard/questions" className="inline-flex min-h-11 items-center justify-center rounded-xl border border-violet-200 bg-white px-4 text-sm font-bold text-violet-800">فتح بنك الأسئلة</Link>
+      <details className="rounded-2xl border border-slate-200 bg-white">
+        <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 px-5 text-sm font-black text-slate-700 marker:content-none hover:bg-slate-50">
+          <span>أدوات إضافية</span>
+          <span aria-hidden="true" className="text-slate-400">⌄</span>
+        </summary>
+        <div className="border-t border-slate-100 p-5 text-sm leading-7 text-slate-600">
+          بنك الأسئلة والمنشئ المتقدم وإعدادات النشر ما زالت متاحة، لكنها ليست مطلوبة لإنشاء نشاط عادي.
+          <div className="mt-3"><Link to="/dashboard/questions" className="inline-flex min-h-11 items-center rounded-xl border border-violet-200 bg-violet-50 px-4 font-black text-violet-800">فتح بنك الأسئلة</Link></div>
         </div>
-      </section>
+      </details>
     </div>
   );
 }
 
-function TaskAction({ to, icon, title, description, action, tone }: {
-  to: string;
-  icon: 'create' | 'quizzes' | 'reports';
-  title: string;
-  description: string;
-  action: string;
-  tone: 'violet' | 'white' | 'amber';
-}) {
-  const styles = {
-    violet: 'border-violet-200 bg-violet-700 text-white',
-    white: 'border-slate-200 bg-white text-slate-950',
-    amber: 'border-amber-200 bg-amber-50 text-slate-950',
-  } as const;
+function FlowStep({ number, title, description, last = false }: { number: string; title: string; description: string; last?: boolean }) {
   return (
-    <Link to={to} className={`${styles[tone]} group flex min-h-52 flex-col rounded-2xl border p-5 transition-transform duration-200 hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-700 motion-reduce:transform-none`}>
-      <span aria-hidden="true" className={`flex h-11 w-11 items-center justify-center rounded-xl ${tone === 'violet' ? 'bg-white/15 text-white' : tone === 'amber' ? 'bg-white text-amber-700' : 'bg-violet-100 text-violet-700'}`}><TeacherIcon name={icon} /></span>
-      <h2 className="mt-4 text-xl font-black">{title}</h2>
-      <p className={`mt-2 text-sm leading-7 ${tone === 'violet' ? 'text-violet-100' : 'text-slate-600'}`}>{description}</p>
-      <span className={`mt-auto pt-4 text-sm font-black ${tone === 'violet' ? 'text-white' : 'text-violet-700'}`}>{action} ←</span>
-    </Link>
+    <li className="relative flex gap-3">
+      {!last ? <span aria-hidden="true" className="absolute right-[1.05rem] top-9 h-[calc(100%+0.5rem)] w-px bg-violet-100" /> : null}
+      <span aria-hidden="true" className="relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-violet-100 text-sm font-black text-violet-800">{number}</span>
+      <div><p className="font-black text-slate-900">{title}</p><p className="mt-0.5 text-sm leading-6 text-slate-500">{description}</p></div>
+    </li>
   );
 }
 
@@ -190,8 +182,8 @@ function RecentActivityRow({ quiz }: { quiz: QuizListItem }) {
 function DashboardSkeleton() {
   return (
     <div role="status" aria-label="جارٍ تجهيز الصفحة الرئيسية" className="animate-pulse space-y-8">
-      <div className="h-56 rounded-3xl bg-slate-200" />
-      <div className="grid gap-4 md:grid-cols-3">{[0, 1, 2].map((item) => <div key={item} className="h-52 rounded-2xl bg-slate-200" />)}</div>
+      <div className="h-20 rounded-2xl bg-slate-200" />
+      <div className="grid gap-4 xl:grid-cols-[1.35fr_0.65fr]"><div className="h-72 rounded-[2rem] bg-slate-200" /><div className="h-72 rounded-2xl bg-slate-200" /></div>
     </div>
   );
 }
