@@ -23,18 +23,14 @@ export default function DashboardPage() {
     enabled: Boolean(activeTenantId && activeWorkspace),
   });
 
-  if (workspacesQuery.isLoading) {
-    return <DashboardSkeleton />;
-  }
+  if (workspacesQuery.isLoading) return <DashboardSkeleton />;
 
   if (workspacesQuery.isError) {
     return (
       <div role="alert" className="teacher-surface max-w-2xl bg-rose-50 p-5 text-sm text-rose-800">
         <p className="font-bold">تعذر تحميل مساحة العمل.</p>
         <p className="mt-1">تحقق من الاتصال ثم حاول مرة أخرى.</p>
-        <button type="button" onClick={() => void workspacesQuery.refetch()} className="mt-4 min-h-11 rounded-lg border border-rose-300 bg-white px-4 py-2 font-bold hover:bg-rose-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-700">
-          إعادة المحاولة
-        </button>
+        <button type="button" onClick={() => void workspacesQuery.refetch()} className="mt-4 min-h-11 rounded-lg border border-rose-300 bg-white px-4 py-2 font-bold hover:bg-rose-100">إعادة المحاولة</button>
       </div>
     );
   }
@@ -42,132 +38,137 @@ export default function DashboardPage() {
   if (workspacesQuery.data && workspacesQuery.data.length === 0) {
     return (
       <section className="teacher-surface mx-auto max-w-2xl p-8 text-center">
-        <TeacherIcon name="workspace" className="mx-auto h-10 w-10 text-[var(--teacher-primary)]" />
-        <h1 className="mt-4 text-2xl font-black text-[var(--teacher-ink)]">أنشئ مساحة عملك الأولى</h1>
-        <p className="mx-auto mt-2 max-w-lg text-base leading-7 text-[var(--teacher-muted)]">مساحة العمل تجمع اختباراتك وأسئلتك ونتائج طلابك في مكان واحد.</p>
-        <button type="button" onClick={() => navigate('/onboarding')} className="mt-5 min-h-11 rounded-lg bg-[var(--teacher-primary)] px-5 py-2 text-sm font-bold text-white hover:bg-[var(--teacher-primary-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700">إنشاء مساحة عمل</button>
+        <TeacherIcon name="workspace" className="mx-auto h-10 w-10 text-violet-700" />
+        <h1 className="mt-4 text-2xl font-black text-[var(--teacher-ink)]">جهّزي مساحة English Spark</h1>
+        <p className="mx-auto mt-2 max-w-lg text-base leading-7 text-[var(--teacher-muted)]">المساحة تجمع أنشطتك وأسئلتك ونتائج الطلاب في مكان واحد.</p>
+        <button type="button" onClick={() => navigate('/onboarding')} className="mt-5 min-h-11 rounded-xl bg-violet-700 px-5 py-2 text-sm font-bold text-white hover:bg-violet-800">إنشاء مساحة العمل</button>
       </section>
     );
   }
 
   if (!activeWorkspace) {
-    return <p className="teacher-surface p-5 text-sm text-slate-700">اختر مساحة العمل من القائمة الرئيسية للمتابعة.</p>;
+    return <p className="teacher-surface p-5 text-sm text-slate-700">اختاري مساحة العمل من القائمة للمتابعة.</p>;
   }
 
+  const firstName = session.user?.fullName?.trim().split(/\s+/)[0] ?? 'مريم';
+
   return (
-    <div className="flex flex-col gap-10">
-      <header>
-        <p className="text-sm font-bold text-[var(--teacher-primary-strong)]">{activeWorkspace.name}</p>
-        <h1 className="mt-2 text-3xl font-black text-[var(--teacher-ink)]">مرحبًا، {session.user?.fullName ?? 'معلمنا'}</h1>
-        <p className="mt-2 text-lg text-[var(--teacher-muted)]">ماذا تريد أن تفعل اليوم؟</p>
+    <div className="flex flex-col gap-9">
+      <header className="relative overflow-hidden rounded-3xl bg-gradient-to-l from-violet-700 via-indigo-700 to-slate-900 px-6 py-8 text-white sm:px-8 sm:py-10">
+        <span aria-hidden="true" className="absolute -left-12 -top-16 h-48 w-48 rounded-full bg-amber-300/15 blur-2xl" />
+        <span aria-hidden="true" className="absolute -bottom-20 right-1/3 h-56 w-56 rounded-full bg-fuchsia-300/10 blur-3xl" />
+        <div className="relative max-w-3xl">
+          <p className="text-sm font-black text-amber-200">{activeWorkspace.name} · English Spark Studio</p>
+          <h1 className="mt-3 text-3xl font-black sm:text-4xl">مرحبًا، {firstName} 👋</h1>
+          <p className="mt-3 text-lg leading-8 text-violet-100">ماذا تريدين أن تفعلي اليوم؟ ابدئي بالنشاط، ونحن نتولى خطوات النشر والرابط خلف الكواليس.</p>
+          <Link to="/dashboard/activities/new" className="mt-6 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-white px-6 text-sm font-black text-violet-800 shadow-sm hover:bg-violet-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
+            <TeacherIcon name="create" />إنشاء نشاط جديد
+          </Link>
+        </div>
       </header>
 
-      <section aria-label="المهام الرئيسية" className="grid gap-4 lg:grid-cols-[1.15fr_1fr_1fr]">
+      <section aria-label="المهام الرئيسية" className="grid gap-4 md:grid-cols-3">
         <TaskAction
-          to="/dashboard/quizzes/new"
+          to="/dashboard/activities/new"
           icon="create"
-          title="إنشاء اختبار جديد"
-          description="ابدأ اختبارًا جديدًا وأضف أسئلتك خطوة بخطوة."
-          action="ابدأ الآن"
-          emphasis="primary"
+          title="إنشاء نشاط"
+          description="اختاري طريقة اللعب، أضيفي الأسئلة، وخذي رابط الطلاب مباشرة."
+          action="ابدئي الآن"
+          tone="violet"
         />
         <TaskAction
           to="/dashboard/quizzes"
-          icon="play"
-          title="تشغيل اختبار"
-          description="اختر اختبارًا منشورًا ثم ابدأ جلسة ذاتية أو مباشرة."
-          action="تشغيل الاختبار"
-          emphasis="secondary"
+          icon="quizzes"
+          title="إدارة المحتوى"
+          description="راجعي الأنشطة السابقة أو افتحي الأدوات المتقدمة عند الحاجة."
+          action="فتح المحتوى"
+          tone="white"
         />
         <TaskAction
           to="/dashboard/reports"
           icon="reports"
-          title="عرض النتائج والتقارير"
-          description="تابع نتائج الجلسات وأداء الطلاب من مكان واحد."
-          action="عرض النتائج"
-          emphasis="violet"
+          title="النتائج"
+          description="تابعي المحاولات والدرجات والتقدم من شاشة واحدة."
+          action="مشاهدة النتائج"
+          tone="amber"
         />
       </section>
 
-      <section aria-labelledby="recent-quizzes-heading">
+      <section aria-labelledby="recent-activities-heading">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 id="recent-quizzes-heading" className="text-xl font-black text-[var(--teacher-ink)]">أحدث الاختبارات</h2>
-            <p className="mt-1 text-sm text-[var(--teacher-muted)]">ارجع سريعًا إلى آخر ما كنت تعمل عليه.</p>
+            <h2 id="recent-activities-heading" className="text-xl font-black text-[var(--teacher-ink)]">آخر ما عملتِ عليه</h2>
+            <p className="mt-1 text-sm text-[var(--teacher-muted)]">ارجعي بسرعة إلى أحدث الأنشطة والمحتوى.</p>
           </div>
           <div className="flex items-center gap-3">
-            {recentQuizzesQuery.data ? <span className="text-sm font-bold tabular-nums text-slate-600">{recentQuizzesQuery.data.totalItems} اختبار</span> : null}
-            <Link to="/dashboard/quizzes" className="inline-flex min-h-11 items-center text-sm font-bold text-[var(--teacher-primary-strong)] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700">عرض الكل ←</Link>
+            {recentQuizzesQuery.data ? <span className="text-sm font-bold tabular-nums text-slate-600">{recentQuizzesQuery.data.totalItems} نشاط</span> : null}
+            <Link to="/dashboard/quizzes" className="inline-flex min-h-11 items-center text-sm font-bold text-violet-700 hover:underline">عرض الكل ←</Link>
           </div>
         </div>
 
         {recentQuizzesQuery.isLoading ? (
-          <div className="mt-4 space-y-2" role="status" aria-label="جارٍ تحميل أحدث الاختبارات">
+          <div className="mt-4 space-y-2" role="status" aria-label="جارٍ تحميل أحدث الأنشطة">
             {[0, 1, 2].map((item) => <div key={item} className="h-16 animate-pulse rounded-xl bg-slate-200/70" />)}
           </div>
         ) : null}
 
-        {recentQuizzesQuery.isError ? (
-          <div role="alert" className="mt-4 rounded-xl bg-amber-50 p-4 text-sm text-amber-900">تعذر تحميل أحدث الاختبارات. يمكنك فتح قائمة الاختبارات للمتابعة.</div>
-        ) : null}
+        {recentQuizzesQuery.isError ? <div role="alert" className="mt-4 rounded-xl bg-amber-50 p-4 text-sm text-amber-900">تعذر تحميل أحدث الأنشطة. يمكنك فتح المحتوى للمتابعة.</div> : null}
 
         {recentQuizzesQuery.data?.items.length === 0 ? (
-          <div className="mt-4 border-t border-slate-200 py-8 text-center">
-            <p className="text-base font-bold text-slate-800">لم تنشئ اختبارًا بعد.</p>
-            <p className="mt-1 text-sm text-[var(--teacher-muted)]">ابدأ باسم الاختبار، ثم أضف أول سؤال داخل المنشئ.</p>
-            <Link to="/dashboard/quizzes/new" className="mt-4 inline-flex min-h-11 items-center rounded-lg bg-[var(--teacher-primary)] px-5 text-sm font-bold text-white hover:bg-[var(--teacher-primary-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700">إنشاء أول اختبار</Link>
+          <div className="teacher-surface mt-4 py-10 text-center">
+            <span aria-hidden="true" className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-100 text-2xl text-violet-700">✦</span>
+            <p className="mt-4 text-base font-black text-slate-900">جاهزة لأول Spark؟</p>
+            <p className="mt-1 text-sm text-[var(--teacher-muted)]">ابدئي بنشاط صغير من خمس أسئلة لتجربة المسار الجديد.</p>
+            <Link to="/dashboard/activities/new" className="mt-4 inline-flex min-h-11 items-center rounded-xl bg-violet-700 px-5 text-sm font-bold text-white hover:bg-violet-800">إنشاء أول نشاط</Link>
           </div>
         ) : null}
 
         {recentQuizzesQuery.data && recentQuizzesQuery.data.items.length > 0 ? (
-          <ul className="teacher-surface mt-4 divide-y divide-slate-100 overflow-hidden" aria-label="أحدث الاختبارات">
-            {recentQuizzesQuery.data.items.map((quiz) => <RecentQuizRow key={quiz.id} quiz={quiz} />)}
+          <ul className="teacher-surface mt-4 divide-y divide-slate-100 overflow-hidden" aria-label="أحدث الأنشطة">
+            {recentQuizzesQuery.data.items.map((quiz) => <RecentActivityRow key={quiz.id} quiz={quiz} />)}
           </ul>
         ) : null}
+      </section>
+
+      <section className="rounded-2xl border border-violet-100 bg-violet-50/60 p-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="font-black text-violet-950">تحتاجين الأدوات القديمة؟</h2>
+            <p className="mt-1 text-sm leading-6 text-violet-900/75">بنك الأسئلة والمنشئ المتقدم وإعدادات النشر ما زالت موجودة للمستخدم المتقدم.</p>
+          </div>
+          <Link to="/dashboard/questions" className="inline-flex min-h-11 items-center justify-center rounded-xl border border-violet-200 bg-white px-4 text-sm font-bold text-violet-800">فتح بنك الأسئلة</Link>
+        </div>
       </section>
     </div>
   );
 }
 
-function TaskAction({
-  to,
-  icon,
-  title,
-  description,
-  action,
-  emphasis,
-}: {
+function TaskAction({ to, icon, title, description, action, tone }: {
   to: string;
-  icon: 'create' | 'play' | 'reports';
+  icon: 'create' | 'quizzes' | 'reports';
   title: string;
   description: string;
   action: string;
-  emphasis: 'primary' | 'secondary' | 'violet';
+  tone: 'violet' | 'white' | 'amber';
 }) {
   const styles = {
-    primary: 'bg-[var(--teacher-primary)] text-white',
-    secondary: 'teacher-surface text-[var(--teacher-ink)]',
-    violet: 'border border-violet-200 bg-[var(--teacher-violet-soft)] text-[var(--teacher-ink)]',
+    violet: 'border-violet-200 bg-violet-700 text-white',
+    white: 'border-slate-200 bg-white text-slate-950',
+    amber: 'border-amber-200 bg-amber-50 text-slate-950',
   } as const;
-  const iconStyles = {
-    primary: 'bg-white/16 text-white',
-    secondary: 'bg-[var(--teacher-primary-soft)] text-[var(--teacher-primary-strong)]',
-    violet: 'bg-white text-[var(--teacher-violet)]',
-  } as const;
-
   return (
-    <Link to={to} className={`${styles[emphasis]} group flex min-h-56 flex-col rounded-xl p-6 transition-transform duration-200 hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 motion-reduce:transform-none`}>
-      <span aria-hidden="true" className={`${iconStyles[emphasis]} flex h-12 w-12 items-center justify-center rounded-xl`}><TeacherIcon name={icon} className="h-6 w-6" /></span>
-      <h2 className="mt-5 text-xl font-black">{title}</h2>
-      <p className={`mt-2 max-w-sm text-base leading-7 ${emphasis === 'primary' ? 'text-emerald-50' : 'text-[var(--teacher-muted)]'}`}>{description}</p>
-      <span className={`mt-auto inline-flex min-h-11 items-center pt-5 text-sm font-black ${emphasis === 'primary' ? 'text-white' : 'text-[var(--teacher-primary-strong)]'}`}>{action} ←</span>
+    <Link to={to} className={`${styles[tone]} group flex min-h-52 flex-col rounded-2xl border p-5 transition-transform duration-200 hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-700 motion-reduce:transform-none`}>
+      <span aria-hidden="true" className={`flex h-11 w-11 items-center justify-center rounded-xl ${tone === 'violet' ? 'bg-white/15 text-white' : tone === 'amber' ? 'bg-white text-amber-700' : 'bg-violet-100 text-violet-700'}`}><TeacherIcon name={icon} /></span>
+      <h2 className="mt-4 text-xl font-black">{title}</h2>
+      <p className={`mt-2 text-sm leading-7 ${tone === 'violet' ? 'text-violet-100' : 'text-slate-600'}`}>{description}</p>
+      <span className={`mt-auto pt-4 text-sm font-black ${tone === 'violet' ? 'text-white' : 'text-violet-700'}`}>{action} ←</span>
     </Link>
   );
 }
 
-function RecentQuizRow({ quiz }: { quiz: QuizListItem }) {
+function RecentActivityRow({ quiz }: { quiz: QuizListItem }) {
   const action = quiz.status === 'Published'
-    ? { label: 'تشغيل', to: `/dashboard/quizzes/${quiz.id}/sessions` }
+    ? { label: 'إدارة ومشاركة', to: `/dashboard/quizzes/${quiz.id}/sessions` }
     : quiz.status === 'Archived'
       ? { label: 'معاينة', to: `/dashboard/quizzes/${quiz.id}/preview` }
       : { label: 'متابعة التحرير', to: `/dashboard/quizzes/${quiz.id}/edit` };
@@ -181,7 +182,7 @@ function RecentQuizRow({ quiz }: { quiz: QuizListItem }) {
         </div>
         <p className="mt-1 text-sm text-[var(--teacher-muted)]">{quiz.itemCount} سؤال · آخر تعديل {new Date(quiz.updatedAt).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
       </div>
-      <Link to={action.to} className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-lg border border-slate-300 bg-white px-4 text-sm font-bold text-slate-700 hover:border-emerald-600 hover:text-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700">{action.label}</Link>
+      <Link to={action.to} className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 text-sm font-bold text-slate-700 hover:border-violet-400 hover:text-violet-800">{action.label}</Link>
     </li>
   );
 }
@@ -189,8 +190,8 @@ function RecentQuizRow({ quiz }: { quiz: QuizListItem }) {
 function DashboardSkeleton() {
   return (
     <div role="status" aria-label="جارٍ تجهيز الصفحة الرئيسية" className="animate-pulse space-y-8">
-      <div className="space-y-3"><div className="h-4 w-32 rounded bg-slate-200" /><div className="h-9 w-72 rounded bg-slate-200" /><div className="h-5 w-56 rounded bg-slate-200" /></div>
-      <div className="grid gap-4 lg:grid-cols-3">{[0, 1, 2].map((item) => <div key={item} className="h-56 rounded-xl bg-slate-200" />)}</div>
+      <div className="h-56 rounded-3xl bg-slate-200" />
+      <div className="grid gap-4 md:grid-cols-3">{[0, 1, 2].map((item) => <div key={item} className="h-52 rounded-2xl bg-slate-200" />)}</div>
     </div>
   );
 }
