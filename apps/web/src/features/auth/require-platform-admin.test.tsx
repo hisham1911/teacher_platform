@@ -17,9 +17,9 @@ function renderGuard(roles: string[]) {
   return render(
     <MemoryRouter initialEntries={['/platform']}>
       <Routes>
-        <Route path="/dashboard" element={<p>لوحة التحكم</p>} />
+        <Route path="/dashboard" element={<p>Studio</p>} />
         <Route element={<RequirePlatformAdmin />}>
-          <Route path="/platform" element={<p>إدارة المنصة</p>} />
+          <Route path="/platform" element={<p>إدارة المنصة الفعلية</p>} />
         </Route>
       </Routes>
     </MemoryRouter>,
@@ -34,11 +34,13 @@ describe('RequirePlatformAdmin', () => {
 
   it('allows the global PlatformAdmin role', () => {
     renderGuard(['PlatformAdmin']);
-    expect(screen.getByText('إدارة المنصة')).toBeInTheDocument();
+    expect(screen.getByText('إدارة المنصة الفعلية')).toBeInTheDocument();
   });
 
-  it('redirects a tenant-only user', () => {
+  it('shows clear permission guidance instead of a silent redirect', () => {
     renderGuard([]);
-    expect(screen.getByText('لوحة التحكم')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'لوحة إدارة English Spark SaaS' })).toBeInTheDocument();
+    expect(screen.getByText('الحساب الحالي ليس PlatformAdmin')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'العودة إلى Studio' })).toHaveAttribute('href', '/dashboard');
   });
 });
