@@ -27,6 +27,7 @@ const DashboardPage = lazy(() => import('../routes/dashboard/dashboard-page'));
 const SettingsPage = lazy(() => import('../routes/dashboard/settings-page'));
 const ActivityNewPage = lazy(() => import('../routes/dashboard/activities/activity-new-page'));
 const ActivityBuilderPage = lazy(() => import('../routes/dashboard/activities/activity-builder-page'));
+const ActivityBulkQuestionsPage = lazy(() => import('../routes/dashboard/activities/activity-bulk-questions-page'));
 const ActivityReadyPage = lazy(() => import('../routes/dashboard/activities/activity-ready-page'));
 
 const QuestionsPage = lazy(() => import('../routes/dashboard/questions/questions-page'));
@@ -82,6 +83,7 @@ export const router = createBrowserRouter([
               { path: '/dashboard', element: <DashboardPage /> },
               { path: '/dashboard/activities/new', element: <ActivityNewPage /> },
               { path: '/dashboard/activities/:quizId/build', element: <ActivityBuilderPage /> },
+              { path: '/dashboard/activities/:quizId/bulk', element: <ActivityBulkQuestionsPage /> },
               { path: '/dashboard/activities/:quizId/ready', element: <ActivityReadyPage /> },
               { path: '/dashboard/settings', element: <SettingsPage /> },
               { path: '/dashboard/questions', element: <QuestionsPage /> },
