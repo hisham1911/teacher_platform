@@ -24,25 +24,22 @@ describe('RootLayout', () => {
     expect(screen.getByRole('link', { name: 'English Spark' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'الرئيسية' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'تسجيل الدخول' })).toBeInTheDocument();
-    expect(screen.getByText('محتوى')).toBeInTheDocument();
   });
 
-  it('يعرض Player بلا تنقل أو Footer Studio', () => {
+  it('يعرض Player بلا تنقل Studio', () => {
     clearSession();
     renderLayout('/play/JOIN123');
-    expect(screen.getByText('محتوى')).toBeInTheDocument();
     expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
     expect(screen.queryByText('English Spark — Learn • Play • Explore')).not.toBeInTheDocument();
   });
 
-  it('يعرض Live Host في وضع تركيز بلا تنقل أو Footer Studio', () => {
+  it('يعرض Live Host في وضع تركيز بلا تنقل Studio', () => {
     establishSession({
       accessToken: 'token', accessTokenExpiresAtMs: Date.now() + 10_000,
       user: { id: 'u1', email: 'creator@example.test', fullName: 'صانع محتوى', emailConfirmed: true, platformRoles: [] },
       activeWorkspace: { id: 'tenant-1', name: 'مساحتي', slug: 'workspace', role: 'Owner', status: 'Active' },
     });
     const view = renderLayout('/dashboard/sessions/session-1/live');
-    expect(screen.getByText('محتوى')).toBeInTheDocument();
     expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
     view.unmount();
     clearSession();
@@ -57,7 +54,7 @@ describe('RootLayout', () => {
     const view = renderLayout('/dashboard');
     expect(screen.queryByText(/إدارة المنصة/)).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /إدارة المنصة/ })).not.toBeInTheDocument();
-    await waitFor(() => expect(queryClientFetchingFinished()).resolves.toBe(true));
+    await waitFor(() => expect(tenantsApi.listMine).toHaveBeenCalled());
     view.unmount();
     clearSession();
   });
@@ -92,8 +89,3 @@ describe('RootLayout', () => {
     clearSession();
   });
 });
-
-async function queryClientFetchingFinished() {
-  await Promise.resolve();
-  return true;
-}
