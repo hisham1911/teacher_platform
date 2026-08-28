@@ -87,7 +87,7 @@ async function loginTeacher(page, email) {
 
   const loginResponse = page.waitForResponse((response) =>
     response.request().method() === 'POST' && response.url().endsWith('/api/v1/auth/login'));
-  await page.getByRole('button', { name: 'تسجيل الدخول' }).click();
+  await page.getByRole('button', { name: 'دخول إلى English Spark' }).click();
   expect((await loginResponse).ok()).toBe(true);
   await expect(page).toHaveURL(/\/dashboard$/);
 }
