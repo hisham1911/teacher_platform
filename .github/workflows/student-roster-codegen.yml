@@ -45,6 +45,7 @@ jobs:
         working-directory: backend
         run: |
           set -euo pipefail
+          # The checked-in migration is temporary; replace it with EF-generated migration + snapshot.
           rm -f src/TeacherPlatform.Infrastructure/Persistence/Migrations/20260828142000_CreateStudentRoster.cs
           dotnet restore
           dotnet build --no-restore
