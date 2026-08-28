@@ -1,29 +1,26 @@
-using System.Data;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using TeacherPlatform.Application.Abstractions;
 using TeacherPlatform.Application.Students;
 using TeacherPlatform.Application.Tenancy;
+using TeacherPlatform.Domain.Students;
 using TeacherPlatform.Infrastructure.Persistence;
 
 namespace TeacherPlatform.Infrastructure.Services;
 
 /// <summary>
-/// Student roster is intentionally separate from session JoinCode.
-/// A StudentCode identifies one managed student inside a tenant; JoinCode identifies one activity session.
-/// The roster uses explicit tenant predicates on every query, including anonymous player resolution.
+/// إدارة سجل الطلاب داخل مساحة العمل. كل عمليات المعلم تمر عبر EF Global Filters وTenantSaveGuard؛
+/// الاستثناء الوحيد هو حل StudentCode من مسار اللاعب المجهول، وفيه يُستخدم IgnoreQueryFilters مع TenantId صريح مأخوذ من الجلسة نفسها.
 /// </summary>
 public sealed class StudentService
 {
     private readonly AppDbContext _db;
     private readonly ITenantContext _tenantContext;
-    private readonly IClock _clock;
 
-    public StudentService(AppDbContext db, ITenantContext tenantContext, IClock clock)
+    public StudentService(AppDbContext db, ITenantContext tenantContext)
     {
         _db = db;
         _tenantContext = tenantContext;
-        _clock = clock;
     }
 
     public async Task<IReadOnlyList<StudentResponse>> ListAsync(
@@ -31,200 +28,251 @@ public sealed class StudentService
         bool includeInactive,
         CancellationToken cancellationToken)
     {
-        var tenantId = RequireTenant();
+        RequireTenant();
         var normalizedSearch = string.IsNullOrWhiteSpace(search) ? null : search.Trim();
-        return await WithConnectionAsync(async connection =>
+        var query = _db.Students.AsNoTracking();
+
+        if (!includeInactive)
         {
-            const string sql = """
-                SELECT "Id", "FullName", "StudentCode", "Grade", "Notes", "IsActive", "CreatedAt", "UpdatedAt"
-                FROM "Students"
-                WHERE "TenantId" = @tenantId
-                  AND (@includeInactive OR "IsActive" = TRUE)
-                  AND (@search IS NULL OR "FullName" ILIKE '%' || @search || '%' OR "StudentCode" ILIKE '%' || @search || '%')
-                ORDER BY "IsActive" DESC, "FullName" ASC, "CreatedAt" ASC;
-                """;
-            await using var command = new NpgsqlCommand(sql, connection);
-            command.Parameters.AddWithValue("tenantId", tenantId);
-            command.Parameters.AddWithValue("includeInactive", includeInactive);
-            command.Parameters.AddWithValue("search", (object?)normalizedSearch ?? DBNull.Value);
-            var students = new List<StudentResponse>();
-            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
-            while (await reader.ReadAsync(cancellationToken))
-            {
-                students.Add(ReadStudent(reader));
-            }
-            return (IReadOnlyList<StudentResponse>)students;
-        }, cancellationToken);
+            query = query.Where(student => student.IsActive);
+        }
+
+        if (normalizedSearch is not null)
+        {
+            var normalizedCode = StudentCodeGenerator.Normalize(normalizedSearch);
+            query = query.Where(student =>
+                EF.Functions.ILike(student.FullName, $"%{normalizedSearch}%") ||
+                (normalizedCode.Length > 0 && EF.Functions.ILike(student.StudentCode, $"%{normalizedCode}%")));
+        }
+
+        var students = await query
+            .OrderByDescending(student => student.IsActive)
+            .ThenBy(student => student.FullName)
+            .ThenBy(student => student.CreatedAt)
+            .ToListAsync(cancellationToken);
+        return students.Select(ToResponse).ToList();
+    }
+
+    public async Task<StudentResponse?> GetAsync(Guid studentId, CancellationToken cancellationToken)
+    {
+        RequireTenant();
+        var student = await _db.Students.AsNoTracking().SingleOrDefaultAsync(item => item.Id == studentId, cancellationToken);
+        return student is null ? null : ToResponse(student);
     }
 
     public async Task<StudentResponse> CreateAsync(CreateStudentRequest request, CancellationToken cancellationToken)
     {
-        var tenantId = RequireTenant();
-        var fullName = request.FullName.Trim();
-        var grade = NormalizeOptional(request.Grade);
-        var notes = NormalizeOptional(request.Notes);
-        var now = _clock.UtcNow;
+        RequireTenant();
 
         for (var attempt = 0; attempt < 8; attempt += 1)
         {
-            var code = GuestTokenService.GenerateJoinCode(8);
+            var student = new Student
+            {
+                Id = Guid.NewGuid(),
+                FullName = request.FullName.Trim(),
+                StudentCode = StudentCodeGenerator.Generate(),
+                Grade = NormalizeOptional(request.Grade),
+                Notes = NormalizeOptional(request.Notes),
+                IsActive = true
+            };
+
+            _db.Students.Add(student);
             try
             {
-                return await WithConnectionAsync(async connection =>
-                {
-                    const string sql = """
-                        INSERT INTO "Students" ("Id", "TenantId", "FullName", "StudentCode", "Grade", "Notes", "IsActive", "CreatedAt", "UpdatedAt")
-                        VALUES (@id, @tenantId, @fullName, @studentCode, @grade, @notes, TRUE, @now, @now)
-                        RETURNING "Id", "FullName", "StudentCode", "Grade", "Notes", "IsActive", "CreatedAt", "UpdatedAt";
-                        """;
-                    await using var command = new NpgsqlCommand(sql, connection);
-                    command.Parameters.AddWithValue("id", Guid.NewGuid());
-                    command.Parameters.AddWithValue("tenantId", tenantId);
-                    command.Parameters.AddWithValue("fullName", fullName);
-                    command.Parameters.AddWithValue("studentCode", code);
-                    command.Parameters.AddWithValue("grade", (object?)grade ?? DBNull.Value);
-                    command.Parameters.AddWithValue("notes", (object?)notes ?? DBNull.Value);
-                    command.Parameters.AddWithValue("now", now);
-                    await using var reader = await command.ExecuteReaderAsync(cancellationToken);
-                    if (!await reader.ReadAsync(cancellationToken)) throw new InvalidOperationException("Student insert returned no row.");
-                    return ReadStudent(reader);
-                }, cancellationToken);
+                await _db.SaveChangesAsync(cancellationToken);
+                return ToResponse(student);
             }
-            catch (PostgresException exception) when (exception.SqlState == PostgresErrorCodes.UniqueViolation)
+            catch (DbUpdateException exception) when (IsUniqueViolation(exception))
             {
-                // Extremely unlikely StudentCode collision; retry with fresh cryptographic code.
+                _db.Entry(student).State = EntityState.Detached;
             }
         }
 
         throw new ServiceResultException("Conflict", "Could not allocate a unique student code. Try again.");
     }
 
-    public async Task<StudentResponse?> SetActiveAsync(Guid studentId, bool isActive, CancellationToken cancellationToken)
+    public async Task<StudentResponse?> UpdateAsync(
+        Guid studentId,
+        UpdateStudentRequest request,
+        CancellationToken cancellationToken)
     {
-        var tenantId = RequireTenant();
-        var now = _clock.UtcNow;
-        return await WithConnectionAsync(async connection =>
+        RequireTenant();
+        var student = await _db.Students.SingleOrDefaultAsync(item => item.Id == studentId, cancellationToken);
+        if (student is null)
         {
-            const string sql = """
-                UPDATE "Students"
-                SET "IsActive" = @isActive, "UpdatedAt" = @now
-                WHERE "Id" = @studentId AND "TenantId" = @tenantId
-                RETURNING "Id", "FullName", "StudentCode", "Grade", "Notes", "IsActive", "CreatedAt", "UpdatedAt";
-                """;
-            await using var command = new NpgsqlCommand(sql, connection);
-            command.Parameters.AddWithValue("isActive", isActive);
-            command.Parameters.AddWithValue("now", now);
-            command.Parameters.AddWithValue("studentId", studentId);
-            command.Parameters.AddWithValue("tenantId", tenantId);
-            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
-            return await reader.ReadAsync(cancellationToken) ? ReadStudent(reader) : null;
-        }, cancellationToken);
+            return null;
+        }
+
+        EnsureVersion(student, request.BaseVersion);
+        student.FullName = request.FullName.Trim();
+        student.Grade = NormalizeOptional(request.Grade);
+        student.Notes = NormalizeOptional(request.Notes);
+        await SaveWithConcurrencyAsync(cancellationToken);
+        return ToResponse(student);
     }
 
+    public async Task<StudentResponse?> SetActiveAsync(
+        Guid studentId,
+        UpdateStudentStatusRequest request,
+        CancellationToken cancellationToken)
+    {
+        RequireTenant();
+        var student = await _db.Students.SingleOrDefaultAsync(item => item.Id == studentId, cancellationToken);
+        if (student is null)
+        {
+            return null;
+        }
+
+        EnsureVersion(student, request.BaseVersion);
+        student.IsActive = request.IsActive;
+        await SaveWithConcurrencyAsync(cancellationToken);
+        return ToResponse(student);
+    }
+
+    public async Task<StudentResponse?> RegenerateCodeAsync(
+        Guid studentId,
+        RegenerateStudentCodeRequest request,
+        CancellationToken cancellationToken)
+    {
+        RequireTenant();
+        var student = await _db.Students.SingleOrDefaultAsync(item => item.Id == studentId, cancellationToken);
+        if (student is null)
+        {
+            return null;
+        }
+
+        EnsureVersion(student, request.BaseVersion);
+        for (var attempt = 0; attempt < 8; attempt += 1)
+        {
+            var code = StudentCodeGenerator.Generate();
+            if (await _db.Students.AsNoTracking().AnyAsync(item => item.Id != studentId && item.StudentCode == code, cancellationToken))
+            {
+                continue;
+            }
+
+            student.StudentCode = code;
+            try
+            {
+                await _db.SaveChangesAsync(cancellationToken);
+                return ToResponse(student);
+            }
+            catch (DbUpdateException exception) when (IsUniqueViolation(exception))
+            {
+                await _db.Entry(student).ReloadAsync(cancellationToken);
+                EnsureVersion(student, request.BaseVersion);
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                throw Conflict();
+            }
+        }
+
+        throw new ServiceResultException("Conflict", "Could not allocate a unique student code. Try again.");
+    }
+
+    public async Task<IReadOnlyList<StudentResultResponse>> ListResultsAsync(
+        Guid studentId,
+        int take,
+        CancellationToken cancellationToken)
+    {
+        RequireTenant();
+        if (!await _db.Students.AsNoTracking().AnyAsync(student => student.Id == studentId, cancellationToken))
+        {
+            throw new ServiceResultException("NotFound", "Student not found.");
+        }
+
+        var size = Math.Clamp(take, 1, 100);
+        return await _db.Attempts
+            .AsNoTracking()
+            .Where(attempt => attempt.Participant != null && attempt.Participant.StudentId == studentId)
+            .OrderByDescending(attempt => attempt.StartedAt)
+            .Take(size)
+            .Select(attempt => new StudentResultResponse
+            {
+                AttemptId = attempt.Id,
+                SessionId = attempt.SessionId,
+                QuizId = attempt.Session != null ? attempt.Session.QuizId : Guid.Empty,
+                QuizTitle = attempt.Session != null && attempt.Session.Quiz != null ? attempt.Session.Quiz.Title : string.Empty,
+                SessionLabel = attempt.Session != null ? attempt.Session.Label : null,
+                Mode = attempt.Session != null ? attempt.Session.Mode.ToString() : string.Empty,
+                Status = attempt.Status.ToString(),
+                Score = attempt.Score,
+                MaxScore = attempt.MaxScore,
+                Percentage = attempt.Percentage,
+                Passed = attempt.Passed,
+                StartedAt = attempt.StartedAt,
+                FinishedAt = attempt.FinishedAt
+            })
+            .ToListAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// حل هوية طالب من مسار Player المجهول. TenantId لا يأتي من العميل؛ المستدعي يمرره بعد حل الجلسة من JoinCode العالمي.
+    /// </summary>
     public async Task<StudentIdentity?> ResolveActiveByCodeAsync(
         Guid tenantId,
         string studentCode,
         CancellationToken cancellationToken)
     {
-        var normalizedCode = NormalizeCode(studentCode);
-        if (normalizedCode.Length < 4) return null;
-        return await WithConnectionAsync(async connection =>
+        var normalizedCode = StudentCodeGenerator.Normalize(studentCode);
+        if (normalizedCode.Length < 4)
         {
-            const string sql = """
-                SELECT "Id", "TenantId", "FullName", "StudentCode"
-                FROM "Students"
-                WHERE "TenantId" = @tenantId AND "StudentCode" = @studentCode AND "IsActive" = TRUE
-                LIMIT 1;
-                """;
-            await using var command = new NpgsqlCommand(sql, connection);
-            command.Parameters.AddWithValue("tenantId", tenantId);
-            command.Parameters.AddWithValue("studentCode", normalizedCode);
-            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
-            if (!await reader.ReadAsync(cancellationToken)) return null;
-            return new StudentIdentity(reader.GetGuid(0), reader.GetGuid(1), reader.GetString(2), reader.GetString(3));
-        }, cancellationToken);
+            return null;
+        }
+
+        return await _db.Students
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(student =>
+                student.TenantId == tenantId &&
+                student.StudentCode == normalizedCode &&
+                student.IsActive)
+            .Select(student => new StudentIdentity(student.Id, student.TenantId, student.FullName, student.StudentCode))
+            .SingleOrDefaultAsync(cancellationToken);
     }
 
-    public async Task<Guid?> GetLinkedParticipantIdAsync(
-        Guid tenantId,
-        Guid sessionId,
-        Guid studentId,
-        CancellationToken cancellationToken)
-    {
-        return await WithConnectionAsync(async connection =>
-        {
-            const string sql = """
-                SELECT "ParticipantId"
-                FROM "StudentSessionLinks"
-                WHERE "TenantId" = @tenantId AND "SessionId" = @sessionId AND "StudentId" = @studentId
-                LIMIT 1;
-                """;
-            await using var command = new NpgsqlCommand(sql, connection);
-            command.Parameters.AddWithValue("tenantId", tenantId);
-            command.Parameters.AddWithValue("sessionId", sessionId);
-            command.Parameters.AddWithValue("studentId", studentId);
-            var value = await command.ExecuteScalarAsync(cancellationToken);
-            return value is Guid participantId ? participantId : null;
-        }, cancellationToken);
-    }
-
-    public async Task LinkParticipantAsync(
-        Guid tenantId,
-        Guid studentId,
-        Guid sessionId,
-        Guid participantId,
-        CancellationToken cancellationToken)
-    {
-        var now = _clock.UtcNow;
-        await WithConnectionAsync(async connection =>
-        {
-            const string sql = """
-                INSERT INTO "StudentSessionLinks" ("TenantId", "StudentId", "SessionId", "ParticipantId", "LinkedAt")
-                VALUES (@tenantId, @studentId, @sessionId, @participantId, @linkedAt)
-                ON CONFLICT ("TenantId", "StudentId", "SessionId") DO NOTHING;
-                """;
-            await using var command = new NpgsqlCommand(sql, connection);
-            command.Parameters.AddWithValue("tenantId", tenantId);
-            command.Parameters.AddWithValue("studentId", studentId);
-            command.Parameters.AddWithValue("sessionId", sessionId);
-            command.Parameters.AddWithValue("participantId", participantId);
-            command.Parameters.AddWithValue("linkedAt", now);
-            await command.ExecuteNonQueryAsync(cancellationToken);
-            return 0;
-        }, cancellationToken);
-    }
-
-    private Guid RequireTenant() => _tenantContext.TenantId is { } tenantId && tenantId != Guid.Empty
+    private Guid RequireTenant() => _tenantContext.IsResolved && _tenantContext.TenantId is { } tenantId && tenantId != Guid.Empty
         ? tenantId
         : throw new ServiceResultException("TenantContextMissing", "Active tenant context is required.");
 
-    private async Task<T> WithConnectionAsync<T>(Func<NpgsqlConnection, Task<T>> action, CancellationToken cancellationToken)
+    private static StudentResponse ToResponse(Student student) => new()
     {
-        var connection = (NpgsqlConnection)_db.Database.GetDbConnection();
-        var shouldClose = connection.State != ConnectionState.Open;
-        if (shouldClose) await connection.OpenAsync(cancellationToken);
-        try
+        Id = student.Id,
+        FullName = student.FullName,
+        StudentCode = student.StudentCode,
+        Grade = student.Grade,
+        Notes = student.Notes,
+        IsActive = student.IsActive,
+        Version = student.Version,
+        CreatedAt = student.CreatedAt,
+        UpdatedAt = student.UpdatedAt
+    };
+
+    private static void EnsureVersion(Student student, uint baseVersion)
+    {
+        if (student.Version != baseVersion)
         {
-            return await action(connection);
-        }
-        finally
-        {
-            if (shouldClose) await connection.CloseAsync();
+            throw Conflict();
         }
     }
 
-    private static StudentResponse ReadStudent(NpgsqlDataReader reader) => new()
+    private async Task SaveWithConcurrencyAsync(CancellationToken cancellationToken)
     {
-        Id = reader.GetGuid(0),
-        FullName = reader.GetString(1),
-        StudentCode = reader.GetString(2),
-        Grade = reader.IsDBNull(3) ? null : reader.GetString(3),
-        Notes = reader.IsDBNull(4) ? null : reader.GetString(4),
-        IsActive = reader.GetBoolean(5),
-        CreatedAt = reader.GetDateTime(6),
-        UpdatedAt = reader.GetDateTime(7)
-    };
+        try
+        {
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw Conflict();
+        }
+    }
+
+    private static bool IsUniqueViolation(DbUpdateException exception) =>
+        exception.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation };
+
+    private static ServiceResultException Conflict() =>
+        new("Conflict", "The student was modified by someone else. Reload and try again.");
 
     private static string? NormalizeOptional(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
-    private static string NormalizeCode(string value) => new(value.Trim().ToUpperInvariant().Where(char.IsLetterOrDigit).ToArray());
 }

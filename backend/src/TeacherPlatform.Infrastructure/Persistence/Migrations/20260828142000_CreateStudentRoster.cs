@@ -36,35 +36,11 @@ public sealed class CreateStudentRoster : Migration
                     principalColumn: "Id");
             });
 
-        migrationBuilder.CreateTable(
-            name: "StudentSessionLinks",
-            columns: table => new
-            {
-                TenantId = table.Column<Guid>(type: "uuid", nullable: false),
-                StudentId = table.Column<Guid>(type: "uuid", nullable: false),
-                SessionId = table.Column<Guid>(type: "uuid", nullable: false),
-                ParticipantId = table.Column<Guid>(type: "uuid", nullable: false),
-                LinkedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
-            },
-            constraints: table =>
-            {
-                table.PrimaryKey("PK_StudentSessionLinks", x => new { x.TenantId, x.StudentId, x.SessionId });
-                table.ForeignKey(
-                    name: "FK_StudentSessionLinks_Students_StudentId_TenantId",
-                    columns: x => new { x.StudentId, x.TenantId },
-                    principalTable: "Students",
-                    principalColumns: new[] { "Id", "TenantId" });
-                table.ForeignKey(
-                    name: "FK_StudentSessionLinks_QuizSessions_SessionId_TenantId",
-                    columns: x => new { x.SessionId, x.TenantId },
-                    principalTable: "QuizSessions",
-                    principalColumns: new[] { "Id", "TenantId" });
-                table.ForeignKey(
-                    name: "FK_StudentSessionLinks_SessionParticipants_ParticipantId_TenantId",
-                    columns: x => new { x.ParticipantId, x.TenantId },
-                    principalTable: "SessionParticipants",
-                    principalColumns: new[] { "Id", "TenantId" });
-            });
+        migrationBuilder.AddColumn<Guid>(
+            name: "StudentId",
+            table: "SessionParticipants",
+            type: "uuid",
+            nullable: true);
 
         migrationBuilder.CreateIndex(
             name: "IX_Students_TenantId_StudentCode",
@@ -78,20 +54,38 @@ public sealed class CreateStudentRoster : Migration
             columns: new[] { "TenantId", "FullName" });
 
         migrationBuilder.CreateIndex(
-            name: "IX_StudentSessionLinks_ParticipantId_TenantId",
-            table: "StudentSessionLinks",
-            columns: new[] { "ParticipantId", "TenantId" },
-            unique: true);
+            name: "IX_Students_TenantId_IsActive",
+            table: "Students",
+            columns: new[] { "TenantId", "IsActive" });
 
         migrationBuilder.CreateIndex(
-            name: "IX_StudentSessionLinks_SessionId_TenantId",
-            table: "StudentSessionLinks",
-            columns: new[] { "SessionId", "TenantId" });
+            name: "IX_SessionParticipants_TenantId_SessionId_StudentId",
+            table: "SessionParticipants",
+            columns: new[] { "TenantId", "SessionId", "StudentId" },
+            unique: true);
+
+        migrationBuilder.AddForeignKey(
+            name: "FK_SessionParticipants_Students_StudentId_TenantId",
+            table: "SessionParticipants",
+            columns: new[] { "StudentId", "TenantId" },
+            principalTable: "Students",
+            principalColumns: new[] { "Id", "TenantId" });
     }
 
     protected override void Down(MigrationBuilder migrationBuilder)
     {
-        migrationBuilder.DropTable(name: "StudentSessionLinks");
+        migrationBuilder.DropForeignKey(
+            name: "FK_SessionParticipants_Students_StudentId_TenantId",
+            table: "SessionParticipants");
+
+        migrationBuilder.DropIndex(
+            name: "IX_SessionParticipants_TenantId_SessionId_StudentId",
+            table: "SessionParticipants");
+
+        migrationBuilder.DropColumn(
+            name: "StudentId",
+            table: "SessionParticipants");
+
         migrationBuilder.DropTable(name: "Students");
     }
 }
