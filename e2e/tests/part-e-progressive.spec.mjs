@@ -107,7 +107,7 @@ test('progressive challenge teacher, player, resume, outcomes, and report', asyn
   const firstQuestion = await (await firstQuestionResponsePromise).json();
   await expect(player.getByTestId('challenge-level-indicator')).toHaveText('المستوى 1 / 2');
   await expect(player.getByTestId('challenge-score-indicator')).toContainText('0');
-  await expect(player.getByLabel('سلم المستويات')).toBeVisible();
+  await expect(player.getByLabel('مسار المهمة')).toBeVisible();
   await capture(player, '03-first-level', 1280, 720);
 
   await player.keyboard.press('Tab');
