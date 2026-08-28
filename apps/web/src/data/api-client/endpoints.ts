@@ -344,6 +344,8 @@ import type {
   PagedResponse,
   CreateQuestionRequest,
   CreateQuestionVersionRequest,
+  BulkQuestionImportRequest,
+  BulkQuestionImportResponse,
   MediaAsset,
 } from '../../types/questions';
 
@@ -436,6 +438,16 @@ export const questionsApi = {
     return call<QuestionDetail>({
       method: 'POST',
       path: `/api/v1/tenants/${tenantId}/questions`,
+      body: payload,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+  bulkCreate(tenantId: string, payload: BulkQuestionImportRequest, signal?: AbortSignal) {
+    return call<BulkQuestionImportResponse>({
+      method: 'POST',
+      path: `/api/v1/tenants/${tenantId}/questions/bulk`,
       body: payload,
       signal,
       needsAuth: true,

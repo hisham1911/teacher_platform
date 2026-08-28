@@ -20,10 +20,14 @@ namespace TeacherPlatform.Api.Controllers;
 public sealed class QuestionsController : ControllerBase
 {
     private readonly QuestionService _questionService;
+    private readonly BulkQuestionImportService _bulkImportService;
 
-    public QuestionsController(QuestionService questionService)
+    public QuestionsController(
+        QuestionService questionService,
+        BulkQuestionImportService bulkImportService)
     {
         _questionService = questionService;
+        _bulkImportService = bulkImportService;
     }
 
     private Guid CurrentUserId()
@@ -87,6 +91,30 @@ public sealed class QuestionsController : ControllerBase
         }
 
         return CreatedAtAction(nameof(Get), new { tenantId, questionId = result!.Id }, result);
+    }
+
+    /// <summary>
+    /// يحفظ مجموعة أسئلة راجعها المستخدم كعملية واحدة. عند استهداف نشاط،
+    /// إنشاء الأسئلة وربطها بالمسودة يحدثان داخل نفس المعاملة أو يتم التراجع عن الكل.
+    /// </summary>
+    [HttpPost("bulk")]
+    [Authorize(Policy = AuthorizationPolicies.TenantContentManagement)]
+    [ProducesResponseType(typeof(BulkQuestionImportResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> BulkCreate(
+        [FromRoute] Guid tenantId,
+        [FromBody] BulkQuestionImportRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
+        var result = await _bulkImportService.ImportAsync(request, CurrentUserId(), cancellationToken);
+        return Ok(result);
     }
 
     /// <summary>تفاصيل السؤال مع النسخة الحالية والوسوم.</summary>

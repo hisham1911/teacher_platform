@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import { Button } from '../../../components/ui/button';
 import { ButtonSpinner } from '../../../components/ui/spinner';
-import { questionBanksApi, questionsApi, quizzesApi } from '../../../data/api-client/endpoints';
+import { questionBanksApi, questionsApi } from '../../../data/api-client/endpoints';
 import { parseActivityMode } from '../../../features/activities/activity-mode';
 import { bulkQuestionRowToRequest, parseBulkQuestionRows } from '../../../features/questions/bulk-question-parser';
 import { createCsvQuestionTemplate, readQuestionImportFile } from '../../../features/questions/question-import-file';
@@ -38,27 +38,18 @@ export default function ActivityBulkQuestionsPage() {
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (!tenantId || !resolvedBankId) throw new Error('missing-context');
-      const createdIds: string[] = [];
-      const failedRows: number[] = [];
-      for (const row of validRows) {
-        try {
-          const created = await questionsApi.create(tenantId, bulkQuestionRowToRequest(row, resolvedBankId));
-          createdIds.push(created.id);
-          if (quizId) await quizzesApi.addItem(tenantId, quizId, { questionId: created.id });
-        } catch {
-          failedRows.push(row.row);
-        }
-      }
-      return { createdIds, failedRows };
+      return questionsApi.bulkCreate(tenantId, {
+        questions: validRows.map((row) => bulkQuestionRowToRequest(row, resolvedBankId)),
+        quizId: quizId ?? null,
+      });
     },
-    onSuccess: async ({ createdIds, failedRows }) => {
+    onSuccess: async () => {
       if (quizId) await queryClient.invalidateQueries({ queryKey: ['quiz-draft', tenantId, quizId] });
       await queryClient.invalidateQueries({ queryKey: ['questions', tenantId] });
       await queryClient.invalidateQueries({ queryKey: ['question-banks', tenantId] });
-      if (failedRows.length === 0) navigate(backPath, { replace: true });
-      else setResultMessage(`تمت إضافة ${createdIds.length} سؤالًا. تعذر حفظ الصفوف: ${failedRows.join('، ')}.`);
+      navigate(backPath, { replace: true });
     },
-    onError: () => setResultMessage('تعذر حفظ المجموعة. الملف ما زال محددًا ويمكن المحاولة مرة أخرى.'),
+    onError: () => setResultMessage('تعذر حفظ المجموعة. لم يتم حفظ أي سؤال من هذا الملف؛ راجع البيانات وحاول مرة أخرى.'),
   });
 
   if (!tenantId) return null;
@@ -107,7 +98,7 @@ export default function ActivityBulkQuestionsPage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-5 pb-28">
-      <header className="teacher-surface overflow-hidden"><div className="bg-gradient-to-br from-violet-800 via-indigo-700 to-slate-950 p-5 text-white sm:p-7"><Link to={backPath} className="inline-flex min-h-11 items-center text-sm font-bold text-violet-100 hover:text-white">→ العودة</Link><p className="mt-2 text-xs font-black tracking-[0.18em] text-amber-200">IMPORT QUESTIONS</p><h1 className="mt-1 text-2xl font-black sm:text-3xl">استيراد أسئلة من ملف</h1><p className="mt-2 max-w-3xl text-sm leading-7 text-violet-100">ارفع ملف Excel أو CSV فقط. سنعرض الأسئلة والأخطاء أولًا، ولن يتم حفظ أي شيء قبل تأكيدك{attachToActivity ? '، وبعد الحفظ تضاف الأسئلة للنشاط الحالي تلقائيًا' : ''}.</p></div></header>
+      <header className="teacher-surface overflow-hidden"><div className="bg-gradient-to-br from-violet-800 via-indigo-700 to-slate-950 p-5 text-white sm:p-7"><Link to={backPath} className="inline-flex min-h-11 items-center text-sm font-bold text-violet-100 hover:text-white">→ العودة</Link><p className="mt-2 text-xs font-black tracking-[0.18em] text-amber-200">IMPORT QUESTIONS</p><h1 className="mt-1 text-2xl font-black sm:text-3xl">استيراد أسئلة من ملف</h1><p className="mt-2 max-w-3xl text-sm leading-7 text-violet-100">ارفع ملف Excel أو CSV فقط. سنعرض الأسئلة والأخطاء أولًا، ولن يتم حفظ أي شيء قبل تأكيدك. عند الحفظ تُحفظ المجموعة كاملة أو لا يُحفظ منها شيء{attachToActivity ? '، وتُربط كلها بالنشاط الحالي في نفس العملية' : ''}.</p></div></header>
 
       <section className="teacher-surface p-4 sm:p-6"><div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_19rem]">
         <div><h2 className="text-lg font-black text-slate-950">1. اختر ملف الأسئلة</h2><p className="mt-1 text-sm leading-6 text-slate-600">الصيغ المقبولة فقط: <b>Excel .xlsx</b> أو <b>CSV .csv</b>.</p><label className={`mt-4 flex min-h-44 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-5 text-center transition ${fileName ? 'border-emerald-300 bg-emerald-50/60' : 'border-violet-200 bg-violet-50/40 hover:border-violet-400 hover:bg-violet-50'}`}><span aria-hidden="true" className="text-3xl">{fileName ? '✓' : '📄'}</span><span className="mt-3 text-base font-black text-slate-950">{isReadingFile ? 'جارٍ قراءة الملف…' : fileName ? fileName : 'اضغط لاختيار ملف Excel أو CSV'}</span><span className="mt-1 text-xs font-bold text-slate-500">حد أقصى 5MB</span><input type="file" accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" className="sr-only" disabled={isReadingFile || saveMutation.isPending} onChange={(event) => void onFileSelected(event.target.files?.[0] ?? null)} /></label>{fileName ? <button type="button" onClick={clearFile} className="mt-2 min-h-11 px-2 text-sm font-bold text-rose-700 hover:underline">إزالة الملف واختيار غيره</button> : null}</div>

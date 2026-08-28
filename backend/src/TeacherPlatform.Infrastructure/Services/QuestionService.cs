@@ -306,7 +306,9 @@ public sealed class QuestionService
         var now = DateTime.UtcNow;
         var questionId = Guid.NewGuid();
 
-        await using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
+        await using var transaction = _db.Database.CurrentTransaction is null
+            ? await _db.Database.BeginTransactionAsync(cancellationToken)
+            : null;
 
         var question = new Question
         {
@@ -341,7 +343,10 @@ public sealed class QuestionService
         var tags = await SyncTagsAsync(question, request.Tags, now, cancellationToken);
 
         await _db.SaveChangesAsync(cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
+        if (transaction is not null)
+        {
+            await transaction.CommitAsync(cancellationToken);
+        }
 
         var detail = BuildDetail(question, version, tags, includeUrls: false);
         return (null, detail);

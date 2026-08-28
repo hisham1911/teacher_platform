@@ -325,6 +325,7 @@ else
 }
 builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.MediaService>();
 builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.QuestionService>();
+builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.BulkQuestionImportService>();
 
 // ---------- Phase 3: Quiz Builder & Publishing ----------
 builder.Services.AddOptions<TeacherPlatform.Application.Options.QuizLimitOptions>()
