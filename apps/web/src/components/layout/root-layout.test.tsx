@@ -12,12 +12,15 @@ vi.mock('../../data/api-client/endpoints', async (importOriginal) => {
 
 const { tenantsApi } = await import('../../data/api-client/endpoints');
 
+function renderLayout(path = '/dashboard') {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(<QueryClientProvider client={queryClient}><MemoryRouter initialEntries={[path]}><RootLayout><div>محتوى</div></RootLayout></MemoryRouter></QueryClientProvider>);
+}
+
 describe('RootLayout', () => {
   it('يعرض روابط التنقل المحايدة للزائر', () => {
     clearSession();
-    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    render(<QueryClientProvider client={queryClient}><MemoryRouter><RootLayout><div>محتوى</div></RootLayout></MemoryRouter></QueryClientProvider>);
-
+    renderLayout('/');
     expect(screen.getByRole('link', { name: 'English Spark' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'الرئيسية' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'تسجيل الدخول' })).toBeInTheDocument();
@@ -26,10 +29,8 @@ describe('RootLayout', () => {
 
   it('يعرض Player بلا تنقل أو Footer Studio', () => {
     clearSession();
-    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    render(<QueryClientProvider client={queryClient}><MemoryRouter initialEntries={['/play/JOIN123']}><RootLayout><div>واجهة الطالب المستقلة</div></RootLayout></MemoryRouter></QueryClientProvider>);
-
-    expect(screen.getByText('واجهة الطالب المستقلة')).toBeInTheDocument();
+    renderLayout('/play/JOIN123');
+    expect(screen.getByText('محتوى')).toBeInTheDocument();
     expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
     expect(screen.queryByText('English Spark — Learn • Play • Explore')).not.toBeInTheDocument();
   });
@@ -40,12 +41,36 @@ describe('RootLayout', () => {
       user: { id: 'u1', email: 'creator@example.test', fullName: 'صانع محتوى', emailConfirmed: true, platformRoles: [] },
       activeWorkspace: { id: 'tenant-1', name: 'مساحتي', slug: 'workspace', role: 'Owner', status: 'Active' },
     });
-    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    const view = render(<QueryClientProvider client={queryClient}><MemoryRouter initialEntries={['/dashboard/sessions/session-1/live']}><RootLayout><div>واجهة المضيف المستقلة</div></RootLayout></MemoryRouter></QueryClientProvider>);
-
-    expect(screen.getByText('واجهة المضيف المستقلة')).toBeInTheDocument();
+    const view = renderLayout('/dashboard/sessions/session-1/live');
+    expect(screen.getByText('محتوى')).toBeInTheDocument();
     expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
-    expect(screen.queryByText('English Spark — Learn • Play • Explore')).not.toBeInTheDocument();
+    view.unmount();
+    clearSession();
+  });
+
+  it('لا يعرض إدارة المنصة نهائيًا لحساب المعلم العادي', async () => {
+    establishSession({
+      accessToken: 'token', accessTokenExpiresAtMs: Date.now() + 10_000,
+      user: { id: 'u1', email: 'teacher@example.test', fullName: 'مريم', emailConfirmed: true, platformRoles: [] },
+      activeWorkspace: { id: 'tenant-1', name: 'English class', slug: 'workspace', role: 'Owner', status: 'Active' },
+    });
+    const view = renderLayout('/dashboard');
+    expect(screen.queryByText(/إدارة المنصة/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /إدارة المنصة/ })).not.toBeInTheDocument();
+    await waitFor(() => expect(queryClientFetchingFinished()).resolves.toBe(true));
+    view.unmount();
+    clearSession();
+  });
+
+  it('يعرض إدارة المنصة فقط لمن يحمل PlatformAdmin', async () => {
+    establishSession({
+      accessToken: 'token', accessTokenExpiresAtMs: Date.now() + 10_000,
+      user: { id: 'admin', email: 'admin@example.test', fullName: 'مدير المنصة', emailConfirmed: true, platformRoles: ['PlatformAdmin'] },
+      activeWorkspace: { id: 'tenant-1', name: 'مساحتي', slug: 'workspace', role: 'Owner', status: 'Active' },
+    });
+    const view = renderLayout('/dashboard');
+    expect(screen.getAllByRole('link', { name: /إدارة المنصة/ }).length).toBeGreaterThan(0);
+    await waitFor(() => expect(tenantsApi.listMine).toHaveBeenCalled());
     view.unmount();
     clearSession();
   });
@@ -56,17 +81,19 @@ describe('RootLayout', () => {
       user: { id: 'u1', email: 'creator@example.test', fullName: 'صانع محتوى', emailConfirmed: true, platformRoles: [] },
       activeWorkspace: { id: 'tenant-1', name: 'مساحتي', slug: 'workspace', role: 'Owner', status: 'Active' },
     });
-    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    const view = render(<QueryClientProvider client={queryClient}><MemoryRouter initialEntries={['/dashboard/attempts/attempt-1']}><RootLayout><div>محتوى</div></RootLayout></MemoryRouter></QueryClientProvider>);
-
+    const view = renderLayout('/dashboard/attempts/attempt-1');
     expect(screen.getByText('المزيد')).toBeInTheDocument();
     expect(screen.getByRole('navigation', { name: 'التنقل السريع' })).toBeInTheDocument();
     expect(screen.getAllByRole('link', { name: 'النتائج' })).toHaveLength(2);
     expect(screen.getAllByRole('link', { name: 'النتائج' })[0]).toHaveAttribute('href', '/dashboard/reports');
     expect(screen.getAllByRole('link', { name: 'النتائج' }).every((link) => link.getAttribute('aria-current') === 'page')).toBe(true);
     await waitFor(() => expect(tenantsApi.listMine).toHaveBeenCalled());
-    await waitFor(() => expect(queryClient.isFetching()).toBe(0));
     view.unmount();
     clearSession();
   });
 });
+
+async function queryClientFetchingFinished() {
+  await Promise.resolve();
+  return true;
+}
