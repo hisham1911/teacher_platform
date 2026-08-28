@@ -32,7 +32,7 @@ export default function StudentJoinPage() {
           <header className="text-center">
             <span className="inline-flex rounded-full border border-white/12 bg-white/[0.07] px-3 py-1 text-[11px] font-black tracking-[0.18em] text-amber-200">ENGLISH SPARK</span>
             <h1 className="mt-4 text-balance text-3xl font-black leading-tight sm:text-5xl">جاهز للانطلاق؟ رمز واحد، والمغامرة تبدأ.</h1>
-            <p className="mx-auto mt-3 max-w-xl text-sm font-semibold leading-7 text-violet-100 sm:text-base">لا حساب ولا كلمة مرور. أدخل رمز النشاط فقط، ثم اكتب اسمك وابدأ.</p>
+            <p className="mx-auto mt-3 max-w-xl text-sm font-semibold leading-7 text-violet-100 sm:text-base">لا حساب ولا كلمة مرور. أدخل رمز النشاط، ثم استخدم كود الطالب إن كان لديك أو ادخل بالاسم كضيف.</p>
           </header>
 
           <div className="mx-auto mt-8 grid max-w-3xl gap-4 lg:grid-cols-[minmax(0,1fr)_220px] lg:items-stretch">
@@ -77,7 +77,7 @@ export default function StudentJoinPage() {
 
             <aside className="grid grid-cols-3 gap-2 lg:grid-cols-1" aria-label="خطوات الدخول">
               <MissionStep icon="⌨️" number="01" text="اكتب الرمز" />
-              <MissionStep icon="👋" number="02" text="اكتب اسمك" />
+              <MissionStep icon="👋" number="02" text="كودك أو اسمك" />
               <MissionStep icon="🚀" number="03" text="ابدأ التحدي" />
             </aside>
           </div>

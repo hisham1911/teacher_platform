@@ -63,9 +63,10 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      <section className="grid gap-3 sm:grid-cols-2" aria-label="اختصارات">
+      <section className="grid gap-3 sm:grid-cols-3" aria-label="اختصارات">
         <Link to="/dashboard/quizzes" className="teacher-surface group flex min-h-24 items-center gap-4 p-4 transition hover:border-violet-200 hover:shadow-md"><span aria-hidden="true" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-violet-100 text-violet-700"><TeacherIcon name="quizzes" /></span><span><span className="block text-base font-black text-slate-950">المحتوى</span><span className="mt-1 block text-sm text-slate-500">افتحي نشاطًا سابقًا وعدّليه أو شاركيه.</span></span><span aria-hidden="true" className="mr-auto text-lg font-black text-violet-500">←</span></Link>
         <Link to="/dashboard/reports" className="teacher-surface group flex min-h-24 items-center gap-4 p-4 transition hover:border-amber-200 hover:shadow-md"><span aria-hidden="true" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-800"><TeacherIcon name="reports" /></span><span><span className="block text-base font-black text-slate-950">النتائج</span><span className="mt-1 block text-sm text-slate-500">الدرجات والمحاولات والتقدم.</span></span><span aria-hidden="true" className="mr-auto text-lg font-black text-amber-600">←</span></Link>
+        <Link to="/dashboard/students" className="teacher-surface group flex min-h-24 items-center gap-4 p-4 transition hover:border-emerald-200 hover:shadow-md"><span aria-hidden="true" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-800"><TeacherIcon name="students" /></span><span><span className="block text-base font-black text-slate-950">الطلاب</span><span className="mt-1 block text-sm text-slate-500">أكواد الدخول ونتائج كل طالب.</span></span><span aria-hidden="true" className="mr-auto text-lg font-black text-emerald-700">←</span></Link>
       </section>
 
       <section aria-labelledby="recent-activities-heading">

@@ -23,6 +23,7 @@ vi.mock('../../data/api-client/endpoints', async (importOriginal) => {
       getSession: vi.fn(),
       getCurrentPlayer: vi.fn(),
       join: vi.fn(),
+      joinWithStudentCode: vi.fn(),
       startAttempt: vi.fn(),
       getCurrentQuestion: vi.fn(),
       submitAnswer: vi.fn(),
@@ -45,6 +46,7 @@ const { playerApi } = await import('../../data/api-client/endpoints');
 const getSessionMock = vi.mocked(playerApi.getSession);
 const getCurrentPlayerMock = vi.mocked(playerApi.getCurrentPlayer);
 const joinMock = vi.mocked(playerApi.join);
+const managedJoinMock = vi.mocked(playerApi.joinWithStudentCode);
 const startAttemptMock = vi.mocked(playerApi.startAttempt);
 
 const activeSession: PlayerSession = {
@@ -171,6 +173,21 @@ describe('PlayPage', () => {
     );
     expect(screen.getByRole('button', { name: 'ابدأ الآن' })).toBeInTheDocument();
     expect(joinMock).toHaveBeenCalledWith('JOIN123', { displayName: 'لاعب تجريبي' });
+  });
+
+  it('يسمح للطالب بالدخول بكوده ويستخدم الاسم الموثوق من السجل', async () => {
+    getSessionMock.mockResolvedValue(activeSession);
+    managedJoinMock.mockResolvedValue({ ...joinResponse, displayName: 'سارة من السجل' });
+    renderPage();
+
+    await waitFor(() => screen.getByRole('button', { name: 'لدي كود طالب' }));
+    fireEvent.click(screen.getByRole('button', { name: 'لدي كود طالب' }));
+    fireEvent.change(screen.getByLabelText('كود الطالب'), { target: { value: 'abcd-1234' } });
+    fireEvent.click(screen.getByRole('button', { name: 'دخول بكود الطالب' }));
+
+    await waitFor(() => expect(screen.getByRole('heading', { name: /سارة من السجل/ })).toBeInTheDocument());
+    expect(managedJoinMock).toHaveBeenCalledWith('JOIN123', 'ABCD1234');
+    expect(joinMock).not.toHaveBeenCalled();
   });
 
   it('يعرض رسالة 409 عند رفض الانضمام', async () => {

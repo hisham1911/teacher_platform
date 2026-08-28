@@ -5,6 +5,7 @@ export type TeacherIconName =
   | 'create'
   | 'quizzes'
   | 'questions'
+  | 'students'
   | 'reports'
   | 'certificate'
   | 'settings'
@@ -27,6 +28,7 @@ export function TeacherIcon({ name, className = 'h-5 w-5' }: { name: TeacherIcon
     create: <><path d="M12 5v14M5 12h14" /><circle cx="12" cy="12" r="9" /></>,
     quizzes: <><path d="M7 3.5h8l3 3V20H7z" /><path d="M15 3.5V7h3M10 11h5M10 15h5" /></>,
     questions: <><path d="M5 6.5 12 3l7 3.5-7 3.5z" /><path d="m5 11 7 3.5 7-3.5M5 15.5l7 3.5 7-3.5" /></>,
+    students: <><circle cx="9" cy="8" r="3" /><circle cx="17" cy="9" r="2.5" /><path d="M3.5 20c.4-4 2.2-6 5.5-6s5.1 2 5.5 6M14 15c3.6-.5 5.8 1.2 6.5 5" /></>,
     reports: <><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" /></>,
     certificate: <><path d="M6 3.5h12V15H6z" /><path d="m9 15-1 6 4-2 4 2-1-6M9 8h6M9 11h4" /></>,
     settings: <><circle cx="12" cy="12" r="3" /><path d="M19 13.5v-3l-2-.7-.6-1.4.9-1.9-2.1-2.1-1.9.9-1.4-.6L10.5 3h-3l-.7 2-.4.2-1.9-.9-2.1 2.1.9 1.9-.6 1.4-2 .7v3l2 .7.6 1.4-.9 1.9 2.1 2.1 1.9-.9 1.4.6.7 2h3l.7-2 1.4-.6 1.9.9 2.1-2.1-.9-1.9.6-1.4z" /></>,

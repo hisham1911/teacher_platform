@@ -17,6 +17,7 @@ import type {
   StartAttemptResponse,
 } from '../../types/sessions';
 import { QUESTION_TYPE_LABELS } from '../../types/questions';
+import { normalizeStudentCode } from '../../types/students';
 import { PlayerSurveyAction, PlayerSurveyPanel } from './player-survey-panel';
 import { PlayerDeliveryPanel } from './player-delivery-panel';
 import { StudentAudioPlayer } from './student-audio-player';
@@ -90,6 +91,9 @@ export default function PlayPage() {
   const [stage, setStage] = useState<PlayerStage>({ kind: 'loading' });
   const [displayName, setDisplayName] = useState('');
   const [nameError, setNameError] = useState<string | null>(null);
+  const [studentCode, setStudentCode] = useState('');
+  const [studentCodeError, setStudentCodeError] = useState<string | null>(null);
+  const [useStudentCode, setUseStudentCode] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
   const sessionQuery = useQuery({
@@ -190,6 +194,26 @@ export default function PlayPage() {
     },
   });
 
+  const managedJoinMutation = useMutation({
+    mutationFn: (code: string) => playerApi.joinWithStudentCode(joinCode!, code),
+    onSuccess: (playerState) => {
+      setActionError(null);
+      setStudentCodeError(null);
+      applyPlayerState(joinCode!, playerState, sessionQuery.data!);
+    },
+    onError: (error) => {
+      if (error instanceof HttpError && error.status === 404) {
+        setStudentCodeError('كود الطالب غير صحيح أو غير مفعّل.');
+      } else if (error instanceof HttpError && error.status === 409) {
+        setActionError('الجلسة لم تعد تقبل منضمّين جددًا.');
+      } else if (error instanceof HttpError && error.status === 429) {
+        setActionError('محاولات كثيرة. انتظر قليلًا ثم حاول مجددًا.');
+      } else {
+        setActionError('تعذر الدخول بكود الطالب. أعد المحاولة.');
+      }
+    },
+  });
+
   const startMutation = useMutation({
     mutationFn: () => playerApi.startAttempt(joinCode!),
     onSuccess: (attempt) => {
@@ -227,6 +251,18 @@ export default function PlayPage() {
     joinMutation.mutate(name);
   }
 
+  function onStudentCodeSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const code = normalizeStudentCode(studentCode);
+    if (code.length < 6) {
+      setStudentCodeError('اكتب كود الطالب كاملًا.');
+      return;
+    }
+    setStudentCodeError(null);
+    setActionError(null);
+    managedJoinMutation.mutate(code);
+  }
+
   // ─── شاشات ────────────────────────────────────────────────────────────────
 
   if (stage.kind === 'loading') {
@@ -259,7 +295,13 @@ export default function PlayPage() {
             </dl>
 
             {session.instructions ? <p className="mt-5 rounded-xl bg-emerald-50 p-4 text-sm leading-7 text-emerald-950">{session.instructions}</p> : null}
-            <form onSubmit={onJoinSubmit} className="mt-6 flex flex-col gap-3">
+            {!useStudentCode ? (
+              <>
+                <button type="button" onClick={() => { setUseStudentCode(true); setActionError(null); }} className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border-2 border-violet-200 bg-violet-50 px-4 text-sm font-black text-violet-900 hover:border-violet-400 hover:bg-violet-100">
+                  <span aria-hidden="true">🎟️</span> لدي كود طالب
+                </button>
+                <p className="mt-3 text-center text-xs font-semibold text-slate-500">أو ادخل بالاسم كضيف إذا لم يعطك المعلم كودًا.</p>
+                <form onSubmit={onJoinSubmit} className="mt-4 flex flex-col gap-3">
               <label htmlFor="display-name" className="text-base font-black">ما اسمك؟</label>
               <TextInput
                 id="display-name"
@@ -281,7 +323,39 @@ export default function PlayPage() {
                 {joinMutation.isPending ? 'جارٍ تجهيز دخولك…' : 'ابدأ الاختبار'}
                 {!joinMutation.isPending ? <span aria-hidden="true" className="mr-2">←</span> : null}
               </StudentButton>
-            </form>
+                </form>
+              </>
+            ) : (
+              <>
+                <button type="button" onClick={() => { setUseStudentCode(false); setStudentCodeError(null); setActionError(null); }} className="mt-6 inline-flex min-h-11 items-center text-sm font-black text-violet-700 hover:underline">
+                  الدخول بالاسم بدلًا من ذلك →
+                </button>
+                <form onSubmit={onStudentCodeSubmit} className="mt-3 flex flex-col gap-3">
+                  <label htmlFor="student-code" className="text-base font-black">كود الطالب</label>
+                  <TextInput
+                    id="student-code"
+                    dir="ltr"
+                    value={studentCode}
+                    onChange={(e) => { setStudentCode(normalizeStudentCode(e.target.value)); setStudentCodeError(null); }}
+                    minLength={6}
+                    maxLength={12}
+                    autoComplete="off"
+                    autoCapitalize="characters"
+                    placeholder="ABCD1234"
+                    aria-invalid={Boolean(studentCodeError)}
+                    aria-describedby={studentCodeError ? 'student-code-error' : undefined}
+                    className="min-h-14 rounded-xl px-4 text-center font-mono text-xl font-black tracking-[0.16em] placeholder:text-slate-400 focus:border-violet-700 focus:outline-violet-700"
+                  />
+                  {studentCodeError ? <p id="student-code-error" role="alert" className="text-sm font-bold text-rose-700">{studentCodeError}</p> : null}
+                  {actionError ? <p role="alert" className="rounded-xl bg-rose-50 p-3 text-sm text-rose-700">{actionError}</p> : null}
+                  <StudentButton type="submit" disabled={managedJoinMutation.isPending || studentCode.length < 6} className="mt-2 w-full text-base">
+                    {managedJoinMutation.isPending ? <ButtonSpinner /> : null}
+                    {managedJoinMutation.isPending ? 'جارٍ التحقق…' : 'دخول بكود الطالب'}
+                    {!managedJoinMutation.isPending ? <span aria-hidden="true" className="mr-2">←</span> : null}
+                  </StudentButton>
+                </form>
+              </>
+            )}
           </div>
         </section>
       </StudentShell>

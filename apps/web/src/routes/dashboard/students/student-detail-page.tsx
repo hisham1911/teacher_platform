@@ -1,6 +1,6 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useLocation, useParams } from 'react-router';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, type UseQueryResult } from '@tanstack/react-query';
 import { Button } from '../../../components/ui/button';
 import { FormField, TextArea, TextInput } from '../../../components/ui/form-field';
 import { ButtonSpinner } from '../../../components/ui/spinner';
@@ -8,7 +8,7 @@ import { studentsApi } from '../../../data/api-client/endpoints';
 import { HttpError } from '../../../data/api-client/http-error';
 import { getActiveTenantId } from '../../../lib/auth/session';
 import { ATTEMPT_STATUS_LABELS, SESSION_MODE_LABELS } from '../../../types/sessions';
-import { formatStudentCode, type Student } from '../../../types/students';
+import { formatStudentCode, type Student, type StudentResult } from '../../../types/students';
 
 export default function StudentDetailPage() {
   const { studentId } = useParams<{ studentId: string }>();
@@ -120,6 +120,12 @@ function StudentEditor({ student, onChanged }: { student: Student; onChanged: ()
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    setFullName(student.fullName);
+    setGrade(student.grade ?? '');
+    setNotes(student.notes ?? '');
+  }, [student.id, student.version, student.fullName, student.grade, student.notes]);
+
   const updateMutation = useMutation({
     mutationFn: () => studentsApi.update(tenantId!, student.id, {
       fullName: fullName.trim(),
@@ -180,7 +186,7 @@ function StudentEditor({ student, onChanged }: { student: Student; onChanged: ()
   );
 }
 
-function StudentResults({ query }: { studentId: string; query: ReturnType<typeof useQuery<Awaited<ReturnType<typeof studentsApi.listResults>>, Error>> }) {
+function StudentResults({ query }: { studentId: string; query: UseQueryResult<StudentResult[], Error> }) {
   return (
     <section className="teacher-surface p-5 sm:p-6">
       <div><h2 className="text-xl font-black text-slate-950">آخر النتائج</h2><p className="mt-1 text-sm text-slate-500">المحاولات المرتبطة بكود هذا الطالب عبر الأنشطة.</p></div>

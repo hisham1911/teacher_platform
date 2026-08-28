@@ -118,6 +118,7 @@ export function RootLayout({ children }: { children: ReactNode }) {
             </summary>
             <div className="mt-1 space-y-1 pr-2">
               <Link to="/dashboard/questions" className="flex min-h-10 items-center gap-2 rounded-lg px-3 text-xs font-bold text-slate-600 hover:bg-violet-50 hover:text-violet-800">بنك الأسئلة</Link>
+              <Link to="/dashboard/students" className="flex min-h-10 items-center gap-2 rounded-lg px-3 text-xs font-bold text-slate-600 hover:bg-violet-50 hover:text-violet-800"><TeacherIcon name="students" className="h-4 w-4" />الطلاب</Link>
             </div>
           </details>
 
@@ -144,6 +145,7 @@ export function RootLayout({ children }: { children: ReactNode }) {
                 <div className="fixed inset-x-3 top-16 z-50 max-h-[calc(100dvh-9rem)] overflow-y-auto rounded-2xl border border-violet-100 bg-white p-3 shadow-xl">
                   {workspaces && workspaces.length > 0 ? <label className="mb-3 flex flex-col gap-1.5 text-xs font-semibold text-slate-600">مساحة العمل<select value={activeWorkspace?.id ?? ''} onChange={(event) => onWorkspaceChange(event.target.value)} className="min-h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-800">{workspaces.map((workspace) => <option key={workspace.id} value={workspace.id}>{workspace.name}</option>)}</select></label> : null}
                   <Link to="/dashboard/questions" className="inline-flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-bold text-slate-700 hover:bg-violet-50"><TeacherIcon name="questions" />بنك الأسئلة</Link>
+                  <Link to="/dashboard/students" className="inline-flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-bold text-slate-700 hover:bg-violet-50"><TeacherIcon name="students" />الطلاب</Link>
                   <Link to="/dashboard/certificates" className="inline-flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-bold text-slate-700 hover:bg-violet-50"><TeacherIcon name="certificate" />الشهادات</Link>
                   <Link to="/dashboard/settings" className="inline-flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-bold text-slate-700 hover:bg-violet-50"><TeacherIcon name="settings" />الإعدادات</Link>
                   {isPlatformAdmin ? <Link to="/platform" className="mt-2 inline-flex min-h-11 w-full items-center gap-3 rounded-xl bg-amber-50 px-3 text-sm font-black text-amber-950"><span aria-hidden="true">⚙️</span><span>إدارة المنصة</span></Link> : null}

@@ -31,6 +31,9 @@ const ActivityManagePage = lazy(() => import('../routes/dashboard/activities/act
 const ActivityBuilderPage = lazy(() => import('../routes/dashboard/activities/activity-builder-page'));
 const ActivityBulkQuestionsPage = lazy(() => import('../routes/dashboard/activities/activity-bulk-questions-page'));
 const ActivityReadyPage = lazy(() => import('../routes/dashboard/activities/activity-ready-page'));
+const StudentsPage = lazy(() => import('../routes/dashboard/students/students-page'));
+const StudentNewPage = lazy(() => import('../routes/dashboard/students/student-new-page'));
+const StudentDetailPage = lazy(() => import('../routes/dashboard/students/student-detail-page'));
 
 const QuestionsPage = lazy(() => import('../routes/dashboard/questions/questions-page'));
 const QuestionNewPage = lazy(() => import('../routes/dashboard/questions/question-new-page'));
@@ -90,6 +93,9 @@ export const router = createBrowserRouter([
               { path: '/dashboard/activities/:quizId/bulk', element: <ActivityBulkQuestionsPage /> },
               { path: '/dashboard/activities/:quizId/ready', element: <ActivityReadyPage /> },
               { path: '/dashboard/settings', element: <SettingsPage /> },
+              { path: '/dashboard/students', element: <StudentsPage /> },
+              { path: '/dashboard/students/new', element: <StudentNewPage /> },
+              { path: '/dashboard/students/:studentId', element: <StudentDetailPage /> },
               { path: '/dashboard/questions', element: <QuestionsPage /> },
               { path: '/dashboard/questions/bulk', element: <ActivityBulkQuestionsPage /> },
               { path: '/dashboard/questions/new', element: <QuestionNewPage /> },
