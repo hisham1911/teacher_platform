@@ -347,6 +347,8 @@ builder.Services.AddOptions<TeacherPlatform.Application.Options.SessionOptions>(
     .ValidateDataAnnotations()
     .ValidateOnStart();
 builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.GuestTokenService>();
+builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.StudentService>();
+builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.ManagedStudentJoinService>();
 builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.SessionService>();
 builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.PlayerService>();
 

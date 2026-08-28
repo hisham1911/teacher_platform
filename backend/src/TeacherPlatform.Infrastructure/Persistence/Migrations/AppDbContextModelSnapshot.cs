@@ -1610,6 +1610,9 @@ namespace TeacherPlatform.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("SessionId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("StudentId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
 
@@ -1624,7 +1627,68 @@ namespace TeacherPlatform.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("SessionId", "TenantId");
 
+                    b.HasIndex("StudentId", "TenantId");
+
+                    b.HasIndex("TenantId", "SessionId", "StudentId")
+                        .IsUnique();
+
                     b.ToTable("SessionParticipants", (string)null);
+                });
+
+            modelBuilder.Entity("TeacherPlatform.Domain.Students.Student", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("FullName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Grade")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("StudentCode")
+                        .IsRequired()
+                        .HasMaxLength(12)
+                        .HasColumnType("character varying(12)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "FullName");
+
+                    b.HasIndex("TenantId", "IsActive");
+
+                    b.HasIndex("TenantId", "StudentCode")
+                        .IsUnique();
+
+                    b.ToTable("Students", (string)null);
                 });
 
             modelBuilder.Entity("TeacherPlatform.Domain.Surveys.Survey", b =>
@@ -2286,7 +2350,24 @@ namespace TeacherPlatform.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
+                    b.HasOne("TeacherPlatform.Domain.Students.Student", "Student")
+                        .WithMany("Participants")
+                        .HasForeignKey("StudentId", "TenantId")
+                        .HasPrincipalKey("Id", "TenantId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
                     b.Navigation("Session");
+
+                    b.Navigation("Student");
+                });
+
+            modelBuilder.Entity("TeacherPlatform.Domain.Students.Student", b =>
+                {
+                    b.HasOne("TeacherPlatform.Domain.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("TeacherPlatform.Domain.Surveys.Survey", b =>
@@ -2466,6 +2547,11 @@ namespace TeacherPlatform.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("TeacherPlatform.Domain.Sessions.SessionParticipant", b =>
                 {
                     b.Navigation("Attempt");
+                });
+
+            modelBuilder.Entity("TeacherPlatform.Domain.Students.Student", b =>
+                {
+                    b.Navigation("Participants");
                 });
 
             modelBuilder.Entity("TeacherPlatform.Domain.Surveys.Survey", b =>
