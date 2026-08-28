@@ -1,0 +1,123 @@
+name: English Spark Golden Path E2E
+
+on:
+  push:
+    branches:
+      - feature/english-spark-ux-foundation
+    paths:
+      - e2e/tests/part-f-english-spark-golden-path.spec.mjs
+      - .github/workflows/english-spark-golden-path-e2e.yml
+
+jobs:
+  golden-path:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: teacher_platform_e2e
+        ports:
+          - '5432:5432'
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+
+    env:
+      ASPNETCORE_ENVIRONMENT: E2E
+      ConnectionStrings__DefaultConnection: Host=localhost;Port=5432;Database=teacher_platform_e2e;Username=postgres;Password=postgres
+      API_URL: http://localhost:5000
+      WEB_URL: http://localhost:5173
+      VITE_API_BASE_URL: http://localhost:5000
+      Auth__WebBaseUrl: http://localhost:5173
+      Auth__TrustedOrigins__0: http://localhost:5173
+      Cors__AllowedOrigins__0: http://localhost:5173
+      DataProtection__KeysDirectory: /tmp/teacher-platform-keys-e2e
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Restore backend
+        working-directory: backend
+        run: dotnet restore
+
+      - name: Install EF tool
+        run: dotnet tool install --global dotnet-ef --version 10.0.3
+
+      - name: Apply database migrations
+        working-directory: backend
+        run: >-
+          dotnet ef database update
+          --project src/TeacherPlatform.Infrastructure/TeacherPlatform.Infrastructure.csproj
+          --startup-project src/TeacherPlatform.Api/TeacherPlatform.Api.csproj
+
+      - name: Install web dependencies
+        working-directory: apps/web
+        run: npm install --registry https://registry.npmjs.org
+
+      - name: Install E2E dependencies
+        working-directory: e2e
+        run: npm install --registry https://registry.npmjs.org
+
+      - name: Install Chromium
+        working-directory: e2e
+        run: npx playwright install --with-deps chromium
+
+      - name: Start API
+        shell: bash
+        run: |
+          nohup dotnet run --project backend/src/TeacherPlatform.Api/TeacherPlatform.Api.csproj --no-launch-profile --urls http://localhost:5000 >/tmp/english-spark-api.log 2>&1 &
+          echo $! >/tmp/english-spark-api.pid
+          for i in $(seq 1 60); do
+            if curl -fsS http://localhost:5000/health/ready >/dev/null; then
+              echo "API ready"
+              exit 0
+            fi
+            sleep 2
+          done
+          cat /tmp/english-spark-api.log
+          exit 1
+
+      - name: Start web
+        shell: bash
+        run: |
+          nohup npm run dev --prefix apps/web -- --host localhost --port 5173 --strictPort >/tmp/english-spark-web.log 2>&1 &
+          echo $! >/tmp/english-spark-web.pid
+          for i in $(seq 1 40); do
+            if curl -fsS http://localhost:5173/ >/dev/null; then
+              echo "Web ready"
+              exit 0
+            fi
+            sleep 2
+          done
+          cat /tmp/english-spark-web.log
+          exit 1
+
+      - name: Run English Spark golden path
+        working-directory: e2e
+        run: npx playwright test tests/part-f-english-spark-golden-path.spec.mjs --project=chromium --reporter=line
+
+      - name: Dump server logs on failure
+        if: failure()
+        shell: bash
+        run: |
+          echo '--- API LOG ---'
+          tail -n 200 /tmp/english-spark-api.log || true
+          echo '--- WEB LOG ---'
+          tail -n 200 /tmp/english-spark-web.log || true
