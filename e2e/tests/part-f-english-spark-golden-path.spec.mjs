@@ -5,8 +5,7 @@ import { expect, test } from '@playwright/test';
 
 const e2eDir = fileURLToPath(new URL('..', import.meta.url));
 const repoRoot = join(e2eDir, '..');
-const state = JSON.parse(readFileSync(join(e2eDir, 'state.json'), 'utf8'));
-const apiUrl = process.env.API_URL || state.api || 'http://localhost:5000';
+const apiUrl = process.env.API_URL || 'http://localhost:5000';
 const mailDir = process.env.MAIL_DIR || join(repoRoot, 'backend', 'src', 'TeacherPlatform.Api', '.dev-mail');
 const password = 'SecurePassword123!';
 
