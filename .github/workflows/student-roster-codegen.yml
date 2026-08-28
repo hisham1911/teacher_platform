@@ -47,6 +47,7 @@ jobs:
           set -euo pipefail
           rm -f src/TeacherPlatform.Infrastructure/Persistence/Migrations/20260828142000_CreateStudentRoster.cs
           dotnet restore
+          dotnet build --no-restore
           dotnet tool install --global dotnet-ef --version 10.0.3
           dotnet ef migrations add CreateStudentRoster \
             --project src/TeacherPlatform.Infrastructure/TeacherPlatform.Infrastructure.csproj \
