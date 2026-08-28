@@ -7,6 +7,7 @@ using TeacherPlatform.Application.Options;
 using TeacherPlatform.Application.Sessions;
 using TeacherPlatform.Application.Students;
 using TeacherPlatform.Infrastructure.Services;
+using AppSessionOptions = TeacherPlatform.Application.Options.SessionOptions;
 
 namespace TeacherPlatform.Api.Controllers;
 
@@ -22,12 +23,12 @@ public sealed class ManagedStudentJoinController : ControllerBase
 {
     private readonly ManagedStudentJoinService _joinService;
     private readonly IOptions<AuthOptions> _authOptions;
-    private readonly IOptions<SessionOptions> _sessionOptions;
+    private readonly IOptions<AppSessionOptions> _sessionOptions;
 
     public ManagedStudentJoinController(
         ManagedStudentJoinService joinService,
         IOptions<AuthOptions> authOptions,
-        IOptions<SessionOptions> sessionOptions)
+        IOptions<AppSessionOptions> sessionOptions)
     {
         _joinService = joinService;
         _authOptions = authOptions;
