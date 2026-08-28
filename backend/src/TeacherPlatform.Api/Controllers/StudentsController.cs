@@ -19,8 +19,10 @@ public sealed class StudentsController : ControllerBase
         _studentService = studentService;
     }
 
+    // StudentCode is a lightweight identity credential, not ordinary workspace metadata.
+    // Keep the entire roster (including results) behind Owner/Teacher rather than AnyTenantRole.
     [HttpGet]
-    [Authorize(Policy = AuthorizationPolicies.ActiveTenantMember)]
+    [Authorize(Policy = AuthorizationPolicies.TenantContentManagement)]
     [ProducesResponseType(typeof(IReadOnlyList<StudentResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> List(
         [FromRoute] Guid tenantId,
@@ -33,7 +35,7 @@ public sealed class StudentsController : ControllerBase
     }
 
     [HttpGet("{studentId:guid}")]
-    [Authorize(Policy = AuthorizationPolicies.ActiveTenantMember)]
+    [Authorize(Policy = AuthorizationPolicies.TenantContentManagement)]
     [ProducesResponseType(typeof(StudentResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Get(
@@ -113,7 +115,7 @@ public sealed class StudentsController : ControllerBase
     }
 
     [HttpGet("{studentId:guid}/results")]
-    [Authorize(Policy = AuthorizationPolicies.ActiveTenantMember)]
+    [Authorize(Policy = AuthorizationPolicies.TenantContentManagement)]
     [ProducesResponseType(typeof(IReadOnlyList<StudentResultResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Results(
