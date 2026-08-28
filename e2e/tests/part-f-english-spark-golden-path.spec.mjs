@@ -100,7 +100,7 @@ test('English Spark golden path hides publishing/session complexity from the tea
   const teacher = await teacherContext.newPage();
   await loginTeacher(teacher, teacherIdentity.email);
 
-  await teacher.getByRole('link', { name: 'إنشاء نشاط جديد' }).click();
+  await teacher.getByLabel('ابدأ من هنا').getByRole('link', { name: 'إنشاء نشاط جديد' }).click();
   await expect(teacher.getByRole('heading', { name: 'ابدأ بالفكرة فقط.' })).toBeVisible();
   await expect(teacher.getByText('اسم للنشاط وطريقة تجربة الطلاب. الباقي سنمشي فيه خطوة بخطوة بدون إعدادات نشر معقدة.')).toBeVisible();
 
