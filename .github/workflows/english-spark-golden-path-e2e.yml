@@ -116,7 +116,7 @@ jobs:
 
       - name: Run English Spark golden path
         working-directory: e2e
-        run: npx playwright test tests/part-f-english-spark-golden-path.spec.mjs --project=chromium --reporter=line
+        run: npx playwright test tests/part-f-english-spark-golden-path.spec.mjs --reporter=line
 
       - name: Dump server logs on failure
         if: failure()
