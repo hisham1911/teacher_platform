@@ -520,9 +520,9 @@ describe('PlayPage', () => {
 
     renderPage();
 
-    await waitFor(() => screen.getByRole('button', { name: 'ابدأ الاختبار' }));
+    await waitFor(() => screen.getByRole('button', { name: 'ادخل إلى المهمة' }));
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'متحدٍّ جديد' } });
-    fireEvent.click(screen.getByRole('button', { name: 'ابدأ الاختبار' }));
+    fireEvent.click(screen.getByRole('button', { name: 'ادخل إلى المهمة' }));
 
     // شاشة استعداد مخصصة للتحدي قبل البدء
     expect(await screen.findByTestId('challenge-ready')).toBeInTheDocument();
