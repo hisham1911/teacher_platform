@@ -126,10 +126,11 @@ export function RootLayout({ children }: { children: ReactNode }) {
               <p className="truncate text-sm font-black text-[var(--teacher-ink)]">{session.user.fullName}</p>
               <p className="mt-0.5 text-[11px] font-bold text-slate-400">English Spark Studio</p>
             </div>
-            <Link to="/platform" className={`flex min-h-11 items-center gap-2 rounded-xl px-3 text-xs font-black ${isPlatformAdmin ? 'bg-amber-50 text-amber-950 hover:bg-amber-100' : 'text-slate-500 hover:bg-slate-50'}`}>
-              <span aria-hidden="true">{isPlatformAdmin ? '⚙️' : '🔒'}</span>
-              <span>{isPlatformAdmin ? 'إدارة المنصة' : 'إدارة المنصة · صلاحية خاصة'}</span>
-            </Link>
+            {isPlatformAdmin ? (
+              <Link to="/platform" className="flex min-h-11 items-center gap-2 rounded-xl bg-amber-50 px-3 text-xs font-black text-amber-950 hover:bg-amber-100">
+                <span aria-hidden="true">⚙️</span><span>إدارة المنصة</span>
+              </Link>
+            ) : null}
             <button type="button" onClick={() => void onLogout()} className="inline-flex min-h-11 w-full items-center gap-2 rounded-xl px-3 text-sm font-semibold text-slate-600 hover:bg-rose-50 hover:text-rose-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-700"><TeacherIcon name="logout" />تسجيل الخروج</button>
           </div>
         </aside>
@@ -145,7 +146,7 @@ export function RootLayout({ children }: { children: ReactNode }) {
                   <Link to="/dashboard/questions" className="inline-flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-bold text-slate-700 hover:bg-violet-50"><TeacherIcon name="questions" />بنك الأسئلة</Link>
                   <Link to="/dashboard/certificates" className="inline-flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-bold text-slate-700 hover:bg-violet-50"><TeacherIcon name="certificate" />الشهادات</Link>
                   <Link to="/dashboard/settings" className="inline-flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-bold text-slate-700 hover:bg-violet-50"><TeacherIcon name="settings" />الإعدادات</Link>
-                  <Link to="/platform" className={`mt-2 inline-flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-black ${isPlatformAdmin ? 'bg-amber-50 text-amber-950' : 'bg-slate-50 text-slate-600'}`}><span aria-hidden="true">{isPlatformAdmin ? '⚙️' : '🔒'}</span><span>إدارة المنصة{!isPlatformAdmin ? <span className="mr-2 text-[10px] font-bold text-slate-500">صلاحية خاصة</span> : null}</span></Link>
+                  {isPlatformAdmin ? <Link to="/platform" className="mt-2 inline-flex min-h-11 w-full items-center gap-3 rounded-xl bg-amber-50 px-3 text-sm font-black text-amber-950"><span aria-hidden="true">⚙️</span><span>إدارة المنصة</span></Link> : null}
                   <button type="button" onClick={() => void onLogout()} className="mt-2 inline-flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-semibold text-rose-700 hover:bg-rose-50"><TeacherIcon name="logout" />تسجيل الخروج</button>
                 </div>
               </details>
