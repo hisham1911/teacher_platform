@@ -1,0 +1,124 @@
+name: Activity launch engineering v3
+
+on:
+  push:
+    branches: [feature/english-spark-ux-foundation]
+    paths:
+      - '.github/workflows/activity-launch-engineering-v3.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  engineer:
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres_ci_password
+          POSTGRES_DB: teacher_platform_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      ASPNETCORE_ENVIRONMENT: Testing
+      ConnectionStrings__DefaultConnection: Host=localhost;Port=5432;Database=teacher_platform_ci;Username=postgres;Password=postgres_ci_password
+      INTEGRATION_TEST_DB: Host=localhost;Port=5432;Database=teacher_platform_ci;Username=postgres;Password=postgres_ci_password
+      DataProtection__KeysDirectory: /tmp/teacher-platform-keys-activity-launch-v3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/english-spark-ux-foundation
+          fetch-depth: 0
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Narrow activation idempotency to launch-created sessions
+        shell: python
+        run: |
+          from pathlib import Path
+          path = Path('scripts/engineer-activity-launch-v2.py')
+          text = path.read_text(encoding='utf-8')
+          old = 'if (from == SessionStatus.Scheduled && to == SessionStatus.Active && session.Status == SessionStatus.Active)'
+          new = 'if (from == SessionStatus.Scheduled && to == SessionStatus.Active && session.LaunchRequestId is not null && session.Status == SessionStatus.Active)'
+          if old not in text:
+              raise SystemExit('Expected activation idempotency block not found')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+      - name: Apply launch engineering patch
+        run: python scripts/engineer-activity-launch-v2.py
+
+      - name: Restore and compile
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd backend
+          dotnet restore
+          dotnet build --no-restore
+
+      - name: Generate and format EF migration
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd backend
+          dotnet tool install --global dotnet-ef --version 10.*
+          export PATH="$PATH:$HOME/.dotnet/tools"
+          dotnet ef migrations add AddActivityLaunchIdempotency --project src/TeacherPlatform.Infrastructure --startup-project src/TeacherPlatform.Api --no-build
+          dotnet format --no-restore
+          dotnet build --no-restore
+
+      - name: Verify backend and retry safety
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd backend
+          dotnet format --verify-no-changes --no-restore
+          dotnet test tests/TeacherPlatform.Domain.Tests --no-build
+          dotnet test tests/TeacherPlatform.Api.Tests --no-build
+          dotnet test tests/TeacherPlatform.IntegrationTests --no-build
+
+      - name: Verify migration on fresh PostgreSQL
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PGPASSWORD=postgres_ci_password
+          psql -h localhost -U postgres -d postgres -v ON_ERROR_STOP=1 -c 'DROP DATABASE IF EXISTS teacher_platform_launch_migration_ci;'
+          psql -h localhost -U postgres -d postgres -v ON_ERROR_STOP=1 -c 'CREATE DATABASE teacher_platform_launch_migration_ci;'
+          cd backend
+          export PATH="$PATH:$HOME/.dotnet/tools"
+          ConnectionStrings__DefaultConnection='Host=localhost;Port=5432;Database=teacher_platform_launch_migration_ci;Username=postgres;Password=postgres_ci_password' dotnet ef database update --project src/TeacherPlatform.Infrastructure --startup-project src/TeacherPlatform.Api --no-build
+
+      - name: Verify frontend
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd apps/web
+          npm ci --registry https://registry.npmjs.org
+          npm run lint
+          npm run typecheck
+          npm run test
+          npm run build
+
+      - name: Commit validated launch engineering
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f .github/workflows/activity-launch-engineering.yml
+          rm -f .github/workflows/activity-launch-engineering-v2.yml
+          rm -f .github/workflows/activity-launch-engineering-v3.yml
+          rm -f scripts/engineer-activity-launch-v2.py
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .
+          git commit -m 'feat(activity): make launch atomic and retry-safe'
+          git push origin HEAD:feature/english-spark-ux-foundation
