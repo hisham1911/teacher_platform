@@ -1,0 +1,225 @@
+name: Student UI engineering
+
+on:
+  push:
+    branches: [feature/english-spark-ux-foundation]
+    paths:
+      - '.github/workflows/student-ui-engineering.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  engineer:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres_ci_password
+          POSTGRES_DB: teacher_platform_ci
+        ports:
+          - '5432:5432'
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      ASPNETCORE_ENVIRONMENT: Testing
+      ConnectionStrings__DefaultConnection: Host=localhost;Port=5432;Database=teacher_platform_ci;Username=postgres;Password=postgres_ci_password
+      INTEGRATION_TEST_DB: Host=localhost;Port=5432;Database=teacher_platform_ci;Username=postgres;Password=postgres_ci_password
+      DataProtection__KeysDirectory: /tmp/teacher-platform-keys-student-ui
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/english-spark-ux-foundation
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Wire student APIs, routes, navigation, and managed player entry
+        shell: python
+        run: |
+          from pathlib import Path
+
+          def replace_once(path_name, old, new):
+              path = Path(path_name)
+              text = path.read_text(encoding='utf-8')
+              if old not in text:
+                  raise SystemExit(f'Expected block not found in {path_name}: {old[:120]!r}')
+              path.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          # --- Central API boundary ---
+          endpoints = 'apps/web/src/data/api-client/endpoints.ts'
+          replace_once(
+              endpoints,
+              """} from '../../types/sessions';\nimport type {\n  CreateSurveyRequest,""",
+              """} from '../../types/sessions';\nimport type {\n  CreateStudentRequest,\n  RegenerateStudentCodeRequest,\n  Student,\n  StudentResult,\n  StudentStatusRequest,\n  UpdateStudentRequest,\n} from '../../types/students';\nimport type {\n  CreateSurveyRequest,""",
+          )
+
+          replace_once(
+              endpoints,
+              """export const sessionsApi = {""",
+              """export interface StudentListQuery {\n  search?: string;\n  includeInactive?: boolean;\n}\n\nexport const studentsApi = {\n  list(tenantId: string, query: StudentListQuery = {}, signal?: AbortSignal) {\n    const params = new URLSearchParams();\n    if (query.search) params.set('search', query.search);\n    if (query.includeInactive) params.set('includeInactive', 'true');\n    const qs = params.toString();\n    return call<Student[]>({\n      method: 'GET',\n      path: `/api/v1/tenants/${tenantId}/students${qs ? `?${qs}` : ''}`,\n      signal,\n      needsAuth: true,\n      needsTenant: true,\n    });\n  },\n  get(tenantId: string, studentId: string, signal?: AbortSignal) {\n    return call<Student>({\n      method: 'GET',\n      path: `/api/v1/tenants/${tenantId}/students/${studentId}`,\n      signal,\n      needsAuth: true,\n      needsTenant: true,\n    });\n  },\n  create(tenantId: string, payload: CreateStudentRequest, signal?: AbortSignal) {\n    return call<Student>({\n      method: 'POST',\n      path: `/api/v1/tenants/${tenantId}/students`,\n      body: payload,\n      signal,\n      needsAuth: true,\n      needsTenant: true,\n    });\n  },\n  update(tenantId: string, studentId: string, payload: UpdateStudentRequest, signal?: AbortSignal) {\n    return call<Student>({\n      method: 'PUT',\n      path: `/api/v1/tenants/${tenantId}/students/${studentId}`,\n      body: payload,\n      signal,\n      needsAuth: true,\n      needsTenant: true,\n    });\n  },\n  setStatus(tenantId: string, studentId: string, payload: StudentStatusRequest, signal?: AbortSignal) {\n    return call<Student>({\n      method: 'POST',\n      path: `/api/v1/tenants/${tenantId}/students/${studentId}/status`,\n      body: payload,\n      signal,\n      needsAuth: true,\n      needsTenant: true,\n    });\n  },\n  regenerateCode(tenantId: string, studentId: string, payload: RegenerateStudentCodeRequest, signal?: AbortSignal) {\n    return call<Student>({\n      method: 'POST',\n      path: `/api/v1/tenants/${tenantId}/students/${studentId}/regenerate-code`,\n      body: payload,\n      signal,\n      needsAuth: true,\n      needsTenant: true,\n    });\n  },\n  listResults(tenantId: string, studentId: string, take = 20, signal?: AbortSignal) {\n    const params = new URLSearchParams({ take: String(take) });\n    return call<StudentResult[]>({\n      method: 'GET',\n      path: `/api/v1/tenants/${tenantId}/students/${studentId}/results?${params.toString()}`,\n      signal,\n      needsAuth: true,\n      needsTenant: true,\n    });\n  },\n};\n\nexport const sessionsApi = {""",
+          )
+
+          replace_once(
+              endpoints,
+              """  join(joinCode: string, payload: JoinSessionRequest, signal?: AbortSignal) {\n    return call<JoinSessionResponse>({\n      method: 'POST',\n      path: `/api/v1/player/sessions/${encodeURIComponent(joinCode)}/join`,\n      body: payload,\n      signal,\n    });\n  },\n  startAttempt""",
+              """  join(joinCode: string, payload: JoinSessionRequest, signal?: AbortSignal) {\n    return call<JoinSessionResponse>({\n      method: 'POST',\n      path: `/api/v1/player/sessions/${encodeURIComponent(joinCode)}/join`,\n      body: payload,\n      signal,\n    });\n  },\n  joinWithStudentCode(joinCode: string, studentCode: string, signal?: AbortSignal) {\n    return call<JoinSessionResponse>({\n      method: 'POST',\n      path: `/api/v1/player/sessions/${encodeURIComponent(joinCode)}/student-join`,\n      body: { studentCode },\n      signal,\n    });\n  },\n  startAttempt""",
+          )
+
+          # --- Router ---
+          router = 'apps/web/src/app/router.tsx'
+          replace_once(
+              router,
+              """const ActivityReadyPage = lazy(() => import('../routes/dashboard/activities/activity-ready-page'));\n\nconst QuestionsPage""",
+              """const ActivityReadyPage = lazy(() => import('../routes/dashboard/activities/activity-ready-page'));\nconst StudentsPage = lazy(() => import('../routes/dashboard/students/students-page'));\nconst StudentNewPage = lazy(() => import('../routes/dashboard/students/student-new-page'));\nconst StudentDetailPage = lazy(() => import('../routes/dashboard/students/student-detail-page'));\n\nconst QuestionsPage""",
+          )
+          replace_once(
+              router,
+              """              { path: '/dashboard/settings', element: <SettingsPage /> },\n              { path: '/dashboard/questions', element: <QuestionsPage /> },""",
+              """              { path: '/dashboard/settings', element: <SettingsPage /> },\n              { path: '/dashboard/students', element: <StudentsPage /> },\n              { path: '/dashboard/students/new', element: <StudentNewPage /> },\n              { path: '/dashboard/students/:studentId', element: <StudentDetailPage /> },\n              { path: '/dashboard/questions', element: <QuestionsPage /> },""",
+          )
+
+          # --- Teacher icon + discoverability without bloating primary nav ---
+          icon = 'apps/web/src/components/ui/teacher-icon.tsx'
+          replace_once(icon, """  | 'questions'\n  | 'reports'""", """  | 'questions'\n  | 'students'\n  | 'reports'""")
+          replace_once(icon, """    questions: <><path d=\"M5 6.5 12 3l7 3.5-7 3.5z\" /><path d=\"m5 11 7 3.5 7-3.5M5 15.5l7 3.5 7-3.5\" /></>,\n    reports:""", """    questions: <><path d=\"M5 6.5 12 3l7 3.5-7 3.5z\" /><path d=\"m5 11 7 3.5 7-3.5M5 15.5l7 3.5 7-3.5\" /></>,\n    students: <><circle cx=\"9\" cy=\"8\" r=\"3\" /><circle cx=\"17\" cy=\"9\" r=\"2.5\" /><path d=\"M3.5 20c.4-4 2.2-6 5.5-6s5.1 2 5.5 6M14 15c3.6-.5 5.8 1.2 6.5 5\" /></>,\n    reports:""")
+
+          layout = 'apps/web/src/components/layout/root-layout.tsx'
+          replace_once(
+              layout,
+              """              <Link to=\"/dashboard/questions\" className=\"flex min-h-10 items-center gap-2 rounded-lg px-3 text-xs font-bold text-slate-600 hover:bg-violet-50 hover:text-violet-800\">بنك الأسئلة</Link>\n            </div>""",
+              """              <Link to=\"/dashboard/questions\" className=\"flex min-h-10 items-center gap-2 rounded-lg px-3 text-xs font-bold text-slate-600 hover:bg-violet-50 hover:text-violet-800\">بنك الأسئلة</Link>\n              <Link to=\"/dashboard/students\" className=\"flex min-h-10 items-center gap-2 rounded-lg px-3 text-xs font-bold text-slate-600 hover:bg-violet-50 hover:text-violet-800\"><TeacherIcon name=\"students\" className=\"h-4 w-4\" />الطلاب</Link>\n            </div>""",
+          )
+          replace_once(
+              layout,
+              """                  <Link to=\"/dashboard/questions\" className=\"inline-flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-bold text-slate-700 hover:bg-violet-50\"><TeacherIcon name=\"questions\" />بنك الأسئلة</Link>\n                  <Link to=\"/dashboard/certificates\"""",
+              """                  <Link to=\"/dashboard/questions\" className=\"inline-flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-bold text-slate-700 hover:bg-violet-50\"><TeacherIcon name=\"questions\" />بنك الأسئلة</Link>\n                  <Link to=\"/dashboard/students\" className=\"inline-flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-bold text-slate-700 hover:bg-violet-50\"><TeacherIcon name=\"students\" />الطلاب</Link>\n                  <Link to=\"/dashboard/certificates\"""",
+          )
+
+          dashboard = 'apps/web/src/routes/dashboard/dashboard-page.tsx'
+          replace_once(dashboard, """      <section className=\"grid gap-3 sm:grid-cols-2\" aria-label=\"اختصارات\">""", """      <section className=\"grid gap-3 sm:grid-cols-3\" aria-label=\"اختصارات\">""")
+          replace_once(
+              dashboard,
+              """        <Link to=\"/dashboard/reports\" className=\"teacher-surface group flex min-h-24 items-center gap-4 p-4 transition hover:border-amber-200 hover:shadow-md\"><span aria-hidden=\"true\" className=\"flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-800\"><TeacherIcon name=\"reports\" /></span><span><span className=\"block text-base font-black text-slate-950\">النتائج</span><span className=\"mt-1 block text-sm text-slate-500\">الدرجات والمحاولات والتقدم.</span></span><span aria-hidden=\"true\" className=\"mr-auto text-lg font-black text-amber-600\">←</span></Link>\n      </section>""",
+              """        <Link to=\"/dashboard/reports\" className=\"teacher-surface group flex min-h-24 items-center gap-4 p-4 transition hover:border-amber-200 hover:shadow-md\"><span aria-hidden=\"true\" className=\"flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-800\"><TeacherIcon name=\"reports\" /></span><span><span className=\"block text-base font-black text-slate-950\">النتائج</span><span className=\"mt-1 block text-sm text-slate-500\">الدرجات والمحاولات والتقدم.</span></span><span aria-hidden=\"true\" className=\"mr-auto text-lg font-black text-amber-600\">←</span></Link>\n        <Link to=\"/dashboard/students\" className=\"teacher-surface group flex min-h-24 items-center gap-4 p-4 transition hover:border-emerald-200 hover:shadow-md\"><span aria-hidden=\"true\" className=\"flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-800\"><TeacherIcon name=\"students\" /></span><span><span className=\"block text-base font-black text-slate-950\">الطلاب</span><span className=\"mt-1 block text-sm text-slate-500\">أكواد الدخول ونتائج كل طالب.</span></span><span aria-hidden=\"true\" className=\"mr-auto text-lg font-black text-emerald-700\">←</span></Link>\n      </section>""",
+          )
+
+          # --- Student public copy ---
+          join_page = 'apps/web/src/routes/public/student-join-page.tsx'
+          replace_once(join_page, 'لا حساب ولا كلمة مرور. أدخل رمز النشاط فقط، ثم اكتب اسمك وابدأ.', 'لا حساب ولا كلمة مرور. أدخل رمز النشاط، ثم استخدم كود الطالب إن كان لديك أو ادخل بالاسم كضيف.')
+          replace_once(join_page, 'text=\"اكتب اسمك\"', 'text=\"كودك أو اسمك\"')
+
+          # --- Player managed-student entry; guest path remains the default and unchanged ---
+          play = 'apps/web/src/routes/play/play-page.tsx'
+          replace_once(play, """import { QUESTION_TYPE_LABELS } from '../../types/questions';""", """import { QUESTION_TYPE_LABELS } from '../../types/questions';\nimport { normalizeStudentCode } from '../../types/students';""")
+          replace_once(
+              play,
+              """  const [displayName, setDisplayName] = useState('');\n  const [nameError, setNameError] = useState<string | null>(null);\n  const [actionError, setActionError] = useState<string | null>(null);""",
+              """  const [displayName, setDisplayName] = useState('');\n  const [nameError, setNameError] = useState<string | null>(null);\n  const [studentCode, setStudentCode] = useState('');\n  const [studentCodeError, setStudentCodeError] = useState<string | null>(null);\n  const [useStudentCode, setUseStudentCode] = useState(false);\n  const [actionError, setActionError] = useState<string | null>(null);""",
+          )
+          replace_once(
+              play,
+              """  const startMutation = useMutation({""",
+              """  const managedJoinMutation = useMutation({\n    mutationFn: (code: string) => playerApi.joinWithStudentCode(joinCode!, code),\n    onSuccess: (playerState) => {\n      setActionError(null);\n      setStudentCodeError(null);\n      applyPlayerState(joinCode!, playerState, sessionQuery.data!);\n    },\n    onError: (error) => {\n      if (error instanceof HttpError && error.status === 404) {\n        setStudentCodeError('كود الطالب غير صحيح أو غير مفعّل.');\n      } else if (error instanceof HttpError && error.status === 409) {\n        setActionError('الجلسة لم تعد تقبل منضمّين جددًا.');\n      } else if (error instanceof HttpError && error.status === 429) {\n        setActionError('محاولات كثيرة. انتظر قليلًا ثم حاول مجددًا.');\n      } else {\n        setActionError('تعذر الدخول بكود الطالب. أعد المحاولة.');\n      }\n    },\n  });\n\n  const startMutation = useMutation({""",
+          )
+          replace_once(
+              play,
+              """  // ─── شاشات ────────────────────────────────────────────────────────────────""",
+              """  function onStudentCodeSubmit(e: React.FormEvent) {\n    e.preventDefault();\n    const code = normalizeStudentCode(studentCode);\n    if (code.length < 6) {\n      setStudentCodeError('اكتب كود الطالب كاملًا.');\n      return;\n    }\n    setStudentCodeError(null);\n    setActionError(null);\n    managedJoinMutation.mutate(code);\n  }\n\n  // ─── شاشات ────────────────────────────────────────────────────────────────""",
+          )
+
+          guest_form_start = """            <form onSubmit={onJoinSubmit} className=\"mt-6 flex flex-col gap-3\">\n              <label htmlFor=\"display-name\" className=\"text-base font-black\">ما اسمك؟</label>"""
+          managed_start = """            {!useStudentCode ? (\n              <>\n                <button type=\"button\" onClick={() => { setUseStudentCode(true); setActionError(null); }} className=\"mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border-2 border-violet-200 bg-violet-50 px-4 text-sm font-black text-violet-900 hover:border-violet-400 hover:bg-violet-100\">\n                  <span aria-hidden=\"true\">🎟️</span> لدي كود طالب\n                </button>\n                <p className=\"mt-3 text-center text-xs font-semibold text-slate-500\">أو ادخل بالاسم كضيف إذا لم يعطك المعلم كودًا.</p>\n                <form onSubmit={onJoinSubmit} className=\"mt-4 flex flex-col gap-3\">\n              <label htmlFor=\"display-name\" className=\"text-base font-black\">ما اسمك؟</label>"""
+          replace_once(play, guest_form_start, managed_start)
+
+          guest_form_end = """              </StudentButton>\n            </form>\n          </div>"""
+          managed_end = """              </StudentButton>\n                </form>\n              </>\n            ) : (\n              <>\n                <button type=\"button\" onClick={() => { setUseStudentCode(false); setStudentCodeError(null); setActionError(null); }} className=\"mt-6 inline-flex min-h-11 items-center text-sm font-black text-violet-700 hover:underline\">\n                  الدخول بالاسم بدلًا من ذلك →\n                </button>\n                <form onSubmit={onStudentCodeSubmit} className=\"mt-3 flex flex-col gap-3\">\n                  <label htmlFor=\"student-code\" className=\"text-base font-black\">كود الطالب</label>\n                  <TextInput\n                    id=\"student-code\"\n                    dir=\"ltr\"\n                    value={studentCode}\n                    onChange={(e) => { setStudentCode(normalizeStudentCode(e.target.value)); setStudentCodeError(null); }}\n                    minLength={6}\n                    maxLength={12}\n                    autoComplete=\"off\"\n                    autoCapitalize=\"characters\"\n                    placeholder=\"ABCD1234\"\n                    aria-invalid={Boolean(studentCodeError)}\n                    aria-describedby={studentCodeError ? 'student-code-error' : undefined}\n                    className=\"min-h-14 rounded-xl px-4 text-center font-mono text-xl font-black tracking-[0.16em] placeholder:text-slate-400 focus:border-violet-700 focus:outline-violet-700\"\n                  />\n                  {studentCodeError ? <p id=\"student-code-error\" role=\"alert\" className=\"text-sm font-bold text-rose-700\">{studentCodeError}</p> : null}\n                  {actionError ? <p role=\"alert\" className=\"rounded-xl bg-rose-50 p-3 text-sm text-rose-700\">{actionError}</p> : null}\n                  <StudentButton type=\"submit\" disabled={managedJoinMutation.isPending || studentCode.length < 6} className=\"mt-2 w-full text-base\">\n                    {managedJoinMutation.isPending ? <ButtonSpinner /> : null}\n                    {managedJoinMutation.isPending ? 'جارٍ التحقق…' : 'دخول بكود الطالب'}\n                    {!managedJoinMutation.isPending ? <span aria-hidden=\"true\" className=\"mr-2\">←</span> : null}\n                  </StudentButton>\n                </form>\n              </>\n            )}\n          </div>"""
+          replace_once(play, guest_form_end, managed_end)
+
+          # --- Player regression test for managed identity ---
+          play_test = 'apps/web/src/routes/play/play-page.test.tsx'
+          replace_once(play_test, """      join: vi.fn(),\n      startAttempt: vi.fn(),""", """      join: vi.fn(),\n      joinWithStudentCode: vi.fn(),\n      startAttempt: vi.fn(),""")
+          replace_once(play_test, """const joinMock = vi.mocked(playerApi.join);\nconst startAttemptMock""", """const joinMock = vi.mocked(playerApi.join);\nconst managedJoinMock = vi.mocked(playerApi.joinWithStudentCode);\nconst startAttemptMock""")
+          marker = """  it('يعرض رسالة 409 عند رفض الانضمام', async () => {"""
+          test = """  it('يسمح للطالب بالدخول بكوده ويستخدم الاسم الموثوق من السجل', async () => {\n    getSessionMock.mockResolvedValue(activeSession);\n    managedJoinMock.mockResolvedValue({ ...joinResponse, displayName: 'سارة من السجل' });\n    renderPage();\n\n    await waitFor(() => screen.getByRole('button', { name: 'لدي كود طالب' }));\n    fireEvent.click(screen.getByRole('button', { name: 'لدي كود طالب' }));\n    fireEvent.change(screen.getByLabelText('كود الطالب'), { target: { value: 'abcd-1234' } });\n    fireEvent.click(screen.getByRole('button', { name: 'دخول بكود الطالب' }));\n\n    await waitFor(() => expect(screen.getByRole('heading', { name: /سارة من السجل/ })).toBeInTheDocument());\n    expect(managedJoinMock).toHaveBeenCalledWith('JOIN123', 'ABCD1234');\n    expect(joinMock).not.toHaveBeenCalled();\n  });\n\n""" + marker
+          replace_once(play_test, marker, test)
+
+          # --- Strongly typed result query and conflict-safe editor resync ---
+          detail = 'apps/web/src/routes/dashboard/students/student-detail-page.tsx'
+          replace_once(detail, """import { useState, type FormEvent } from 'react';""", """import { useEffect, useState, type FormEvent } from 'react';""")
+          replace_once(detail, """import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';""", """import { useMutation, useQuery, useQueryClient, type UseQueryResult } from '@tanstack/react-query';""")
+          replace_once(detail, """import { formatStudentCode, type Student } from '../../../types/students';""", """import { formatStudentCode, type Student, type StudentResult } from '../../../types/students';""")
+          replace_once(
+              detail,
+              """  const [message, setMessage] = useState<string | null>(null);\n  const [error, setError] = useState<string | null>(null);\n\n  const updateMutation""",
+              """  const [message, setMessage] = useState<string | null>(null);\n  const [error, setError] = useState<string | null>(null);\n\n  useEffect(() => {\n    setFullName(student.fullName);\n    setGrade(student.grade ?? '');\n    setNotes(student.notes ?? '');\n  }, [student.id, student.version, student.fullName, student.grade, student.notes]);\n\n  const updateMutation""",
+          )
+          replace_once(detail, """function StudentResults({ query }: { studentId: string; query: ReturnType<typeof useQuery<Awaited<ReturnType<typeof studentsApi.listResults>>, Error>> }) {""", """function StudentResults({ query }: { studentId: string; query: UseQueryResult<StudentResult[], Error> }) {""")
+
+      - name: Add focused student utility tests
+        shell: bash
+        run: |
+          cat > apps/web/src/types/students.test.ts <<'EOF'
+          import { describe, expect, it } from 'vitest';
+          import { formatStudentCode, normalizeStudentCode } from './students';
+
+          describe('student code helpers', () => {
+            it('normalizes pasted codes without ambiguous formatting characters', () => {
+              expect(normalizeStudentCode(' abcd-23 78 ')).toBe('ABCD2378');
+            });
+
+            it('limits input to the persisted code maximum', () => {
+              expect(normalizeStudentCode('abcdefghijklmnop')).toHaveLength(12);
+            });
+
+            it('formats a code for display without changing its stored value', () => {
+              expect(formatStudentCode('abcd2378')).toBe('ABCD-2378');
+            });
+          });
+          EOF
+
+      - name: Format backend
+        working-directory: backend
+        run: |
+          dotnet restore
+          dotnet format --no-restore
+
+      - name: Verify backend
+        working-directory: backend
+        run: |
+          dotnet build --no-restore
+          dotnet test tests/TeacherPlatform.Domain.Tests --no-build
+          dotnet test tests/TeacherPlatform.Api.Tests --no-build
+          dotnet test tests/TeacherPlatform.IntegrationTests --no-build
+
+      - name: Verify frontend
+        working-directory: apps/web
+        run: |
+          npm install --registry https://registry.npmjs.org
+          npm run lint
+          npm run typecheck
+          npm run test
+          npm run build
+
+      - name: Commit validated student UI
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm .github/workflows/student-ui-engineering.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .
+          git commit -m 'feat(students): complete roster and managed player experience'
+          git push origin HEAD:feature/english-spark-ux-foundation
