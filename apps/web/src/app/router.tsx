@@ -27,6 +27,7 @@ const ChooseWorkspacePage = lazy(() => import('../routes/onboarding/choose-works
 const DashboardPage = lazy(() => import('../routes/dashboard/dashboard-page'));
 const SettingsPage = lazy(() => import('../routes/dashboard/settings-page'));
 const ActivityNewPage = lazy(() => import('../routes/dashboard/activities/activity-new-page'));
+const ActivityManagePage = lazy(() => import('../routes/dashboard/activities/activity-manage-page'));
 const ActivityBuilderPage = lazy(() => import('../routes/dashboard/activities/activity-builder-page'));
 const ActivityBulkQuestionsPage = lazy(() => import('../routes/dashboard/activities/activity-bulk-questions-page'));
 const ActivityReadyPage = lazy(() => import('../routes/dashboard/activities/activity-ready-page'));
@@ -84,6 +85,7 @@ export const router = createBrowserRouter([
             children: [
               { path: '/dashboard', element: <DashboardPage /> },
               { path: '/dashboard/activities/new', element: <ActivityNewPage /> },
+              { path: '/dashboard/activities/:quizId/manage', element: <ActivityManagePage /> },
               { path: '/dashboard/activities/:quizId/build', element: <ActivityBuilderPage /> },
               { path: '/dashboard/activities/:quizId/bulk', element: <ActivityBulkQuestionsPage /> },
               { path: '/dashboard/activities/:quizId/ready', element: <ActivityReadyPage /> },
