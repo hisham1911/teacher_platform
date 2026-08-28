@@ -13,7 +13,7 @@ async function loginTeacher(page) {
   await page.getByLabel('كلمة المرور').fill('SecurePassword123!');
   const responsePromise = page.waitForResponse((response) =>
     response.request().method() === 'POST' && response.url().endsWith('/api/v1/auth/login'));
-  await page.getByRole('button', { name: 'تسجيل الدخول' }).click();
+  await page.getByRole('button', { name: 'دخول إلى English Spark' }).click();
   const response = await responsePromise;
   expect(response.ok()).toBe(true);
   await expect(page).toHaveURL(/\/dashboard$/);
@@ -116,7 +116,7 @@ test('progressive challenge teacher, player, resume, outcomes, and report', asyn
   const firstOptionBox = await firstOption.locator('..').boundingBox();
   expect(firstOptionBox?.height ?? 0).toBeGreaterThanOrEqual(44);
   await firstOption.click();
-  await player.getByRole('button', { name: 'تثبيت الإجابة' }).click();
+  await player.getByRole('button', { name: /تأكيد الإجابة/ }).click();
   await expect(player.getByTestId('challenge-feedback-correct')).toBeVisible();
   await expect(player.getByTestId('challenge-score-indicator')).toContainText('5');
   await capture(player, '04-correct-feedback', 1280, 720);
@@ -160,7 +160,7 @@ test('progressive challenge teacher, player, resume, outcomes, and report', asyn
 
   await capture(player, '05-middle-level', 390, 844);
   await player.getByText('خمسة', { exact: true }).click();
-  await player.getByRole('button', { name: 'تثبيت الإجابة' }).click();
+  await player.getByRole('button', { name: /تأكيد الإجابة/ }).click();
   await expect(player.getByTestId('challenge-feedback-wrong')).toBeVisible();
   await capture(player, '06-wrong-feedback', 375, 812);
   await expect(player.getByTestId('challenge-result-banner')).toContainText('انتهى التحدي');
@@ -190,11 +190,11 @@ test('progressive challenge teacher, player, resume, outcomes, and report', asyn
   const winner = await winnerContext.newPage();
   await joinAndStart(winner, session.joinCode, 'الفائزة بالتحدي');
   await winner.getByText('القاهرة', { exact: true }).click();
-  await winner.getByRole('button', { name: 'تثبيت الإجابة' }).click();
+  await winner.getByRole('button', { name: /تأكيد الإجابة/ }).click();
   await expect(winner.getByTestId('challenge-feedback-correct')).toBeVisible();
   await winner.getByRole('button', { name: 'متابعة الآن' }).click();
   await winner.getByText('سبعة', { exact: true }).click();
-  await winner.getByRole('button', { name: 'تثبيت الإجابة' }).click();
+  await winner.getByRole('button', { name: /تأكيد الإجابة/ }).click();
   await expect(winner.getByTestId('challenge-feedback-correct')).toBeVisible();
   const certificateResponsePromise = winner.waitForResponse((response) =>
     response.request().method() === 'POST' && response.url().endsWith('/certificate'));
