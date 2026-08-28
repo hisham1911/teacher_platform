@@ -157,14 +157,14 @@ test('English Spark golden path hides publishing/session complexity from the tea
   await expect(student.getByPlaceholder('اكتب اسمك هنا')).toBeVisible();
 
   await student.getByPlaceholder('اكتب اسمك هنا').fill('طالبة English Spark');
-  await student.getByRole('button', { name: 'ابدأ الاختبار' }).click();
+  await student.getByRole('button', { name: 'ادخل إلى المهمة' }).click();
   await expect(student.getByTestId('challenge-ready')).toBeVisible();
 
   const attemptResponse = student.waitForResponse((response) =>
     response.request().method() === 'POST' && response.url().endsWith(`/player/sessions/${session.joinCode}/attempts`));
   const firstQuestionResponse = student.waitForResponse((response) =>
     response.request().method() === 'GET' && response.url().endsWith('/current-question'));
-  await student.getByRole('button', { name: 'ابدأ التحدي' }).click();
+  await student.getByRole('button', { name: 'ابدأ المهمة' }).click();
   expect((await attemptResponse).ok()).toBe(true);
   expect((await firstQuestionResponse).ok()).toBe(true);
 

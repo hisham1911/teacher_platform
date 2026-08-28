@@ -36,14 +36,14 @@ async function capture(page, name, width, height) {
 async function joinAndStart(page, joinCode, displayName) {
   await page.goto(`/play/${joinCode}`);
   await page.getByPlaceholder('اكتب اسمك هنا').fill(displayName);
-  await page.getByRole('button', { name: 'ابدأ الاختبار' }).click();
+  await page.getByRole('button', { name: 'ادخل إلى المهمة' }).click();
   await expect(page.getByTestId('challenge-ready')).toBeVisible();
 
   const startResponsePromise = page.waitForResponse((response) =>
     response.request().method() === 'POST' && response.url().endsWith(`/player/sessions/${joinCode}/attempts`));
   const questionResponsePromise = page.waitForResponse((response) =>
     response.request().method() === 'GET' && response.url().includes(`/player/sessions/${joinCode}/attempts/`) && response.url().endsWith('/current-question'));
-  await page.getByRole('button', { name: 'ابدأ التحدي' }).click();
+  await page.getByRole('button', { name: 'ابدأ المهمة' }).click();
   const [startResponse, questionResponse] = await Promise.all([startResponsePromise, questionResponsePromise]);
   expect(startResponse.ok()).toBe(true);
   expect(questionResponse.ok()).toBe(true);
@@ -94,7 +94,7 @@ test('progressive challenge teacher, player, resume, outcomes, and report', asyn
   await expect(player.getByPlaceholder('اكتب اسمك هنا')).toBeVisible();
   await capture(player, '01-join', 1440, 900);
   await player.getByPlaceholder('اكتب اسمك هنا').fill('طالبة التحدي');
-  await player.getByRole('button', { name: 'ابدأ الاختبار' }).click();
+  await player.getByRole('button', { name: 'ادخل إلى المهمة' }).click();
   await expect(player.getByTestId('challenge-ready')).toBeVisible();
   await capture(player, '02-ready', 1280, 720);
 
@@ -102,7 +102,7 @@ test('progressive challenge teacher, player, resume, outcomes, and report', asyn
     response.request().method() === 'POST' && response.url().endsWith(`/player/sessions/${session.joinCode}/attempts`));
   const firstQuestionResponsePromise = player.waitForResponse((response) =>
     response.request().method() === 'GET' && response.url().endsWith('/current-question'));
-  await player.getByRole('button', { name: 'ابدأ التحدي' }).click();
+  await player.getByRole('button', { name: 'ابدأ المهمة' }).click();
   const attempt = await (await startResponsePromise).json();
   const firstQuestion = await (await firstQuestionResponsePromise).json();
   await expect(player.getByTestId('challenge-level-indicator')).toHaveText('المستوى 1 / 2');

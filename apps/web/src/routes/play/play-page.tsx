@@ -22,7 +22,7 @@ import { PlayerSurveyAction, PlayerSurveyPanel } from './player-survey-panel';
 import { PlayerDeliveryPanel } from './player-delivery-panel';
 import { StudentAudioPlayer } from './student-audio-player';
 import { ProgressivePlayerView, ProgressiveResultView, ProgressiveShell } from './progressive-player';
-import { QuestionProgress, StudentButton, StudentError, StudentLearningVisual, StudentLoading, StudentShell } from './student-ui';
+import { QuestionProgress, StudentButton, StudentError, StudentLearningVisual, StudentLoading, StudentShell, StudentSparkBrand } from './student-ui';
 
 /**
  * /play/:joinCode — واجهة الطالب (Phase 4).
@@ -266,11 +266,11 @@ export default function PlayPage() {
   // ─── شاشات ────────────────────────────────────────────────────────────────
 
   if (stage.kind === 'loading') {
-    return <StudentLoading message="جارٍ تجهيز الاختبار…" />;
+    return <StudentLoading message="جارٍ تجهيز النشاط…" />;
   }
 
   if (stage.kind === 'unavailable') {
-    return <StudentError title="الاختبار غير متاح الآن" message={stage.message} />;
+    return <StudentError title="النشاط غير متاح الآن" message={stage.message} />;
   }
 
   if (stage.kind === 'join') {
@@ -283,15 +283,15 @@ export default function PlayPage() {
             <span aria-hidden="true" className="absolute bottom-12 left-10 h-3 w-3 rotate-45 rounded-sm bg-[var(--student-violet)] opacity-75" />
             <div className="mb-4"><StudentLearningVisual /></div>
             <h2 dir="auto" className="rounded-full bg-white px-4 py-2 text-sm font-black text-[var(--student-ink)] shadow-[0_1px_4px_rgb(15_23_42/0.08)]">{session.title}</h2>
-            <h1 className="mt-5 text-balance text-3xl font-black leading-tight text-[var(--student-ink)] sm:text-4xl">جاهز للتحدي؟</h1>
+            <h1 className="mt-5 text-balance text-3xl font-black leading-tight text-[var(--student-ink)] sm:text-4xl">{session.mode === 'ProgressiveChallenge' ? 'جاهز تبدأ المهمة؟' : session.mode === 'Live' ? 'جاهز للمسابقة؟' : 'جاهز تبدأ؟'}</h1>
             {session.description ? <p className="mx-auto mt-3 max-w-sm text-pretty text-sm font-semibold leading-7 text-amber-950/75">{session.description}</p> : null}
           </div>
 
           <div className="p-6 sm:p-8">
             <dl className="flex items-stretch justify-center divide-x divide-x-reverse divide-slate-200 rounded-xl bg-slate-50 py-4 text-center">
-              <div className="min-w-0 flex-1 px-3"><dt className="text-xs font-semibold text-[var(--student-muted)]">الأسئلة</dt><dd className="mt-1 text-lg font-black text-emerald-800">{session.questionCount}</dd></div>
+              <div className="min-w-0 flex-1 px-3"><dt className="text-xs font-semibold text-[var(--student-muted)]">{session.mode === 'ProgressiveChallenge' ? 'المستويات' : 'الأسئلة'}</dt><dd className="mt-1 text-lg font-black text-emerald-800">{session.questionCount}</dd></div>
               <div className="min-w-0 flex-1 px-3"><dt className="text-xs font-semibold text-[var(--student-muted)]">الوقت</dt><dd className="mt-1 text-sm font-black text-[var(--student-violet)]">{sessionTimeLabel(session)}</dd></div>
-              <div className="min-w-0 flex-1 px-3"><dt className="text-xs font-semibold text-[var(--student-muted)]">النجاح</dt><dd dir="ltr" className="mt-1 text-lg font-black text-amber-700">{session.passingPercentage}%</dd></div>
+              <div className="min-w-0 flex-1 px-3"><dt className="text-xs font-semibold text-[var(--student-muted)]">{session.mode === 'ProgressiveChallenge' ? 'النقاط' : 'النجاح'}</dt><dd dir="ltr" className="mt-1 text-lg font-black text-amber-700">{session.mode === 'ProgressiveChallenge' ? session.totalPoints : `${session.passingPercentage}%`}</dd></div>
             </dl>
 
             {session.instructions ? <p className="mt-5 rounded-xl bg-emerald-50 p-4 text-sm leading-7 text-emerald-950">{session.instructions}</p> : null}
@@ -320,7 +320,7 @@ export default function PlayPage() {
               {actionError ? <p role="alert" className="rounded-xl bg-rose-50 p-3 text-sm text-rose-700">{actionError}</p> : null}
               <StudentButton type="submit" disabled={joinMutation.isPending} className="mt-2 w-full text-base">
                 {joinMutation.isPending ? <ButtonSpinner /> : null}
-                {joinMutation.isPending ? 'جارٍ تجهيز دخولك…' : 'ابدأ الاختبار'}
+                {joinMutation.isPending ? 'جارٍ تجهيز دخولك…' : session.mode === 'ProgressiveChallenge' ? 'ادخل إلى المهمة' : 'ابدأ الاختبار'}
                 {!joinMutation.isPending ? <span aria-hidden="true" className="mr-2">←</span> : null}
               </StudentButton>
                 </form>
@@ -475,16 +475,17 @@ function ChallengeReadyView({
     <ProgressiveShell>
       <div className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col items-center justify-center px-4 py-10">
         <section className="challenge-panel challenge-enter w-full p-6 text-center sm:p-10" data-testid="challenge-ready">
-          <p className="text-sm font-black tracking-wide text-[var(--challenge-accent)]">التحدي المتدرج</p>
+          <div className="-mt-2 mb-1"><StudentSparkBrand inverse /></div>
+          <p className="text-xs font-black tracking-[0.2em] text-[var(--challenge-accent)]">SPARK CHALLENGE</p>
           <h1 className="mt-3 text-balance text-3xl font-black text-white sm:text-4xl">
-            أهلًا بك، <bdi>{displayName}</bdi>!
+            جاهز تبدأ المهمة، <bdi>{displayName}</bdi>؟
           </h1>
           <p dir="auto" className="mt-3 text-base font-bold text-sky-200">{session.title}</p>
 
           <dl className="mx-auto mt-6 flex max-w-md items-stretch justify-center divide-x divide-x-reverse divide-white/10 rounded-xl bg-white/[0.06] py-4">
             <div className="min-w-0 flex-1 px-3"><dt className="text-xs font-bold text-sky-300">المستويات</dt><dd dir="ltr" className="mt-1 text-lg font-black text-white">{session.questionCount}</dd></div>
             <div className="min-w-0 flex-1 px-3"><dt className="text-xs font-bold text-sky-300">النقاط</dt><dd dir="ltr" className="mt-1 text-lg font-black text-white">{session.totalPoints}</dd></div>
-            <div className="min-w-0 flex-1 px-3"><dt className="text-xs font-bold text-sky-300">النجاح</dt><dd dir="ltr" className="mt-1 text-lg font-black text-[var(--challenge-accent)]">{session.passingPercentage}%</dd></div>
+            <div className="min-w-0 flex-1 px-3"><dt className="text-xs font-bold text-sky-300">الوقت</dt><dd className="mt-1 text-sm font-black text-[var(--challenge-accent)]">{sessionTimeLabel(session)}</dd></div>
           </dl>
 
           <p className="mx-auto mt-5 max-w-md rounded-xl bg-white/[0.06] p-4 text-sm font-semibold leading-7 text-sky-100">
@@ -500,7 +501,7 @@ function ChallengeReadyView({
             disabled={starting}
             className="mt-7 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[var(--challenge-accent)] px-8 text-base font-black text-slate-950 transition-transform duration-200 hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-55 motion-reduce:transition-none sm:w-72">
             {starting ? <ButtonSpinner /> : null}
-            {starting ? 'جارٍ البدء…' : hasAttempt ? 'استئناف التحدي' : 'ابدأ التحدي'}
+            {starting ? 'جارٍ تجهيز المهمة…' : hasAttempt ? 'استئناف المهمة' : 'ابدأ المهمة'}
           </button>
         </section>
       </div>

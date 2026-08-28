@@ -118,6 +118,19 @@ describe('PlayPage', () => {
     expect(getSessionMock).toHaveBeenCalledWith('JOIN123', expect.anything());
   });
 
+
+  it('يعرض دخول التحدي المتدرج كتجربة مهمة لا كاختبار تقليدي', async () => {
+    getSessionMock.mockResolvedValue({ ...activeSession, mode: 'ProgressiveChallenge' });
+    renderPage();
+
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'جاهز تبدأ المهمة؟' })).toBeInTheDocument());
+    expect(screen.getByText('المستويات')).toBeInTheDocument();
+    expect(screen.getByText('النقاط')).toBeInTheDocument();
+    expect(screen.queryByText('النجاح')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'ادخل إلى المهمة' })).toBeInTheDocument();
+    expect(screen.getByLabelText('English Spark')).toBeInTheDocument();
+  });
+
   it('يعرض رسالة انتظار عندما تكون الجلسة مجدولة', async () => {
     getSessionMock.mockResolvedValue({ ...activeSession, status: 'Scheduled', canJoin: false });
     renderPage();
@@ -513,8 +526,8 @@ describe('PlayPage', () => {
 
     // شاشة استعداد مخصصة للتحدي قبل البدء
     expect(await screen.findByTestId('challenge-ready')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'ابدأ التحدي' })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'ابدأ التحدي' }));
+    expect(screen.getByRole('button', { name: 'ابدأ المهمة' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'ابدأ المهمة' }));
 
     expect(await screen.findByTestId('challenge-level-indicator')).toHaveTextContent('المستوى 1 / 2');
     expect(startAttemptMock).toHaveBeenCalledWith('JOIN123');

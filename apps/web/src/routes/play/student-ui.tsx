@@ -17,11 +17,24 @@ export function StudentShell({
   return (
     <main className="student-shell min-h-dvh overflow-x-clip" dir="rtl">
       <div className={`relative z-10 mx-auto flex min-h-dvh w-full ${shellWidths[width]} flex-col px-4 sm:px-6`}>
-        <div className={`flex flex-1 flex-col pb-5 pt-4 ${centered ? 'justify-center py-6 sm:py-10' : 'sm:pt-6'}`}>
+        <StudentSparkBrand />
+        <div className={`flex flex-1 flex-col pb-5 pt-2 ${centered ? 'justify-center pb-8 sm:pb-10' : 'sm:pt-4'}`}>
           {children}
         </div>
       </div>
     </main>
+  );
+}
+
+export function StudentSparkBrand({ inverse = false }: { inverse?: boolean }) {
+  return (
+    <div className={`flex min-h-14 items-center justify-center gap-2.5 py-3 text-center ${inverse ? 'text-white' : 'text-slate-950'}`} aria-label="English Spark">
+      <span aria-hidden="true" className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 via-fuchsia-500 to-violet-700 text-lg font-black text-white shadow-sm">✦</span>
+      <div className="leading-none">
+        <p className="text-xs font-black tracking-[0.16em]">ENGLISH SPARK</p>
+        <p className={`mt-1.5 text-[9px] font-black tracking-[0.18em] ${inverse ? 'text-sky-200' : 'text-violet-600'}`}>LEARN • PLAY • EXPLORE</p>
+      </div>
+    </div>
   );
 }
 
