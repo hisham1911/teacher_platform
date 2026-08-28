@@ -1,15 +1,90 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expect, test } from '@playwright/test';
 
 const e2eDir = fileURLToPath(new URL('..', import.meta.url));
+const repoRoot = join(e2eDir, '..');
 const state = JSON.parse(readFileSync(join(e2eDir, 'state.json'), 'utf8'));
+const apiUrl = process.env.API_URL || state.api || 'http://localhost:5000';
+const mailDir = process.env.MAIL_DIR || join(repoRoot, 'backend', 'src', 'TeacherPlatform.Api', '.dev-mail');
+const password = 'SecurePassword123!';
 
-async function loginTeacher(page) {
+function latestConfirmationUrl(email) {
+  const files = readdirSync(mailDir).filter((file) => file.endsWith('.json')).sort();
+  for (let index = files.length - 1; index >= 0; index--) {
+    const payload = JSON.parse(readFileSync(join(mailDir, files[index]), 'utf8'));
+    if (payload.To === email && payload.Kind === 'Confirmation') return payload.ActionUrl;
+  }
+  throw new Error(`No confirmation email found for ${email}`);
+}
+
+async function post(request, path, body, token) {
+  const response = await request.post(`${apiUrl}${path}`, {
+    data: body,
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  });
+  if (!response.ok()) throw new Error(`POST ${path} -> ${response.status()}: ${await response.text()}`);
+  return response.json();
+}
+
+async function prepareTeacher(request) {
+  const nonce = `${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
+  const email = `spark-golden-${nonce}@example.test`;
+
+  await post(request, '/api/v1/auth/register', {
+    email,
+    password,
+    fullName: 'Mariam Golden Path',
+  });
+
+  const confirmation = new URL(latestConfirmationUrl(email));
+  await post(request, '/api/v1/auth/confirm-email', {
+    uid: confirmation.searchParams.get('uid'),
+    token: confirmation.searchParams.get('token'),
+  });
+
+  const login = await post(request, '/api/v1/auth/login', { email, password });
+  const token = login.accessToken;
+  const tenant = await post(request, '/api/v1/tenants', {
+    name: `English Spark Golden ${nonce}`,
+    slug: `spark-golden-${Date.now().toString(36)}`,
+    countryCode: 'EG',
+    timezone: 'Africa/Cairo',
+    defaultLocale: 'ar',
+  }, token);
+
+  const bank = await post(request, `/api/v1/tenants/${tenant.id}/question-banks`, {
+    name: 'English Spark Starter Bank',
+  }, token);
+
+  await post(request, `/api/v1/tenants/${tenant.id}/questions`, {
+    bankId: bank.id,
+    questionType: 'MultipleChoice',
+    prompt: 'ما عاصمة مصر؟',
+    options: [
+      { text: 'القاهرة', isCorrect: true },
+      { text: 'الإسكندرية', isCorrect: false },
+    ],
+  }, token);
+
+  await post(request, `/api/v1/tenants/${tenant.id}/questions`, {
+    bankId: bank.id,
+    questionType: 'MultipleChoice',
+    prompt: 'كم عدد أيام الأسبوع؟',
+    options: [
+      { text: 'سبعة', isCorrect: true },
+      { text: 'خمسة', isCorrect: false },
+    ],
+  }, token);
+
+  return { email };
+}
+
+async function loginTeacher(page, email) {
   await page.goto('/auth/login');
-  await page.getByLabel('البريد الإلكتروني').fill(state.email);
-  await page.getByLabel('كلمة المرور').fill('SecurePassword123!');
+  await page.getByLabel('البريد الإلكتروني').fill(email);
+  await page.getByLabel('كلمة المرور').fill(password);
 
   const loginResponse = page.waitForResponse((response) =>
     response.request().method() === 'POST' && response.url().endsWith('/api/v1/auth/login'));
@@ -18,12 +93,13 @@ async function loginTeacher(page) {
   await expect(page).toHaveURL(/\/dashboard$/);
 }
 
-test('English Spark golden path hides publishing/session complexity from the teacher', async ({ browser }) => {
+test('English Spark golden path hides publishing/session complexity from the teacher', async ({ browser, request }) => {
   test.setTimeout(120_000);
+  const teacherIdentity = await prepareTeacher(request);
 
   const teacherContext = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const teacher = await teacherContext.newPage();
-  await loginTeacher(teacher);
+  await loginTeacher(teacher, teacherIdentity.email);
 
   await teacher.getByRole('link', { name: 'إنشاء نشاط جديد' }).click();
   await expect(teacher.getByRole('heading', { name: 'ابدأ بالفكرة فقط.' })).toBeVisible();
