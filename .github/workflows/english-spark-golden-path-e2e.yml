@@ -57,6 +57,10 @@ jobs:
         working-directory: backend
         run: dotnet restore
 
+      - name: Build backend
+        working-directory: backend
+        run: dotnet build --no-restore
+
       - name: Install EF tool
         run: dotnet tool install --global dotnet-ef --version 10.0.3
 
@@ -64,6 +68,7 @@ jobs:
         working-directory: backend
         run: >-
           dotnet ef database update
+          --no-build
           --project src/TeacherPlatform.Infrastructure/TeacherPlatform.Infrastructure.csproj
           --startup-project src/TeacherPlatform.Api/TeacherPlatform.Api.csproj
 
@@ -82,7 +87,7 @@ jobs:
       - name: Start API
         shell: bash
         run: |
-          nohup dotnet run --project backend/src/TeacherPlatform.Api/TeacherPlatform.Api.csproj --no-launch-profile --urls http://localhost:5000 >/tmp/english-spark-api.log 2>&1 &
+          nohup dotnet run --project backend/src/TeacherPlatform.Api/TeacherPlatform.Api.csproj --no-build --no-launch-profile --urls http://localhost:5000 >/tmp/english-spark-api.log 2>&1 &
           echo $! >/tmp/english-spark-api.pid
           for i in $(seq 1 60); do
             if curl -fsS http://localhost:5000/health/ready >/dev/null; then
