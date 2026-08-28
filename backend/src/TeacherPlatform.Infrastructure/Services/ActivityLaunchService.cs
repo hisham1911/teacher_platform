@@ -1,3 +1,5 @@
+using System.Buffers.Binary;
+using System.Security.Cryptography;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using TeacherPlatform.Application.Abstractions;
@@ -13,6 +15,8 @@ namespace TeacherPlatform.Infrastructure.Services;
 /// Durable use case behind the teacher's «Prepare student link» button.
 /// Publish, session creation and activation either commit together or roll back together.
 /// RequestId makes network retries return the same session instead of creating duplicates.
+/// Concurrent retries with the same tenant + RequestId are serialized by a PostgreSQL
+/// transaction-level advisory lock before the idempotency lookup.
 /// </summary>
 public sealed class ActivityLaunchService
 {
@@ -38,7 +42,7 @@ public sealed class ActivityLaunchService
         ActivityLaunchRequest request,
         CancellationToken cancellationToken)
     {
-        RequireTenantId();
+        var tenantId = RequireTenantId();
 
         if (request.RequestId == Guid.Empty)
         {
@@ -50,13 +54,24 @@ public sealed class ActivityLaunchService
             return (new ServiceResultException("Validation", "Mode must be SelfPaced, Live or ProgressiveChallenge."), null);
         }
 
+        await using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
+
+        // Exactly-concurrent retries must not race through Publish/Create before the unique index
+        // gets a chance to arbitrate. The lock is transaction-scoped and automatically released
+        // on commit/rollback, so there is no lock lifecycle to clean up manually.
+        var launchLockKey = BuildLaunchLockKey(tenantId, request.RequestId);
+        await _db.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT pg_advisory_xact_lock({launchLockKey})",
+            cancellationToken);
+
+        // Re-check only after acquiring the lock. A concurrent request that completed while this
+        // one was waiting is now returned as the same successful launch.
         var existing = await FindExistingAsync(request.RequestId, cancellationToken);
         if (existing is not null)
         {
             return ValidateExisting(existing, quizId, mode);
         }
 
-        await using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
         try
         {
             var (draftError, draft) = await _quizService.GetDraftAsync(quizId, cancellationToken);
@@ -112,6 +127,8 @@ public sealed class ActivityLaunchService
         }
         catch (DbUpdateException exception) when (IsUniqueViolation(exception))
         {
+            // Defensive fallback for any future path that can create the same idempotency key
+            // without first taking this advisory lock.
             await transaction.RollbackAsync(cancellationToken);
             _db.ChangeTracker.Clear();
             var winner = await FindExistingAsync(request.RequestId, cancellationToken);
@@ -149,6 +166,15 @@ public sealed class ActivityLaunchService
         _tenantContext.IsResolved && _tenantContext.TenantId is Guid tenantId && tenantId != Guid.Empty
             ? tenantId
             : throw new ServiceResultException("TenantContextMissing", "Tenant context is not resolved for this request.");
+
+    private static long BuildLaunchLockKey(Guid tenantId, Guid requestId)
+    {
+        Span<byte> identity = stackalloc byte[32];
+        tenantId.TryWriteBytes(identity[..16]);
+        requestId.TryWriteBytes(identity[16..]);
+        var digest = SHA256.HashData(identity);
+        return BinaryPrimitives.ReadInt64LittleEndian(digest);
+    }
 
     private static bool IsUniqueViolation(DbUpdateException exception) =>
         exception.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation };
