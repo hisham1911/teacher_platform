@@ -4,6 +4,23 @@ namespace TeacherPlatform.Application.Sessions;
 
 // ---------- Teacher: Session management ----------
 
+public sealed class ActivityLaunchRequest
+{
+    /// <summary>Stable UUID generated once by the browser and reused after network failures.</summary>
+    [Required]
+    public Guid RequestId { get; set; }
+
+    [Required, RegularExpression("SelfPaced|Live|ProgressiveChallenge")]
+    public string Mode { get; set; } = "SelfPaced";
+
+    [StringLength(200)]
+    public string? Label { get; set; }
+
+    /// <summary>xmin of the draft the teacher reviewed before pressing Prepare.</summary>
+    [Required]
+    public uint DraftBaseVersion { get; set; }
+}
+
 public sealed class CreateSessionRequest
 {
     /// <summary>SelfPaced أو Live أو ProgressiveChallenge.</summary>

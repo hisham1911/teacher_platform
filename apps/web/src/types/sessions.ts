@@ -12,6 +12,13 @@ export type QuizTimeMode = 'None' | 'TotalTime' | 'PerQuestion';
 
 // ─── Teacher API ────────────────────────────────────────────────────────────
 
+export interface ActivityLaunchRequest {
+  requestId: string;
+  mode: SessionMode;
+  label?: string | null;
+  draftBaseVersion: number;
+}
+
 export interface CreateSessionRequest {
   mode: SessionMode;
   label?: string | null;

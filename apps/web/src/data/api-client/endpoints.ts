@@ -747,6 +747,7 @@ export const publicQuizApi = {
 
 // ---------- Phase 4: Sessions (Teacher) & Player (Anonymous) ----------
 import type {
+  ActivityLaunchRequest,
   AttemptResult,
   CreateSessionRequest,
   FinishAttemptResponse,
@@ -874,6 +875,16 @@ export const sessionsApi = {
     return call<PagedResponse<SessionListItem>>({
       method: 'GET',
       path: `/api/v1/tenants/${tenantId}/quizzes/${quizId}/sessions${qs ? `?${qs}` : ''}`,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+  launch(tenantId: string, quizId: string, payload: ActivityLaunchRequest, signal?: AbortSignal) {
+    return call<SessionDetail>({
+      method: 'POST',
+      path: `/api/v1/tenants/${tenantId}/quizzes/${quizId}/sessions/launch`,
+      body: payload,
       signal,
       needsAuth: true,
       needsTenant: true,

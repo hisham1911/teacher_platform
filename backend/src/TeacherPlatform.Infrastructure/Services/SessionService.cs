@@ -60,7 +60,8 @@ public sealed class SessionService
     public async Task<(ServiceResultException? Error, SessionDetailResponse? Result)> CreateAsync(
         Guid quizId,
         CreateSessionRequest request,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        Guid? launchRequestId = null)
     {
         var tenantId = RequireTenantId();
 
@@ -126,6 +127,7 @@ public sealed class SessionService
             QuizId = quizId,
             QuizVersionId = publishedVersionId,
             JoinCode = joinCode,
+            LaunchRequestId = launchRequestId,
             Mode = mode,
             Status = SessionStatus.Scheduled,
             Label = request.Label?.Trim(),
@@ -299,6 +301,12 @@ public sealed class SessionService
         if (session is null)
         {
             return (new ServiceResultException("NotFound", "Session not found."), null);
+        }
+
+        // If activation succeeded but the response was lost, the same stale request is still a success.
+        if (from == SessionStatus.Scheduled && to == SessionStatus.Active && session.LaunchRequestId is not null && session.Status == SessionStatus.Active)
+        {
+            return (null, await BuildDetailAsync(sessionId, cancellationToken));
         }
 
         if (request.BaseVersion != session.Version)

@@ -1,6 +1,6 @@
 import { quizzesApi, sessionsApi } from '../../data/api-client/endpoints';
-import type { QuizDraft, PublishQuizResponse } from '../../types/quizzes';
-import type { SessionDetail } from '../../types/sessions';
+import type { QuizDraft } from '../../types/quizzes';
+import type { ActivityLaunchRequest, SessionDetail } from '../../types/sessions';
 import type { ActivityMode } from './activity-mode';
 
 export interface ActivityLaunchInput {
@@ -9,60 +9,71 @@ export interface ActivityLaunchInput {
   mode: ActivityMode;
   label?: string | null;
   draft?: QuizDraft;
+  requestId?: string;
 }
 
 export interface ActivityLaunchResult {
   session: SessionDetail;
-  published: PublishQuizResponse | null;
   activated: boolean;
 }
 
 export interface ActivityLaunchDependencies {
   getDraft: (tenantId: string, quizId: string) => Promise<QuizDraft>;
-  publish: (tenantId: string, quizId: string, baseVersion: number) => Promise<PublishQuizResponse>;
-  createSession: (tenantId: string, quizId: string, mode: ActivityMode, label?: string | null) => Promise<SessionDetail>;
-  activateSession: (tenantId: string, quizId: string, sessionId: string, baseVersion: number) => Promise<SessionDetail>;
+  launch: (tenantId: string, quizId: string, payload: ActivityLaunchRequest) => Promise<SessionDetail>;
 }
 
 const defaultDependencies: ActivityLaunchDependencies = {
   getDraft: (tenantId, quizId) => quizzesApi.getDraft(tenantId, quizId),
-  publish: (tenantId, quizId, baseVersion) => quizzesApi.publish(tenantId, quizId, { baseVersion }),
-  createSession: (tenantId, quizId, mode, label) => sessionsApi.create(tenantId, quizId, { mode, label: label ?? null }),
-  activateSession: (tenantId, quizId, sessionId, baseVersion) =>
-    sessionsApi.activate(tenantId, quizId, sessionId, { baseVersion }),
+  launch: (tenantId, quizId, payload) => sessionsApi.launch(tenantId, quizId, payload),
 };
 
-/**
- * Turns the technical Publish -> Session -> Activate pipeline into one teacher action.
- * Live sessions stay Scheduled intentionally because the teacher still needs the host screen
- * before students should begin. Self-paced and progressive activities are activated immediately.
- */
+function launchStorageKey(tenantId: string, quizId: string, mode: ActivityMode) {
+  return `tp-activity-launch:${tenantId}:${quizId}:${mode}`;
+}
+
+function createUuid(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (character) => {
+    const value = Math.floor(Math.random() * 16);
+    const nibble = character === 'x' ? value : (value & 0x3) | 0x8;
+    return nibble.toString(16);
+  });
+}
+
+export function getOrCreateActivityLaunchRequestId(tenantId: string, quizId: string, mode: ActivityMode): string {
+  const key = launchStorageKey(tenantId, quizId, mode);
+  try {
+    const existing = sessionStorage.getItem(key);
+    if (existing) return existing;
+    const created = createUuid();
+    sessionStorage.setItem(key, created);
+    return created;
+  } catch {
+    return createUuid();
+  }
+}
+
+export function clearActivityLaunchRequestId(tenantId: string, quizId: string, mode: ActivityMode) {
+  try {
+    sessionStorage.removeItem(launchStorageKey(tenantId, quizId, mode));
+  } catch {
+    // Storage can be blocked; correctness still comes from the server request id.
+  }
+}
+
+/** One teacher action maps to one retry-safe server use case. */
 export async function launchActivity(
   input: ActivityLaunchInput,
   dependencies: ActivityLaunchDependencies = defaultDependencies,
 ): Promise<ActivityLaunchResult> {
   const draft = input.draft ?? await dependencies.getDraft(input.tenantId, input.quizId);
-  const published = draft.publicationState === 'PublishedCurrent'
-    ? null
-    : await dependencies.publish(input.tenantId, input.quizId, draft.version);
-
-  const created = await dependencies.createSession(
-    input.tenantId,
-    input.quizId,
-    input.mode,
-    input.label ?? draft.title,
-  );
-
-  if (input.mode === 'Live') {
-    return { session: created, published, activated: false };
-  }
-
-  const activated = await dependencies.activateSession(
-    input.tenantId,
-    input.quizId,
-    created.id,
-    created.version,
-  );
-
-  return { session: activated, published, activated: true };
+  const requestId = input.requestId ?? getOrCreateActivityLaunchRequestId(input.tenantId, input.quizId, input.mode);
+  const session = await dependencies.launch(input.tenantId, input.quizId, {
+    requestId,
+    mode: input.mode,
+    label: input.label ?? draft.title,
+    draftBaseVersion: draft.version,
+  });
+  clearActivityLaunchRequestId(input.tenantId, input.quizId, input.mode);
+  return { session, activated: session.status === 'Active' };
 }

@@ -351,6 +351,7 @@ builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.GuestTokenSer
 builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.StudentService>();
 builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.ManagedStudentJoinService>();
 builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.SessionService>();
+builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.ActivityLaunchService>();
 builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.PlayerService>();
 
 // ---------- Phase 6: Live Competition ----------

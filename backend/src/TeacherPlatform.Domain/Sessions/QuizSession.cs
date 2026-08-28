@@ -24,6 +24,12 @@ public sealed class QuizSession : ITenantEntity
     /// <summary>رمز الانضمام — عشوائي غير متسلسل، URL-safe، غير قابل للتخمين.</summary>
     public string JoinCode { get; set; } = string.Empty;
 
+    /// <summary>
+    /// مفتاح idempotency لعملية «تجهيز رابط الطلاب». nullable حتى تبقى الجلسات
+    /// اليدوية/القديمة بلا تغيير، وفريد داخل المستأجر عند وجوده.
+    /// </summary>
+    public Guid? LaunchRequestId { get; set; }
+
     public SessionMode Mode { get; set; } = SessionMode.SelfPaced;
 
     public SessionStatus Status { get; set; } = SessionStatus.Scheduled;

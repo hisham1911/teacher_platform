@@ -21,6 +21,8 @@ public sealed class QuizSessionConfiguration : IEntityTypeConfiguration<QuizSess
         builder.Property(s => s.Version).IsRowVersion();
 
         builder.HasIndex(s => s.JoinCode).IsUnique();
+        // PostgreSQL allows multiple NULL values in a unique index; legacy/manual sessions stay unaffected.
+        builder.HasIndex(s => new { s.TenantId, s.LaunchRequestId }).IsUnique();
         builder.HasIndex(s => s.TenantId);
         builder.HasIndex(s => new { s.TenantId, s.QuizId });
         builder.HasIndex(s => new { s.TenantId, s.Status });

@@ -1540,6 +1540,9 @@ namespace TeacherPlatform.Infrastructure.Persistence.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
+                    b.Property<Guid?>("LaunchRequestId")
+                        .HasColumnType("uuid");
+
                     b.Property<int>("Mode")
                         .HasColumnType("integer");
 
@@ -1574,6 +1577,9 @@ namespace TeacherPlatform.Infrastructure.Persistence.Migrations
                     b.HasIndex("QuizId", "TenantId");
 
                     b.HasIndex("QuizVersionId", "TenantId");
+
+                    b.HasIndex("TenantId", "LaunchRequestId")
+                        .IsUnique();
 
                     b.HasIndex("TenantId", "QuizId");
 
