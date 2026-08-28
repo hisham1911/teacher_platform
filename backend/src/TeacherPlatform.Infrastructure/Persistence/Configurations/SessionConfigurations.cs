@@ -54,7 +54,7 @@ public sealed class SessionParticipantConfiguration : IEntityTypeConfiguration<S
         builder.HasIndex(p => p.TenantId);
         builder.HasIndex(p => new { p.SessionId, p.TenantId });
         builder.HasIndex(p => p.GuestTokenHash);
-        // PostgreSQL يسمح بعدة NULL في unique index؛ لذلك يظل بإمكان الضيوف الانضمام بلا StudentId.
+        // PostgreSQL allows multiple NULL values in a unique index, so guest participants remain supported.
         builder.HasIndex(p => new { p.TenantId, p.SessionId, p.StudentId }).IsUnique();
 
         builder.HasOne(p => p.Session)
@@ -66,7 +66,7 @@ public sealed class SessionParticipantConfiguration : IEntityTypeConfiguration<S
         builder.HasOne(p => p.Student)
             .WithMany(student => student.Participants)
             .HasForeignKey(p => new { p.StudentId, p.TenantId })
-            .HasPrincipalKey<Student>(student => new { student.Id, student.TenantId })
+            .HasPrincipalKey(student => new { student.Id, student.TenantId })
             .OnDelete(DeleteBehavior.NoAction);
     }
 }
