@@ -44,6 +44,50 @@ public sealed class ActivityLaunchFlowTests : IClassFixture<TestWebApplicationFa
     }
 
     [Fact]
+    public async Task SelfPacedLaunch_ConcurrentSameRequestId_AllReturnExactlySameSession()
+    {
+        var client = NewClient();
+        var token = await RegisterConfirmLoginAsync(client);
+        var tenantId = await CreateTenantAsync(client, token, "Concurrent launch retry");
+        var bankId = await CreateBankAsync(client, token, tenantId);
+        var quizId = await CreateQuizAsync(client, token, tenantId, "concurrent");
+        await AddQuestionsAsync(client, token, tenantId, quizId, new[] { MultipleChoice(bankId, "Concurrent retry-safe question") });
+        var draftVersion = await DraftVersionAsync(client, token, tenantId, quizId);
+        var requestId = Guid.NewGuid();
+
+        var gate = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var launches = new Task<HttpResponseMessage>[8];
+        for (var index = 0; index < launches.Length; index++)
+        {
+            launches[index] = LaunchAfterGateAsync();
+        }
+
+        gate.SetResult(true);
+        var responses = await Task.WhenAll(launches);
+
+        var sessionIds = new HashSet<Guid>();
+        var joinCodes = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var response in responses)
+        {
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            var body = await ReadJsonAsync<JsonElement>(response);
+            Assert.Equal("Active", body.GetProperty("status").GetString());
+            sessionIds.Add(body.GetProperty("id").GetGuid());
+            joinCodes.Add(body.GetProperty("joinCode").GetString()!);
+        }
+
+        Assert.Single(sessionIds);
+        Assert.Single(joinCodes);
+        Assert.Equal(1, await SessionCountAsync(client, token, tenantId, quizId));
+
+        async Task<HttpResponseMessage> LaunchAfterGateAsync()
+        {
+            await gate.Task;
+            return await LaunchAsync(client, token, tenantId, quizId, requestId, "SelfPaced", draftVersion);
+        }
+    }
+
+    [Fact]
     public async Task ProgressiveLaunch_WhenModeValidationFailsAfterPublish_RollsBackPublishAndSession()
     {
         var client = NewClient();
