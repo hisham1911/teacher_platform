@@ -33,21 +33,24 @@ beforeEach(() => {
 afterEach(() => { cleanup(); clearSession(); vi.clearAllMocks(); });
 
 describe('DashboardPage', () => {
-  it('يعرض المسار البسيط ويفتح النشاط من مركز الإدارة المبسط', async () => {
+  it('يعرض مسارًا محايدًا يركز على تجربة الطالب واختصارات العمل الأساسية', async () => {
     establishSession({
       accessToken: 'tok', accessTokenExpiresAtMs: Date.now() + 100_000,
-      user: { id: 'u1', email: 't@example.com', fullName: 'معلمة تجريبية', emailConfirmed: true, platformRoles: [] },
+      user: { id: 'u1', email: 'creator@example.com', fullName: 'صانع محتوى تجريبي', emailConfirmed: true, platformRoles: [] },
       activeWorkspace: { id: 't1', name: 'مساحة أحمد', slug: 'ahmed-ws', role: 'Owner', status: 'Active' },
     });
 
     renderDashboard();
-    expect(await screen.findByRole('heading', { name: /^مرحبًا، معلمة/ })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /^مرحبًا، صانع/ })).toBeInTheDocument();
+    expect(screen.getByText('ابدأ بما يحتاجه الطلاب الآن، واترك التفاصيل التقنية خلف الكواليس.')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'إنشاء نشاط جديد' })).toHaveAttribute('href', '/dashboard/activities/new');
-    expect(screen.getByRole('link', { name: /المحتوى/ })).toHaveAttribute('href', '/dashboard/quizzes');
+    expect(screen.getByRole('link', { name: /شاهد بوابة الطالب/ })).toHaveAttribute('href', '/join');
+    expect(screen.getByRole('link', { name: /بنك الأسئلة/ })).toHaveAttribute('href', '/dashboard/questions');
+    expect(screen.getByRole('link', { name: /الطلاب/ })).toHaveAttribute('href', '/dashboard/students');
     expect(screen.getByRole('link', { name: /النتائج/ })).toHaveAttribute('href', '/dashboard/reports');
     expect(await screen.findByText('اختبار قواعد')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'فتح النشاط' })).toHaveAttribute('href', '/dashboard/activities/q1/manage');
-    expect(screen.queryByRole('link', { name: /متابعة التحرير|إدارة ومشاركة/ })).not.toBeInTheDocument();
+    expect(screen.queryByText(/اختاري|اكتبي|أضيفي|أنشئي|افتحي|كمّلي/)).not.toBeInTheDocument();
   });
 
   it('يعرض خطأ قابلًا لإعادة المحاولة عند فشل تحميل مساحات العمل', async () => {
