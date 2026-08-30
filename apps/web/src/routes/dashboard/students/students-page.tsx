@@ -9,6 +9,8 @@ export default function StudentsPage() {
   const tenantId = getActiveTenantId();
   const [search, setSearch] = useState('');
   const [includeInactive, setIncludeInactive] = useState(false);
+  const [copiedStudentId, setCopiedStudentId] = useState<string | null>(null);
+  const [copyError, setCopyError] = useState<string | null>(null);
   const normalizedSearch = useMemo(() => search.trim(), [search]);
 
   const studentsQuery = useQuery({
@@ -20,6 +22,17 @@ export default function StudentsPage() {
   const visibleStudents = studentsQuery.data ?? [];
   const activeCount = visibleStudents.filter((student) => student.isActive).length;
 
+  async function copyStudentCode(studentId: string, studentCode: string) {
+    try {
+      await navigator.clipboard.writeText(studentCode);
+      setCopyError(null);
+      setCopiedStudentId(studentId);
+      window.setTimeout(() => setCopiedStudentId((current) => current === studentId ? null : current), 1800);
+    } catch {
+      setCopyError('تعذر نسخ الكود تلقائيًا. افتح ملف الطالب وحدد الكود لنسخه يدويًا.');
+    }
+  }
+
   return (
     <div className="space-y-6">
       <header className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
@@ -30,13 +43,25 @@ export default function StudentsPage() {
             أدر ملفات الطلاب وأكواد الدخول من مكان واحد. لا يحتاج الطالب بريدًا إلكترونيًا أو كلمة مرور.
           </p>
         </div>
-        <Link
-          to="/dashboard/students/new"
-          className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-violet-700 px-5 text-sm font-bold text-white shadow-sm transition hover:bg-violet-800 hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-200">
-          <span aria-hidden="true" className="text-lg leading-none">＋</span>
-          إضافة طالب
-        </Link>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Link to="/join" className="inline-flex min-h-12 shrink-0 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-violet-300 hover:text-violet-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-100">
+            معاينة بوابة الطالب
+          </Link>
+          <Link
+            to="/dashboard/students/new"
+            className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-violet-700 px-5 text-sm font-bold text-white shadow-sm transition hover:bg-violet-800 hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-200">
+            <span aria-hidden="true" className="text-lg leading-none">＋</span>
+            إضافة طالب
+          </Link>
+        </div>
       </header>
+
+      <section className="rounded-2xl border border-violet-100 bg-violet-50/60 p-4 text-sm leading-7 text-slate-700 sm:flex sm:items-center sm:justify-between sm:gap-4" aria-label="طريقة استخدام كود الطالب">
+        <p><span className="font-bold text-slate-950">كود واحد لكل طالب.</span> يفتح الطالب رابط النشاط، ثم يختار «لدي كود طالب» لتُربط المحاولة بملفه ونتائجه تلقائيًا.</p>
+        <Link to="/join" className="mt-2 inline-flex min-h-10 shrink-0 items-center font-bold text-violet-700 hover:underline sm:mt-0">شاهد الرحلة ←</Link>
+      </section>
+
+      {copyError ? <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">{copyError}</p> : null}
 
       <section className="teacher-surface overflow-hidden" aria-label="قائمة الطلاب">
         <div className="border-b border-slate-200 p-4 sm:p-5">
@@ -113,10 +138,10 @@ export default function StudentsPage() {
         {studentsQuery.data && studentsQuery.data.length > 0 ? (
           <ul className="divide-y divide-slate-100" aria-label="الطلاب">
             {studentsQuery.data.map((student) => (
-              <li key={student.id}>
+              <li key={student.id} className="flex items-center gap-2 px-3 py-2 sm:px-4">
                 <Link
                   to={`/dashboard/students/${student.id}`}
-                  className="group flex min-h-20 items-center gap-3 px-4 py-4 transition hover:bg-violet-50/50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-violet-100 sm:gap-4 sm:px-5">
+                  className="group flex min-h-20 min-w-0 flex-1 items-center gap-3 rounded-xl px-2 py-2 transition hover:bg-violet-50/60 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-100 sm:gap-4">
                   <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-100 text-base font-bold text-slate-600 ring-1 ring-slate-200">
                     {student.fullName.trim().charAt(0) || '؟'}
                   </span>
@@ -133,8 +158,17 @@ export default function StudentsPage() {
                     </div>
                   </div>
 
-                  <span aria-hidden="true" className="shrink-0 text-lg text-slate-300 transition group-hover:-translate-x-0.5 group-hover:text-violet-600">←</span>
+                  <span aria-hidden="true" className="hidden shrink-0 text-lg text-slate-300 transition group-hover:-translate-x-0.5 group-hover:text-violet-600 sm:block">←</span>
                 </Link>
+
+                <button
+                  type="button"
+                  onClick={() => void copyStudentCode(student.id, student.studentCode)}
+                  disabled={!student.isActive}
+                  aria-label={`نسخ كود ${student.fullName}`}
+                  className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 shadow-sm transition hover:border-violet-300 hover:text-violet-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-100 disabled:cursor-not-allowed disabled:opacity-40 sm:px-4 sm:text-sm">
+                  {copiedStudentId === student.id ? 'تم ✓' : 'نسخ الكود'}
+                </button>
               </li>
             ))}
           </ul>
@@ -158,6 +192,7 @@ function StudentsSkeleton() {
             <div className="h-4 w-40 rounded bg-slate-200" />
             <div className="h-3 w-28 rounded bg-slate-100" />
           </div>
+          <div className="h-11 w-20 rounded-xl bg-slate-100" />
         </div>
       ))}
     </div>
