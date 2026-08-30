@@ -40,7 +40,7 @@ describe('router — public product routes', () => {
   it('يعرض بوابة الطالب العامة على /join', async () => {
     await renderRoute('/join');
     await expectHeading('جاهز للانطلاق');
-    expect(screen.getByLabelText('رمز النشاط')).toBeInTheDocument();
+    expect(screen.getByLabelText(/رمز النشاط/)).toBeInTheDocument();
   });
 
   it('يعرض صفحة تسجيل الدخول على /auth/login', async () => {
