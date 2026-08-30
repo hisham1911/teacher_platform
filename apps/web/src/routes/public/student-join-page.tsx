@@ -1,8 +1,26 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
 
-function normalizeJoinCode(value: string) {
+export function normalizeJoinCode(value: string) {
   return value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12);
+}
+
+export function extractJoinCode(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+
+  try {
+    const url = new URL(trimmed);
+    const match = url.pathname.match(/\/play\/([^/?#]+)/i);
+    if (match?.[1]) return normalizeJoinCode(match[1]);
+  } catch {
+    // The input can be a plain activity code or a relative /play/... path.
+  }
+
+  const pathMatch = trimmed.match(/(?:^|\/)play\/([^/?#\s]+)/i);
+  if (pathMatch?.[1]) return normalizeJoinCode(pathMatch[1]);
+
+  return normalizeJoinCode(trimmed);
 }
 
 export default function StudentJoinPage() {
@@ -12,12 +30,18 @@ export default function StudentJoinPage() {
 
   function submit(event: FormEvent) {
     event.preventDefault();
-    const normalized = normalizeJoinCode(code);
+    const normalized = extractJoinCode(code);
     if (normalized.length < 4) {
-      setError('اكتب رمز النشاط كما ظهر لك.');
+      setError('اكتب رمز النشاط أو الصق رابط النشاط كاملًا.');
       return;
     }
     navigate(`/play/${normalized}`);
+  }
+
+  function onCodeChange(value: string) {
+    const looksLikeLink = value.includes('/') || value.includes('://');
+    setCode(looksLikeLink ? extractJoinCode(value) : normalizeJoinCode(value));
+    setError(null);
   }
 
   return (
@@ -30,22 +54,22 @@ export default function StudentJoinPage() {
 
         <div className="relative mx-auto max-w-4xl">
           <header className="text-center">
-            <span className="inline-flex rounded-full border border-white/12 bg-white/[0.07] px-3 py-1 text-[11px] font-black tracking-[0.18em] text-amber-200">ENGLISH SPARK</span>
-            <h1 className="mt-4 text-balance text-3xl font-black leading-tight sm:text-5xl">جاهز للانطلاق؟ رمز واحد، والمغامرة تبدأ.</h1>
-            <p className="mx-auto mt-3 max-w-xl text-sm font-semibold leading-7 text-violet-100 sm:text-base">لا حساب ولا كلمة مرور. أدخل رمز النشاط، ثم استخدم كود الطالب إن كان لديك أو ادخل بالاسم كضيف.</p>
+            <span className="inline-flex rounded-full border border-white/12 bg-white/[0.07] px-3 py-1 text-[11px] font-bold tracking-[0.18em] text-amber-200">ENGLISH SPARK</span>
+            <h1 className="mt-4 text-balance text-3xl font-bold leading-tight sm:text-5xl">جاهز للانطلاق؟ رمز واحد، والمغامرة تبدأ.</h1>
+            <p className="mx-auto mt-3 max-w-xl text-sm font-semibold leading-7 text-violet-100 sm:text-base">لا حساب ولا كلمة مرور. أدخل رمز النشاط أو الصق رابطه، ثم استخدم كود الطالب إن كان لديك أو ادخل بالاسم كضيف.</p>
           </header>
 
           <div className="mx-auto mt-8 grid max-w-3xl gap-4 lg:grid-cols-[minmax(0,1fr)_220px] lg:items-stretch">
             <form onSubmit={submit} className="rounded-[1.75rem] border border-white/15 bg-white p-5 text-slate-950 shadow-[0_24px_70px_rgb(15_23_42/0.28)] sm:p-7">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-xs font-black text-violet-700">جاهز؟</p>
-                  <h2 className="mt-1 text-2xl font-black">أدخل رمز النشاط</h2>
+                  <p className="text-xs font-bold text-violet-700">جاهز؟</p>
+                  <h2 className="mt-1 text-2xl font-bold">أدخل رمز النشاط</h2>
                 </div>
                 <span aria-hidden="true" className="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-100 text-2xl">⚡</span>
               </div>
 
-              <label htmlFor="join-code" className="sr-only">رمز النشاط</label>
+              <label htmlFor="join-code" className="sr-only">رمز النشاط أو رابط النشاط</label>
               <input
                 id="join-code"
                 dir="ltr"
@@ -54,29 +78,26 @@ export default function StudentJoinPage() {
                 autoCapitalize="characters"
                 autoFocus
                 value={code}
-                onChange={(event) => {
-                  setCode(normalizeJoinCode(event.target.value));
-                  setError(null);
-                }}
+                onChange={(event) => onCodeChange(event.target.value)}
                 placeholder="SPARK123"
                 aria-invalid={Boolean(error)}
                 aria-describedby={error ? 'join-code-error' : 'join-code-hint'}
-                className="mt-6 min-h-20 w-full rounded-2xl border-2 border-slate-200 bg-slate-50 px-4 text-center font-mono text-3xl font-black tracking-[0.2em] text-slate-950 shadow-inner transition placeholder:text-slate-300 focus:border-violet-600 focus:bg-white focus:outline-4 focus:outline-violet-100 sm:text-4xl"
+                className="mt-6 min-h-20 w-full rounded-2xl border-2 border-slate-200 bg-slate-50 px-4 text-center font-mono text-3xl font-bold tracking-[0.2em] text-slate-950 shadow-inner transition placeholder:text-slate-300 focus:border-violet-600 focus:bg-white focus:outline-4 focus:outline-violet-100 sm:text-4xl"
               />
 
               {error ? (
                 <p id="join-code-error" role="alert" className="mt-3 rounded-xl bg-rose-50 px-3 py-2 text-center text-sm font-bold text-rose-700">{error}</p>
               ) : (
-                <p id="join-code-hint" className="mt-3 text-center text-xs font-semibold text-slate-500">لو عندك رابط أو QR، افتحه مباشرة ومش هتحتاج تكتب الرمز.</p>
+                <p id="join-code-hint" className="mt-3 text-center text-xs font-semibold text-slate-500">اكتب الرمز فقط، أو الصق رابط النشاط كاملًا وسنستخرج الرمز تلقائيًا.</p>
               )}
 
-              <button type="submit" disabled={code.length < 4} className="mt-5 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-violet-700 px-6 text-base font-black text-white shadow-[0_12px_28px_rgb(109_40_217/0.24)] transition hover:-translate-y-0.5 hover:bg-violet-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-700 disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transform-none">
+              <button type="submit" disabled={code.length < 4} className="mt-5 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-violet-700 px-6 text-base font-bold text-white shadow-[0_12px_28px_rgb(109_40_217/0.24)] transition hover:-translate-y-0.5 hover:bg-violet-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-700 disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transform-none">
                 ابدأ الآن <span aria-hidden="true">←</span>
               </button>
             </form>
 
             <aside className="grid grid-cols-3 gap-2 lg:grid-cols-1" aria-label="خطوات الدخول">
-              <MissionStep icon="⌨️" number="01" text="اكتب الرمز" />
+              <MissionStep icon="⌨️" number="01" text="رمز أو رابط" />
               <MissionStep icon="👋" number="02" text="كودك أو اسمك" />
               <MissionStep icon="🚀" number="03" text="ابدأ التحدي" />
             </aside>
@@ -84,7 +105,7 @@ export default function StudentJoinPage() {
 
           <div className="mt-7 flex flex-col items-center justify-between gap-3 border-t border-white/10 pt-5 text-center sm:flex-row sm:text-right">
             <p className="text-xs font-semibold text-violet-200">English Spark · Learn • Play • Explore</p>
-            <Link to="/auth/login" className="inline-flex min-h-11 items-center rounded-xl px-3 text-xs font-black text-white/80 hover:bg-white/10 hover:text-white">دخول Studio لصانع المحتوى</Link>
+            <Link to="/auth/login" className="inline-flex min-h-11 items-center rounded-xl px-3 text-xs font-bold text-white/80 hover:bg-white/10 hover:text-white">دخول Studio لصانع المحتوى</Link>
           </div>
         </div>
       </section>
@@ -97,9 +118,9 @@ function MissionStep({ icon, number, text }: { icon: string; number: string; tex
     <div className="rounded-2xl border border-white/10 bg-white/[0.07] p-3 text-center backdrop-blur sm:p-4 lg:text-right">
       <div className="flex items-center justify-between gap-2 lg:flex-row-reverse">
         <span aria-hidden="true" className="text-xl">{icon}</span>
-        <span className="font-mono text-[10px] font-black tracking-widest text-amber-200">{number}</span>
+        <span className="font-mono text-[10px] font-bold tracking-widest text-amber-200">{number}</span>
       </div>
-      <p className="mt-2 text-xs font-black text-violet-50 sm:text-sm">{text}</p>
+      <p className="mt-2 text-xs font-bold text-violet-50 sm:text-sm">{text}</p>
     </div>
   );
 }
