@@ -344,6 +344,8 @@ import type {
   PagedResponse,
   CreateQuestionRequest,
   CreateQuestionVersionRequest,
+  BulkQuestionImportRequest,
+  BulkQuestionImportResponse,
   MediaAsset,
 } from '../../types/questions';
 
@@ -436,6 +438,16 @@ export const questionsApi = {
     return call<QuestionDetail>({
       method: 'POST',
       path: `/api/v1/tenants/${tenantId}/questions`,
+      body: payload,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+  bulkCreate(tenantId: string, payload: BulkQuestionImportRequest, signal?: AbortSignal) {
+    return call<BulkQuestionImportResponse>({
+      method: 'POST',
+      path: `/api/v1/tenants/${tenantId}/questions/bulk`,
       body: payload,
       signal,
       needsAuth: true,
@@ -735,6 +747,7 @@ export const publicQuizApi = {
 
 // ---------- Phase 4: Sessions (Teacher) & Player (Anonymous) ----------
 import type {
+  ActivityLaunchRequest,
   AttemptResult,
   CreateSessionRequest,
   FinishAttemptResponse,
@@ -749,6 +762,14 @@ import type {
   SubmitAnswerRequest,
   SubmitAnswerResponse,
 } from '../../types/sessions';
+import type {
+  CreateStudentRequest,
+  RegenerateStudentCodeRequest,
+  Student,
+  StudentResult,
+  StudentStatusRequest,
+  UpdateStudentRequest,
+} from '../../types/students';
 import type {
   CreateSurveyRequest,
   PlayerSurvey,
@@ -765,6 +786,86 @@ import type {
   LiveTokenResponse,
 } from '../../types/live';
 
+export interface StudentListQuery {
+  search?: string;
+  includeInactive?: boolean;
+}
+
+export const studentsApi = {
+  list(tenantId: string, query: StudentListQuery = {}, signal?: AbortSignal) {
+    const params = new URLSearchParams();
+    if (query.search) params.set('search', query.search);
+    if (query.includeInactive) params.set('includeInactive', 'true');
+    const qs = params.toString();
+    return call<Student[]>({
+      method: 'GET',
+      path: `/api/v1/tenants/${tenantId}/students${qs ? `?${qs}` : ''}`,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+  get(tenantId: string, studentId: string, signal?: AbortSignal) {
+    return call<Student>({
+      method: 'GET',
+      path: `/api/v1/tenants/${tenantId}/students/${studentId}`,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+  create(tenantId: string, payload: CreateStudentRequest, signal?: AbortSignal) {
+    return call<Student>({
+      method: 'POST',
+      path: `/api/v1/tenants/${tenantId}/students`,
+      body: payload,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+  update(tenantId: string, studentId: string, payload: UpdateStudentRequest, signal?: AbortSignal) {
+    return call<Student>({
+      method: 'PUT',
+      path: `/api/v1/tenants/${tenantId}/students/${studentId}`,
+      body: payload,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+  setStatus(tenantId: string, studentId: string, payload: StudentStatusRequest, signal?: AbortSignal) {
+    return call<Student>({
+      method: 'POST',
+      path: `/api/v1/tenants/${tenantId}/students/${studentId}/status`,
+      body: payload,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+  regenerateCode(tenantId: string, studentId: string, payload: RegenerateStudentCodeRequest, signal?: AbortSignal) {
+    return call<Student>({
+      method: 'POST',
+      path: `/api/v1/tenants/${tenantId}/students/${studentId}/regenerate-code`,
+      body: payload,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+  listResults(tenantId: string, studentId: string, take = 20, signal?: AbortSignal) {
+    const params = new URLSearchParams({ take: String(take) });
+    return call<StudentResult[]>({
+      method: 'GET',
+      path: `/api/v1/tenants/${tenantId}/students/${studentId}/results?${params.toString()}`,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+};
+
 export const sessionsApi = {
   list(tenantId: string, quizId: string, page?: number, pageSize?: number, signal?: AbortSignal) {
     const params = new URLSearchParams();
@@ -774,6 +875,16 @@ export const sessionsApi = {
     return call<PagedResponse<SessionListItem>>({
       method: 'GET',
       path: `/api/v1/tenants/${tenantId}/quizzes/${quizId}/sessions${qs ? `?${qs}` : ''}`,
+      signal,
+      needsAuth: true,
+      needsTenant: true,
+    });
+  },
+  launch(tenantId: string, quizId: string, payload: ActivityLaunchRequest, signal?: AbortSignal) {
+    return call<SessionDetail>({
+      method: 'POST',
+      path: `/api/v1/tenants/${tenantId}/quizzes/${quizId}/sessions/launch`,
+      body: payload,
       signal,
       needsAuth: true,
       needsTenant: true,
@@ -977,6 +1088,14 @@ export const playerApi = {
       method: 'POST',
       path: `/api/v1/player/sessions/${encodeURIComponent(joinCode)}/join`,
       body: payload,
+      signal,
+    });
+  },
+  joinWithStudentCode(joinCode: string, studentCode: string, signal?: AbortSignal) {
+    return call<JoinSessionResponse>({
+      method: 'POST',
+      path: `/api/v1/player/sessions/${encodeURIComponent(joinCode)}/student-join`,
+      body: { studentCode },
       signal,
     });
   },

@@ -14,8 +14,8 @@ export function FormField({
 }) {
   const errorId = `${id}-error`;
   return (
-    <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="text-sm font-medium text-slate-700">
+    <div className="flex flex-col gap-2">
+      <label htmlFor={id} className="text-sm font-bold text-slate-700">
         {label}
       </label>
       {children({
@@ -24,7 +24,7 @@ export function FormField({
         'aria-describedby': error ? errorId : undefined,
       })}
       {error ? (
-        <p id={errorId} role="alert" className="text-sm text-rose-600">
+        <p id={errorId} role="alert" className="text-sm font-semibold text-rose-600">
           {error}
         </p>
       ) : null}
@@ -33,7 +33,7 @@ export function FormField({
 }
 
 const inputBase =
-  'min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-sky-500 focus:outline-2 focus:outline-sky-600 disabled:cursor-not-allowed disabled:bg-slate-50';
+  'min-h-13 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base text-slate-950 placeholder-slate-400 shadow-sm transition focus:border-violet-500 focus:outline-2 focus:outline-violet-200 disabled:cursor-not-allowed disabled:bg-slate-50';
 
 export function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return <input {...props} className={`${inputBase} ${props.className ?? ''}`} />;

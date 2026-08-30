@@ -10,10 +10,13 @@ test('teacher builds a quiz and sees a coherent publication lifecycle', async ({
   await page.goto('/auth/login');
   await page.getByLabel('البريد الإلكتروني').fill(state.email);
   await page.getByLabel('كلمة المرور').fill('SecurePassword123!');
-  await page.getByRole('button', { name: 'تسجيل الدخول' }).click();
+  await page.getByRole('button', { name: 'دخول إلى English Spark' }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
 
-  await expect(page.getByRole('heading', { name: 'مرحبًا، E2E Teacher' })).toBeVisible();
-  await page.getByRole('link', { name: /إنشاء اختبار جديد/ }).click();
+  // Part D intentionally protects the legacy/advanced quiz builder. The primary
+  // English Spark dashboard now points teachers to the guided activity flow, so
+  // reach the advanced builder directly instead of asserting the old dashboard CTA.
+  await page.goto('/dashboard/quizzes/new');
   await page.getByLabel('اسم الاختبار').fill('اختبار رحلة المعلم');
   await page.getByRole('button', { name: 'ابدأ إضافة الأسئلة' }).click();
 

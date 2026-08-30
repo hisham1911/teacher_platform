@@ -4,7 +4,7 @@ param(
     [int]$WebPort = 5173
 )
 
-# تشغيل E2E كامل من سطر واحد: API + Web + seed + الاستعادة بعد restart + المسابقة المباشرة.
+# تشغيل E2E كامل من سطر واحد: API + Web + seed + مسار English Spark + الاستعادة بعد restart + المسابقة المباشرة.
 # المتطلبات: PostgreSQL محلية، قاعدة teacher_platform_e2e مُنشأة ومهاجرة، و dotnet + node متاحان.
 $ErrorActionPreference = "Stop"
 
@@ -85,6 +85,8 @@ if ($Stage -eq "all") {
         if ($LASTEXITCODE -ne 0) { throw "E2E seed failed with exit code $LASTEXITCODE" }
         npx playwright test tests/part-d-builder.spec.mjs --reporter=line
         if ($LASTEXITCODE -ne 0) { throw "Playwright Part D builder failed with exit code $LASTEXITCODE" }
+        npx playwright test tests/part-f-english-spark-golden-path.spec.mjs --reporter=line
+        if ($LASTEXITCODE -ne 0) { throw "Playwright Part F English Spark golden path failed with exit code $LASTEXITCODE" }
         npx playwright test tests/part-e-progressive.spec.mjs --reporter=line
         if ($LASTEXITCODE -ne 0) { throw "Playwright Part E progressive challenge failed with exit code $LASTEXITCODE" }
         npx playwright test tests/part-a.spec.mjs --reporter=line

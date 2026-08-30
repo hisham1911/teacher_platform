@@ -77,7 +77,7 @@ test('survives API restart + finish + result + F5 (Part B)', async ({ page }) =>
   await page.goto('/auth/login');
   await page.getByLabel('البريد الإلكتروني').fill(email);
   await page.getByLabel('كلمة المرور').fill('SecurePassword123!');
-  await page.getByRole('button', { name: 'تسجيل الدخول' }).click();
+  await page.getByRole('button', { name: 'دخول إلى English Spark' }).click();
   await expect(page).toHaveURL(/\/dashboard$/, { timeout: 15_000 });
   await page.goto('/dashboard/reports');
   await expect(page.getByRole('heading', { name: 'النتائج والتقارير' })).toBeVisible();

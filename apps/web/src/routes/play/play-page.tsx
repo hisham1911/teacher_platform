@@ -17,11 +17,12 @@ import type {
   StartAttemptResponse,
 } from '../../types/sessions';
 import { QUESTION_TYPE_LABELS } from '../../types/questions';
+import { normalizeStudentCode } from '../../types/students';
 import { PlayerSurveyAction, PlayerSurveyPanel } from './player-survey-panel';
 import { PlayerDeliveryPanel } from './player-delivery-panel';
 import { StudentAudioPlayer } from './student-audio-player';
 import { ProgressivePlayerView, ProgressiveResultView, ProgressiveShell } from './progressive-player';
-import { QuestionProgress, StudentButton, StudentError, StudentLearningVisual, StudentLoading, StudentShell } from './student-ui';
+import { QuestionProgress, StudentButton, StudentError, StudentLearningVisual, StudentLoading, StudentShell, StudentSparkBrand } from './student-ui';
 
 /**
  * /play/:joinCode — واجهة الطالب (Phase 4).
@@ -90,6 +91,9 @@ export default function PlayPage() {
   const [stage, setStage] = useState<PlayerStage>({ kind: 'loading' });
   const [displayName, setDisplayName] = useState('');
   const [nameError, setNameError] = useState<string | null>(null);
+  const [studentCode, setStudentCode] = useState('');
+  const [studentCodeError, setStudentCodeError] = useState<string | null>(null);
+  const [useStudentCode, setUseStudentCode] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
   const sessionQuery = useQuery({
@@ -108,7 +112,7 @@ export default function PlayPage() {
         // الاستعادة بعد F5 من السيرفر عبر الكوكي فقط — بدون حفظ الاسم في localStorage
         restoreMutation.mutate();
       } else if (session.status === 'Scheduled') {
-        setStage({ kind: 'unavailable', message: 'الجلسة لم تُفعَّل بعد. انتظر المعلم.' });
+        setStage({ kind: 'unavailable', message: 'الجلسة لم تُفعَّل بعد. انتظر بدء النشاط.' });
       } else if (session.status === 'Finished') {
         setStage({ kind: 'unavailable', message: 'انتهت هذه الجلسة.' });
         restoreMutation.mutate();
@@ -121,7 +125,7 @@ export default function PlayPage() {
         kind: 'unavailable',
         message:
           e instanceof HttpError && e.status === 404
-            ? 'رمز الانضمام غير صحيح. تأكد من الرمز مع معلمك.'
+            ? 'رمز الانضمام غير صحيح. تأكد من رمز النشاط.'
             : 'تعذر الاتصال. تحقق من الإنترنت ثم أعد تحميل الصفحة.',
       });
     }
@@ -190,6 +194,26 @@ export default function PlayPage() {
     },
   });
 
+  const managedJoinMutation = useMutation({
+    mutationFn: (code: string) => playerApi.joinWithStudentCode(joinCode!, code),
+    onSuccess: (playerState) => {
+      setActionError(null);
+      setStudentCodeError(null);
+      applyPlayerState(joinCode!, playerState, sessionQuery.data!);
+    },
+    onError: (error) => {
+      if (error instanceof HttpError && error.status === 404) {
+        setStudentCodeError('كود الطالب غير صحيح أو غير مفعّل.');
+      } else if (error instanceof HttpError && error.status === 409) {
+        setActionError('الجلسة لم تعد تقبل منضمّين جددًا.');
+      } else if (error instanceof HttpError && error.status === 429) {
+        setActionError('محاولات كثيرة. انتظر قليلًا ثم حاول مجددًا.');
+      } else {
+        setActionError('تعذر الدخول بكود الطالب. أعد المحاولة.');
+      }
+    },
+  });
+
   const startMutation = useMutation({
     mutationFn: () => playerApi.startAttempt(joinCode!),
     onSuccess: (attempt) => {
@@ -227,14 +251,26 @@ export default function PlayPage() {
     joinMutation.mutate(name);
   }
 
+  function onStudentCodeSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const code = normalizeStudentCode(studentCode);
+    if (code.length < 6) {
+      setStudentCodeError('اكتب كود الطالب كاملًا.');
+      return;
+    }
+    setStudentCodeError(null);
+    setActionError(null);
+    managedJoinMutation.mutate(code);
+  }
+
   // ─── شاشات ────────────────────────────────────────────────────────────────
 
   if (stage.kind === 'loading') {
-    return <StudentLoading message="جارٍ تجهيز الاختبار…" />;
+    return <StudentLoading message="جارٍ تجهيز النشاط…" />;
   }
 
   if (stage.kind === 'unavailable') {
-    return <StudentError title="الاختبار غير متاح الآن" message={stage.message} />;
+    return <StudentError title="النشاط غير متاح الآن" message={stage.message} />;
   }
 
   if (stage.kind === 'join') {
@@ -247,19 +283,25 @@ export default function PlayPage() {
             <span aria-hidden="true" className="absolute bottom-12 left-10 h-3 w-3 rotate-45 rounded-sm bg-[var(--student-violet)] opacity-75" />
             <div className="mb-4"><StudentLearningVisual /></div>
             <h2 dir="auto" className="rounded-full bg-white px-4 py-2 text-sm font-black text-[var(--student-ink)] shadow-[0_1px_4px_rgb(15_23_42/0.08)]">{session.title}</h2>
-            <h1 className="mt-5 text-balance text-3xl font-black leading-tight text-[var(--student-ink)] sm:text-4xl">جاهز للتحدي؟</h1>
+            <h1 className="mt-5 text-balance text-3xl font-black leading-tight text-[var(--student-ink)] sm:text-4xl">{session.mode === 'ProgressiveChallenge' ? 'جاهز تبدأ المهمة؟' : session.mode === 'Live' ? 'جاهز للمسابقة؟' : 'جاهز تبدأ؟'}</h1>
             {session.description ? <p className="mx-auto mt-3 max-w-sm text-pretty text-sm font-semibold leading-7 text-amber-950/75">{session.description}</p> : null}
           </div>
 
           <div className="p-6 sm:p-8">
             <dl className="flex items-stretch justify-center divide-x divide-x-reverse divide-slate-200 rounded-xl bg-slate-50 py-4 text-center">
-              <div className="min-w-0 flex-1 px-3"><dt className="text-xs font-semibold text-[var(--student-muted)]">الأسئلة</dt><dd className="mt-1 text-lg font-black text-emerald-800">{session.questionCount}</dd></div>
+              <div className="min-w-0 flex-1 px-3"><dt className="text-xs font-semibold text-[var(--student-muted)]">{session.mode === 'ProgressiveChallenge' ? 'المستويات' : 'الأسئلة'}</dt><dd className="mt-1 text-lg font-black text-emerald-800">{session.questionCount}</dd></div>
               <div className="min-w-0 flex-1 px-3"><dt className="text-xs font-semibold text-[var(--student-muted)]">الوقت</dt><dd className="mt-1 text-sm font-black text-[var(--student-violet)]">{sessionTimeLabel(session)}</dd></div>
-              <div className="min-w-0 flex-1 px-3"><dt className="text-xs font-semibold text-[var(--student-muted)]">النجاح</dt><dd dir="ltr" className="mt-1 text-lg font-black text-amber-700">{session.passingPercentage}%</dd></div>
+              <div className="min-w-0 flex-1 px-3"><dt className="text-xs font-semibold text-[var(--student-muted)]">{session.mode === 'ProgressiveChallenge' ? 'النقاط' : 'النجاح'}</dt><dd dir="ltr" className="mt-1 text-lg font-black text-amber-700">{session.mode === 'ProgressiveChallenge' ? session.totalPoints : `${session.passingPercentage}%`}</dd></div>
             </dl>
 
             {session.instructions ? <p className="mt-5 rounded-xl bg-emerald-50 p-4 text-sm leading-7 text-emerald-950">{session.instructions}</p> : null}
-            <form onSubmit={onJoinSubmit} className="mt-6 flex flex-col gap-3">
+            {!useStudentCode ? (
+              <>
+                <button type="button" onClick={() => { setUseStudentCode(true); setActionError(null); }} className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border-2 border-violet-200 bg-violet-50 px-4 text-sm font-black text-violet-900 hover:border-violet-400 hover:bg-violet-100">
+                  <span aria-hidden="true">🎟️</span> لدي كود طالب
+                </button>
+                <p className="mt-3 text-center text-xs font-semibold text-slate-500">أو ادخل بالاسم كضيف إذا لم يعطك المعلم كودًا.</p>
+                <form onSubmit={onJoinSubmit} className="mt-4 flex flex-col gap-3">
               <label htmlFor="display-name" className="text-base font-black">ما اسمك؟</label>
               <TextInput
                 id="display-name"
@@ -278,10 +320,42 @@ export default function PlayPage() {
               {actionError ? <p role="alert" className="rounded-xl bg-rose-50 p-3 text-sm text-rose-700">{actionError}</p> : null}
               <StudentButton type="submit" disabled={joinMutation.isPending} className="mt-2 w-full text-base">
                 {joinMutation.isPending ? <ButtonSpinner /> : null}
-                {joinMutation.isPending ? 'جارٍ تجهيز دخولك…' : 'ابدأ الاختبار'}
+                {joinMutation.isPending ? 'جارٍ تجهيز دخولك…' : session.mode === 'ProgressiveChallenge' ? 'ادخل إلى المهمة' : 'ابدأ الاختبار'}
                 {!joinMutation.isPending ? <span aria-hidden="true" className="mr-2">←</span> : null}
               </StudentButton>
-            </form>
+                </form>
+              </>
+            ) : (
+              <>
+                <button type="button" onClick={() => { setUseStudentCode(false); setStudentCodeError(null); setActionError(null); }} className="mt-6 inline-flex min-h-11 items-center text-sm font-black text-violet-700 hover:underline">
+                  الدخول بالاسم بدلًا من ذلك →
+                </button>
+                <form onSubmit={onStudentCodeSubmit} className="mt-3 flex flex-col gap-3">
+                  <label htmlFor="student-code" className="text-base font-black">كود الطالب</label>
+                  <TextInput
+                    id="student-code"
+                    dir="ltr"
+                    value={studentCode}
+                    onChange={(e) => { setStudentCode(normalizeStudentCode(e.target.value)); setStudentCodeError(null); }}
+                    minLength={6}
+                    maxLength={12}
+                    autoComplete="off"
+                    autoCapitalize="characters"
+                    placeholder="ABCD1234"
+                    aria-invalid={Boolean(studentCodeError)}
+                    aria-describedby={studentCodeError ? 'student-code-error' : undefined}
+                    className="min-h-14 rounded-xl px-4 text-center font-mono text-xl font-black tracking-[0.16em] placeholder:text-slate-400 focus:border-violet-700 focus:outline-violet-700"
+                  />
+                  {studentCodeError ? <p id="student-code-error" role="alert" className="text-sm font-bold text-rose-700">{studentCodeError}</p> : null}
+                  {actionError ? <p role="alert" className="rounded-xl bg-rose-50 p-3 text-sm text-rose-700">{actionError}</p> : null}
+                  <StudentButton type="submit" disabled={managedJoinMutation.isPending || studentCode.length < 6} className="mt-2 w-full text-base">
+                    {managedJoinMutation.isPending ? <ButtonSpinner /> : null}
+                    {managedJoinMutation.isPending ? 'جارٍ التحقق…' : 'دخول بكود الطالب'}
+                    {!managedJoinMutation.isPending ? <span aria-hidden="true" className="mr-2">←</span> : null}
+                  </StudentButton>
+                </form>
+              </>
+            )}
           </div>
         </section>
       </StudentShell>
@@ -401,21 +475,22 @@ function ChallengeReadyView({
     <ProgressiveShell>
       <div className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col items-center justify-center px-4 py-10">
         <section className="challenge-panel challenge-enter w-full p-6 text-center sm:p-10" data-testid="challenge-ready">
-          <p className="text-sm font-black tracking-wide text-[var(--challenge-accent)]">التحدي المتدرج</p>
+          <div className="-mt-2 mb-1"><StudentSparkBrand inverse /></div>
+          <p className="text-xs font-black tracking-[0.2em] text-[var(--challenge-accent)]">SPARK CHALLENGE</p>
           <h1 className="mt-3 text-balance text-3xl font-black text-white sm:text-4xl">
-            أهلًا بك، <bdi>{displayName}</bdi>!
+            جاهز تبدأ المهمة، <bdi>{displayName}</bdi>؟
           </h1>
           <p dir="auto" className="mt-3 text-base font-bold text-sky-200">{session.title}</p>
 
           <dl className="mx-auto mt-6 flex max-w-md items-stretch justify-center divide-x divide-x-reverse divide-white/10 rounded-xl bg-white/[0.06] py-4">
             <div className="min-w-0 flex-1 px-3"><dt className="text-xs font-bold text-sky-300">المستويات</dt><dd dir="ltr" className="mt-1 text-lg font-black text-white">{session.questionCount}</dd></div>
             <div className="min-w-0 flex-1 px-3"><dt className="text-xs font-bold text-sky-300">النقاط</dt><dd dir="ltr" className="mt-1 text-lg font-black text-white">{session.totalPoints}</dd></div>
-            <div className="min-w-0 flex-1 px-3"><dt className="text-xs font-bold text-sky-300">النجاح</dt><dd dir="ltr" className="mt-1 text-lg font-black text-[var(--challenge-accent)]">{session.passingPercentage}%</dd></div>
+            <div className="min-w-0 flex-1 px-3"><dt className="text-xs font-bold text-sky-300">الوقت</dt><dd className="mt-1 text-sm font-black text-[var(--challenge-accent)]">{sessionTimeLabel(session)}</dd></div>
           </dl>
 
           <p className="mx-auto mt-5 max-w-md rounded-xl bg-white/[0.06] p-4 text-sm font-semibold leading-7 text-sky-100">
             الإجابة الصحيحة تنقلك للمستوى التالي، والإجابة الخاطئة تنهي التحدي.
-            {hasAttempt ? ' سنُعيدك إلى آخر مستوى وصلت إليه.' : ''} رتّب المعلم الأسئلة من الأسهل إلى الأصعب.
+            {hasAttempt ? ' سنُعيدك إلى آخر مستوى وصلت إليه.' : ''} تم ترتيب الأسئلة من الأسهل إلى الأصعب.
           </p>
 
           {error ? <p role="alert" className="mx-auto mt-4 max-w-md rounded-xl bg-rose-500/15 p-3 text-sm font-bold text-rose-200">{error}</p> : null}
@@ -426,7 +501,7 @@ function ChallengeReadyView({
             disabled={starting}
             className="mt-7 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[var(--challenge-accent)] px-8 text-base font-black text-slate-950 transition-transform duration-200 hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-55 motion-reduce:transition-none sm:w-72">
             {starting ? <ButtonSpinner /> : null}
-            {starting ? 'جارٍ البدء…' : hasAttempt ? 'استئناف التحدي' : 'ابدأ التحدي'}
+            {starting ? 'جارٍ تجهيز المهمة…' : hasAttempt ? 'استئناف المهمة' : 'ابدأ المهمة'}
           </button>
         </section>
       </div>
@@ -545,7 +620,7 @@ function LivePlayerView({
         <div className="rounded-2xl border border-sky-200 bg-sky-50 p-7 text-center">
           <div className="mx-auto mb-4 h-3 w-3 animate-pulse rounded-full bg-sky-600" />
           <h2 className="text-lg font-bold text-slate-950">أنت داخل قاعة الانتظار</h2>
-          <p className="mt-2 text-sm text-slate-600">سيظهر السؤال هنا عندما يفتحه المعلم. لا تغلق الصفحة.</p>
+          <p className="mt-2 text-sm text-slate-600">سيظهر السؤال هنا عند فتحه. لا تغلق الصفحة.</p>
           <p className="mt-4 text-xs text-sky-800">انضم {state.participantCount} مشارك</p>
         </div>
       ) : null}
@@ -589,7 +664,7 @@ function LivePlayerView({
         <div className="space-y-4">
           <div className="rounded-2xl bg-slate-950 p-6 text-center text-white">
             <h2 className="text-xl font-black">أُغلق السؤال</h2>
-            <p className="mt-1 text-sm text-slate-300">انتظر السؤال التالي من المعلم.</p>
+            <p className="mt-1 text-sm text-slate-300">انتظر السؤال التالي.</p>
           </div>
           <Leaderboard state={state} />
         </div>
@@ -893,7 +968,7 @@ function QuestionMedia({
         <audio controls preload="metadata" src={url} onError={() => setPlaybackFailed(true)} className="w-full" data-testid="question-media-audio">
           المتصفح لا يدعم تشغيل الصوت.
         </audio>
-        {playbackFailed ? <p role="alert" className="mt-2 rounded-lg bg-rose-50 p-3 text-sm text-rose-700">تعذر تشغيل الصوت. أعد تحميل الصفحة، وإن استمرت المشكلة فأبلغ المعلم.</p> : null}
+        {playbackFailed ? <p role="alert" className="mt-2 rounded-lg bg-rose-50 p-3 text-sm text-rose-700">تعذر تشغيل الصوت. أعد تحميل الصفحة، وإن استمرت المشكلة فأبلغ مسؤول النشاط.</p> : null}
       </div>
     );
   }

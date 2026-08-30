@@ -7,6 +7,7 @@ import { RequirePlatformAdmin } from '../features/auth/require-platform-admin';
 import { RequireTenant } from '../features/auth/require-tenant';
 
 const HomePage = lazy(() => import('../routes/public/home-page'));
+const StudentJoinPage = lazy(() => import('../routes/public/student-join-page'));
 const PublicQuizPage = lazy(() => import('../routes/public/public-quiz-page'));
 const PublicResultPage = lazy(() => import('../routes/public/public-result-page'));
 const PublicCertificatePage = lazy(() => import('../routes/public/public-certificate-page'));
@@ -25,6 +26,14 @@ const ChooseWorkspacePage = lazy(() => import('../routes/onboarding/choose-works
 
 const DashboardPage = lazy(() => import('../routes/dashboard/dashboard-page'));
 const SettingsPage = lazy(() => import('../routes/dashboard/settings-page'));
+const ActivityNewPage = lazy(() => import('../routes/dashboard/activities/activity-new-page'));
+const ActivityManagePage = lazy(() => import('../routes/dashboard/activities/activity-manage-page'));
+const ActivityBuilderPage = lazy(() => import('../routes/dashboard/activities/activity-builder-page'));
+const ActivityBulkQuestionsPage = lazy(() => import('../routes/dashboard/activities/activity-bulk-questions-page'));
+const ActivityReadyPage = lazy(() => import('../routes/dashboard/activities/activity-ready-page'));
+const StudentsPage = lazy(() => import('../routes/dashboard/students/students-page'));
+const StudentNewPage = lazy(() => import('../routes/dashboard/students/student-new-page'));
+const StudentDetailPage = lazy(() => import('../routes/dashboard/students/student-detail-page'));
 
 const QuestionsPage = lazy(() => import('../routes/dashboard/questions/questions-page'));
 const QuestionNewPage = lazy(() => import('../routes/dashboard/questions/question-new-page'));
@@ -61,6 +70,7 @@ export const router = createBrowserRouter([
     ),
     children: [
       { path: '/', element: <HomePage /> },
+      { path: '/join', element: <StudentJoinPage /> },
       { path: '/privacy', element: <PrivacyPage /> },
       { path: '/terms', element: <TermsPage /> },
       { path: '/auth/login', element: <LoginPage /> },
@@ -77,8 +87,17 @@ export const router = createBrowserRouter([
             element: <RequireTenant />,
             children: [
               { path: '/dashboard', element: <DashboardPage /> },
+              { path: '/dashboard/activities/new', element: <ActivityNewPage /> },
+              { path: '/dashboard/activities/:quizId/manage', element: <ActivityManagePage /> },
+              { path: '/dashboard/activities/:quizId/build', element: <ActivityBuilderPage /> },
+              { path: '/dashboard/activities/:quizId/bulk', element: <ActivityBulkQuestionsPage /> },
+              { path: '/dashboard/activities/:quizId/ready', element: <ActivityReadyPage /> },
               { path: '/dashboard/settings', element: <SettingsPage /> },
+              { path: '/dashboard/students', element: <StudentsPage /> },
+              { path: '/dashboard/students/new', element: <StudentNewPage /> },
+              { path: '/dashboard/students/:studentId', element: <StudentDetailPage /> },
               { path: '/dashboard/questions', element: <QuestionsPage /> },
+              { path: '/dashboard/questions/bulk', element: <ActivityBulkQuestionsPage /> },
               { path: '/dashboard/questions/new', element: <QuestionNewPage /> },
               { path: '/dashboard/questions/:questionId/edit', element: <QuestionEditPage /> },
               { path: '/dashboard/questions/:questionId/preview', element: <QuestionPreviewPage /> },

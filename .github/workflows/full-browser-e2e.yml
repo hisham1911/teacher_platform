@@ -1,0 +1,199 @@
+name: Full Browser E2E
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/english-spark-ux-foundation
+    paths:
+      - 'apps/web/**'
+      - 'backend/**'
+      - 'e2e/**'
+      - '.github/workflows/full-browser-e2e.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'apps/web/**'
+      - 'backend/**'
+      - 'e2e/**'
+      - '.github/workflows/full-browser-e2e.yml'
+
+jobs:
+  full-browser-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: teacher_platform_e2e
+        ports:
+          - '5432:5432'
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+
+    env:
+      ASPNETCORE_ENVIRONMENT: E2E
+      ConnectionStrings__DefaultConnection: Host=localhost;Port=5432;Database=teacher_platform_e2e;Username=postgres;Password=postgres
+      API_URL: http://localhost:5000
+      WEB_URL: http://localhost:5173
+      VITE_API_BASE_URL: http://localhost:5000
+      Auth__WebBaseUrl: http://localhost:5173
+      Auth__TrustedOrigins__0: http://localhost:5173
+      Cors__AllowedOrigins__0: http://localhost:5173
+      DataProtection__KeysDirectory: /tmp/teacher-platform-keys-e2e
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Restore backend
+        working-directory: backend
+        run: dotnet restore
+
+      - name: Build backend
+        working-directory: backend
+        run: dotnet build --no-restore
+
+      - name: Install EF tool
+        run: dotnet tool install --global dotnet-ef --version 10.0.3
+
+      - name: Apply database migrations
+        working-directory: backend
+        run: >-
+          dotnet ef database update
+          --no-build
+          --project src/TeacherPlatform.Infrastructure/TeacherPlatform.Infrastructure.csproj
+          --startup-project src/TeacherPlatform.Api/TeacherPlatform.Api.csproj
+
+      - name: Install web dependencies
+        working-directory: apps/web
+        run: npm ci --registry https://registry.npmjs.org
+
+      - name: Install E2E dependencies
+        working-directory: e2e
+        run: npm ci --registry https://registry.npmjs.org
+
+      - name: Install Chromium
+        working-directory: e2e
+        run: npx playwright install --with-deps chromium
+
+      - name: Start API
+        shell: bash
+        run: |
+          start_api() {
+            nohup dotnet run --project backend/src/TeacherPlatform.Api/TeacherPlatform.Api.csproj --no-build --no-launch-profile --urls http://localhost:5000 >/tmp/full-e2e-api.log 2>&1 &
+            echo $! >/tmp/full-e2e-api.pid
+            for i in $(seq 1 60); do
+              if curl -fsS http://localhost:5000/health/ready >/dev/null; then
+                echo "API ready"
+                return 0
+              fi
+              sleep 2
+            done
+            cat /tmp/full-e2e-api.log
+            return 1
+          }
+          start_api
+
+      - name: Start web
+        shell: bash
+        run: |
+          nohup npm run dev --prefix apps/web -- --host localhost --port 5173 --strictPort >/tmp/full-e2e-web.log 2>&1 &
+          echo $! >/tmp/full-e2e-web.pid
+          for i in $(seq 1 40); do
+            if curl -fsS http://localhost:5173/ >/dev/null; then
+              echo "Web ready"
+              exit 0
+            fi
+            sleep 2
+          done
+          cat /tmp/full-e2e-web.log
+          exit 1
+
+      - name: Seed E2E data
+        working-directory: e2e
+        run: node seed.mjs
+
+      - name: Run advanced builder regression
+        working-directory: e2e
+        run: npx playwright test tests/part-d-builder.spec.mjs --reporter=line
+
+      - name: Run progressive challenge regression
+        working-directory: e2e
+        run: npx playwright test tests/part-e-progressive.spec.mjs --reporter=line
+
+      - name: Run guest resume Part A
+        working-directory: e2e
+        run: npx playwright test tests/part-a.spec.mjs --reporter=line
+
+      - name: Restart API for persistence proof
+        shell: bash
+        run: |
+          kill "$(cat /tmp/full-e2e-api.pid)" || true
+          for i in $(seq 1 20); do
+            if ! curl -fsS http://localhost:5000/health/ready >/dev/null 2>&1; then
+              break
+            fi
+            sleep 1
+          done
+          nohup dotnet run --project backend/src/TeacherPlatform.Api/TeacherPlatform.Api.csproj --no-build --no-launch-profile --urls http://localhost:5000 >>/tmp/full-e2e-api.log 2>&1 &
+          echo $! >/tmp/full-e2e-api.pid
+          for i in $(seq 1 60); do
+            if curl -fsS http://localhost:5000/health/ready >/dev/null; then
+              echo "API restarted"
+              exit 0
+            fi
+            sleep 2
+          done
+          cat /tmp/full-e2e-api.log
+          exit 1
+
+      - name: Run persistence and reporting Part B
+        working-directory: e2e
+        run: npx playwright test tests/part-b.spec.mjs --reporter=line
+
+      - name: Run live competition Part C
+        working-directory: e2e
+        run: npx playwright test tests/part-c-live.spec.mjs --reporter=line
+
+      - name: Run English Spark golden path Part F
+        working-directory: e2e
+        run: npx playwright test tests/part-f-english-spark-golden-path.spec.mjs --reporter=line
+
+      - name: Dump server logs on failure
+        if: failure()
+        shell: bash
+        run: |
+          echo '--- API LOG ---'
+          tail -n 300 /tmp/full-e2e-api.log || true
+          echo '--- WEB LOG ---'
+          tail -n 200 /tmp/full-e2e-web.log || true
+
+      - name: Upload Playwright diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: full-browser-e2e-diagnostics
+          if-no-files-found: ignore
+          path: |
+            e2e/test-results/
+            e2e/playwright-report/
+            e2e/visual-results/

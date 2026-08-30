@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using TeacherPlatform.Domain.Sessions;
+using TeacherPlatform.Domain.Students;
 
 namespace TeacherPlatform.Infrastructure.Persistence.Configurations;
 
@@ -16,13 +17,12 @@ public sealed class QuizSessionConfiguration : IEntityTypeConfiguration<QuizSess
         builder.Property(s => s.Mode).HasConversion<int>();
         builder.Property(s => s.Status).HasConversion<int>();
 
-        // مفتاح بديل مركب: يمنع أي FK مركب من تجاوز TenantId
         builder.HasAlternateKey(s => new { s.Id, s.TenantId });
-
         builder.Property(s => s.Version).IsRowVersion();
 
-        // JoinCode فريد عالمياً (ليس لكل مستأجر) — يجب أن يكون غير قابل للتخمين
         builder.HasIndex(s => s.JoinCode).IsUnique();
+        // PostgreSQL allows multiple NULL values in a unique index; legacy/manual sessions stay unaffected.
+        builder.HasIndex(s => new { s.TenantId, s.LaunchRequestId }).IsUnique();
         builder.HasIndex(s => s.TenantId);
         builder.HasIndex(s => new { s.TenantId, s.QuizId });
         builder.HasIndex(s => new { s.TenantId, s.Status });
@@ -56,11 +56,19 @@ public sealed class SessionParticipantConfiguration : IEntityTypeConfiguration<S
         builder.HasIndex(p => p.TenantId);
         builder.HasIndex(p => new { p.SessionId, p.TenantId });
         builder.HasIndex(p => p.GuestTokenHash);
+        // PostgreSQL allows multiple NULL values in a unique index, so guest participants remain supported.
+        builder.HasIndex(p => new { p.TenantId, p.SessionId, p.StudentId }).IsUnique();
 
         builder.HasOne(p => p.Session)
             .WithMany(s => s.Participants)
             .HasForeignKey(p => new { p.SessionId, p.TenantId })
             .HasPrincipalKey(s => new { s.Id, s.TenantId })
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.HasOne(p => p.Student)
+            .WithMany(student => student.Participants)
+            .HasForeignKey(p => new { p.StudentId, p.TenantId })
+            .HasPrincipalKey(student => new { student.Id, student.TenantId })
             .OnDelete(DeleteBehavior.NoAction);
     }
 }
@@ -78,10 +86,8 @@ public sealed class AttemptConfiguration : IEntityTypeConfiguration<Attempt>
         builder.Property(a => a.Percentage).HasPrecision(5, 2);
 
         builder.HasAlternateKey(a => new { a.Id, a.TenantId });
-
         builder.Property(a => a.Version).IsRowVersion();
 
-        // محاولة واحدة فقط لكل مشارك في كل جلسة
         builder.HasIndex(a => new { a.SessionId, a.ParticipantId }).IsUnique();
         builder.HasIndex(a => a.TenantId);
         builder.HasIndex(a => new { a.SessionId, a.TenantId });
@@ -112,7 +118,6 @@ public sealed class AttemptAnswerConfiguration : IEntityTypeConfiguration<Attemp
 
         builder.HasAlternateKey(a => new { a.Id, a.TenantId });
 
-        // إجابة واحدة فقط لكل عنصر في كل محاولة
         builder.HasIndex(a => new { a.AttemptId, a.QuizVersionItemId }).IsUnique();
         builder.HasIndex(a => a.TenantId);
         builder.HasIndex(a => new { a.AttemptId, a.TenantId });
@@ -123,7 +128,6 @@ public sealed class AttemptAnswerConfiguration : IEntityTypeConfiguration<Attemp
             .HasPrincipalKey(at => new { at.Id, at.TenantId })
             .OnDelete(DeleteBehavior.NoAction);
 
-        // FK مركب إلى QuizVersionItem — يضمن أن العنصر من نفس المستأجر
         builder.HasOne<Domain.Quizzes.QuizVersionItem>()
             .WithMany()
             .HasForeignKey(a => new { a.QuizVersionItemId, a.TenantId })

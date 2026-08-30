@@ -20,10 +20,42 @@ namespace TeacherPlatform.Api.Controllers;
 public sealed class SessionsController : ControllerBase
 {
     private readonly SessionService _sessionService;
+    private readonly ActivityLaunchService _activityLaunchService;
 
-    public SessionsController(SessionService sessionService)
+    public SessionsController(SessionService sessionService, ActivityLaunchService activityLaunchService)
     {
         _sessionService = sessionService;
+        _activityLaunchService = activityLaunchService;
+    }
+
+    /// <summary>
+    /// تجهيز نشاط للطلاب كعملية واحدة retry-safe: ينشر عند الحاجة، ينشئ جلسة،
+    /// ويفعّل الأنماط الفردية. Live يبقى Scheduled حتى يضغط المعلم «ابدأ».
+    /// </summary>
+    [HttpPost("launch")]
+    [Authorize(Policy = AuthorizationPolicies.TenantContentManagement)]
+    [ProducesResponseType(typeof(SessionDetailResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Launch(
+        [FromRoute] Guid tenantId,
+        [FromRoute] Guid quizId,
+        [FromBody] ActivityLaunchRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
+        var (error, result) = await _activityLaunchService.LaunchAsync(quizId, request, cancellationToken);
+        if (error is not null)
+        {
+            throw error;
+        }
+
+        return Ok(result);
     }
 
     /// <summary>إنشاء جلسة جديدة على النسخة المنشورة الحالية للاختبار.</summary>
