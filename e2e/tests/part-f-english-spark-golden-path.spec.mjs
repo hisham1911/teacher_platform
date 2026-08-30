@@ -102,7 +102,7 @@ test('English Spark golden path hides publishing/session complexity from the tea
 
   await teacher.getByLabel('ابدأ من هنا').getByRole('link', { name: 'إنشاء نشاط جديد' }).click();
   await expect(teacher.getByRole('heading', { name: 'ابدأ بالفكرة فقط.' })).toBeVisible();
-  await expect(teacher.getByText('اسم للنشاط وطريقة تجربة الطلاب. الباقي سنمشي فيه خطوة بخطوة بدون إعدادات نشر معقدة.')).toBeVisible();
+  await expect(teacher.getByText('سمِّ النشاط واختر شكل تجربة الطلاب. سننتقل بعدها مباشرة إلى الأسئلة ثم المشاركة.')).toBeVisible();
 
   const progressiveMode = teacher.locator('input[name="activity-mode"][value="ProgressiveChallenge"]');
   await expect(progressiveMode).toBeChecked();
