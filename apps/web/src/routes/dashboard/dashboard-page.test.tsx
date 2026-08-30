@@ -45,9 +45,9 @@ describe('DashboardPage', () => {
     expect(screen.getByText('ابدأ بما يحتاجه الطلاب الآن، واترك التفاصيل التقنية خلف الكواليس.')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'إنشاء نشاط جديد' })).toHaveAttribute('href', '/dashboard/activities/new');
     expect(screen.getByRole('link', { name: /شاهد بوابة الطالب/ })).toHaveAttribute('href', '/join');
-    expect(screen.getByRole('link', { name: /بنك الأسئلة/ })).toHaveAttribute('href', '/dashboard/questions');
-    expect(screen.getByRole('link', { name: /الطلاب/ })).toHaveAttribute('href', '/dashboard/students');
-    expect(screen.getByRole('link', { name: /النتائج/ })).toHaveAttribute('href', '/dashboard/reports');
+    expect(screen.getByRole('link', { name: /ابنِ مكتبة قابلة لإعادة الاستخدام/ })).toHaveAttribute('href', '/dashboard/questions');
+    expect(screen.getByRole('link', { name: /أكواد دخول ثابتة وملف نتائج لكل طالب/ })).toHaveAttribute('href', '/dashboard/students');
+    expect(screen.getByRole('link', { name: /اعرف ما حدث بعد النشاط/ })).toHaveAttribute('href', '/dashboard/reports');
     expect(await screen.findByText('اختبار قواعد')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'فتح النشاط' })).toHaveAttribute('href', '/dashboard/activities/q1/manage');
     expect(screen.queryByText(/اختاري|اكتبي|أضيفي|أنشئي|افتحي|كمّلي/)).not.toBeInTheDocument();
