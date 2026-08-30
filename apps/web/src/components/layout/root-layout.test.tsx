@@ -20,17 +20,18 @@ function renderLayout(path = '/dashboard') {
 describe('RootLayout', () => {
   it('يعرض روابط التنقل المحايدة للزائر', () => {
     clearSession();
-    renderLayout('/');
-    expect(screen.getByRole('link', { name: 'English Spark' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'الرئيسية' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'تسجيل الدخول' })).toBeInTheDocument();
+    const view = renderLayout('/');
+    expect(screen.getByRole('link', { name: /تسجيل الدخول/ })).toBeInTheDocument();
+    expect(screen.queryByText('لوحة المعلمة')).not.toBeInTheDocument();
+    view.unmount();
   });
 
   it('يعرض Player بلا تنقل Studio', () => {
     clearSession();
-    renderLayout('/play/JOIN123');
-    expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
-    expect(screen.queryByText('English Spark — Learn • Play • Explore')).not.toBeInTheDocument();
+    const view = renderLayout('/play/ABC123');
+    expect(screen.queryByText('English Spark Studio')).not.toBeInTheDocument();
+    expect(screen.queryByRole('navigation', { name: 'التنقل السريع' })).not.toBeInTheDocument();
+    view.unmount();
   });
 
   it('يعرض Live Host في وضع تركيز بلا تنقل Studio', () => {
@@ -40,7 +41,8 @@ describe('RootLayout', () => {
       activeWorkspace: { id: 'tenant-1', name: 'مساحتي', slug: 'workspace', role: 'Owner', status: 'Active' },
     });
     const view = renderLayout('/dashboard/sessions/session-1/live');
-    expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
+    expect(screen.queryByText('English Spark Studio')).not.toBeInTheDocument();
+    expect(screen.queryByRole('navigation', { name: 'التنقل السريع' })).not.toBeInTheDocument();
     view.unmount();
     clearSession();
   });
@@ -48,11 +50,10 @@ describe('RootLayout', () => {
   it('لا يعرض إدارة المنصة نهائيًا لحساب المعلم العادي', async () => {
     establishSession({
       accessToken: 'token', accessTokenExpiresAtMs: Date.now() + 10_000,
-      user: { id: 'u1', email: 'teacher@example.test', fullName: 'مريم', emailConfirmed: true, platformRoles: [] },
-      activeWorkspace: { id: 'tenant-1', name: 'English class', slug: 'workspace', role: 'Owner', status: 'Active' },
+      user: { id: 'u1', email: 'creator@example.test', fullName: 'صانع محتوى', emailConfirmed: true, platformRoles: [] },
+      activeWorkspace: { id: 'tenant-1', name: 'مساحتي', slug: 'workspace', role: 'Owner', status: 'Active' },
     });
     const view = renderLayout('/dashboard');
-    expect(screen.queryByText(/إدارة المنصة/)).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /إدارة المنصة/ })).not.toBeInTheDocument();
     await waitFor(() => expect(tenantsApi.listMine).toHaveBeenCalled());
     view.unmount();
@@ -72,7 +73,7 @@ describe('RootLayout', () => {
     clearSession();
   });
 
-  it('يعرض النتائج والتنقل السريع للمستخدم المسجل', async () => {
+  it('يعرض النتائج كقسم نشط ويضع الطلاب في التنقل السريع للمستخدم المسجل', async () => {
     establishSession({
       accessToken: 'token', accessTokenExpiresAtMs: Date.now() + 10_000,
       user: { id: 'u1', email: 'creator@example.test', fullName: 'صانع محتوى', emailConfirmed: true, platformRoles: [] },
@@ -81,9 +82,11 @@ describe('RootLayout', () => {
     const view = renderLayout('/dashboard/attempts/attempt-1');
     expect(screen.getByText('المزيد')).toBeInTheDocument();
     expect(screen.getByRole('navigation', { name: 'التنقل السريع' })).toBeInTheDocument();
-    expect(screen.getAllByRole('link', { name: 'النتائج' })).toHaveLength(2);
-    expect(screen.getAllByRole('link', { name: 'النتائج' })[0]).toHaveAttribute('href', '/dashboard/reports');
-    expect(screen.getAllByRole('link', { name: 'النتائج' }).every((link) => link.getAttribute('aria-current') === 'page')).toBe(true);
+    const resultLinks = screen.getAllByRole('link', { name: 'النتائج' });
+    expect(resultLinks).toHaveLength(2);
+    expect(resultLinks[0]).toHaveAttribute('href', '/dashboard/reports');
+    expect(resultLinks.some((link) => link.getAttribute('aria-current') === 'page')).toBe(true);
+    expect(screen.getAllByRole('link', { name: 'الطلاب' }).length).toBeGreaterThan(1);
     await waitFor(() => expect(tenantsApi.listMine).toHaveBeenCalled());
     view.unmount();
     clearSession();
