@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { extractJoinCode, normalizeJoinCode } from './student-join-page';
+import { extractJoinCode, normalizeJoinCode } from './student-join-input';
 
 describe('student join input', () => {
   it('normalizes a plain activity code', () => {
