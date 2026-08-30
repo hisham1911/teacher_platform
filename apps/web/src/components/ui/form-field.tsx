@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ComponentPropsWithRef, ReactNode } from 'react';
 
 type FieldInputProps = {
   id: string;
@@ -59,14 +59,14 @@ export function FormField({
 const inputBase =
   'min-h-12 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-base leading-7 text-slate-950 shadow-[0_1px_2px_rgb(15_23_42/0.04)] outline-none transition-[border-color,box-shadow,background-color] placeholder:text-slate-400 hover:border-slate-400 focus-visible:border-violet-600 focus-visible:ring-4 focus-visible:ring-violet-100 aria-[invalid=true]:border-rose-500 aria-[invalid=true]:ring-4 aria-[invalid=true]:ring-rose-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500';
 
-export function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
+export function TextInput(props: ComponentPropsWithRef<'input'>) {
   return <input {...props} className={`${inputBase} ${props.className ?? ''}`} />;
 }
 
-export function TextArea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+export function TextArea(props: ComponentPropsWithRef<'textarea'>) {
   return <textarea {...props} className={`${inputBase} resize-y ${props.className ?? ''}`} />;
 }
 
-export function SelectInput(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
+export function SelectInput(props: ComponentPropsWithRef<'select'>) {
   return <select {...props} className={`${inputBase} ${props.className ?? ''}`} />;
 }
