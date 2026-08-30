@@ -6,6 +6,7 @@ import { expect, test } from '@playwright/test';
 const e2eDir = fileURLToPath(new URL('..', import.meta.url));
 const repoRoot = join(e2eDir, '..');
 const apiUrl = process.env.API_URL || 'http://localhost:5000';
+const webUrl = process.env.WEB_URL || 'http://localhost:5173';
 const mailDir = process.env.MAIL_DIR || join(repoRoot, 'backend', 'src', 'TeacherPlatform.Api', '.dev-mail');
 const password = 'SecurePassword123!';
 
@@ -147,7 +148,17 @@ test('English Spark golden path hides publishing/session complexity from the tea
   await expect(teacher.getByText('الطلاب يمكنهم الدخول الآن')).toBeVisible();
   await expect(teacher.getByText(session.joinCode, { exact: true })).toBeVisible();
   await expect(teacher.getByRole('button', { name: 'نسخ رابط الطلاب' })).toBeVisible();
+  await expect(teacher.getByRole('button', { name: 'نسخ رسالة جاهزة' })).toBeVisible();
   await expect(teacher.getByTestId('activity-qr-code')).toBeVisible();
+
+  const joinPortal = await teacherContext.newPage();
+  await joinPortal.goto('/join');
+  const joinInput = joinPortal.getByLabel(/رمز النشاط/);
+  await joinInput.fill(`${webUrl}/play/${session.joinCode}?source=shared-message`);
+  await expect(joinInput).toHaveValue(session.joinCode);
+  await joinPortal.getByRole('button', { name: 'ابدأ الآن' }).click();
+  await expect(joinPortal).toHaveURL(new RegExp(`/play/${session.joinCode}$`));
+  await joinPortal.close();
 
   const studentPagePromise = teacher.waitForEvent('popup');
   await teacher.getByRole('link', { name: /معاينة كطالب/ }).click();
