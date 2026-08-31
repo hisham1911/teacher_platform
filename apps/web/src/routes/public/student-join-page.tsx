@@ -12,7 +12,7 @@ export default function StudentJoinPage() {
     event.preventDefault();
     const normalized = extractJoinCode(code);
     if (normalized.length < 4) {
-      setError('اكتب كود النشاط أو الصق الرابط اللي معك.');
+      setError('اكتب رمز النشاط أو الصق رابط النشاط كاملًا.');
       return;
     }
     navigate(`/play/${normalized}`);
@@ -29,10 +29,25 @@ export default function StudentJoinPage() {
       <section className="student-enter mx-auto grid w-full max-w-3xl gap-5 lg:grid-cols-[minmax(0,1fr)_260px] lg:items-center">
         <form onSubmit={submit} className="student-panel order-2 p-5 text-center sm:p-7 lg:order-1">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--student-violet-soft)] text-2xl" aria-hidden="true">⚡</div>
-          <h1 className="mt-4 text-2xl font-black text-[var(--student-ink)] sm:text-3xl">جاهز للنشاط؟</h1>
-          <p className="mx-auto mt-2 max-w-md text-sm leading-7 text-[var(--student-muted)]">اكتب كود النشاط اللي معك، أو الصق الرابط كامل.</p>
+          <h1 className="mt-4 text-2xl font-black text-[var(--student-ink)] sm:text-3xl">ادخل النشاط</h1>
+          <p className="mx-auto mt-2 max-w-md text-sm leading-7 text-[var(--student-muted)]">
+            ابدأ برمز النشاط أو رابطه. كود الطالب الشخصي تستخدمه بعد فتح النشاط.
+          </p>
 
-          <label htmlFor="join-code" className="mt-6 block text-right text-sm font-bold text-[var(--student-ink)]">كود النشاط</label>
+          <div className="mt-5 grid gap-2 text-right sm:grid-cols-2" aria-label="الفرق بين رمز النشاط وكود الطالب">
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-3">
+              <p className="text-sm font-black text-emerald-900">① رمز النشاط</p>
+              <p className="mt-1 text-xs leading-6 text-emerald-800">يفتح النشاط نفسه. ابدأ به هنا.</p>
+            </div>
+            <div className="rounded-2xl border border-violet-200 bg-violet-50/80 p-3">
+              <p className="text-sm font-black text-violet-900">② كود الطالب</p>
+              <p className="mt-1 text-xs leading-6 text-violet-800">يثبت هويتك ونتائجك بعد فتح النشاط.</p>
+            </div>
+          </div>
+
+          <label htmlFor="join-code" className="mt-6 block text-right text-sm font-bold text-[var(--student-ink)]">
+            رمز النشاط <span className="font-semibold text-[var(--student-muted)]">— وليس كود الطالب</span>
+          </label>
           <input
             id="join-code"
             dir="ltr"
@@ -51,20 +66,24 @@ export default function StudentJoinPage() {
           {error ? (
             <p id="join-code-error" role="alert" className="mt-3 rounded-xl bg-rose-50 px-3 py-2 text-sm font-bold text-rose-700">{error}</p>
           ) : (
-            <p id="join-code-hint" className="mt-3 text-xs leading-6 text-[var(--student-muted)]">لو لصقت الرابط، هنجيب الكود منه تلقائيًا.</p>
+            <p id="join-code-hint" className="mt-3 text-xs leading-6 text-[var(--student-muted)]">
+              معك كود طالب مثل ABCD-EFGH؟ احتفظ به؛ سيظهر خيار «الدخول بكود الطالب» بعد فتح النشاط.
+            </p>
           )}
 
           <button type="submit" disabled={code.length < 4} className="mt-5 inline-flex min-h-14 w-full items-center justify-center rounded-2xl bg-[var(--student-primary)] px-6 text-base font-black text-white shadow-[0_10px_24px_rgb(5_150_105/0.2)] transition hover:bg-[var(--student-primary-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--student-primary)] disabled:cursor-not-allowed disabled:opacity-40">
-            دخول النشاط
+            فتح النشاط
           </button>
 
-          <p className="mt-5 text-xs leading-6 text-[var(--student-muted)]">بعد الدخول، اكتب اسمك أو استخدم كود الطالب لو المعلم أعطاك واحدًا.</p>
+          <p className="mt-5 text-xs leading-6 text-[var(--student-muted)]">
+            لا تحتاج حسابًا. بعد فتح النشاط اختر اسمك للعب السريع، أو كود الطالب لحفظ نتيجتك على ملفك.
+          </p>
         </form>
 
         <div className="order-1 flex flex-col items-center text-center lg:order-2">
           <StudentLearningVisual />
-          <p className="mt-2 text-sm font-black text-[var(--student-primary-strong)]">الكود معك؟ أنت جاهز.</p>
-          <p className="mt-1 max-w-[220px] text-xs leading-6 text-[var(--student-muted)]">لا تحتاج حسابًا أو كلمة مرور.</p>
+          <p className="mt-2 text-sm font-black text-[var(--student-primary-strong)]">رمز النشاط أولًا.</p>
+          <p className="mt-1 max-w-[220px] text-xs leading-6 text-[var(--student-muted)]">ثم استخدم كود الطالب إذا كان لديك واحد.</p>
         </div>
       </section>
     </StudentShell>
