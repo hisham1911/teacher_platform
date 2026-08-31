@@ -79,6 +79,11 @@ public sealed class PlatformUserResponse
     public DateTime CreatedAt { get; set; }
 }
 
+public sealed class UpdatePlatformUserStatusRequest
+{
+    public bool Suspended { get; set; }
+}
+
 public sealed class UsageMetricResponse
 {
     public string Metric { get; set; } = string.Empty;
