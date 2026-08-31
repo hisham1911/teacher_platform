@@ -62,7 +62,7 @@ public sealed class PlatformAdminController : ControllerBase
         var error = await _service.UpdateUserStatusAsync(
             userId, request, RequireActorId(), HttpContext.TraceIdentifier, cancellationToken);
         if (error is not null) throw error;
-        return NoContent();
+        return Ok(new { suspended = request.Suspended });
     }
 
     [HttpPost("tenants/{tenantId:guid}/subscriptions/activate")]
