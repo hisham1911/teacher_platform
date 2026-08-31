@@ -42,7 +42,8 @@ export function RootLayout({ children }: { children: ReactNode }) {
   const session = useSessionSnapshot();
   const activeTenantId = getActiveTenantId();
   const isFocusedLiveHost = location.pathname.startsWith('/dashboard/sessions/') && location.pathname.endsWith('/live');
-  const isFocusedExperience = location.pathname.startsWith('/play/') || isFocusedLiveHost;
+  const isStudentExperience = location.pathname === '/join' || location.pathname.startsWith('/play/');
+  const isFocusedExperience = isStudentExperience || isFocusedLiveHost;
 
   const { data: workspaces } = useQuery({
     queryKey: ['tenants', 'mine'],
@@ -119,6 +120,13 @@ export function RootLayout({ children }: { children: ReactNode }) {
             إنشاء نشاط جديد
           </Link>
 
+          {isPlatformAdmin ? (
+            <Link to="/platform" className="mt-3 flex min-h-12 items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-3 text-sm font-bold text-amber-950 shadow-sm hover:bg-amber-100">
+              <span aria-hidden="true" className="text-lg">⚙️</span>
+              <span><span className="block">إدارة الحسابات</span><span className="mt-0.5 block text-[10px] font-semibold text-amber-800">المستخدمون · العملاء · الاشتراكات</span></span>
+            </Link>
+          ) : null}
+
           <StudioNavigation pathname={location.pathname} />
 
           <nav className="mt-3 flex flex-col gap-1 border-t border-slate-200 pt-3" aria-label="إعدادات Studio">
@@ -142,11 +150,6 @@ export function RootLayout({ children }: { children: ReactNode }) {
               <p className="truncate text-sm font-semibold text-[var(--teacher-ink)]">{session.user.fullName}</p>
               <p className="mt-0.5 text-[11px] font-medium text-slate-400">English Spark Studio</p>
             </div>
-            {isPlatformAdmin ? (
-              <Link to="/platform" className="flex min-h-11 items-center gap-2 rounded-xl bg-amber-50 px-3 text-xs font-bold text-amber-950 hover:bg-amber-100">
-                <span aria-hidden="true">⚙️</span><span>إدارة المنصة</span>
-              </Link>
-            ) : null}
             <button type="button" onClick={() => void onLogout()} className="inline-flex min-h-11 w-full items-center gap-2 rounded-xl px-3 text-sm font-medium text-slate-600 hover:bg-rose-50 hover:text-rose-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-rose-100">
               <TeacherIcon name="logout" />تسجيل الخروج
             </button>
@@ -170,11 +173,11 @@ export function RootLayout({ children }: { children: ReactNode }) {
                       </select>
                     </label>
                   ) : null}
+                  {isPlatformAdmin ? <Link to="/platform" className="mb-2 inline-flex min-h-12 w-full items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-3 text-sm font-bold text-amber-950"><span aria-hidden="true">⚙️</span><span>إدارة الحسابات والمنصة</span></Link> : null}
                   <Link to="/dashboard/questions" className="inline-flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-semibold text-slate-700 hover:bg-violet-50"><TeacherIcon name="questions" />بنك الأسئلة</Link>
                   <Link to="/dashboard/reports" className="inline-flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-semibold text-slate-700 hover:bg-violet-50"><TeacherIcon name="reports" />النتائج</Link>
                   <Link to="/dashboard/certificates" className="inline-flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-semibold text-slate-700 hover:bg-violet-50"><TeacherIcon name="certificate" />الشهادات</Link>
                   <Link to="/dashboard/settings" className="inline-flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-semibold text-slate-700 hover:bg-violet-50"><TeacherIcon name="settings" />الإعدادات</Link>
-                  {isPlatformAdmin ? <Link to="/platform" className="mt-2 inline-flex min-h-11 w-full items-center gap-3 rounded-xl bg-amber-50 px-3 text-sm font-bold text-amber-950"><span aria-hidden="true">⚙️</span><span>إدارة المنصة</span></Link> : null}
                   <button type="button" onClick={() => void onLogout()} className="mt-2 inline-flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-medium text-rose-700 hover:bg-rose-50"><TeacherIcon name="logout" />تسجيل الخروج</button>
                 </div>
               </details>
@@ -182,7 +185,7 @@ export function RootLayout({ children }: { children: ReactNode }) {
           </header>
 
           <main id="main-content" className="mx-auto w-full max-w-7xl flex-1 px-4 py-5 pb-24 sm:px-6 sm:py-7 sm:pb-24 lg:px-8 lg:py-8">{children}</main>
-          <footer className="hidden border-t border-slate-200 px-4 py-4 text-center text-xs text-slate-500 lg:block">English Spark — Learn • Play • Explore</footer>
+          <footer className="hidden border-t border-slate-200 px-4 py-4 text-center text-xs text-slate-500 lg:block">English Spark Studio</footer>
           <MobileStudioNavigation pathname={location.pathname} />
         </div>
       </div>
