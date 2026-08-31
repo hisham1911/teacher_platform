@@ -325,6 +325,7 @@ else
 }
 builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.MediaService>();
 builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.QuestionService>();
+builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.BulkQuestionImportService>();
 
 // ---------- Phase 3: Quiz Builder & Publishing ----------
 builder.Services.AddOptions<TeacherPlatform.Application.Options.QuizLimitOptions>()
@@ -347,7 +348,10 @@ builder.Services.AddOptions<TeacherPlatform.Application.Options.SessionOptions>(
     .ValidateDataAnnotations()
     .ValidateOnStart();
 builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.GuestTokenService>();
+builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.StudentService>();
+builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.ManagedStudentJoinService>();
 builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.SessionService>();
+builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.ActivityLaunchService>();
 builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.PlayerService>();
 
 // ---------- Phase 6: Live Competition ----------

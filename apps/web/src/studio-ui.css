@@ -1,0 +1,81 @@
+:root {
+  font-family: 'IBM Plex Sans Arabic', 'Segoe UI', Tahoma, system-ui, sans-serif;
+  font-synthesis: none;
+  font-kerning: normal;
+  text-rendering: optimizeLegibility;
+  --studio-border: oklch(0.91 0.012 245);
+  --studio-border-strong: oklch(0.84 0.018 245);
+  --studio-focus: oklch(0.51 0.22 292);
+  --studio-radius: 1rem;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  line-height: 1.6;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button,
+a,
+input,
+textarea,
+select,
+summary {
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  background: oklch(0.9 0.065 292);
+  color: oklch(0.25 0.06 292);
+}
+
+.teacher-app {
+  font-size: 1rem;
+}
+
+.teacher-surface {
+  border-color: var(--studio-border);
+  border-radius: var(--studio-radius);
+  box-shadow:
+    0 1px 2px rgb(15 23 42 / 0.025),
+    0 5px 18px rgb(15 23 42 / 0.035);
+}
+
+.teacher-app :where(h1, h2, h3) {
+  text-wrap: balance;
+}
+
+.teacher-app :where(p) {
+  text-wrap: pretty;
+}
+
+.teacher-app :where(input, textarea, select)::placeholder {
+  opacity: 1;
+}
+
+.teacher-app :where(button, a, summary) {
+  touch-action: manipulation;
+}
+
+@media (max-width: 40rem) {
+  .teacher-surface {
+    border-radius: 0.875rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .teacher-app *,
+  .teacher-app *::before,
+  .teacher-app *::after {
+    scroll-behavior: auto !important;
+  }
+}

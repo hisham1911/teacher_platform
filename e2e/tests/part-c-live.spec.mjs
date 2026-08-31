@@ -15,7 +15,7 @@ test('teacher hosts a live competition and scoring stays hidden until close', as
   await host.goto('/auth/login');
   await host.getByLabel('البريد الإلكتروني').fill(state.email);
   await host.getByLabel('كلمة المرور').fill('SecurePassword123!');
-  await host.getByRole('button', { name: 'تسجيل الدخول' }).click();
+  await host.getByRole('button', { name: 'دخول إلى English Spark' }).click();
   await expect(host).toHaveURL(/\/dashboard$/);
   await host.goto(`/dashboard/sessions/${state.liveSessionId}/live?quizId=${state.quizId}`);
   await expect(host.getByRole('heading', { name: 'مسابقة E2E مباشرة' })).toBeVisible();

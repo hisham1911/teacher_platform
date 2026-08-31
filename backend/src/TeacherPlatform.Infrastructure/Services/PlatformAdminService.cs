@@ -4,6 +4,7 @@ using Npgsql;
 using TeacherPlatform.Application.Abstractions;
 using TeacherPlatform.Application.Saas;
 using TeacherPlatform.Domain.Certificates;
+using TeacherPlatform.Domain.Identity;
 using TeacherPlatform.Domain.Quizzes;
 using TeacherPlatform.Domain.Saas;
 using TeacherPlatform.Infrastructure.Persistence;
@@ -164,6 +165,62 @@ public sealed class PlatformAdminService
             user.PlatformRoles = rolesByUser.GetValueOrDefault(user.Id) ?? [];
         }
         return users;
+    }
+
+    public async Task<ServiceResultException?> UpdateUserStatusAsync(
+        Guid userId,
+        UpdatePlatformUserStatusRequest request,
+        Guid actorUserId,
+        string? requestId,
+        CancellationToken cancellationToken)
+    {
+        if (request.Suspended && userId == actorUserId)
+        {
+            return new ServiceResultException("ValidationError", "You cannot suspend your own account.");
+        }
+
+        var user = await _db.Users.SingleOrDefaultAsync(current => current.Id == userId, cancellationToken);
+        var profile = await _db.UserProfiles.SingleOrDefaultAsync(current => current.UserId == userId, cancellationToken);
+        if (user is null || profile is null)
+        {
+            return new ServiceResultException("NotFound", "User not found.");
+        }
+
+        var targetStatus = request.Suspended ? UserProfileStatus.Suspended : UserProfileStatus.Active;
+        if (profile.Status == targetStatus)
+        {
+            return null;
+        }
+
+        profile.Status = targetStatus;
+        profile.UpdatedAt = _clock.UtcNow;
+        user.LockoutEnabled = true;
+        user.LockoutEnd = request.Suspended ? DateTimeOffset.MaxValue : null;
+        user.AccessFailedCount = 0;
+
+        if (request.Suspended)
+        {
+            var now = _clock.UtcNow;
+            var activeTokens = await _db.RefreshTokens
+                .Where(token => token.UserId == userId && token.RevokedAt == null && token.ExpiresAt > now)
+                .ToListAsync(cancellationToken);
+            foreach (var token in activeTokens)
+            {
+                token.RevokedAt = now;
+                token.RevokedReason = "PlatformAdminSuspended";
+            }
+        }
+
+        AddAudit(
+            actorUserId,
+            null,
+            request.Suspended ? "UserSuspended" : "UserRestored",
+            "User",
+            userId.ToString(),
+            new { Status = targetStatus.ToString() },
+            requestId);
+        await _db.SaveChangesAsync(cancellationToken);
+        return null;
     }
 
     public async Task<(ServiceResultException? Error, SubscriptionResponse? Result)> ActivateSubscriptionAsync(

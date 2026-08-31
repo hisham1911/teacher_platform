@@ -13,7 +13,7 @@ async function loginTeacher(page) {
   await page.getByLabel('كلمة المرور').fill('SecurePassword123!');
   const responsePromise = page.waitForResponse((response) =>
     response.request().method() === 'POST' && response.url().endsWith('/api/v1/auth/login'));
-  await page.getByRole('button', { name: 'تسجيل الدخول' }).click();
+  await page.getByRole('button', { name: 'دخول إلى English Spark' }).click();
   const response = await responsePromise;
   expect(response.ok()).toBe(true);
   await expect(page).toHaveURL(/\/dashboard$/);
@@ -36,14 +36,14 @@ async function capture(page, name, width, height) {
 async function joinAndStart(page, joinCode, displayName) {
   await page.goto(`/play/${joinCode}`);
   await page.getByPlaceholder('اكتب اسمك هنا').fill(displayName);
-  await page.getByRole('button', { name: 'ابدأ الاختبار' }).click();
+  await page.getByRole('button', { name: 'ادخل إلى المهمة' }).click();
   await expect(page.getByTestId('challenge-ready')).toBeVisible();
 
   const startResponsePromise = page.waitForResponse((response) =>
     response.request().method() === 'POST' && response.url().endsWith(`/player/sessions/${joinCode}/attempts`));
   const questionResponsePromise = page.waitForResponse((response) =>
     response.request().method() === 'GET' && response.url().includes(`/player/sessions/${joinCode}/attempts/`) && response.url().endsWith('/current-question'));
-  await page.getByRole('button', { name: 'ابدأ التحدي' }).click();
+  await page.getByRole('button', { name: 'ابدأ المهمة' }).click();
   const [startResponse, questionResponse] = await Promise.all([startResponsePromise, questionResponsePromise]);
   expect(startResponse.ok()).toBe(true);
   expect(questionResponse.ok()).toBe(true);
@@ -94,7 +94,7 @@ test('progressive challenge teacher, player, resume, outcomes, and report', asyn
   await expect(player.getByPlaceholder('اكتب اسمك هنا')).toBeVisible();
   await capture(player, '01-join', 1440, 900);
   await player.getByPlaceholder('اكتب اسمك هنا').fill('طالبة التحدي');
-  await player.getByRole('button', { name: 'ابدأ الاختبار' }).click();
+  await player.getByRole('button', { name: 'ادخل إلى المهمة' }).click();
   await expect(player.getByTestId('challenge-ready')).toBeVisible();
   await capture(player, '02-ready', 1280, 720);
 
@@ -102,12 +102,12 @@ test('progressive challenge teacher, player, resume, outcomes, and report', asyn
     response.request().method() === 'POST' && response.url().endsWith(`/player/sessions/${session.joinCode}/attempts`));
   const firstQuestionResponsePromise = player.waitForResponse((response) =>
     response.request().method() === 'GET' && response.url().endsWith('/current-question'));
-  await player.getByRole('button', { name: 'ابدأ التحدي' }).click();
+  await player.getByRole('button', { name: 'ابدأ المهمة' }).click();
   const attempt = await (await startResponsePromise).json();
   const firstQuestion = await (await firstQuestionResponsePromise).json();
   await expect(player.getByTestId('challenge-level-indicator')).toHaveText('المستوى 1 / 2');
   await expect(player.getByTestId('challenge-score-indicator')).toContainText('0');
-  await expect(player.getByLabel('سلم المستويات')).toBeVisible();
+  await expect(player.getByRole('complementary', { name: 'مسار المهمة' })).toBeVisible();
   await capture(player, '03-first-level', 1280, 720);
 
   await player.keyboard.press('Tab');
@@ -116,7 +116,7 @@ test('progressive challenge teacher, player, resume, outcomes, and report', asyn
   const firstOptionBox = await firstOption.locator('..').boundingBox();
   expect(firstOptionBox?.height ?? 0).toBeGreaterThanOrEqual(44);
   await firstOption.click();
-  await player.getByRole('button', { name: 'تثبيت الإجابة' }).click();
+  await player.getByRole('button', { name: /تأكيد الإجابة/ }).click();
   await expect(player.getByTestId('challenge-feedback-correct')).toBeVisible();
   await expect(player.getByTestId('challenge-score-indicator')).toContainText('5');
   await capture(player, '04-correct-feedback', 1280, 720);
@@ -160,7 +160,7 @@ test('progressive challenge teacher, player, resume, outcomes, and report', asyn
 
   await capture(player, '05-middle-level', 390, 844);
   await player.getByText('خمسة', { exact: true }).click();
-  await player.getByRole('button', { name: 'تثبيت الإجابة' }).click();
+  await player.getByRole('button', { name: /تأكيد الإجابة/ }).click();
   await expect(player.getByTestId('challenge-feedback-wrong')).toBeVisible();
   await capture(player, '06-wrong-feedback', 375, 812);
   await expect(player.getByTestId('challenge-result-banner')).toContainText('انتهى التحدي');
@@ -190,11 +190,11 @@ test('progressive challenge teacher, player, resume, outcomes, and report', asyn
   const winner = await winnerContext.newPage();
   await joinAndStart(winner, session.joinCode, 'الفائزة بالتحدي');
   await winner.getByText('القاهرة', { exact: true }).click();
-  await winner.getByRole('button', { name: 'تثبيت الإجابة' }).click();
+  await winner.getByRole('button', { name: /تأكيد الإجابة/ }).click();
   await expect(winner.getByTestId('challenge-feedback-correct')).toBeVisible();
   await winner.getByRole('button', { name: 'متابعة الآن' }).click();
   await winner.getByText('سبعة', { exact: true }).click();
-  await winner.getByRole('button', { name: 'تثبيت الإجابة' }).click();
+  await winner.getByRole('button', { name: /تأكيد الإجابة/ }).click();
   await expect(winner.getByTestId('challenge-feedback-correct')).toBeVisible();
   const certificateResponsePromise = winner.waitForResponse((response) =>
     response.request().method() === 'POST' && response.url().endsWith('/certificate'));

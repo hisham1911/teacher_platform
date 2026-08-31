@@ -185,4 +185,4 @@ jobs:
 
       - name: Publish smoke
         working-directory: backend
-        run: dotnet publish src/TeacherPlatform.Api/TeacherPlatform.Api.csproj -c Release -o obj/Release/publish-test --no-build
+        run: dotnet publish src/TeacherPlatform.Api/TeacherPlatform.Api.csproj -c Release -o obj/Release/publish-test --no-restore

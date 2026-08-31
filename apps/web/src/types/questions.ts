@@ -107,6 +107,17 @@ export interface CreateQuestionRequest {
   acceptedAnswers?: string[];
 }
 
+export interface BulkQuestionImportRequest {
+  questions: CreateQuestionRequest[];
+  quizId?: string | null;
+}
+
+export interface BulkQuestionImportResponse {
+  createdCount: number;
+  questionIds: string[];
+  quizId: string | null;
+}
+
 export interface CreateQuestionVersionRequest {
   prompt: string;
   explanation?: string | null;

@@ -23,6 +23,7 @@ vi.mock('../../data/api-client/endpoints', async (importOriginal) => {
       getSession: vi.fn(),
       getCurrentPlayer: vi.fn(),
       join: vi.fn(),
+      joinWithStudentCode: vi.fn(),
       startAttempt: vi.fn(),
       getCurrentQuestion: vi.fn(),
       submitAnswer: vi.fn(),
@@ -45,6 +46,7 @@ const { playerApi } = await import('../../data/api-client/endpoints');
 const getSessionMock = vi.mocked(playerApi.getSession);
 const getCurrentPlayerMock = vi.mocked(playerApi.getCurrentPlayer);
 const joinMock = vi.mocked(playerApi.join);
+const managedJoinMock = vi.mocked(playerApi.joinWithStudentCode);
 const startAttemptMock = vi.mocked(playerApi.startAttempt);
 
 const activeSession: PlayerSession = {
@@ -116,12 +118,25 @@ describe('PlayPage', () => {
     expect(getSessionMock).toHaveBeenCalledWith('JOIN123', expect.anything());
   });
 
+
+  it('يعرض دخول التحدي المتدرج كتجربة مهمة لا كاختبار تقليدي', async () => {
+    getSessionMock.mockResolvedValue({ ...activeSession, mode: 'ProgressiveChallenge' });
+    renderPage();
+
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'جاهز تبدأ المهمة؟' })).toBeInTheDocument());
+    expect(screen.getByText('المستويات')).toBeInTheDocument();
+    expect(screen.getByText('النقاط')).toBeInTheDocument();
+    expect(screen.queryByText('النجاح')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'ادخل إلى المهمة' })).toBeInTheDocument();
+    expect(screen.getByLabelText('English Spark')).toBeInTheDocument();
+  });
+
   it('يعرض رسالة انتظار عندما تكون الجلسة مجدولة', async () => {
     getSessionMock.mockResolvedValue({ ...activeSession, status: 'Scheduled', canJoin: false });
     renderPage();
 
     await waitFor(() =>
-      expect(screen.getByText('الجلسة لم تُفعَّل بعد. انتظر المعلم.')).toBeInTheDocument(),
+      expect(screen.getByText('الجلسة لم تُفعَّل بعد. انتظر بدء النشاط.')).toBeInTheDocument(),
     );
     expect(screen.queryByRole('button', { name: 'ابدأ الاختبار' })).not.toBeInTheDocument();
   });
@@ -171,6 +186,21 @@ describe('PlayPage', () => {
     );
     expect(screen.getByRole('button', { name: 'ابدأ الآن' })).toBeInTheDocument();
     expect(joinMock).toHaveBeenCalledWith('JOIN123', { displayName: 'لاعب تجريبي' });
+  });
+
+  it('يسمح للطالب بالدخول بكوده ويستخدم الاسم الموثوق من السجل', async () => {
+    getSessionMock.mockResolvedValue(activeSession);
+    managedJoinMock.mockResolvedValue({ ...joinResponse, displayName: 'سارة من السجل' });
+    renderPage();
+
+    await waitFor(() => screen.getByRole('button', { name: 'لدي كود طالب' }));
+    fireEvent.click(screen.getByRole('button', { name: 'لدي كود طالب' }));
+    fireEvent.change(screen.getByLabelText('كود الطالب'), { target: { value: 'abcd-1234' } });
+    fireEvent.click(screen.getByRole('button', { name: 'دخول بكود الطالب' }));
+
+    await waitFor(() => expect(screen.getByRole('heading', { name: /سارة من السجل/ })).toBeInTheDocument());
+    expect(managedJoinMock).toHaveBeenCalledWith('JOIN123', 'ABCD1234');
+    expect(joinMock).not.toHaveBeenCalled();
   });
 
   it('يعرض رسالة 409 عند رفض الانضمام', async () => {
@@ -490,14 +520,14 @@ describe('PlayPage', () => {
 
     renderPage();
 
-    await waitFor(() => screen.getByRole('button', { name: 'ابدأ الاختبار' }));
+    await waitFor(() => screen.getByRole('button', { name: 'ادخل إلى المهمة' }));
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'متحدٍّ جديد' } });
-    fireEvent.click(screen.getByRole('button', { name: 'ابدأ الاختبار' }));
+    fireEvent.click(screen.getByRole('button', { name: 'ادخل إلى المهمة' }));
 
     // شاشة استعداد مخصصة للتحدي قبل البدء
     expect(await screen.findByTestId('challenge-ready')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'ابدأ التحدي' })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'ابدأ التحدي' }));
+    expect(screen.getByRole('button', { name: 'ابدأ المهمة' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'ابدأ المهمة' }));
 
     expect(await screen.findByTestId('challenge-level-indicator')).toHaveTextContent('المستوى 1 / 2');
     expect(startAttemptMock).toHaveBeenCalledWith('JOIN123');

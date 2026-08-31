@@ -799,7 +799,9 @@ public sealed class QuizService
         var now = DateTime.UtcNow;
         var checksum = ComputeChecksum(draft);
 
-        await using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
+        await using var transaction = _db.Database.CurrentTransaction is null
+            ? await _db.Database.BeginTransactionAsync(cancellationToken)
+            : null;
 
         // 1) تقاعد النسخة المنشورة السابقة
         if (quiz.CurrentPublishedVersionId is Guid previousPublishedId)
@@ -867,7 +869,10 @@ public sealed class QuizService
         try
         {
             await _db.SaveChangesAsync(cancellationToken);
-            await transaction.CommitAsync(cancellationToken);
+            if (transaction is not null)
+            {
+                await transaction.CommitAsync(cancellationToken);
+            }
         }
         catch (DbUpdateConcurrencyException)
         {
