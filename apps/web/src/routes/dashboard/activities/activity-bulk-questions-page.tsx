@@ -9,6 +9,8 @@ import { bulkQuestionRowToRequest, parseBulkQuestionRows } from '../../../featur
 import { createCsvQuestionTemplate, readQuestionImportFile } from '../../../features/questions/question-import-file';
 import { getActiveTenantId } from '../../../lib/auth/session';
 
+const DEFAULT_IMPORT_BANK_NAME = 'English Spark';
+
 export default function ActivityBulkQuestionsPage() {
   const { quizId } = useParams<{ quizId: string }>();
   const [searchParams] = useSearchParams();
@@ -37,9 +39,16 @@ export default function ActivityBulkQuestionsPage() {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      if (!tenantId || !resolvedBankId) throw new Error('missing-context');
+      if (!tenantId) throw new Error('missing-context');
+
+      let targetBankId = resolvedBankId;
+      if (!targetBankId) {
+        const createdBank = await questionBanksApi.create(tenantId, { name: DEFAULT_IMPORT_BANK_NAME });
+        targetBankId = createdBank.id;
+      }
+
       return questionsApi.bulkCreate(tenantId, {
-        questions: validRows.map((row) => bulkQuestionRowToRequest(row, resolvedBankId)),
+        questions: validRows.map((row) => bulkQuestionRowToRequest(row, targetBankId)),
         quizId: quizId ?? null,
       });
     },
@@ -96,13 +105,19 @@ export default function ActivityBulkQuestionsPage() {
 
   function clearFile() { setRaw(''); setFileName(null); setResultMessage(null); }
 
+  const saveDestination = attachToActivity
+    ? ' وإضافتها للنشاط الحالي'
+    : resolvedBankId
+      ? ' داخل البنك المحدد'
+      : ` داخل بنك ${DEFAULT_IMPORT_BANK_NAME}`;
+
   return (
     <div className="mx-auto max-w-6xl space-y-5 pb-28">
       <header className="teacher-surface overflow-hidden"><div className="bg-gradient-to-br from-violet-800 via-indigo-700 to-slate-950 p-5 text-white sm:p-7"><Link to={backPath} className="inline-flex min-h-11 items-center text-sm font-bold text-violet-100 hover:text-white">→ العودة</Link><p className="mt-2 text-xs font-black tracking-[0.18em] text-amber-200">IMPORT QUESTIONS</p><h1 className="mt-1 text-2xl font-black sm:text-3xl">استيراد أسئلة من ملف</h1><p className="mt-2 max-w-3xl text-sm leading-7 text-violet-100">ارفع ملف Excel أو CSV فقط. سنعرض الأسئلة والأخطاء أولًا، ولن يتم حفظ أي شيء قبل تأكيدك. عند الحفظ تُحفظ المجموعة كاملة أو لا يُحفظ منها شيء{attachToActivity ? '، وتُربط كلها بالنشاط الحالي في نفس العملية' : ''}.</p></div></header>
 
       <section className="teacher-surface p-4 sm:p-6"><div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_19rem]">
         <div><h2 className="text-lg font-black text-slate-950">1. اختر ملف الأسئلة</h2><p className="mt-1 text-sm leading-6 text-slate-600">الصيغ المقبولة فقط: <b>Excel .xlsx</b> أو <b>CSV .csv</b>.</p><label className={`mt-4 flex min-h-44 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-5 text-center transition ${fileName ? 'border-emerald-300 bg-emerald-50/60' : 'border-violet-200 bg-violet-50/40 hover:border-violet-400 hover:bg-violet-50'}`}><span aria-hidden="true" className="text-3xl">{fileName ? '✓' : '📄'}</span><span className="mt-3 text-base font-black text-slate-950">{isReadingFile ? 'جارٍ قراءة الملف…' : fileName ? fileName : 'اضغط لاختيار ملف Excel أو CSV'}</span><span className="mt-1 text-xs font-bold text-slate-500">حد أقصى 5MB</span><input type="file" accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" className="sr-only" disabled={isReadingFile || saveMutation.isPending} onChange={(event) => void onFileSelected(event.target.files?.[0] ?? null)} /></label>{fileName ? <button type="button" onClick={clearFile} className="mt-2 min-h-11 px-2 text-sm font-bold text-rose-700 hover:underline">إزالة الملف واختيار غيره</button> : null}</div>
-        <div className="space-y-4"><label className="flex flex-col gap-2 text-sm font-bold text-slate-800">2. حفظ داخل بنك<select value={resolvedBankId} onChange={(event) => setBankId(event.target.value)} className="min-h-12 rounded-xl border border-slate-300 bg-white px-3 text-sm">{banks.map((bank) => <option key={bank.id} value={bank.id}>{bank.name}</option>)}</select></label>{banks.length === 0 && !banksQuery.isLoading ? <p className="rounded-xl bg-amber-50 p-3 text-sm font-bold text-amber-900">لا يوجد بنك أسئلة حتى الآن. أنشئ بنكًا أولًا ثم ارجع للاستيراد.</p> : null}<button type="button" onClick={downloadCsvTemplate} className="min-h-11 w-full rounded-xl border border-violet-200 bg-white px-4 text-sm font-black text-violet-800 hover:bg-violet-50">تحميل قالب CSV فارغ</button><div className="rounded-2xl bg-violet-50 p-4 text-sm leading-7 text-violet-950"><p className="font-black">أعمدة الملف</p><p className="mt-1 break-words text-xs" dir="ltr">type · prompt · A · B · C · D · correct · difficulty · language · tags · explanation</p><p className="mt-2 text-xs">الإجابة الصحيحة A/B/C/D. الأنواع المدعومة في الاستيراد الآن: MultipleChoice وTrueFalse.</p></div></div>
+        <div className="space-y-4">{banksQuery.isLoading ? <div role="status" className="rounded-xl bg-slate-50 p-3 text-sm font-semibold text-slate-500">جارٍ تجهيز بنك الأسئلة…</div> : banks.length > 0 ? <label className="flex flex-col gap-2 text-sm font-bold text-slate-800">2. حفظ داخل بنك<select value={resolvedBankId} onChange={(event) => setBankId(event.target.value)} className="min-h-12 rounded-xl border border-slate-300 bg-white px-3 text-sm">{banks.map((bank) => <option key={bank.id} value={bank.id}>{bank.name}</option>)}</select></label> : <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm leading-6 text-emerald-950"><p className="font-black">2. لا تحتاج لإنشاء بنك أولًا</p><p className="mt-1">عند الحفظ سننشئ بنك <b>{DEFAULT_IMPORT_BANK_NAME}</b> تلقائيًا ونضع الأسئلة بداخله.</p></div>}<button type="button" onClick={downloadCsvTemplate} className="min-h-11 w-full rounded-xl border border-violet-200 bg-white px-4 text-sm font-black text-violet-800 hover:bg-violet-50">تحميل قالب CSV فارغ</button><div className="rounded-2xl bg-violet-50 p-4 text-sm leading-7 text-violet-950"><p className="font-black">أعمدة الملف</p><p className="mt-1 break-words text-xs" dir="ltr">type · prompt · A · B · C · D · correct · difficulty · language · tags · explanation</p><p className="mt-2 text-xs">الإجابة الصحيحة A/B/C/D. الأنواع المدعومة في الاستيراد الآن: MultipleChoice وTrueFalse.</p></div></div>
       </div></section>
 
       <section className="teacher-surface overflow-hidden"><div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-4 sm:px-6"><div><h2 className="text-xl font-black text-slate-950">3. راجع الأسئلة قبل الحفظ</h2><p className="mt-1 text-sm text-slate-600">{rows.length === 0 ? 'ارفع ملفًا أولًا.' : `${validRows.length} صالح · ${invalidRows} يحتاج مراجعة`}</p></div>{rows.length > 0 ? <span className={`rounded-full px-3 py-1 text-xs font-black ${invalidRows === 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900'}`}>{invalidRows === 0 ? 'الملف جاهز' : 'راجع الأخطاء'}</span> : null}</div>
@@ -110,7 +125,7 @@ export default function ActivityBulkQuestionsPage() {
       </section>
 
       {resultMessage ? <p role="status" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm font-bold text-amber-950">{resultMessage}</p> : null}
-      <div className="sticky bottom-20 z-20 rounded-2xl border border-violet-100 bg-white/95 p-3 shadow-xl backdrop-blur lg:bottom-4"><div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"><p className="text-sm font-bold text-slate-600">{rows.length === 0 ? 'ارفع ملف الأسئلة أولًا.' : `سيتم إنشاء ${validRows.length} سؤالًا${attachToActivity ? ' وإضافتها للنشاط الحالي' : ' داخل البنك المحدد'}.`}</p><Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending || validRows.length === 0 || invalidRows > 0 || !resolvedBankId}>{saveMutation.isPending ? <ButtonSpinner /> : null}{saveMutation.isPending ? 'جارٍ حفظ المجموعة…' : `حفظ ${validRows.length} سؤالًا`}</Button></div></div>
+      <div className="sticky bottom-20 z-20 rounded-2xl border border-violet-100 bg-white/95 p-3 shadow-xl backdrop-blur lg:bottom-4"><div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"><p className="text-sm font-bold text-slate-600">{rows.length === 0 ? 'ارفع ملف الأسئلة أولًا.' : `سيتم إنشاء ${validRows.length} سؤالًا${saveDestination}.`}</p><Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending || banksQuery.isLoading || validRows.length === 0 || invalidRows > 0}>{saveMutation.isPending ? <ButtonSpinner /> : null}{saveMutation.isPending ? 'جارٍ حفظ المجموعة…' : `حفظ ${validRows.length} سؤالًا`}</Button></div></div>
     </div>
   );
 }
