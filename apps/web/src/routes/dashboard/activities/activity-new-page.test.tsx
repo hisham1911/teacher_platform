@@ -12,6 +12,11 @@ vi.mock('../../../data/api-client/endpoints', async (importOriginal) => {
 const { quizzesApi } = await import('../../../data/api-client/endpoints');
 const createQuizMock = vi.mocked(quizzesApi.create);
 
+function renderPage() {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(<QueryClientProvider client={queryClient}><MemoryRouter initialEntries={['/dashboard/activities/new']}><Routes><Route path="/dashboard/activities/new" element={<ActivityNewPage />} /><Route path="/dashboard/activities/:quizId/build" element={<p>المنشئ البسيط</p>} /></Routes></MemoryRouter></QueryClientProvider>);
+}
+
 describe('ActivityNewPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -26,14 +31,29 @@ describe('ActivityNewPage', () => {
       createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z', version: 1,
     });
 
-    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    render(<QueryClientProvider client={queryClient}><MemoryRouter initialEntries={['/dashboard/activities/new']}><Routes><Route path="/dashboard/activities/new" element={<ActivityNewPage />} /><Route path="/dashboard/activities/:quizId/build" element={<p>المنشئ البسيط</p>} /></Routes></MemoryRouter></QueryClientProvider>);
+    renderPage();
 
     expect(screen.getByRole('radio', { name: /التحدي المتدرج/ })).toBeChecked();
+    expect(screen.getByText('مقترح للبدء')).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('اسم بسيط وواضح'), { target: { value: 'تحدي كلمات الفضاء' } });
     fireEvent.click(screen.getByRole('button', { name: /التالي: إضافة الأسئلة/ }));
 
     await waitFor(() => expect(createQuizMock).toHaveBeenCalledWith('tenant-1', expect.objectContaining({ title: 'تحدي كلمات الفضاء', slug: expect.any(String) })));
     expect(await screen.findByText('المنشئ البسيط')).toBeInTheDocument();
+  });
+
+  it('يضع طرق اللعب البديلة خلف اختيار ثانوي بدل منافسة المسار المقترح', () => {
+    renderPage();
+
+    const alternativesSummary = screen.getByText('استخدام طريقة لعب أخرى');
+    const alternatives = alternativesSummary.closest('details');
+    expect(alternatives).not.toBeNull();
+    expect(alternatives).not.toHaveAttribute('open');
+
+    fireEvent.click(alternativesSummary);
+
+    expect(alternatives).toHaveAttribute('open');
+    expect(screen.getByRole('radio', { name: /اختبار فردي/ })).not.toBeChecked();
+    expect(screen.getByRole('radio', { name: /مسابقة مباشرة/ })).not.toBeChecked();
   });
 });
