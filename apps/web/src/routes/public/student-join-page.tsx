@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { useNavigate } from 'react-router';
+import { StudentLearningVisual, StudentShell } from '../play/student-ui';
 import { extractJoinCode, normalizeJoinCode } from './student-join-input';
 
 export default function StudentJoinPage() {
@@ -11,7 +12,7 @@ export default function StudentJoinPage() {
     event.preventDefault();
     const normalized = extractJoinCode(code);
     if (normalized.length < 4) {
-      setError('اكتب رمز النشاط أو الصق رابط النشاط كاملًا.');
+      setError('اكتب كود النشاط أو الصق الرابط اللي معك.');
       return;
     }
     navigate(`/play/${normalized}`);
@@ -24,82 +25,48 @@ export default function StudentJoinPage() {
   }
 
   return (
-    <div className="mx-auto flex min-h-[calc(100dvh-12rem)] max-w-5xl items-center py-5 sm:py-8">
-      <section className="relative w-full overflow-hidden rounded-[2.25rem] bg-gradient-to-br from-slate-950 via-indigo-950 to-violet-900 px-4 py-6 text-white shadow-[0_30px_90px_rgb(49_46_129/0.24)] sm:px-8 sm:py-9 lg:px-10 lg:py-10">
-        <span aria-hidden="true" className="absolute -left-24 -top-28 h-80 w-80 rounded-full bg-fuchsia-400/15 blur-3xl" />
-        <span aria-hidden="true" className="absolute -bottom-24 right-0 h-80 w-80 rounded-full bg-cyan-300/10 blur-3xl" />
-        <span aria-hidden="true" className="absolute left-[18%] top-16 h-2 w-2 rounded-full bg-amber-300/80 shadow-[0_0_24px_rgb(253_224_71/0.8)]" />
-        <span aria-hidden="true" className="absolute right-[12%] top-28 h-1.5 w-1.5 rounded-full bg-white/70" />
+    <StudentShell centered width="wide">
+      <section className="student-enter mx-auto grid w-full max-w-3xl gap-5 lg:grid-cols-[minmax(0,1fr)_260px] lg:items-center">
+        <form onSubmit={submit} className="student-panel order-2 p-5 text-center sm:p-7 lg:order-1">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--student-violet-soft)] text-2xl" aria-hidden="true">⚡</div>
+          <h1 className="mt-4 text-2xl font-black text-[var(--student-ink)] sm:text-3xl">جاهز للنشاط؟</h1>
+          <p className="mx-auto mt-2 max-w-md text-sm leading-7 text-[var(--student-muted)]">اكتب كود النشاط اللي معك، أو الصق الرابط كامل.</p>
 
-        <div className="relative mx-auto max-w-4xl">
-          <header className="text-center">
-            <span className="inline-flex rounded-full border border-white/12 bg-white/[0.07] px-3 py-1 text-[11px] font-bold tracking-[0.18em] text-amber-200">ENGLISH SPARK</span>
-            <h1 className="mt-4 text-balance text-3xl font-bold leading-tight sm:text-5xl">جاهز للانطلاق؟ رمز واحد، والمغامرة تبدأ.</h1>
-            <p className="mx-auto mt-3 max-w-xl text-sm font-semibold leading-7 text-violet-100 sm:text-base">لا حساب ولا كلمة مرور. أدخل رمز النشاط أو الصق رابطه، ثم استخدم كود الطالب إن كان لديك أو ادخل بالاسم كضيف.</p>
-          </header>
+          <label htmlFor="join-code" className="mt-6 block text-right text-sm font-bold text-[var(--student-ink)]">كود النشاط</label>
+          <input
+            id="join-code"
+            dir="ltr"
+            inputMode="text"
+            autoComplete="off"
+            autoCapitalize="characters"
+            autoFocus
+            value={code}
+            onChange={(event) => onCodeChange(event.target.value)}
+            placeholder="SPARK123"
+            aria-invalid={Boolean(error)}
+            aria-describedby={error ? 'join-code-error' : 'join-code-hint'}
+            className="mt-2 min-h-16 w-full rounded-2xl border-2 border-slate-200 bg-white px-4 text-center font-mono text-2xl font-black tracking-[0.16em] text-[var(--student-ink)] shadow-sm transition placeholder:text-slate-300 focus:border-[var(--student-primary)] focus:outline-none focus:ring-4 focus:ring-emerald-100 sm:text-3xl"
+          />
 
-          <div className="mx-auto mt-8 grid max-w-3xl gap-4 lg:grid-cols-[minmax(0,1fr)_220px] lg:items-stretch">
-            <form onSubmit={submit} className="rounded-[1.75rem] border border-white/15 bg-white p-5 text-slate-950 shadow-[0_24px_70px_rgb(15_23_42/0.28)] sm:p-7">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-xs font-bold text-violet-700">جاهز؟</p>
-                  <h2 className="mt-1 text-2xl font-bold">أدخل رمز النشاط</h2>
-                </div>
-                <span aria-hidden="true" className="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-100 text-2xl">⚡</span>
-              </div>
+          {error ? (
+            <p id="join-code-error" role="alert" className="mt-3 rounded-xl bg-rose-50 px-3 py-2 text-sm font-bold text-rose-700">{error}</p>
+          ) : (
+            <p id="join-code-hint" className="mt-3 text-xs leading-6 text-[var(--student-muted)]">لو لصقت الرابط، هنجيب الكود منه تلقائيًا.</p>
+          )}
 
-              <label htmlFor="join-code" className="sr-only">رمز النشاط أو رابط النشاط</label>
-              <input
-                id="join-code"
-                dir="ltr"
-                inputMode="text"
-                autoComplete="off"
-                autoCapitalize="characters"
-                autoFocus
-                value={code}
-                onChange={(event) => onCodeChange(event.target.value)}
-                placeholder="SPARK123"
-                aria-invalid={Boolean(error)}
-                aria-describedby={error ? 'join-code-error' : 'join-code-hint'}
-                className="mt-6 min-h-20 w-full rounded-2xl border-2 border-slate-200 bg-slate-50 px-4 text-center font-mono text-3xl font-bold tracking-[0.2em] text-slate-950 shadow-inner transition placeholder:text-slate-300 focus:border-violet-600 focus:bg-white focus:outline-4 focus:outline-violet-100 sm:text-4xl"
-              />
+          <button type="submit" disabled={code.length < 4} className="mt-5 inline-flex min-h-14 w-full items-center justify-center rounded-2xl bg-[var(--student-primary)] px-6 text-base font-black text-white shadow-[0_10px_24px_rgb(5_150_105/0.2)] transition hover:bg-[var(--student-primary-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--student-primary)] disabled:cursor-not-allowed disabled:opacity-40">
+            دخول النشاط
+          </button>
 
-              {error ? (
-                <p id="join-code-error" role="alert" className="mt-3 rounded-xl bg-rose-50 px-3 py-2 text-center text-sm font-bold text-rose-700">{error}</p>
-              ) : (
-                <p id="join-code-hint" className="mt-3 text-center text-xs font-semibold text-slate-500">اكتب الرمز فقط، أو الصق رابط النشاط كاملًا وسنستخرج الرمز تلقائيًا.</p>
-              )}
+          <p className="mt-5 text-xs leading-6 text-[var(--student-muted)]">بعد الدخول، اكتب اسمك أو استخدم كود الطالب لو المعلم أعطاك واحدًا.</p>
+        </form>
 
-              <button type="submit" disabled={code.length < 4} className="mt-5 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-violet-700 px-6 text-base font-bold text-white shadow-[0_12px_28px_rgb(109_40_217/0.24)] transition hover:-translate-y-0.5 hover:bg-violet-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-700 disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transform-none">
-                ابدأ الآن <span aria-hidden="true">←</span>
-              </button>
-            </form>
-
-            <aside className="grid grid-cols-3 gap-2 lg:grid-cols-1" aria-label="خطوات الدخول">
-              <MissionStep icon="⌨️" number="01" text="رمز أو رابط" />
-              <MissionStep icon="👋" number="02" text="كودك أو اسمك" />
-              <MissionStep icon="🚀" number="03" text="ابدأ التحدي" />
-            </aside>
-          </div>
-
-          <div className="mt-7 flex flex-col items-center justify-between gap-3 border-t border-white/10 pt-5 text-center sm:flex-row sm:text-right">
-            <p className="text-xs font-semibold text-violet-200">English Spark · Learn • Play • Explore</p>
-            <Link to="/auth/login" className="inline-flex min-h-11 items-center rounded-xl px-3 text-xs font-bold text-white/80 hover:bg-white/10 hover:text-white">دخول Studio لصانع المحتوى</Link>
-          </div>
+        <div className="order-1 flex flex-col items-center text-center lg:order-2">
+          <StudentLearningVisual />
+          <p className="mt-2 text-sm font-black text-[var(--student-primary-strong)]">الكود معك؟ أنت جاهز.</p>
+          <p className="mt-1 max-w-[220px] text-xs leading-6 text-[var(--student-muted)]">لا تحتاج حسابًا أو كلمة مرور.</p>
         </div>
       </section>
-    </div>
-  );
-}
-
-function MissionStep({ icon, number, text }: { icon: string; number: string; text: string }) {
-  return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.07] p-3 text-center backdrop-blur sm:p-4 lg:text-right">
-      <div className="flex items-center justify-between gap-2 lg:flex-row-reverse">
-        <span aria-hidden="true" className="text-xl">{icon}</span>
-        <span className="font-mono text-[10px] font-bold tracking-widest text-amber-200">{number}</span>
-      </div>
-      <p className="mt-2 text-xs font-bold text-violet-50 sm:text-sm">{text}</p>
-    </div>
+    </StudentShell>
   );
 }
