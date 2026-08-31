@@ -93,7 +93,7 @@ async function loginTeacher(page, email) {
   await expect(page).toHaveURL(/\/dashboard$/);
 }
 
-test('English Spark golden path hides publishing/session complexity from the teacher', async ({ browser, request }) => {
+test('English Spark golden path keeps the recommended teacher journey simple', async ({ browser, request }) => {
   test.setTimeout(120_000);
   const teacherIdentity = await prepareTeacher(request);
 
@@ -103,11 +103,12 @@ test('English Spark golden path hides publishing/session complexity from the tea
 
   await teacher.getByLabel('ابدأ من هنا').getByRole('link', { name: 'إنشاء نشاط جديد' }).click();
   await expect(teacher.getByRole('heading', { name: 'ابدأ بالفكرة فقط.' })).toBeVisible();
-  await expect(teacher.getByText('سمِّ النشاط واختر شكل تجربة الطلاب. سننتقل بعدها مباشرة إلى الأسئلة ثم المشاركة.')).toBeVisible();
+  await expect(teacher.getByText(/جهزنا لك التحدي المتدرج كأفضل بداية/)).toBeVisible();
 
   const progressiveMode = teacher.locator('input[name="activity-mode"][value="ProgressiveChallenge"]');
   await expect(progressiveMode).toBeChecked();
-  await expect(teacher.getByText('التحدي المتدرج', { exact: true })).toBeVisible();
+  await expect(teacher.getByText('مقترح للبدء')).toBeVisible();
+  await expect(teacher.getByText('استخدام طريقة لعب أخرى')).toBeVisible();
 
   const activityTitle = `تحدي الفضاء E2E ${Date.now()}`;
   await teacher.getByLabel('اسم بسيط وواضح').fill(activityTitle);
@@ -117,6 +118,8 @@ test('English Spark golden path hides publishing/session complexity from the tea
   await expect(teacher.getByRole('heading', { name: activityTitle })).toBeVisible();
   await expect(teacher.getByText('الخطوة 2 · الأسئلة')).toBeVisible();
   await expect(teacher.getByText('ابدأ بالسهل ثم ارفع الصعوبة')).toBeVisible();
+  await expect(teacher.getByRole('heading', { name: 'اختر نوع السؤال' })).toBeVisible();
+  await expect(teacher.getByText('ابدأ هنا')).toBeVisible();
 
   await teacher.getByRole('button', { name: /من بنك الأسئلة/ }).click();
   await expect(teacher.getByRole('heading', { name: 'اختر من البنك' })).toBeVisible();
@@ -150,6 +153,9 @@ test('English Spark golden path hides publishing/session complexity from the tea
   await expect(teacher.getByRole('button', { name: 'نسخ رابط الطلاب' })).toBeVisible();
   await expect(teacher.getByRole('button', { name: 'نسخ رسالة جاهزة' })).toBeVisible();
   await expect(teacher.getByTestId('activity-qr-code')).toBeVisible();
+  await expect(teacher.getByText('لو تستخدم أكواد الطلاب الثابتة')).toBeVisible();
+  await expect(teacher.getByText(/أرسل نفس رابط النشاط للجميع/)).toBeVisible();
+  await expect(teacher.getByRole('link', { name: 'إدارة أكواد الطلاب' })).toBeVisible();
 
   const joinPortal = await teacherContext.newPage();
   await joinPortal.goto('/join');
