@@ -26,7 +26,7 @@ export default function QuizzesPage() {
   const archiveMutation = useMutation({
     mutationFn: (quizId: string) => quizzesApi.archive(tenantId!, quizId),
     onSuccess: async () => { setArchiveError(null); await queryClient.invalidateQueries({ queryKey: ['quizzes', tenantId] }); },
-    onError: (error) => setArchiveError(error instanceof HttpError && error.status === 403 ? 'لا توجد صلاحية لأرشفة هذا المحتوى.' : 'تعذر الأرشفة. حاول مرة أخرى.'),
+    onError: (error) => setArchiveError(error instanceof HttpError && error.status === 403 ? 'لا توجد صلاحية لأرشفة هذا النشاط.' : 'تعذر الأرشفة. حاول مرة أخرى.'),
   });
 
   if (!tenantId) return null;
@@ -36,24 +36,24 @@ export default function QuizzesPage() {
   return (
     <div className="flex flex-col gap-6">
       <header className="flex flex-wrap items-end justify-between gap-4">
-        <div><p className="text-xs font-black uppercase tracking-[0.16em] text-violet-700">English Spark Studio</p><h1 className="mt-1 text-2xl font-black text-slate-950">المحتوى</h1><p className="mt-1 text-sm leading-6 text-slate-600">أنشطتك في مكان واحد. افتحي أي نشاط لتعديل الأسئلة أو معاينته أو تجهيز رابط الطلاب.</p></div>
+        <div><h1 className="text-2xl font-black text-slate-950">الأنشطة</h1><p className="mt-2 text-sm leading-6 text-slate-600">هنا تجد كل أنشطتك. افتح أي نشاط لتعدله أو تجربه أو تشاركه مع الطلاب.</p></div>
         <Button onClick={() => navigate('/dashboard/activities/new')}>+ نشاط جديد</Button>
       </header>
 
       <form onSubmit={onSearchSubmit} className="teacher-surface flex flex-wrap items-end gap-2 p-4" role="search">
-        <FormField id="quiz-search" label="بحث بالاسم">{(props) => <TextInput {...props} value={searchInput} onChange={(e) => setSearchInput(e.target.value)} placeholder="البحث في المحتوى…" />}</FormField>
+        <FormField id="quiz-search" label="ابحث عن نشاط">{(props) => <TextInput {...props} value={searchInput} onChange={(e) => setSearchInput(e.target.value)} placeholder="اكتب اسم النشاط…" />}</FormField>
         <div className="flex flex-col gap-1"><label htmlFor="quiz-status" className="text-sm font-medium text-slate-700">الحالة</label><select id="quiz-status" value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }} className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm"><option value="">كل الحالات</option>{Object.entries(QUIZ_STATUS_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></div>
         <Button type="submit" variant="secondary">بحث</Button>
       </form>
 
       {archiveError ? <p role="alert" className="rounded-lg bg-rose-50 p-3 text-sm text-rose-700">{archiveError}</p> : null}
-      {isLoading && !data ? <p className="text-sm text-slate-500">جارٍ تحميل المحتوى…</p> : null}
-      {isError ? <p role="alert" className="rounded-lg bg-rose-50 p-3 text-sm text-rose-700">تعذر تحميل المحتوى. تحقق من الاتصال ثم حاول مرة أخرى.</p> : null}
+      {isLoading && !data ? <p className="text-sm text-slate-500">جارٍ تحميل الأنشطة…</p> : null}
+      {isError ? <p role="alert" className="rounded-lg bg-rose-50 p-3 text-sm text-rose-700">تعذر تحميل الأنشطة. تحقق من الاتصال ثم حاول مرة أخرى.</p> : null}
 
-      {data && data.items.length === 0 ? <div className="rounded-2xl border border-dashed border-violet-200 bg-violet-50/50 p-10 text-center"><p className="text-base font-black text-slate-900">{search || statusFilter ? 'لا توجد نتائج مطابقة.' : 'لا يوجد محتوى بعد.'}</p><p className="mt-2 text-sm text-slate-600">نشاط صغير هو بداية مناسبة، وسيظهر هنا تلقائيًا.</p>{!search && !statusFilter ? <Button onClick={() => navigate('/dashboard/activities/new')}>إنشاء أول نشاط</Button> : null}</div> : null}
+      {data && data.items.length === 0 ? <div className="rounded-2xl border border-dashed border-violet-200 bg-violet-50/50 p-10 text-center"><p className="text-base font-black text-slate-900">{search || statusFilter ? 'لا يوجد نشاط يطابق البحث.' : 'لم تنشئ نشاطًا بعد.'}</p><p className="mt-2 text-sm text-slate-600">ابدأ بنشاط بسيط، وسيظهر هنا فورًا.</p>{!search && !statusFilter ? <Button onClick={() => navigate('/dashboard/activities/new')}>إنشاء أول نشاط</Button> : null}</div> : null}
 
       {data && data.items.length > 0 ? (
-        <ul className="grid gap-3" aria-label="نتائج المحتوى">
+        <ul className="grid gap-3" aria-label="نتائج الأنشطة">
           {data.items.map((quiz) => (
             <li key={quiz.id} className="teacher-surface p-4 sm:p-5">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
