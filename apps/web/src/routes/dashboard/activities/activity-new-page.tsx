@@ -4,9 +4,14 @@ import { Link, useNavigate } from 'react-router';
 import { TeacherIcon } from '../../../components/ui/teacher-icon';
 import { quizzesApi } from '../../../data/api-client/endpoints';
 import { HttpError } from '../../../data/api-client/http-error';
-import { ACTIVITY_MODES, type ActivityMode } from '../../../features/activities/activity-mode';
+import {
+  ACTIVITY_MODES,
+  type ActivityMode,
+  type ActivityModeDefinition,
+} from '../../../features/activities/activity-mode';
 import { getActiveTenantId } from '../../../lib/auth/session';
 
+const RECOMMENDED_MODE: ActivityMode = 'ProgressiveChallenge';
 const STUDENT_EXPERIENCE: Record<ActivityMode, { icon: string; label: string }> = {
   ProgressiveChallenge: { icon: '🚀', label: 'يتقدم مستوى بعد مستوى' },
   SelfPaced: { icon: '🧠', label: 'يحل كل طالب في وقته' },
@@ -17,7 +22,7 @@ export default function ActivityNewPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const tenantId = getActiveTenantId();
-  const [mode, setMode] = useState<ActivityMode>('ProgressiveChallenge');
+  const [mode, setMode] = useState<ActivityMode>(RECOMMENDED_MODE);
   const [title, setTitle] = useState('');
   const [error, setError] = useState<string | null>(null);
 
@@ -46,6 +51,10 @@ export default function ActivityNewPage() {
     createMutation.mutate();
   }
 
+  const recommendedDefinition = ACTIVITY_MODES.find((definition) => definition.mode === RECOMMENDED_MODE)!;
+  const alternativeModes = ACTIVITY_MODES.filter((definition) => definition.mode !== RECOMMENDED_MODE);
+  const selectedAlternative = alternativeModes.find((definition) => definition.mode === mode);
+
   return (
     <div className="mx-auto max-w-5xl pb-8">
       <div className="flex items-center justify-between gap-3">
@@ -56,7 +65,7 @@ export default function ActivityNewPage() {
       <header className="mt-4 text-center sm:text-right">
         <p className="text-xs font-bold tracking-[0.16em] text-violet-700">ENGLISH SPARK STUDIO</p>
         <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">ابدأ بالفكرة فقط.</h1>
-        <p className="mx-auto mt-3 max-w-2xl text-base leading-8 text-slate-600 sm:mx-0">سمِّ النشاط واختر شكل تجربة الطلاب. سننتقل بعدها مباشرة إلى الأسئلة ثم المشاركة.</p>
+        <p className="mx-auto mt-3 max-w-2xl text-base leading-8 text-slate-600 sm:mx-0">سمِّ النشاط فقط. جهزنا لك التحدي المتدرج كأفضل بداية، ويمكن تغيير طريقة اللعب عند الحاجة.</p>
       </header>
 
       <WizardProgress />
@@ -92,37 +101,39 @@ export default function ActivityNewPage() {
           <div className="flex items-start gap-4">
             <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-lg font-bold text-amber-900">2</span>
             <div className="min-w-0 flex-1">
-              <h2 className="text-xl font-bold text-slate-950">كيف سيعيش الطلاب النشاط؟</h2>
-              <p className="mt-1 text-sm leading-6 text-slate-500">اختر التجربة الأقرب للهدف. الإعدادات التفصيلية تظل متاحة لاحقًا.</p>
+              <h2 className="text-xl font-bold text-slate-950">طريقة اللعب</h2>
+              <p className="mt-1 text-sm leading-6 text-slate-500">ابدأ بالخيار المقترح. افتح البدائل فقط إذا كان نشاطك يحتاج طريقة مختلفة.</p>
             </div>
           </div>
 
-          <div className="mt-5 grid gap-3 lg:grid-cols-3">
-            {ACTIVITY_MODES.map((definition) => {
-              const selected = mode === definition.mode;
-              const experience = STUDENT_EXPERIENCE[definition.mode];
-              const icon = definition.mode === 'Live' ? 'play' : definition.mode === 'ProgressiveChallenge' ? 'certificate' : 'quizzes';
-              return (
-                <label key={definition.mode} className={`relative flex cursor-pointer flex-col rounded-2xl border-2 p-4 transition-all focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-violet-700 sm:p-5 ${selected ? 'border-violet-600 bg-violet-50 shadow-[0_12px_34px_rgb(109_40_217/0.1)]' : 'border-slate-200 bg-white hover:border-violet-300'}`}>
-                  <input type="radio" name="activity-mode" value={definition.mode} checked={selected} onChange={() => setMode(definition.mode)} className="sr-only" />
-                  <div className="flex items-start justify-between gap-3">
-                    <span aria-hidden="true" className={`flex h-11 w-11 items-center justify-center rounded-xl ${selected ? 'bg-violet-700 text-white' : 'bg-slate-100 text-slate-600'}`}><TeacherIcon name={icon} /></span>
-                    <div className="flex items-center gap-2">
-                      <span className="rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-bold text-amber-900">{definition.badge}</span>
-                      <span aria-hidden="true" className={`flex h-6 w-6 items-center justify-center rounded-full border text-xs font-bold ${selected ? 'border-violet-700 bg-violet-700 text-white' : 'border-slate-300 text-transparent'}`}>✓</span>
-                    </div>
-                  </div>
-                  <h3 className="mt-4 text-lg font-bold text-slate-950">{definition.title}</h3>
-                  <p className="mt-2 text-sm leading-6 text-slate-600">{definition.description}</p>
-                  <div className="mt-4 rounded-xl bg-white/80 p-3 ring-1 ring-slate-100">
-                    <p className="text-xs font-semibold text-slate-400">تجربة الطالب</p>
-                    <p className="mt-1 text-sm font-bold text-slate-800"><span aria-hidden="true">{experience.icon}</span> {experience.label}</p>
-                  </div>
-                  <p className="mt-auto pt-4 text-xs font-semibold leading-5 text-slate-400">مناسب لـ {definition.recommendedFor}</p>
-                </label>
-              );
-            })}
+          <div className="mt-5">
+            <ModeOption
+              definition={recommendedDefinition}
+              selected={mode === recommendedDefinition.mode}
+              onSelect={setMode}
+              featured
+            />
           </div>
+
+          <details open={mode !== RECOMMENDED_MODE} className="mt-3 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50/60">
+            <summary className="flex min-h-12 cursor-pointer list-none items-center gap-3 px-4 text-sm font-semibold text-slate-700 marker:content-none hover:bg-slate-100/70 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-violet-600">
+              <span aria-hidden="true" className="text-base">⚙</span>
+              <span>استخدام طريقة لعب أخرى</span>
+              <span className="mr-auto rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-500 ring-1 ring-slate-200">{selectedAlternative?.title ?? 'اختياري'}</span>
+              <span aria-hidden="true" className="text-slate-400">⌄</span>
+            </summary>
+            <div className="grid gap-3 border-t border-slate-200 p-3 lg:grid-cols-2 sm:p-4">
+              {alternativeModes.map((definition) => (
+                <ModeOption
+                  key={definition.mode}
+                  definition={definition}
+                  selected={mode === definition.mode}
+                  onSelect={setMode}
+                  compact
+                />
+              ))}
+            </div>
+          </details>
         </fieldset>
 
         {error ? <p role="alert" className="rounded-xl border border-rose-100 bg-rose-50 p-4 text-sm font-semibold text-rose-800">{error}</p> : null}
@@ -135,6 +146,43 @@ export default function ActivityNewPage() {
         </div>
       </form>
     </div>
+  );
+}
+
+function ModeOption({
+  definition,
+  selected,
+  onSelect,
+  featured = false,
+  compact = false,
+}: {
+  definition: ActivityModeDefinition;
+  selected: boolean;
+  onSelect: (mode: ActivityMode) => void;
+  featured?: boolean;
+  compact?: boolean;
+}) {
+  const experience = STUDENT_EXPERIENCE[definition.mode];
+  const icon = definition.mode === 'Live' ? 'play' : definition.mode === 'ProgressiveChallenge' ? 'certificate' : 'quizzes';
+
+  return (
+    <label className={`relative flex cursor-pointer flex-col rounded-2xl border-2 transition-all focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-violet-700 ${compact ? 'p-4' : 'p-5 sm:p-6'} ${selected ? 'border-violet-600 bg-violet-50 shadow-[0_12px_34px_rgb(109_40_217/0.1)]' : 'border-slate-200 bg-white hover:border-violet-300'}`}>
+      <input type="radio" name="activity-mode" value={definition.mode} checked={selected} onChange={() => onSelect(definition.mode)} className="sr-only" />
+      <div className="flex items-start justify-between gap-3">
+        <span aria-hidden="true" className={`flex h-11 w-11 items-center justify-center rounded-xl ${selected ? 'bg-violet-700 text-white' : 'bg-slate-100 text-slate-600'}`}><TeacherIcon name={icon} /></span>
+        <div className="flex items-center gap-2">
+          <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${featured ? 'bg-amber-100 text-amber-950' : 'bg-slate-100 text-slate-600'}`}>{featured ? 'مقترح للبدء' : definition.badge}</span>
+          <span aria-hidden="true" className={`flex h-6 w-6 items-center justify-center rounded-full border text-xs font-bold ${selected ? 'border-violet-700 bg-violet-700 text-white' : 'border-slate-300 text-transparent'}`}>✓</span>
+        </div>
+      </div>
+      <h3 className="mt-4 text-lg font-bold text-slate-950">{definition.title}</h3>
+      <p className="mt-2 text-sm leading-6 text-slate-600">{definition.description}</p>
+      <div className="mt-4 rounded-xl bg-white/80 p-3 ring-1 ring-slate-100">
+        <p className="text-xs font-semibold text-slate-400">تجربة الطالب</p>
+        <p className="mt-1 text-sm font-bold text-slate-800"><span aria-hidden="true">{experience.icon}</span> {experience.label}</p>
+      </div>
+      {!compact ? <p className="mt-auto pt-4 text-xs font-semibold leading-5 text-slate-400">مناسب لـ {definition.recommendedFor}</p> : null}
+    </label>
   );
 }
 
