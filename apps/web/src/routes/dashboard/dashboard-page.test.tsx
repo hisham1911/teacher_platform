@@ -10,11 +10,7 @@ const listQuizzesMock = vi.hoisted(() => vi.fn());
 
 vi.mock('../../data/api-client/endpoints', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../data/api-client/endpoints')>();
-  return {
-    ...actual,
-    tenantsApi: { ...actual.tenantsApi, listMine: listMineMock },
-    quizzesApi: { ...actual.quizzesApi, list: listQuizzesMock },
-  };
+  return { ...actual, tenantsApi: { ...actual.tenantsApi, listMine: listMineMock }, quizzesApi: { ...actual.quizzesApi, list: listQuizzesMock } };
 });
 
 function renderDashboard() {
@@ -24,33 +20,32 @@ function renderDashboard() {
 
 beforeEach(() => {
   listMineMock.mockResolvedValue([{ id: 't1', name: 'مساحة أحمد', slug: 'ahmed-ws', countryCode: 'SA', timezone: 'Asia/Riyadh', defaultLocale: 'ar', status: 'Active', myRole: 'Owner', settings: { settingsJson: '{}' } }]);
-  listQuizzesMock.mockResolvedValue({
-    items: [{ id: 'q1', title: 'اختبار قواعد', slug: 'grammar', status: 'Draft', currentPublishedVersionNumber: null, itemCount: 3, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-02T00:00:00Z' }],
-    page: 1, pageSize: 5, totalItems: 1, totalPages: 1,
-  });
+  listQuizzesMock.mockResolvedValue({ items: [{ id: 'q1', title: 'اختبار قواعد', slug: 'grammar', status: 'Draft', currentPublishedVersionNumber: null, itemCount: 3, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-02T00:00:00Z' }], page: 1, pageSize: 5, totalItems: 1, totalPages: 1 });
 });
 
 afterEach(() => { cleanup(); clearSession(); vi.clearAllMocks(); });
 
 describe('DashboardPage', () => {
-  it('يعرض مسارًا محايدًا يركز على تجربة الطالب واختصارات العمل الأساسية', async () => {
-    establishSession({
-      accessToken: 'tok', accessTokenExpiresAtMs: Date.now() + 100_000,
-      user: { id: 'u1', email: 'creator@example.com', fullName: 'صانع محتوى تجريبي', emailConfirmed: true, platformRoles: [] },
-      activeWorkspace: { id: 't1', name: 'مساحة أحمد', slug: 'ahmed-ws', role: 'Owner', status: 'Active' },
-    });
+  it('يعرض بداية بسيطة ونصوصًا مباشرة لصانع المحتوى', async () => {
+    establishSession({ accessToken: 'tok', accessTokenExpiresAtMs: Date.now() + 100_000, user: { id: 'u1', email: 'creator@example.com', fullName: 'صانع محتوى تجريبي', emailConfirmed: true, platformRoles: [] }, activeWorkspace: { id: 't1', name: 'مساحة أحمد', slug: 'ahmed-ws', role: 'Owner', status: 'Active' } });
 
     renderDashboard();
-    expect(await screen.findByRole('heading', { name: /^مرحبًا، صانع/ })).toBeInTheDocument();
-    expect(screen.getByText('ابدأ بما يحتاجه الطلاب الآن، واترك التفاصيل التقنية خلف الكواليس.')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'إنشاء نشاط جديد' })).toHaveAttribute('href', '/dashboard/activities/new');
-    expect(screen.getByRole('link', { name: /شاهد بوابة الطالب/ })).toHaveAttribute('href', '/join');
-    expect(screen.getByRole('link', { name: /ابنِ مكتبة قابلة لإعادة الاستخدام/ })).toHaveAttribute('href', '/dashboard/questions');
-    expect(screen.getByRole('link', { name: /أكواد دخول ثابتة وملف نتائج لكل طالب/ })).toHaveAttribute('href', '/dashboard/students');
-    expect(screen.getByRole('link', { name: /اعرف ما حدث بعد النشاط/ })).toHaveAttribute('href', '/dashboard/reports');
+    expect(await screen.findByRole('heading', { name: /^أهلًا، صانع/ })).toBeInTheDocument();
+    expect(screen.getByText('ماذا تريد أن تجهز للطلاب اليوم؟')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'إنشاء نشاط' })).toHaveAttribute('href', '/dashboard/activities/new');
+    expect(screen.getByRole('link', { name: /فتح واجهة الطالب/ })).toHaveAttribute('href', '/join');
+    expect(screen.getByRole('link', { name: /احفظ الأسئلة واستخدمها/ })).toHaveAttribute('href', '/dashboard/questions');
+    expect(screen.getByRole('link', { name: /أضف الطلاب وانسخ كود/ })).toHaveAttribute('href', '/dashboard/students');
+    expect(screen.getByRole('link', { name: /تابع الإجابات والدرجات/ })).toHaveAttribute('href', '/dashboard/reports');
     expect(await screen.findByText('اختبار قواعد')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'فتح النشاط' })).toHaveAttribute('href', '/dashboard/activities/q1/manage');
     expect(screen.queryByText(/اختاري|اكتبي|أضيفي|أنشئي|افتحي|كمّلي/)).not.toBeInTheDocument();
+  });
+
+  it('يظهر مدخل إدارة الحسابات للـPlatformAdmin فقط', async () => {
+    establishSession({ accessToken: 'tok', accessTokenExpiresAtMs: Date.now() + 100_000, user: { id: 'admin', email: 'admin@example.com', fullName: 'مدير', emailConfirmed: true, platformRoles: ['PlatformAdmin'] }, activeWorkspace: { id: 't1', name: 'مساحة أحمد', slug: 'ahmed-ws', role: 'Owner', status: 'Active' } });
+    renderDashboard();
+    expect(await screen.findByRole('link', { name: 'فتح لوحة الإدارة' })).toHaveAttribute('href', '/platform');
   });
 
   it('يعرض خطأ قابلًا لإعادة المحاولة عند فشل تحميل مساحات العمل', async () => {
