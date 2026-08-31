@@ -18,11 +18,19 @@ function renderLayout(path = '/dashboard') {
 }
 
 describe('RootLayout', () => {
-  it('يعرض روابط التنقل المحايدة للزائر', () => {
+  it('يعرض روابط التنقل العامة للزائر', () => {
     clearSession();
     const view = renderLayout('/');
     expect(screen.getByRole('link', { name: /تسجيل الدخول/ })).toBeInTheDocument();
-    expect(screen.queryByText('لوحة المعلمة')).not.toBeInTheDocument();
+    view.unmount();
+  });
+
+  it('يعرض بوابة الطالب بلا أي تنقل أو دخول خاص بالمعلم', () => {
+    clearSession();
+    const view = renderLayout('/join');
+    expect(screen.getByText('محتوى')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /تسجيل الدخول/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('navigation', { name: 'التنقل الرئيسي' })).not.toBeInTheDocument();
     view.unmount();
   });
 
@@ -47,27 +55,27 @@ describe('RootLayout', () => {
     clearSession();
   });
 
-  it('لا يعرض إدارة المنصة نهائيًا لحساب المعلم العادي', async () => {
+  it('لا يعرض إدارة الحسابات لحساب المعلم العادي', async () => {
     establishSession({
       accessToken: 'token', accessTokenExpiresAtMs: Date.now() + 10_000,
       user: { id: 'u1', email: 'creator@example.test', fullName: 'صانع محتوى', emailConfirmed: true, platformRoles: [] },
       activeWorkspace: { id: 'tenant-1', name: 'مساحتي', slug: 'workspace', role: 'Owner', status: 'Active' },
     });
     const view = renderLayout('/dashboard');
-    expect(screen.queryByRole('link', { name: /إدارة المنصة/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /إدارة الحسابات/ })).not.toBeInTheDocument();
     await waitFor(() => expect(tenantsApi.listMine).toHaveBeenCalled());
     view.unmount();
     clearSession();
   });
 
-  it('يعرض إدارة المنصة فقط لمن يحمل PlatformAdmin', async () => {
+  it('يعرض إدارة الحسابات بوضوح لمن يحمل PlatformAdmin', async () => {
     establishSession({
       accessToken: 'token', accessTokenExpiresAtMs: Date.now() + 10_000,
       user: { id: 'admin', email: 'admin@example.test', fullName: 'مدير المنصة', emailConfirmed: true, platformRoles: ['PlatformAdmin'] },
       activeWorkspace: { id: 'tenant-1', name: 'مساحتي', slug: 'workspace', role: 'Owner', status: 'Active' },
     });
     const view = renderLayout('/dashboard');
-    expect(screen.getAllByRole('link', { name: /إدارة المنصة/ }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('link', { name: /إدارة الحسابات/ }).length).toBeGreaterThan(0);
     await waitFor(() => expect(tenantsApi.listMine).toHaveBeenCalled());
     view.unmount();
     clearSession();
