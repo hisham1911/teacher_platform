@@ -63,7 +63,7 @@ async function loginTeacher(page, email) {
   await expect(page).toHaveURL(/\/dashboard$/);
 }
 
-test('teacher can add an Arabic-named student with optional fields empty', async ({ browser, request }) => {
+test('teacher can add an Arabic-named student through the name-only path', async ({ browser, request }) => {
   test.setTimeout(90_000);
   const identity = await prepareTeacher(request);
   const context = await browser.newContext({ viewport: { width: 1366, height: 850 } });
@@ -76,12 +76,14 @@ test('teacher can add an Arabic-named student with optional fields empty', async
 
   await expect(page.getByRole('heading', { name: 'إضافة طالب' })).toBeVisible();
   await page.getByLabel('اسم الطالب').fill('هشام');
-  await expect(page.getByLabel(/المستوى أو الصف/)).toHaveValue('');
-  await expect(page.getByLabel(/ملاحظات/)).toHaveValue('');
+
+  const optionalDetails = page.getByText('إضافة مستوى أو ملاحظة').locator('..');
+  await expect(optionalDetails).toBeVisible();
+  await expect(optionalDetails).not.toHaveAttribute('open');
 
   const createResponsePromise = page.waitForResponse((response) =>
     response.request().method() === 'POST' && /\/api\/v1\/tenants\/[0-9a-f-]+\/students$/i.test(new URL(response.url()).pathname));
-  await page.getByRole('button', { name: 'حفظ الطالب' }).click();
+  await page.getByRole('button', { name: 'حفظ وإنشاء الكود' }).click();
   const createResponse = await createResponsePromise;
   const responseBody = await createResponse.text();
   expect(createResponse.status(), responseBody).toBe(201);
