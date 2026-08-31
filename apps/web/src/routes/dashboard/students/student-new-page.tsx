@@ -79,17 +79,17 @@ export default function StudentNewPage() {
         <p className="mt-3 text-xs font-semibold tracking-[0.08em] text-violet-700">إدارة الطلاب</p>
         <h1 className="mt-1 text-[1.75rem] font-bold leading-tight text-slate-950 sm:text-[2rem]">إضافة طالب</h1>
         <p className="mt-2 text-base leading-8 text-slate-600">
-          الاسم هو البيانات الوحيدة المطلوبة. سننشئ كود دخول ثابت للطالب تلقائيًا بعد الحفظ.
+          اكتب الاسم فقط وسننشىء كود دخول ثابتًا للطالب. المستوى والملاحظات يمكن إضافتهما الآن أو لاحقًا.
         </p>
       </header>
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,640px)_minmax(220px,1fr)] lg:items-start">
         <form onSubmit={submit} className="teacher-surface overflow-hidden" noValidate>
-          <div className="space-y-6 p-5 sm:p-7">
+          <div className="space-y-5 p-5 sm:p-7">
             <FormField
               id="student-name"
               label="اسم الطالب"
-              hint="اكتب الاسم بالشكل الذي تريد ظهوره في النتائج والتقارير."
+              hint="هذا هو الاسم الذي سيظهر في النتائج والتقارير."
               error={nameError}>
               {(props) => (
                 <TextInput
@@ -109,39 +109,49 @@ export default function StudentNewPage() {
               )}
             </FormField>
 
-            <FormField
-              id="student-grade"
-              label="المستوى أو الصف"
-              hint="يساعدك في البحث والتنظيم فقط، ويمكن إضافته لاحقًا."
-              optional>
-              {(props) => (
-                <TextInput
-                  {...props}
-                  value={grade}
-                  onChange={(event) => setGrade(event.target.value)}
-                  maxLength={50}
-                  autoComplete="off"
-                  placeholder="مثال: Grade 6 أو Level A2"
-                />
-              )}
-            </FormField>
+            <details className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50/60">
+              <summary className="flex min-h-12 cursor-pointer list-none items-center gap-3 px-4 text-sm font-semibold text-slate-700 marker:content-none hover:bg-slate-100/70 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-violet-600">
+                <span aria-hidden="true">＋</span>
+                <span>إضافة مستوى أو ملاحظة</span>
+                <span className="mr-auto rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-500 ring-1 ring-slate-200">اختياري</span>
+                <span aria-hidden="true" className="text-slate-400">⌄</span>
+              </summary>
+              <div className="space-y-5 border-t border-slate-200 bg-white p-4 sm:p-5">
+                <FormField
+                  id="student-grade"
+                  label="المستوى أو الصف"
+                  hint="يساعدك في البحث والتنظيم فقط، ويمكن إضافته لاحقًا."
+                  optional>
+                  {(props) => (
+                    <TextInput
+                      {...props}
+                      value={grade}
+                      onChange={(event) => setGrade(event.target.value)}
+                      maxLength={50}
+                      autoComplete="off"
+                      placeholder="مثال: Grade 6 أو Level A2"
+                    />
+                  )}
+                </FormField>
 
-            <FormField
-              id="student-notes"
-              label="ملاحظات"
-              hint="معلومة داخلية لك فقط؛ لا تظهر للطالب أثناء اللعب."
-              optional>
-              {(props) => (
-                <TextArea
-                  {...props}
-                  value={notes}
-                  onChange={(event) => setNotes(event.target.value)}
-                  maxLength={500}
-                  rows={4}
-                  placeholder="مثال: يحتاج متابعة في الاستماع"
-                />
-              )}
-            </FormField>
+                <FormField
+                  id="student-notes"
+                  label="ملاحظات"
+                  hint="معلومة داخلية لك فقط؛ لا تظهر للطالب أثناء اللعب."
+                  optional>
+                  {(props) => (
+                    <TextArea
+                      {...props}
+                      value={notes}
+                      onChange={(event) => setNotes(event.target.value)}
+                      maxLength={500}
+                      rows={4}
+                      placeholder="مثال: يحتاج متابعة في الاستماع"
+                    />
+                  )}
+                </FormField>
+              </div>
+            </details>
 
             {formError ? (
               <div role="alert" aria-live="assertive" className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm leading-7 text-rose-800">
@@ -159,7 +169,7 @@ export default function StudentNewPage() {
             </Link>
             <Button type="submit" disabled={createMutation.isPending}>
               {createMutation.isPending ? <ButtonSpinner /> : null}
-              {createMutation.isPending ? 'جارٍ الحفظ…' : 'حفظ الطالب'}
+              {createMutation.isPending ? 'جارٍ الحفظ…' : 'حفظ وإنشاء الكود'}
             </Button>
           </div>
         </form>
@@ -169,7 +179,7 @@ export default function StudentNewPage() {
           <ol className="mt-4 space-y-4 text-sm leading-6 text-slate-600">
             <li className="flex gap-3"><StepNumber value="1" /><span>يُنشأ كود دخول خاص بالطالب تلقائيًا.</span></li>
             <li className="flex gap-3"><StepNumber value="2" /><span>شارك الكود مع الطالب مرة واحدة؛ لا يحتاج بريدًا أو كلمة مرور.</span></li>
-            <li className="flex gap-3"><StepNumber value="3" /><span>تظهر محاولاته ونتائجه في ملفه تلقائيًا.</span></li>
+            <li className="flex gap-3"><StepNumber value="3" /><span>بعدها أرسل رابط أي نشاط، وسيستخدم الطالب نفس كوده لتسجيل نتيجته.</span></li>
           </ol>
         </aside>
       </div>
