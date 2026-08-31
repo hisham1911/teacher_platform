@@ -53,6 +53,18 @@ public sealed class PlatformAdminController : ControllerBase
     public async Task<IActionResult> ListUsers(CancellationToken cancellationToken) =>
         Ok(await _service.ListUsersAsync(cancellationToken));
 
+    [HttpPut("users/{userId:guid}/status")]
+    public async Task<IActionResult> UpdateUserStatus(
+        Guid userId,
+        [FromBody] UpdatePlatformUserStatusRequest request,
+        CancellationToken cancellationToken)
+    {
+        var error = await _service.UpdateUserStatusAsync(
+            userId, request, RequireActorId(), HttpContext.TraceIdentifier, cancellationToken);
+        if (error is not null) throw error;
+        return NoContent();
+    }
+
     [HttpPost("tenants/{tenantId:guid}/subscriptions/activate")]
     public async Task<IActionResult> ActivateSubscription(
         Guid tenantId,
