@@ -34,9 +34,9 @@ describe('ActivityNewPage', () => {
     renderPage();
 
     expect(screen.getByRole('radio', { name: /التحدي المتدرج/ })).toBeChecked();
-    expect(screen.getByText('مقترح للبدء')).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText('اسم بسيط وواضح'), { target: { value: 'تحدي كلمات الفضاء' } });
-    fireEvent.click(screen.getByRole('button', { name: /التالي: إضافة الأسئلة/ }));
+    expect(screen.getByText('الاختيار الافتراضي')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('اسم النشاط'), { target: { value: 'تحدي كلمات الفضاء' } });
+    fireEvent.click(screen.getByRole('button', { name: /التالي: الأسئلة/ }));
 
     await waitFor(() => expect(createQuizMock).toHaveBeenCalledWith('tenant-1', expect.objectContaining({ title: 'تحدي كلمات الفضاء', slug: expect.any(String) })));
     expect(await screen.findByText('المنشئ البسيط')).toBeInTheDocument();
@@ -45,7 +45,7 @@ describe('ActivityNewPage', () => {
   it('يضع طرق اللعب البديلة خلف اختيار ثانوي بدل منافسة المسار المقترح', () => {
     renderPage();
 
-    const alternativesSummary = screen.getByText('استخدام طريقة لعب أخرى');
+    const alternativesSummary = screen.getByText('تغيير طريقة اللعب');
     const alternatives = alternativesSummary.closest('details');
     expect(alternatives).not.toBeNull();
     expect(alternatives).not.toHaveAttribute('open');
