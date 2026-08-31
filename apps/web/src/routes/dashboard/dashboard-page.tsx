@@ -28,54 +28,65 @@ export default function DashboardPage() {
     return <div role="alert" className="teacher-surface max-w-2xl bg-rose-50 p-5 text-sm text-rose-800"><p className="font-bold">تعذر تحميل مساحة العمل.</p><p className="mt-1">تحقق من الاتصال ثم حاول مرة أخرى.</p><button type="button" onClick={() => void workspacesQuery.refetch()} className="mt-4 min-h-11 rounded-lg border border-rose-300 bg-white px-4 py-2 font-bold hover:bg-rose-100">إعادة المحاولة</button></div>;
   }
   if (workspacesQuery.data && workspacesQuery.data.length === 0) {
-    return <section className="teacher-surface mx-auto max-w-2xl p-8 text-center"><TeacherIcon name="workspace" className="mx-auto h-10 w-10 text-violet-700" /><h1 className="mt-4 text-2xl font-bold text-[var(--teacher-ink)]">تجهيز مساحة English Spark</h1><p className="mx-auto mt-2 max-w-lg text-base leading-7 text-[var(--teacher-muted)]">المساحة تجمع الأنشطة والأسئلة والطلاب والنتائج في مكان واحد.</p><button type="button" onClick={() => navigate('/onboarding')} className="mt-5 min-h-11 rounded-xl bg-violet-700 px-5 py-2 text-sm font-bold text-white hover:bg-violet-800">إنشاء مساحة العمل</button></section>;
+    return <section className="teacher-surface mx-auto max-w-2xl p-8 text-center"><TeacherIcon name="workspace" className="mx-auto h-10 w-10 text-violet-700" /><h1 className="mt-4 text-2xl font-bold text-[var(--teacher-ink)]">أنشئ مساحة العمل أولًا</h1><p className="mx-auto mt-2 max-w-lg text-base leading-7 text-[var(--teacher-muted)]">هنا ستجد الأنشطة والأسئلة والطلاب والنتائج.</p><button type="button" onClick={() => navigate('/onboarding')} className="mt-5 min-h-11 rounded-xl bg-violet-700 px-5 py-2 text-sm font-bold text-white hover:bg-violet-800">إنشاء مساحة العمل</button></section>;
   }
-  if (!activeWorkspace) return <p className="teacher-surface p-5 text-sm text-slate-700">اختيار مساحة العمل من القائمة مطلوب للمتابعة.</p>;
+  if (!activeWorkspace) return <p className="teacher-surface p-5 text-sm text-slate-700">اختر مساحة العمل من القائمة للمتابعة.</p>;
 
   const firstName = session.user?.fullName?.trim().split(/\s+/)[0] ?? 'مرحبًا';
+  const isPlatformAdmin = Boolean(session.user?.platformRoles.includes('PlatformAdmin'));
 
   return (
     <div className="flex flex-col gap-8">
       <header>
         <p className="text-sm font-semibold text-violet-700">{activeWorkspace.name}</p>
-        <h1 className="mt-1 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">مرحبًا، {firstName} 👋</h1>
-        <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-500">ابدأ بما يحتاجه الطلاب الآن، واترك التفاصيل التقنية خلف الكواليس.</p>
+        <h1 className="mt-1 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">أهلًا، {firstName} 👋</h1>
+        <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-500">ماذا تريد أن تجهز للطلاب اليوم؟</p>
       </header>
+
+      {isPlatformAdmin ? (
+        <section className="flex flex-col gap-4 rounded-2xl border border-amber-200 bg-amber-50 p-5 sm:flex-row sm:items-center sm:justify-between" aria-label="إدارة المنصة">
+          <div className="flex items-start gap-3">
+            <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-200 text-xl">⚙️</span>
+            <div><h2 className="font-bold text-amber-950">إدارة الحسابات والمنصة</h2><p className="mt-1 text-sm leading-6 text-amber-900/75">راجع المستخدمين والعملاء والاشتراكات والخطط.</p></div>
+          </div>
+          <Link to="/platform" className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl bg-amber-900 px-4 text-sm font-bold text-white hover:bg-amber-950">فتح لوحة الإدارة</Link>
+        </section>
+      ) : null}
 
       <section className="grid gap-4 lg:grid-cols-[minmax(0,1.45fr)_minmax(280px,0.55fr)]" aria-label="ابدأ من هنا">
         <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-violet-800 via-indigo-800 to-slate-950 p-6 text-white shadow-[0_24px_70px_rgb(76_29_149/0.18)] sm:p-8">
           <span aria-hidden="true" className="absolute -left-16 -top-20 h-64 w-64 rounded-full bg-fuchsia-400/15 blur-3xl" />
           <span aria-hidden="true" className="absolute -bottom-24 right-16 h-64 w-64 rounded-full bg-cyan-300/10 blur-3xl" />
           <div className="relative max-w-2xl">
-            <span className="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-bold text-amber-200">من هنا تبدأ تجربة الطالب</span>
-            <h2 className="mt-4 text-3xl font-bold leading-tight sm:text-4xl">أنشئ تجربة واضحة وممتعة للطلاب.</h2>
-            <p className="mt-3 max-w-xl text-base leading-8 text-violet-100">اختر الفكرة، أضف الأسئلة، ثم شارك الرابط أو الرمز. كل خطوة مصممة لتوصلك إلى تجربة الطالب بأقل إعداد ممكن.</p>
+            <span className="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-bold text-amber-200">نشاط جديد</span>
+            <h2 className="mt-4 text-3xl font-bold leading-tight sm:text-4xl">ابدأ بالاسم، والباقي خطوة بخطوة.</h2>
+            <p className="mt-3 max-w-xl text-base leading-8 text-violet-100">اكتب اسم النشاط، أضف الأسئلة، ثم جرّبه بنفسك قبل أن ترسل الرابط للطلاب.</p>
             <div className="mt-6 flex flex-col gap-2 sm:flex-row">
-              <Link to="/dashboard/activities/new" className="inline-flex min-h-13 items-center justify-center gap-2 rounded-xl bg-white px-6 text-sm font-bold text-violet-900 shadow-sm hover:bg-violet-50"><TeacherIcon name="create" />إنشاء نشاط جديد</Link>
-              <Link to="/join" className="inline-flex min-h-13 items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 px-5 text-sm font-bold text-white hover:bg-white/15"><span aria-hidden="true">🚀</span>شاهد بوابة الطالب</Link>
+              <Link to="/dashboard/activities/new" className="inline-flex min-h-13 items-center justify-center gap-2 rounded-xl bg-white px-6 text-sm font-bold text-violet-900 shadow-sm hover:bg-violet-50"><TeacherIcon name="create" />إنشاء نشاط</Link>
+              <Link to="/join" className="inline-flex min-h-13 items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 px-5 text-sm font-bold text-white hover:bg-white/15"><span aria-hidden="true">🚀</span>فتح واجهة الطالب</Link>
             </div>
           </div>
         </div>
 
         <div className="teacher-surface p-5 sm:p-6">
-          <p className="text-xs font-bold tracking-[0.14em] text-violet-700">المسار الأبسط</p>
+          <h2 className="text-base font-bold text-slate-950">ثلاث خطوات فقط</h2>
           <ol className="mt-5 space-y-5">
-            <FlowStep number="1" title="حدد الفكرة" description="اسم واضح وطريقة لعب تناسب الهدف." />
-            <FlowStep number="2" title="أضف الأسئلة" description="سؤال جديد، بنك الأسئلة، أو مجموعة كاملة." />
-            <FlowStep number="3" title="شارك النشاط" description="رابط أو QR أو رمز دخول للطلاب." last />
+            <FlowStep number="1" title="سمِّ النشاط" description="اكتب اسمًا يعرفه الطلاب بسهولة." />
+            <FlowStep number="2" title="أضف الأسئلة" description="اكتب أسئلة جديدة أو استخدم الموجود عندك." />
+            <FlowStep number="3" title="جرّبه وشاركه" description="افتحه كطالب، وبعدها أرسل الرابط." last />
           </ol>
         </div>
       </section>
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="اختصارات العمل">
-        <ShortcutCard to="/dashboard/quizzes" icon="quizzes" title="المحتوى" description="افتح نشاطًا سابقًا وعدله أو شاركه." tone="violet" />
-        <ShortcutCard to="/dashboard/questions" icon="questions" title="بنك الأسئلة" description="ابنِ مكتبة قابلة لإعادة الاستخدام بدل تكرار نفس السؤال." tone="sky" />
-        <ShortcutCard to="/dashboard/students" icon="students" title="الطلاب" description="أكواد دخول ثابتة وملف نتائج لكل طالب." tone="emerald" />
-        <ShortcutCard to="/dashboard/reports" icon="reports" title="النتائج" description="اعرف ما حدث بعد النشاط وأين يحتاج الطلاب دعمًا." tone="amber" />
+        <ShortcutCard to="/dashboard/quizzes" icon="quizzes" title="المحتوى" description="كل الأنشطة التي أنشأتها من قبل." tone="violet" />
+        <ShortcutCard to="/dashboard/questions" icon="questions" title="بنك الأسئلة" description="احفظ الأسئلة واستخدمها في أكثر من نشاط." tone="sky" />
+        <ShortcutCard to="/dashboard/students" icon="students" title="الطلاب" description="أضف الطلاب وانسخ كود كل طالب." tone="emerald" />
+        <ShortcutCard to="/dashboard/reports" icon="reports" title="النتائج" description="تابع الإجابات والدرجات بعد كل نشاط." tone="amber" />
       </section>
 
       <section aria-labelledby="recent-activities-heading">
-        <div className="flex flex-wrap items-end justify-between gap-3"><div><h2 id="recent-activities-heading" className="text-xl font-bold text-slate-950">آخر الأنشطة</h2><p className="mt-1 text-sm text-slate-500">افتح النشاط وكمل من المكان الذي توقفت عنده.</p></div><Link to="/dashboard/quizzes" className="inline-flex min-h-11 items-center text-sm font-bold text-violet-700 hover:underline">عرض الكل ←</Link></div>
+        <div className="flex flex-wrap items-end justify-between gap-3"><div><h2 id="recent-activities-heading" className="text-xl font-bold text-slate-950">آخر الأنشطة</h2><p className="mt-1 text-sm text-slate-500">افتح أي نشاط لتكمل تعديله أو مشاركته.</p></div><Link to="/dashboard/quizzes" className="inline-flex min-h-11 items-center text-sm font-bold text-violet-700 hover:underline">عرض الكل ←</Link></div>
         {recentQuizzesQuery.isLoading ? <div className="mt-4 space-y-2" role="status" aria-label="جارٍ تحميل أحدث الأنشطة">{[0, 1, 2].map((item) => <div key={item} className="h-16 animate-pulse rounded-xl bg-slate-200/70" />)}</div> : null}
         {recentQuizzesQuery.isError ? <div role="alert" className="mt-4 rounded-xl bg-amber-50 p-4 text-sm text-amber-900">تعذر تحميل أحدث الأنشطة.</div> : null}
         {recentQuizzesQuery.data?.items.length === 0 ? <div className="teacher-surface mt-4 py-10 text-center"><span aria-hidden="true" className="text-3xl">✦</span><p className="mt-3 font-bold text-slate-900">لا يوجد نشاط بعد</p><Link to="/dashboard/activities/new" className="mt-4 inline-flex min-h-11 items-center rounded-xl bg-violet-700 px-5 text-sm font-bold text-white">إنشاء أول نشاط</Link></div> : null}
