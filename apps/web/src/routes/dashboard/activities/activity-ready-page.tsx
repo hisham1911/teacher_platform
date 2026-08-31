@@ -79,6 +79,15 @@ export default function ActivityReadyPage() {
                 </div>
                 <div className="flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white p-5 shadow-sm" data-testid="activity-qr-code"><QRCode value={playUrl} size={168} /><p className="mt-3 text-xs font-semibold text-slate-500">امسح الرمز بكاميرا الهاتف</p></div>
               </div>
+
+              <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 sm:flex-row sm:items-center">
+                <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-xl shadow-sm ring-1 ring-emerald-100">👥</span>
+                <div className="min-w-0 flex-1">
+                  <p className="font-bold text-emerald-950">لو تستخدم أكواد الطلاب الثابتة</p>
+                  <p className="mt-1 text-sm leading-7 text-emerald-900">أرسل نفس رابط النشاط للجميع. كل طالب يفتح الرابط ثم يختار «لدي كود طالب» ويكتب كوده الثابت؛ عندها تُربط النتيجة بملفه تلقائيًا.</p>
+                </div>
+                <Link to="/dashboard/students" className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl border border-emerald-300 bg-white px-4 text-sm font-bold text-emerald-900 hover:bg-emerald-100">إدارة أكواد الطلاب</Link>
+              </div>
             </div>
           )}
 
