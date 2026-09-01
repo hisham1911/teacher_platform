@@ -316,7 +316,7 @@ public sealed class StudentPortalFlowTests : IClassFixture<TestWebApplicationFac
             HttpMethod.Post,
             $"/api/v1/tenants/{tenantId}/quizzes",
             accessToken,
-            new { title = "Portal Quiz", description = "Portal integration", passingPercentage = 50, shuffleQuestions = false }));
+            new { title = "Portal Quiz", slug = $"{slugPrefix}-{Guid.NewGuid():N}", description = "Portal integration" }));
         Assert.Equal(HttpStatusCode.Created, quizResponse.StatusCode);
         var quiz = await ReadJsonAsync<JsonElement>(quizResponse);
         var quizId = quiz.GetProperty("id").GetGuid();
