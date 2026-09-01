@@ -26,7 +26,7 @@ jobs:
           dotnet-version: '10.0.x'
 
       - name: Patch Program registration exactly once
-        shell: python
+        shell: python {0}
         run: |
           from pathlib import Path
           path = Path('backend/src/TeacherPlatform.Api/Program.cs')
