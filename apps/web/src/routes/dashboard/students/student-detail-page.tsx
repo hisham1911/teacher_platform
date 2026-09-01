@@ -9,6 +9,7 @@ import { HttpError } from '../../../data/api-client/http-error';
 import { getActiveTenantId } from '../../../lib/auth/session';
 import { ATTEMPT_STATUS_LABELS, SESSION_MODE_LABELS } from '../../../types/sessions';
 import { formatStudentCode, type Student, type StudentResult } from '../../../types/students';
+import { StudentPortalAccessCard } from './student-portal-access-card';
 
 export default function StudentDetailPage() {
   const { studentId } = useParams<{ studentId: string }>();
@@ -69,7 +70,7 @@ export default function StudentDetailPage() {
             {student.isActive ? 'نشط' : 'غير نشط'}
           </span>
         </div>
-        <p className="mt-2 text-base leading-8 text-slate-600">بيانات الطالب، كود الدخول، وآخر النتائج في ملف واحد.</p>
+        <p className="mt-2 text-base leading-8 text-slate-600">بيانات الطالب، دخول English Spark، وآخر النتائج في ملف واحد.</p>
       </header>
 
       {justCreated ? (
@@ -77,10 +78,12 @@ export default function StudentDetailPage() {
           <span aria-hidden="true" className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-xs font-bold text-white">✓</span>
           <div>
             <p className="font-bold">تمت إضافة الطالب بنجاح</p>
-            <p>انسخ كود الدخول أدناه وشاركه مع الطالب. لا يحتاج إلى إنشاء حساب.</p>
+            <p>أنشئ كود دخول English Spark من البطاقة أدناه وشاركه مع الطالب مرة واحدة.</p>
           </div>
         </div>
       ) : null}
+
+      <StudentPortalAccessCard studentId={student.id} isActive={student.isActive} />
 
       <StudentCodeCard student={student} onChanged={refreshStudent} />
 
@@ -133,8 +136,8 @@ function StudentCodeCard({ student, onChanged }: { student: Student; onChanged: 
     <section className="teacher-surface overflow-hidden" aria-labelledby="student-code-title">
       <div className="grid md:grid-cols-[minmax(0,1fr)_auto] md:items-stretch">
         <div className="p-5 sm:p-6">
-          <p id="student-code-title" className="text-sm font-bold text-slate-900">كود دخول الطالب</p>
-          <p className="mt-1 text-sm leading-7 text-slate-500">استخدم نفس الكود في كل الأنشطة. لا يحتاج الطالب بريدًا أو كلمة مرور.</p>
+          <p id="student-code-title" className="text-sm font-bold text-slate-900">كود الربط القديم للأنشطة</p>
+          <p className="mt-1 text-sm leading-7 text-slate-500">يبقى للتوافق مع مسار الانضمام القديم فقط. دخول مساحة الطالب يستخدم كود English Spark المنفصل أعلاه.</p>
           <p dir="ltr" className="mt-4 inline-flex select-all rounded-xl bg-violet-50 px-4 py-3 font-mono text-2xl font-bold tracking-[0.14em] text-violet-900 ring-1 ring-violet-100 sm:text-3xl">
             {formatStudentCode(student.studentCode)}
           </p>

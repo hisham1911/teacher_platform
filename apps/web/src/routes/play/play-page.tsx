@@ -5,6 +5,7 @@ import { Button } from '../../components/ui/button';
 import { ButtonSpinner } from '../../components/ui/spinner';
 import { TextInput, TextArea } from '../../components/ui/form-field';
 import { playerApi } from '../../data/api-client/endpoints';
+import { studentPortalApi } from '../../data/api-client/student-portal-endpoints';
 import { HttpError } from '../../data/api-client/http-error';
 import { LiveCountdown } from '../../features/live/live-countdown';
 import { useLiveConnection } from '../../features/live/use-live-connection';
@@ -95,6 +96,7 @@ export default function PlayPage() {
   const [studentCodeError, setStudentCodeError] = useState<string | null>(null);
   const [useStudentCode, setUseStudentCode] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [portalHint, setPortalHint] = useState<string | null>(null);
 
   const sessionQuery = useQuery({
     queryKey: ['player-session', joinCode],
@@ -162,7 +164,30 @@ export default function PlayPage() {
     }
   }
 
-  // استعادة تلقائية بعد إعادة تحميل الصفحة: السيرفر يقرّر الوجهة من الكوكي فقط
+  const portalJoinMutation = useMutation({
+    mutationFn: () => studentPortalApi.joinActivity(joinCode!),
+    onSuccess: (playerState) => {
+      setPortalHint(null);
+      setActionError(null);
+      applyPlayerState(joinCode!, playerState, sessionQuery.data!);
+    },
+    onError: (error) => {
+      // لا توجد جلسة بوابة صالحة: نترك الانضمام السريع كما هو بدون رسالة خطأ.
+      if (error instanceof HttpError && error.status === 401) return;
+      // جلسة البوابة صالحة لكن النشاط تابع لمساحة أخرى: لا نسرّب تفاصيل الـTenant ونسمح بالضيف.
+      if (error instanceof HttpError && error.status === 404) {
+        setPortalHint('هذا النشاط خارج مساحتك الحالية. يمكنك الانضمام إليه كضيف بالاسم.');
+        return;
+      }
+      if (error instanceof HttpError && error.status === 409) {
+        setActionError('النشاط لم يعد يقبل منضمّين جددًا.');
+        return;
+      }
+      setActionError('تعذر ربط النشاط بمساحتك الآن. يمكنك المتابعة كضيف.');
+    },
+  });
+
+  // استعادة تلقائية بعد إعادة تحميل الصفحة: Guest Cookie له الأولوية، ثم نحاول Portal Cookie.
   const restoreMutation = useMutation({
     mutationFn: () => playerApi.getCurrentPlayer(joinCode!),
     onSuccess: (playerState) => {
@@ -170,10 +195,11 @@ export default function PlayPage() {
       applyPlayerState(joinCode!, playerState, sessionQuery.data!);
     },
     onError: (error) => {
-      // 401 = لا كوكي صالح ⇒ نترك شاشة الانضمام. بقية الأخطاء غير مؤذية للعرض.
-      if (!(error instanceof HttpError && error.status === 401)) {
-        setActionError('تعذر استعادة جلستك. أدخل اسمك للانضمام من جديد.');
+      if (error instanceof HttpError && error.status === 401) {
+        portalJoinMutation.mutate();
+        return;
       }
+      setActionError('تعذر استعادة جلستك. أدخل اسمك للانضمام من جديد.');
     },
   });
 
@@ -295,6 +321,7 @@ export default function PlayPage() {
             </dl>
 
             {session.instructions ? <p className="mt-5 rounded-xl bg-emerald-50 p-4 text-sm leading-7 text-emerald-950">{session.instructions}</p> : null}
+            {portalHint ? <p role="status" className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm leading-7 text-amber-900">{portalHint}</p> : null}
             {!useStudentCode ? (
               <>
                 <button type="button" onClick={() => { setUseStudentCode(true); setActionError(null); }} className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border-2 border-violet-200 bg-violet-50 px-4 text-sm font-black text-violet-900 hover:border-violet-400 hover:bg-violet-100">
