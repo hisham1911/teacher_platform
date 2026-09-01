@@ -1,0 +1,79 @@
+name: Student Portal Codegen
+
+on:
+  push:
+    branches:
+      - feature/student-portal-foundation
+    paths:
+      - .student-portal-codegen
+
+permissions:
+  contents: write
+
+jobs:
+  codegen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Patch Program registration exactly once
+        shell: python
+        run: |
+          from pathlib import Path
+          path = Path('backend/src/TeacherPlatform.Api/Program.cs')
+          text = path.read_text(encoding='utf-8')
+          needle = 'builder.Services.AddScoped<TeacherPlatform.Infrastructure.Services.StudentService>();\n'
+          replacement = needle + 'builder.Services.AddStudentPortal(configuration);\n'
+          if text.count(needle) != 1:
+              raise SystemExit(f'Expected one StudentService registration, found {text.count(needle)}')
+          if 'builder.Services.AddStudentPortal(configuration);' not in text:
+              text = text.replace(needle, replacement, 1)
+              path.write_text(text, encoding='utf-8')
+
+      - name: Restore
+        run: dotnet restore backend/TeacherPlatform.sln
+
+      - name: Format changed backend
+        run: dotnet format backend/TeacherPlatform.sln --no-restore
+
+      - name: Build before migration
+        run: dotnet build backend/TeacherPlatform.sln --no-restore --configuration Release
+
+      - name: Install EF tool
+        run: dotnet tool install --global dotnet-ef --version 10.0.10
+
+      - name: Generate Student Portal migration from EF model
+        working-directory: backend
+        run: |
+          if ls src/TeacherPlatform.Infrastructure/Persistence/Migrations/*AddStudentPortalFoundation*.cs >/dev/null 2>&1; then
+            echo 'Migration already exists; skipping generation.'
+          else
+            dotnet ef migrations add AddStudentPortalFoundation \
+              -p src/TeacherPlatform.Infrastructure \
+              -s src/TeacherPlatform.Api \
+              --no-build
+          fi
+
+      - name: Build after migration
+        run: dotnet build backend/TeacherPlatform.sln --no-restore --configuration Release
+
+      - name: Commit generated product changes
+        run: |
+          git config user.name 'Hisham Mohamed Ahmed'
+          git config user.email '89082601+hisham1911@users.noreply.github.com'
+          git add backend/src/TeacherPlatform.Api/Program.cs backend/src/TeacherPlatform.Infrastructure/Persistence/Migrations
+          if git diff --cached --quiet; then
+            echo 'No codegen changes to commit.'
+            exit 0
+          fi
+          git commit -m 'feat(student-portal): register portal and add EF migration'
+          git push origin HEAD:feature/student-portal-foundation
