@@ -5,8 +5,8 @@ namespace TeacherPlatform.Domain.Students;
 
 /// <summary>
 /// طالب مُدار داخل مساحة عمل واحدة.
-/// StudentCode هو هوية دخول خفيفة ثابتة للطالب داخل مساحة العمل، بينما JoinCode يعرّف جلسة نشاط بعينها.
-/// لا تُستخدم هذه الهوية بدل كوكي اللاعب؛ بعد التحقق من StudentCode يحصل اللاعب على Guest Token للجلسة كالمعتاد.
+/// StudentCode هو رمز roster قديم خفيف داخل مساحة العمل، بينما StudentPortalCredential
+/// هو هوية الدخول الدائمة إلى بوابة الطالب وJoinCode يعرّف جلسة نشاط بعينها.
 /// </summary>
 public sealed class Student : ITenantEntity
 {
@@ -23,7 +23,7 @@ public sealed class Student : ITenantEntity
 
     public string? Notes { get; set; }
 
-    /// <summary>إلغاء التفعيل يمنع استخدام الرمز في انضمامات جديدة دون حذف التاريخ والنتائج.</summary>
+    /// <summary>إلغاء التفعيل يمنع كل دخول جديد للطالب دون حذف التاريخ والنتائج.</summary>
     public bool IsActive { get; set; } = true;
 
     /// <summary>Optimistic concurrency token (PostgreSQL xmin).</summary>
@@ -34,4 +34,6 @@ public sealed class Student : ITenantEntity
     public DateTime UpdatedAt { get; set; }
 
     public ICollection<SessionParticipant> Participants { get; set; } = new List<SessionParticipant>();
+    public ICollection<StudentPortalCredential> PortalCredentials { get; set; } = new List<StudentPortalCredential>();
+    public ICollection<StudentPortalSession> PortalSessions { get; set; } = new List<StudentPortalSession>();
 }
