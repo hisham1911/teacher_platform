@@ -58,7 +58,7 @@ async function answerSeedQuiz(page) {
   await page.getByRole('button', { name: 'تثبيت الإجابة' }).click();
   await expect(page.getByText(/إجابة صحيحة ✓/)).toBeVisible();
   await page.getByRole('button', { name: 'إنهاء الاختبار' }).click();
-  await expect(page.getByText('100%')).toBeVisible();
+  await expect(page.getByText('100%').first()).toBeVisible();
 }
 
 test('persistent student portal login → automatic activity binding → progress home → reusable credential', async ({ browser, request }) => {
@@ -89,6 +89,14 @@ test('persistent student portal login → automatic activity binding → progres
 
   const studentContext = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const studentPage = await studentContext.newPage();
+
+  // Quick Join is activity-only and points persistent students to their separate portal.
+  await studentPage.goto('/join');
+  await expect(studentPage.getByRole('heading', { name: 'انضم لنشاط سريع' })).toBeVisible();
+  await expect(studentPage.getByLabel('رمز النشاط')).toBeVisible();
+  await expect(studentPage.getByRole('link', { name: 'الدخول إلى مساحتي' })).toHaveAttribute('href', '/student');
+  await expect(studentPage.getByLabel('كود دخول الطالب')).toHaveCount(0);
+
   await studentPage.goto('/student');
   await expect(studentPage.getByRole('heading', { name: 'ادخل إلى مساحتك' })).toBeVisible();
   await studentPage.getByLabel('كود دخول الطالب').fill(accessCode);
@@ -128,7 +136,7 @@ test('persistent student portal login → automatic activity binding → progres
   await studentPage.getByRole('button', { name: 'دخول' }).click();
   await expect(studentPage).toHaveURL(/\/student\/home$/, { timeout: 15_000 });
   await expect(studentPage.getByText('اختبار E2E')).toBeVisible();
-  await expect(studentPage.getByText('100%')).toBeVisible();
+  await expect(studentPage.getByText('100%').first()).toBeVisible();
 
   const guestContext = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const guestPage = await guestContext.newPage();
