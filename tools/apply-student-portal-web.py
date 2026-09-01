@@ -25,8 +25,8 @@ replace_once(
 )
 replace_once(
     'apps/web/src/routes/play/play-page.tsx',
-    "  const [actionError, setActionError] = useState<string | null>(null);\n",
-    "  const [actionError, setActionError] = useState<string | null>(null);\n  const [portalHint, setPortalHint] = useState<string | null>(null);\n",
+    "  const [useStudentCode, setUseStudentCode] = useState(false);\n  const [actionError, setActionError] = useState<string | null>(null);\n",
+    "  const [useStudentCode, setUseStudentCode] = useState(false);\n  const [actionError, setActionError] = useState<string | null>(null);\n  const [portalHint, setPortalHint] = useState<string | null>(null);\n",
 )
 replace_once(
     'apps/web/src/routes/play/play-page.tsx',
