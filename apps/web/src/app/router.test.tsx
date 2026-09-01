@@ -37,10 +37,16 @@ describe('router — public product routes', () => {
     expect(screen.getByRole('link', { name: /دخول الطالب بالرمز/ })).toHaveAttribute('href', '/join');
   });
 
-  it('يعرض بوابة الطالب العامة على /join', async () => {
+  it('يعرض الانضمام السريع للنشاط على /join', async () => {
     await renderRoute('/join');
-    await expectHeading('جاهز للانطلاق');
+    await expectHeading('انضم لنشاط سريع');
     expect(screen.getByLabelText(/رمز النشاط/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /الدخول إلى مساحتي/ })).toHaveAttribute('href', '/student');
+  });
+
+  it('يعرض بوابة الطالب المستقلة على /student', async () => {
+    await renderRoute('/student');
+    await expectHeading(/مساحتك|دخول الطالب|أهلًا/);
   });
 
   it('يعرض صفحة تسجيل الدخول على /auth/login', async () => {
