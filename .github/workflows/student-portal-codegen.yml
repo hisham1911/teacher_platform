@@ -60,6 +60,7 @@ jobs:
             dotnet ef migrations add AddStudentPortalFoundation \
               -p src/TeacherPlatform.Infrastructure \
               -s src/TeacherPlatform.Api \
+              --configuration Release \
               --no-build
           fi
 
