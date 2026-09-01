@@ -12,7 +12,8 @@ using AppSessionOptions = TeacherPlatform.Application.Options.SessionOptions;
 namespace TeacherPlatform.Api.Controllers;
 
 /// <summary>
-/// دخول الطالب المُدار إلى جلسة نشاط. يتحقق من StudentCode داخل Tenant الجلسة ثم يصدر نفس كوكي اللاعب المستخدم في بقية Player API.
+/// ربط الطالب المُدار بجلسة نشاط. StudentCode القديم يبقى للتوافق،
+/// بينما portal-join يستخدم هوية بوابة الطالب من HttpOnly cookie بدون إعادة إدخال أي كود.
 /// </summary>
 [ApiController]
 [Route("api/v1/player/sessions")]
@@ -22,17 +23,23 @@ namespace TeacherPlatform.Api.Controllers;
 public sealed class ManagedStudentJoinController : ControllerBase
 {
     private readonly ManagedStudentJoinService _joinService;
+    private readonly StudentPortalService _portalService;
     private readonly IOptions<AuthOptions> _authOptions;
     private readonly IOptions<AppSessionOptions> _sessionOptions;
+    private readonly IOptions<StudentPortalOptions> _portalOptions;
 
     public ManagedStudentJoinController(
         ManagedStudentJoinService joinService,
+        StudentPortalService portalService,
         IOptions<AuthOptions> authOptions,
-        IOptions<AppSessionOptions> sessionOptions)
+        IOptions<AppSessionOptions> sessionOptions,
+        IOptions<StudentPortalOptions> portalOptions)
     {
         _joinService = joinService;
+        _portalService = portalService;
         _authOptions = authOptions;
         _sessionOptions = sessionOptions;
+        _portalOptions = portalOptions;
     }
 
     [HttpPost("{joinCode}/student-join")]
@@ -55,6 +62,26 @@ public sealed class ManagedStudentJoinController : ControllerBase
         SetGuestCookie(result.RawGuestToken);
         return Ok(result.Player);
     }
+
+    [HttpPost("{joinCode}/portal-join")]
+    [ProducesResponseType(typeof(JoinSessionResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
+    public async Task<IActionResult> PortalJoin([FromRoute] string joinCode, CancellationToken cancellationToken)
+    {
+        var portalToken = ReadPortalCookie();
+        if (string.IsNullOrWhiteSpace(portalToken)) return Unauthorized();
+
+        var identity = await _portalService.ResolveIdentityAsync(portalToken, cancellationToken);
+        var result = await _joinService.JoinPortalAsync(joinCode, identity, cancellationToken);
+        SetGuestCookie(result.RawGuestToken);
+        return Ok(result.Player);
+    }
+
+    private string? ReadPortalCookie() =>
+        Request.Cookies[StudentPortalTokenService.ResolveCookieName(_portalOptions.Value.CookieName, _authOptions.Value.UseSecureCookie)];
 
     private void SetGuestCookie(string rawToken)
     {
