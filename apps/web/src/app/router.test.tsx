@@ -44,9 +44,11 @@ describe('router — public product routes', () => {
     expect(screen.getByRole('link', { name: /الدخول إلى مساحتي/ })).toHaveAttribute('href', '/student');
   });
 
-  it('يعرض بوابة الطالب المستقلة على /student', async () => {
+  it('يعرض بوابة الطالب المستقلة على /student للزائر غير المسجل', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('{}', { status: 401 })));
     await renderRoute('/student');
-    await expectHeading(/مساحتك|دخول الطالب|أهلًا/);
+    await expectHeading('ادخل إلى مساحتك');
+    expect(screen.getByLabelText('كود دخول الطالب')).toBeInTheDocument();
   });
 
   it('يعرض صفحة تسجيل الدخول على /auth/login', async () => {
