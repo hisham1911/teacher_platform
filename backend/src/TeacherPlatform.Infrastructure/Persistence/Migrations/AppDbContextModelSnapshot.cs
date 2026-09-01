@@ -1697,6 +1697,101 @@ namespace TeacherPlatform.Infrastructure.Persistence.Migrations
                     b.ToTable("Students", (string)null);
                 });
 
+            modelBuilder.Entity("TeacherPlatform.Domain.Students.StudentPortalCredential", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("CodeSuffix")
+                        .IsRequired()
+                        .HasMaxLength(4)
+                        .HasColumnType("character varying(4)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LookupDigest")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTime?>("RevokedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("StudentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("VerifierHash")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LookupDigest")
+                        .IsUnique();
+
+                    b.HasIndex("StudentId", "TenantId");
+
+                    b.HasIndex("TenantId", "StudentId")
+                        .IsUnique()
+                        .HasFilter("\"RevokedAt\" IS NULL");
+
+                    b.ToTable("StudentPortalCredentials", (string)null);
+                });
+
+            modelBuilder.Entity("TeacherPlatform.Domain.Students.StudentPortalSession", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CredentialId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("LastSeenAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("RevokedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("StudentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExpiresAt");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.HasIndex("CredentialId", "TenantId");
+
+                    b.HasIndex("StudentId", "TenantId");
+
+                    b.HasIndex("TenantId", "StudentId", "RevokedAt");
+
+                    b.ToTable("StudentPortalSessions", (string)null);
+                });
+
             modelBuilder.Entity("TeacherPlatform.Domain.Surveys.Survey", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2376,6 +2471,39 @@ namespace TeacherPlatform.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("TeacherPlatform.Domain.Students.StudentPortalCredential", b =>
+                {
+                    b.HasOne("TeacherPlatform.Domain.Students.Student", "Student")
+                        .WithMany("PortalCredentials")
+                        .HasForeignKey("StudentId", "TenantId")
+                        .HasPrincipalKey("Id", "TenantId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Student");
+                });
+
+            modelBuilder.Entity("TeacherPlatform.Domain.Students.StudentPortalSession", b =>
+                {
+                    b.HasOne("TeacherPlatform.Domain.Students.StudentPortalCredential", "Credential")
+                        .WithMany("Sessions")
+                        .HasForeignKey("CredentialId", "TenantId")
+                        .HasPrincipalKey("Id", "TenantId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("TeacherPlatform.Domain.Students.Student", "Student")
+                        .WithMany("PortalSessions")
+                        .HasForeignKey("StudentId", "TenantId")
+                        .HasPrincipalKey("Id", "TenantId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Credential");
+
+                    b.Navigation("Student");
+                });
+
             modelBuilder.Entity("TeacherPlatform.Domain.Surveys.Survey", b =>
                 {
                     b.HasOne("TeacherPlatform.Domain.Quizzes.Quiz", "Quiz")
@@ -2558,6 +2686,15 @@ namespace TeacherPlatform.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("TeacherPlatform.Domain.Students.Student", b =>
                 {
                     b.Navigation("Participants");
+
+                    b.Navigation("PortalCredentials");
+
+                    b.Navigation("PortalSessions");
+                });
+
+            modelBuilder.Entity("TeacherPlatform.Domain.Students.StudentPortalCredential", b =>
+                {
+                    b.Navigation("Sessions");
                 });
 
             modelBuilder.Entity("TeacherPlatform.Domain.Surveys.Survey", b =>
