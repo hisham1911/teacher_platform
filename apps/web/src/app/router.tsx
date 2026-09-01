@@ -14,6 +14,8 @@ const PublicCertificatePage = lazy(() => import('../routes/public/public-certifi
 const PrivacyPage = lazy(() => import('../routes/public/privacy-page'));
 const TermsPage = lazy(() => import('../routes/public/terms-page'));
 const RouteErrorPage = lazy(() => import('../routes/public/route-error-page'));
+const StudentPortalLoginPage = lazy(() => import('../routes/student/student-portal-login-page'));
+const StudentHomePage = lazy(() => import('../routes/student/student-home-page'));
 
 const LoginPage = lazy(() => import('../routes/auth/login-page'));
 const SignupPage = lazy(() => import('../routes/auth/signup-page'));
@@ -71,6 +73,8 @@ export const router = createBrowserRouter([
     children: [
       { path: '/', element: <HomePage /> },
       { path: '/join', element: <StudentJoinPage /> },
+      { path: '/student', element: <StudentPortalLoginPage /> },
+      { path: '/student/home', element: <StudentHomePage /> },
       { path: '/privacy', element: <PrivacyPage /> },
       { path: '/terms', element: <TermsPage /> },
       { path: '/auth/login', element: <LoginPage /> },
