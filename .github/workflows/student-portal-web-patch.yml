@@ -1,0 +1,33 @@
+name: Student Portal Web Patch
+
+on:
+  push:
+    branches:
+      - feature/student-portal-foundation
+    paths:
+      - .student-portal-web-patch
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Apply guarded patch
+        run: python tools/apply-student-portal-web.py
+      - name: Commit product changes
+        run: |
+          git config user.name 'Hisham Mohamed Ahmed'
+          git config user.email '89082601+hisham1911@users.noreply.github.com'
+          git add apps/web/src/components/layout/root-layout.tsx apps/web/src/routes/play/play-page.tsx apps/web/src/routes/dashboard/students/student-detail-page.tsx
+          git diff --cached --check
+          git commit -m 'feat(student-portal): integrate portal with studio and player'
+          git push origin HEAD:feature/student-portal-foundation
