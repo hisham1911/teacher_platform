@@ -49,9 +49,9 @@ describe('ReportsIndexPage', () => {
 
     renderPage();
 
-    expect(await screen.findByRole('heading', { name: 'تقدم الطلاب في الأنشطة المرسلة' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'تقدم الطلاب' })).toHaveAttribute('href', '/dashboard/assignments/assignment-1');
-    expect(screen.getByText('الحصة الأولى')).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: 'تقدم الطلاب' })).toHaveAttribute('href', '/dashboard/assignments/assignment-1');
+    expect(await screen.findByText('الحصة الأولى')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'تقدم الطلاب في الأنشطة المرسلة' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'تشغيلات النشاط السابقة' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'فتح النتائج' })).toHaveAttribute('href', '/dashboard/reports/session-1?quizId=quiz-1');
   });
