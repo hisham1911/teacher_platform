@@ -164,7 +164,7 @@ function MiniGame() {
   const [score, setScore] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
   const [finished, setFinished] = useState(false);
-  const question = demoQuestions[index];
+  const question = demoQuestions[index] ?? demoQuestions[0];
 
   function choose(optionIndex: number) {
     if (selected !== null) return;
