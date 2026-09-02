@@ -4,14 +4,20 @@ import { describe, expect, it } from 'vitest';
 import HomePage from './home-page';
 
 describe('HomePage', () => {
-  it('يشغّل التجربة المصغرة ويعرض النتيجة بدون التأثير على مسارات الطالب', () => {
+  it('يعرض قدرات المنصة الحقيقية ويشغّل التجربة المصغرة', () => {
     render(
       <MemoryRouter>
         <HomePage />
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole('heading', { name: /تعلّم الإنجليزية بالممارسة/ })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /من أول سؤال/ })).toBeInTheDocument();
+    expect(screen.getAllByText('بنك أسئلة').length).toBeGreaterThan(0);
+    expect(screen.getByText('مسابقة مباشرة')).toBeInTheDocument();
+    expect(screen.getAllByText('تحدٍ متدرج').length).toBeGreaterThan(0);
+    expect(screen.getByText('تقارير تفصيلية')).toBeInTheDocument();
+    expect(screen.getByText('شهادات PDF')).toBeInTheDocument();
+    expect(screen.getByText('مشاركة مع ولي الأمر')).toBeInTheDocument();
 
     const activityLinks = screen.getAllByRole('link', { name: /ابدأ نشاطًا/ });
     expect(activityLinks.length).toBeGreaterThan(0);

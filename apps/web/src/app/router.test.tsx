@@ -36,7 +36,9 @@ describe('router — public product routes', () => {
 
   it('يعرض الصفحة الرئيسية على /', async () => {
     await renderRoute('/');
-    await expectHeading('تعلّم الإنجليزية بالممارسة');
+    await expectHeading('من أول سؤال');
+    expect(screen.getAllByText('بنك أسئلة').length).toBeGreaterThan(0);
+    expect(screen.getByText('شهادات')).toBeInTheDocument();
 
     const activityLinks = screen.getAllByRole('link', { name: /ابدأ نشاطًا/ });
     expect(activityLinks.length).toBeGreaterThan(0);
