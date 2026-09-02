@@ -8,7 +8,7 @@ type DemoQuestion = {
   correctIndex: number;
 };
 
-const demoQuestions: readonly DemoQuestion[] = [
+const demoQuestions: readonly [DemoQuestion, ...DemoQuestion[]] = [
   {
     prompt: 'What does “Book” mean?',
     helper: 'اختر المعنى الصحيح.',
@@ -27,7 +27,7 @@ const demoQuestions: readonly DemoQuestion[] = [
     options: ['Apple', 'Chair', 'House'],
     correctIndex: 0,
   },
-] as const;
+];
 
 const studentBenefits = [
   {
