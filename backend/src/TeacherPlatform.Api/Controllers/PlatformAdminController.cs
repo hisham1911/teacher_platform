@@ -34,6 +34,7 @@ public sealed class PlatformAdminController : ControllerBase
     [HttpPost("plans")]
     public async Task<IActionResult> CreatePlan([FromBody] CreatePlanRequest request, CancellationToken cancellationToken)
     {
+        EnsureSupportedPackage(request.Contract.Package);
         var (error, result) = await _service.CreatePlanAsync(request, RequireActorId(), HttpContext.TraceIdentifier, cancellationToken);
         if (error is not null) throw error;
         return Created($"/api/v1/platform/plans/{result!.Id}", result);
@@ -42,6 +43,7 @@ public sealed class PlatformAdminController : ControllerBase
     [HttpPut("plans/{planId:guid}")]
     public async Task<IActionResult> UpdatePlan(Guid planId, [FromBody] UpdatePlanRequest request, CancellationToken cancellationToken)
     {
+        EnsureSupportedPackage(request.Contract.Package);
         var (error, result) = await _service.UpdatePlanAsync(planId, request, RequireActorId(), HttpContext.TraceIdentifier, cancellationToken);
         if (error is not null) throw error;
         return Ok(result);
@@ -111,6 +113,20 @@ public sealed class PlatformAdminController : ControllerBase
         [FromQuery] int take = 100,
         CancellationToken cancellationToken = default) =>
         Ok(await _service.ListAuditAsync(tenantId, take, cancellationToken));
+
+    private static void EnsureSupportedPackage(string package)
+    {
+        if (string.Equals(package, CommercialContract.GrandfatheredPackage, StringComparison.OrdinalIgnoreCase)
+            || CommercialPackageCatalog.All.Any(item =>
+                string.Equals(item.Package, package, StringComparison.OrdinalIgnoreCase)))
+        {
+            return;
+        }
+
+        throw new ServiceResultException(
+            "ValidationError",
+            "Package must be Teacher, TeacherPro, Academy, or a supported compatibility package.");
+    }
 
     private Guid RequireActorId()
     {
