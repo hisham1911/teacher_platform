@@ -35,7 +35,7 @@ describe('ActivityNewPage', () => {
 
     expect(screen.getByRole('radio', { name: /التحدي المتدرج/ })).toBeChecked();
     expect(screen.getByText('الاختيار الافتراضي')).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText('اسم النشاط'), { target: { value: 'تحدي كلمات الفضاء' } });
+    fireEvent.change(screen.getByRole('textbox', { name: 'اسم النشاط' }), { target: { value: 'تحدي كلمات الفضاء' } });
     fireEvent.click(screen.getByRole('button', { name: /التالي: الأسئلة/ }));
 
     await waitFor(() => expect(createQuizMock).toHaveBeenCalledWith('tenant-1', expect.objectContaining({ title: 'تحدي كلمات الفضاء', slug: expect.any(String) })));

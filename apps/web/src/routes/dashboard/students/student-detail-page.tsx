@@ -9,6 +9,7 @@ import { HttpError } from '../../../data/api-client/http-error';
 import { getActiveTenantId } from '../../../lib/auth/session';
 import { ATTEMPT_STATUS_LABELS, SESSION_MODE_LABELS } from '../../../types/sessions';
 import { formatStudentCode, type Student, type StudentResult } from '../../../types/students';
+import { StudentPortalAccessCard } from './student-portal-access-card';
 
 export default function StudentDetailPage() {
   const { studentId } = useParams<{ studentId: string }>();
@@ -69,7 +70,7 @@ export default function StudentDetailPage() {
             {student.isActive ? 'نشط' : 'غير نشط'}
           </span>
         </div>
-        <p className="mt-2 text-base leading-8 text-slate-600">بيانات الطالب، كود الدخول، وآخر النتائج في ملف واحد.</p>
+        <p className="mt-2 text-base leading-8 text-slate-600">بيانات الطالب، دخول English Spark، وآخر النتائج في ملف واحد.</p>
       </header>
 
       {justCreated ? (
@@ -77,10 +78,12 @@ export default function StudentDetailPage() {
           <span aria-hidden="true" className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-xs font-bold text-white">✓</span>
           <div>
             <p className="font-bold">تمت إضافة الطالب بنجاح</p>
-            <p>انسخ كود الدخول أدناه وشاركه مع الطالب. لا يحتاج إلى إنشاء حساب.</p>
+            <p>أنشئ كود دخول English Spark من البطاقة أدناه وشاركه مع الطالب مرة واحدة.</p>
           </div>
         </div>
       ) : null}
+
+      <StudentPortalAccessCard studentId={student.id} studentName={student.fullName} isActive={student.isActive} />
 
       <StudentCodeCard student={student} onChanged={refreshStudent} />
 
@@ -130,34 +133,43 @@ function StudentCodeCard({ student, onChanged }: { student: Student; onChanged: 
   }
 
   return (
-    <section className="teacher-surface overflow-hidden" aria-labelledby="student-code-title">
-      <div className="grid md:grid-cols-[minmax(0,1fr)_auto] md:items-stretch">
-        <div className="p-5 sm:p-6">
-          <p id="student-code-title" className="text-sm font-bold text-slate-900">كود دخول الطالب</p>
-          <p className="mt-1 text-sm leading-7 text-slate-500">استخدم نفس الكود في كل الأنشطة. لا يحتاج الطالب بريدًا أو كلمة مرور.</p>
-          <p dir="ltr" className="mt-4 inline-flex select-all rounded-xl bg-violet-50 px-4 py-3 font-mono text-2xl font-bold tracking-[0.14em] text-violet-900 ring-1 ring-violet-100 sm:text-3xl">
-            {formatStudentCode(student.studentCode)}
-          </p>
+    <details className="teacher-surface overflow-hidden">
+      <summary className="flex min-h-16 cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 sm:px-6">
+        <div>
+          <p className="text-sm font-bold text-slate-900">توافق مع الأنشطة القديمة</p>
+          <p className="mt-1 text-sm leading-7 text-slate-500">افتح هذا القسم فقط إذا كان النشاط القديم ما زال يطلب كود الطالب السابق.</p>
         </div>
+        <span aria-hidden="true" className="shrink-0 rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">عرض</span>
+      </summary>
+      <div className="border-t border-slate-200">
+        <div className="grid md:grid-cols-[minmax(0,1fr)_auto] md:items-stretch">
+          <div className="p-5 sm:p-6">
+            <p className="text-sm font-bold text-slate-900">كود الربط القديم للأنشطة</p>
+            <p className="mt-1 text-sm leading-7 text-slate-500">هذا الكود للتوافق مع المسار القديم فقط. دخول مساحة الطالب يستخدم كود English Spark المنفصل أعلاه.</p>
+            <p dir="ltr" className="mt-4 inline-flex select-all rounded-xl bg-violet-50 px-4 py-3 font-mono text-2xl font-bold tracking-[0.14em] text-violet-900 ring-1 ring-violet-100 sm:text-3xl">
+              {formatStudentCode(student.studentCode)}
+            </p>
+          </div>
 
-        <div className="flex flex-col justify-center gap-2 border-t border-slate-200 bg-slate-50/70 p-4 md:min-w-48 md:border-r md:border-t-0">
-          <button
-            type="button"
-            onClick={() => void copyCode()}
-            className="inline-flex min-h-11 items-center justify-center rounded-xl bg-violet-700 px-4 text-sm font-bold text-white shadow-sm hover:bg-violet-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-200">
-            {copied ? 'تم النسخ ✓' : 'نسخ الكود'}
-          </button>
-          <button
-            type="button"
-            onClick={regenerate}
-            disabled={regenerateMutation.isPending}
-            className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-slate-200 disabled:cursor-not-allowed disabled:opacity-55">
-            {regenerateMutation.isPending ? 'جارٍ التغيير…' : 'تغيير الكود'}
-          </button>
+          <div className="flex flex-col justify-center gap-2 border-t border-slate-200 bg-slate-50/70 p-4 md:min-w-48 md:border-r md:border-t-0">
+            <button
+              type="button"
+              onClick={() => void copyCode()}
+              className="inline-flex min-h-11 items-center justify-center rounded-xl bg-violet-700 px-4 text-sm font-bold text-white shadow-sm hover:bg-violet-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-200">
+              {copied ? 'تم النسخ ✓' : 'نسخ الكود'}
+            </button>
+            <button
+              type="button"
+              onClick={regenerate}
+              disabled={regenerateMutation.isPending}
+              className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-slate-200 disabled:cursor-not-allowed disabled:opacity-55">
+              {regenerateMutation.isPending ? 'جارٍ التغيير…' : 'تغيير الكود'}
+            </button>
+          </div>
         </div>
+        {error ? <p role="alert" className="border-t border-rose-200 bg-rose-50 px-5 py-3 text-sm leading-7 text-rose-800 sm:px-6">{error}</p> : null}
       </div>
-      {error ? <p role="alert" className="border-t border-rose-200 bg-rose-50 px-5 py-3 text-sm leading-7 text-rose-800 sm:px-6">{error}</p> : null}
-    </section>
+    </details>
   );
 }
 

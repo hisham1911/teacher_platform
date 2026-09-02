@@ -16,11 +16,13 @@ public sealed class StudentService
 {
     private readonly AppDbContext _db;
     private readonly ITenantContext _tenantContext;
+    private readonly IClock _clock;
 
-    public StudentService(AppDbContext db, ITenantContext tenantContext)
+    public StudentService(AppDbContext db, ITenantContext tenantContext, IClock clock)
     {
         _db = db;
         _tenantContext = tenantContext;
+        _clock = clock;
     }
 
     public async Task<IReadOnlyList<StudentResponse>> ListAsync(
@@ -125,6 +127,19 @@ public sealed class StudentService
 
         EnsureVersion(student, request.BaseVersion);
         student.IsActive = request.IsActive;
+
+        if (!request.IsActive)
+        {
+            var now = _clock.UtcNow;
+            var portalSessions = await _db.StudentPortalSessions
+                .Where(item => item.StudentId == studentId && item.RevokedAt == null)
+                .ToListAsync(cancellationToken);
+            foreach (var portalSession in portalSessions)
+            {
+                portalSession.RevokedAt = now;
+            }
+        }
+
         await SaveWithConcurrencyAsync(cancellationToken);
         return ToResponse(student);
     }

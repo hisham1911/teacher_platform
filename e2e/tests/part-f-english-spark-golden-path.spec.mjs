@@ -67,7 +67,7 @@ test('English Spark golden path keeps the recommended teacher journey simple', a
   await expect(teacher.getByText('تغيير طريقة اللعب')).toBeVisible();
 
   const activityTitle = `تحدي الفضاء E2E ${Date.now()}`;
-  await teacher.getByLabel('اسم النشاط').fill(activityTitle);
+  await teacher.getByRole('textbox', { name: 'اسم النشاط' }).fill(activityTitle);
   await teacher.getByRole('button', { name: 'التالي: الأسئلة' }).click();
 
   await expect(teacher).toHaveURL(/\/dashboard\/activities\/[0-9a-f-]+\/build\?mode=ProgressiveChallenge$/i);
@@ -113,10 +113,10 @@ test('English Spark golden path keeps the recommended teacher journey simple', a
   const joinPortal = await teacherContext.newPage();
   await joinPortal.goto('/join');
   await expect(joinPortal.getByRole('link', { name: /تسجيل الدخول/ })).toHaveCount(0);
-  const joinInput = joinPortal.getByLabel('كود النشاط');
+  const joinInput = joinPortal.getByLabel('رمز النشاط');
   await joinInput.fill(`${webUrl}/play/${session.joinCode}?source=shared-message`);
   await expect(joinInput).toHaveValue(session.joinCode);
-  await joinPortal.getByRole('button', { name: 'دخول النشاط' }).click();
+  await joinPortal.getByRole('button', { name: 'فتح النشاط' }).click();
   await expect(joinPortal).toHaveURL(new RegExp(`/play/${session.joinCode}$`));
   await joinPortal.close();
 

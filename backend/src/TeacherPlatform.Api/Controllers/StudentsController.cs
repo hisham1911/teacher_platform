@@ -13,14 +13,16 @@ namespace TeacherPlatform.Api.Controllers;
 public sealed class StudentsController : ControllerBase
 {
     private readonly StudentService _studentService;
+    private readonly StudentPortalService _portalService;
 
-    public StudentsController(StudentService studentService)
+    public StudentsController(StudentService studentService, StudentPortalService portalService)
     {
         _studentService = studentService;
+        _portalService = portalService;
     }
 
-    // StudentCode is a lightweight identity credential, not ordinary workspace metadata.
-    // Keep the entire roster (including results) behind Owner/Teacher rather than AnyTenantRole.
+    // StudentCode and portal access are credentials, not ordinary workspace metadata.
+    // Keep the entire roster behind Owner/Teacher rather than AnyTenantRole.
     [HttpGet]
     [Authorize(Policy = AuthorizationPolicies.TenantContentManagement)]
     [ProducesResponseType(typeof(IReadOnlyList<StudentResponse>), StatusCodes.Status200OK)]
@@ -126,5 +128,38 @@ public sealed class StudentsController : ControllerBase
     {
         var results = await _studentService.ListResultsAsync(studentId, take, cancellationToken);
         return Ok(results);
+    }
+
+    [HttpGet("{studentId:guid}/portal-access")]
+    [Authorize(Policy = AuthorizationPolicies.TenantContentManagement)]
+    [ProducesResponseType(typeof(StudentPortalAccessStatusResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> PortalAccess(
+        [FromRoute] Guid tenantId,
+        [FromRoute] Guid studentId,
+        CancellationToken cancellationToken) =>
+        Ok(await _portalService.GetAccessStatusAsync(studentId, cancellationToken));
+
+    [HttpPost("{studentId:guid}/portal-access")]
+    [Authorize(Policy = AuthorizationPolicies.TenantContentManagement)]
+    [ProducesResponseType(typeof(StudentPortalAccessCodeResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> RotatePortalAccess(
+        [FromRoute] Guid tenantId,
+        [FromRoute] Guid studentId,
+        CancellationToken cancellationToken) =>
+        Ok(await _portalService.RotateAccessCodeAsync(studentId, cancellationToken));
+
+    [HttpDelete("{studentId:guid}/portal-access")]
+    [Authorize(Policy = AuthorizationPolicies.TenantContentManagement)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> RevokePortalAccess(
+        [FromRoute] Guid tenantId,
+        [FromRoute] Guid studentId,
+        CancellationToken cancellationToken)
+    {
+        await _portalService.RevokeAccessAsync(studentId, cancellationToken);
+        return NoContent();
     }
 }

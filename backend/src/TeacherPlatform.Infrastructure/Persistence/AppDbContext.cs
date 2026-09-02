@@ -40,8 +40,10 @@ public class AppDbContext(
     public DbSet<Domain.Quizzes.QuizVersion> QuizVersions => Set<Domain.Quizzes.QuizVersion>();
     public DbSet<Domain.Quizzes.QuizVersionItem> QuizVersionItems => Set<Domain.Quizzes.QuizVersionItem>();
 
-    // Phase 4 — Student roster, Sessions, Participants, Attempts & Answers
+    // Phase 4 — Student roster, Portal, Sessions, Participants, Attempts & Answers
     public DbSet<Domain.Students.Student> Students => Set<Domain.Students.Student>();
+    public DbSet<Domain.Students.StudentPortalCredential> StudentPortalCredentials => Set<Domain.Students.StudentPortalCredential>();
+    public DbSet<Domain.Students.StudentPortalSession> StudentPortalSessions => Set<Domain.Students.StudentPortalSession>();
     public DbSet<Domain.Sessions.QuizSession> QuizSessions => Set<Domain.Sessions.QuizSession>();
     public DbSet<Domain.Sessions.SessionParticipant> SessionParticipants => Set<Domain.Sessions.SessionParticipant>();
     public DbSet<Domain.Sessions.Attempt> Attempts => Set<Domain.Sessions.Attempt>();
@@ -118,8 +120,10 @@ public class AppDbContext(
             modelBuilder.ApplyConfiguration(new Configurations.QuizVersionConfiguration());
             modelBuilder.ApplyConfiguration(new Configurations.QuizVersionItemConfiguration());
 
-            // Phase 4 — Student roster, Sessions, Participants, Attempts & Answers
+            // Phase 4 — Student roster, Portal, Sessions, Participants, Attempts & Answers
             modelBuilder.ApplyConfiguration(new Configurations.StudentConfiguration());
+            modelBuilder.ApplyConfiguration(new Configurations.StudentPortalCredentialConfiguration());
+            modelBuilder.ApplyConfiguration(new Configurations.StudentPortalSessionConfiguration());
             modelBuilder.ApplyConfiguration(new Configurations.QuizSessionConfiguration());
             modelBuilder.ApplyConfiguration(new Configurations.SessionParticipantConfiguration());
             modelBuilder.ApplyConfiguration(new Configurations.AttemptConfiguration());
@@ -163,6 +167,8 @@ public class AppDbContext(
             modelBuilder.Ignore<Domain.Quizzes.QuizVersion>();
             modelBuilder.Ignore<Domain.Quizzes.QuizVersionItem>();
             modelBuilder.Ignore<Domain.Students.Student>();
+            modelBuilder.Ignore<Domain.Students.StudentPortalCredential>();
+            modelBuilder.Ignore<Domain.Students.StudentPortalSession>();
             modelBuilder.Ignore<Domain.Sessions.QuizSession>();
             modelBuilder.Ignore<Domain.Sessions.SessionParticipant>();
             modelBuilder.Ignore<Domain.Sessions.Attempt>();

@@ -42,7 +42,7 @@ export function RootLayout({ children }: { children: ReactNode }) {
   const session = useSessionSnapshot();
   const activeTenantId = getActiveTenantId();
   const isFocusedLiveHost = location.pathname.startsWith('/dashboard/sessions/') && location.pathname.endsWith('/live');
-  const isStudentExperience = location.pathname === '/join' || location.pathname.startsWith('/play/');
+  const isStudentExperience = location.pathname === '/join' || location.pathname.startsWith('/play/') || location.pathname.startsWith('/student');
   const isFocusedExperience = isStudentExperience || isFocusedLiveHost;
 
   const { data: workspaces } = useQuery({

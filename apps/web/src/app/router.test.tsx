@@ -2,6 +2,8 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryRouter } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { studentPortalApi } from '../data/api-client/student-portal-endpoints';
+import { HttpError } from '../data/api-client/http-error';
 import { router } from './router';
 
 async function renderRoute(initialPath: string) {
@@ -27,6 +29,7 @@ describe('router — public product routes', () => {
   });
 
   afterEach(() => {
+    vi.restoreAllMocks();
     vi.unstubAllEnvs();
     vi.unstubAllGlobals();
   });
@@ -37,10 +40,20 @@ describe('router — public product routes', () => {
     expect(screen.getByRole('link', { name: /دخول الطالب بالرمز/ })).toHaveAttribute('href', '/join');
   });
 
-  it('يعرض بوابة الطالب العامة على /join', async () => {
+  it('يعرض الانضمام السريع للنشاط على /join', async () => {
     await renderRoute('/join');
-    await expectHeading('جاهز للانطلاق');
+    await expectHeading('انضم لنشاط سريع');
     expect(screen.getByLabelText(/رمز النشاط/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /الدخول إلى مساحتي/ })).toHaveAttribute('href', '/student');
+  });
+
+  it('يعرض بوابة الطالب المستقلة على /student للزائر غير المسجل', async () => {
+    vi.spyOn(studentPortalApi, 'status').mockResolvedValue({ enabled: true });
+    vi.spyOn(studentPortalApi, 'me').mockRejectedValue(new HttpError(401, null));
+
+    await renderRoute('/student');
+    await expectHeading('ادخل إلى مساحتك');
+    expect(screen.getByLabelText('كود دخول الطالب')).toBeInTheDocument();
   });
 
   it('يعرض صفحة تسجيل الدخول على /auth/login', async () => {

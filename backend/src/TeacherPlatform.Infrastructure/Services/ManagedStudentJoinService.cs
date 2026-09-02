@@ -4,6 +4,7 @@ using Npgsql;
 using TeacherPlatform.Application.Abstractions;
 using TeacherPlatform.Application.Options;
 using TeacherPlatform.Application.Sessions;
+using TeacherPlatform.Application.Students;
 using TeacherPlatform.Domain.Sessions;
 using TeacherPlatform.Infrastructure.Persistence;
 
@@ -12,9 +13,8 @@ namespace TeacherPlatform.Infrastructure.Services;
 public sealed record ManagedStudentJoinResult(JoinSessionResponse Player, string RawGuestToken);
 
 /// <summary>
-/// نقطة الربط الوحيدة بين سجل الطلاب ومحرك اللعب.
-/// StudentCode يُستخدم مرة واحدة لإثبات هوية الطالب داخل Tenant الجلسة، ثم تستمر كل عمليات اللعب بالـGuest Token الحالي؛
-/// وبذلك لا نكرر منطق التقييم/الاستئناف ولا نرسل StudentCode مع كل إجابة.
+/// نقطة الربط الوحيدة بين هوية الطالب الدائمة ومحرك اللعب.
+/// كلا StudentCode القديم وStudent Portal يصلان إلى نفس منطق participant/token حتى لا يتشعب محرك اللعب.
 /// </summary>
 public sealed class ManagedStudentJoinService
 {
@@ -46,24 +46,7 @@ public sealed class ManagedStudentJoinService
         string studentCode,
         CancellationToken cancellationToken)
     {
-        var normalizedJoinCode = joinCode.Trim().ToUpperInvariant();
-        var session = await _db.QuizSessions
-            .IgnoreQueryFilters()
-            .AsNoTracking()
-            .Where(item => item.JoinCode == normalizedJoinCode)
-            .Select(item => new { item.Id, item.TenantId, item.Status })
-            .SingleOrDefaultAsync(cancellationToken);
-
-        if (session is null)
-        {
-            throw new ServiceResultException("NotFound", "Activity not found.");
-        }
-
-        if (session.Status != SessionStatus.Active)
-        {
-            throw new ServiceResultException("Conflict", "This activity is not accepting students now.");
-        }
-
+        var session = await ResolveJoinableSessionAsync(joinCode, cancellationToken);
         var identity = await _studentService.ResolveActiveByCodeAsync(session.TenantId, studentCode, cancellationToken);
         if (identity is null)
         {
@@ -71,17 +54,57 @@ public sealed class ManagedStudentJoinService
             throw new ServiceResultException("NotFound", "Student code is invalid or inactive.");
         }
 
+        return await JoinResolvedAsync(
+            session,
+            identity.Id,
+            identity.TenantId,
+            identity.FullName,
+            cancellationToken);
+    }
+
+    public async Task<ManagedStudentJoinResult> JoinPortalAsync(
+        string joinCode,
+        StudentPortalIdentity identity,
+        CancellationToken cancellationToken)
+    {
+        var session = await ResolveJoinableSessionAsync(joinCode, cancellationToken);
+        if (session.TenantId != identity.TenantId)
+        {
+            // لا نكشف للطالب إن النشاط تابع لمساحة أخرى؛ يعامل كعدم وجود ارتباط صالح.
+            throw new ServiceResultException("NotFound", "Student portal is not valid for this activity.");
+        }
+
+        return await JoinResolvedAsync(
+            session,
+            identity.StudentId,
+            identity.TenantId,
+            identity.FullName,
+            cancellationToken);
+    }
+
+    private async Task<ManagedStudentJoinResult> JoinResolvedAsync(
+        JoinableSession session,
+        Guid studentId,
+        Guid studentTenantId,
+        string fullName,
+        CancellationToken cancellationToken)
+    {
+        if (session.TenantId != studentTenantId)
+        {
+            throw new ServiceResultException("NotFound", "Student identity is not valid for this activity.");
+        }
+
         using var tenantScope = _tenantContext.BeginBootstrap(session.TenantId);
 
         var existing = await _db.SessionParticipants
             .Include(participant => participant.Attempt)
             .SingleOrDefaultAsync(
-                participant => participant.SessionId == session.Id && participant.StudentId == identity.Id,
+                participant => participant.SessionId == session.Id && participant.StudentId == studentId,
                 cancellationToken);
 
         if (existing is not null)
         {
-            return await RotateTokenAsync(existing, identity.FullName, cancellationToken);
+            return await RotateTokenAsync(existing, fullName, cancellationToken);
         }
 
         var participantCount = await _db.SessionParticipants.CountAsync(
@@ -99,8 +122,8 @@ public sealed class ManagedStudentJoinService
             Id = Guid.NewGuid(),
             TenantId = session.TenantId,
             SessionId = session.Id,
-            StudentId = identity.Id,
-            DisplayName = identity.FullName,
+            StudentId = studentId,
+            DisplayName = fullName,
             GuestTokenHash = GuestTokenService.ComputeHash(rawToken),
             GuestTokenExpiresAt = _guestTokenService.ComputeExpiry(_sessionOptions.Value.GuestTokenDays),
             JoinedAt = now,
@@ -116,20 +139,43 @@ public sealed class ManagedStudentJoinService
         }
         catch (DbUpdateException exception) when (IsUniqueViolation(exception))
         {
-            // سباق نادر: فتح الطالب نفس النشاط في جهازين في اللحظة نفسها. نحتفظ بمشارك واحد ونُدوّر رمزه.
+            // سباق نادر: فتح الطالب نفس النشاط في جهازين في اللحظة نفسها.
             _db.Entry(participant).State = EntityState.Detached;
             var racedParticipant = await _db.SessionParticipants
                 .Include(item => item.Attempt)
                 .SingleOrDefaultAsync(
-                    item => item.SessionId == session.Id && item.StudentId == identity.Id,
+                    item => item.SessionId == session.Id && item.StudentId == studentId,
                     cancellationToken);
             if (racedParticipant is null)
             {
                 throw;
             }
 
-            return await RotateTokenAsync(racedParticipant, identity.FullName, cancellationToken);
+            return await RotateTokenAsync(racedParticipant, fullName, cancellationToken);
         }
+    }
+
+    private async Task<JoinableSession> ResolveJoinableSessionAsync(string joinCode, CancellationToken cancellationToken)
+    {
+        var normalizedJoinCode = joinCode.Trim().ToUpperInvariant();
+        var session = await _db.QuizSessions
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(item => item.JoinCode == normalizedJoinCode)
+            .Select(item => new JoinableSession(item.Id, item.TenantId, item.Status))
+            .SingleOrDefaultAsync(cancellationToken);
+
+        if (session is null)
+        {
+            throw new ServiceResultException("NotFound", "Activity not found.");
+        }
+
+        if (session.Status != SessionStatus.Active)
+        {
+            throw new ServiceResultException("Conflict", "This activity is not accepting students now.");
+        }
+
+        return session;
     }
 
     private async Task<ManagedStudentJoinResult> RotateTokenAsync(
@@ -156,4 +202,6 @@ public sealed class ManagedStudentJoinService
 
     private static bool IsUniqueViolation(DbUpdateException exception) =>
         exception.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation };
+
+    private sealed record JoinableSession(Guid Id, Guid TenantId, SessionStatus Status);
 }
