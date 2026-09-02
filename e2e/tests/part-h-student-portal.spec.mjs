@@ -55,7 +55,6 @@ async function loginStudentPortal(page, accessCode) {
 async function startSeedQuizThroughFirstQuestion(page) {
   await expect(page.getByRole('button', { name: 'ابدأ الآن' })).toBeVisible();
   await page.getByRole('button', { name: 'ابدأ الآن' }).click();
-
   await expect(page.getByText('ما عاصمة مصر؟')).toBeVisible();
   await page.getByText('القاهرة', { exact: true }).click();
   await page.getByRole('button', { name: 'تثبيت الإجابة' }).click();
@@ -71,7 +70,7 @@ async function finishSeedQuizFromSecondQuestion(page) {
   await page.getByText('سبعة', { exact: true }).click();
   await page.getByRole('button', { name: 'تثبيت الإجابة' }).click();
   await expect(page.getByText(/إجابة صحيحة ✓/)).toBeVisible();
-  await page.getByRole('button', { name: 'إنهاء الاختبار' }).click();
+  await page.getByRole('button', { name: 'إنهاء النشاط' }).click();
   await expect(page.getByText('100%').first()).toBeVisible();
 }
 
@@ -105,8 +104,6 @@ test('persistent student portal supports cross-device resume and reusable creden
 
   const deviceAContext = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const deviceAPage = await deviceAContext.newPage();
-
-  // Quick Join remains activity-only and points persistent students to their separate portal.
   await deviceAPage.goto('/join');
   await expect(deviceAPage.getByRole('heading', { name: 'انضم لنشاط سريع' })).toBeVisible();
   await expect(deviceAPage.getByLabel('رمز النشاط')).toBeVisible();
@@ -132,11 +129,8 @@ test('persistent student portal supports cross-device resume and reusable creden
   expect(guestCookieA).toBeDefined();
   expect(guestCookieA.httpOnly).toBe(true);
 
-  // Device A starts the managed attempt and stops at question 2.
   await startSeedQuizThroughFirstQuestion(deviceAPage);
 
-  // Device B has no cookies. The same portal credential must resolve the same managed student
-  // and resume the in-progress attempt at question 2 rather than creating a new identity.
   const deviceBContext = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const deviceBPage = await deviceBContext.newPage();
   await loginStudentPortal(deviceBPage, accessCode);
@@ -164,7 +158,9 @@ test('persistent student portal supports cross-device resume and reusable creden
   const activityRow = deviceBPage.locator('div').filter({ hasText: 'اختبار E2E' }).filter({ hasText: '100%' }).first();
   await expect(activityRow).toBeVisible();
   await expect(deviceBPage.getByText('مكتمل ✓')).toBeVisible();
-  await expect(deviceBPage.getByRole('heading', { name: 'آخر محاولاتك' })).toBeVisible();
+  await expect(deviceBPage.getByRole('heading', { name: 'انتهيت سابقًا' })).toBeVisible();
+  await expect(deviceBPage.getByRole('heading', { name: 'رحلتك حتى الآن' })).toBeVisible();
+  await expect(deviceBPage.getByRole('heading', { name: 'شهاداتك من الأنشطة المؤهلة' })).toBeVisible();
 
   await deviceBPage.getByRole('button', { name: 'تسجيل الخروج' }).click();
   await expect(deviceBPage).toHaveURL(/\/student$/);
@@ -181,7 +177,7 @@ test('persistent student portal supports cross-device resume and reusable creden
   await guestPage.goto(`/play/${joinCode}`);
   await expect(guestPage.getByPlaceholder('اكتب اسمك هنا')).toBeVisible();
   await guestPage.getByPlaceholder('اكتب اسمك هنا').fill('ضيف البوابة');
-  await guestPage.getByRole('button', { name: 'ابدأ الاختبار' }).click();
+  await guestPage.getByRole('button', { name: 'ابدأ النشاط' }).click();
   await expect(guestPage.getByRole('button', { name: 'ابدأ الآن' })).toBeVisible();
 
   await guestContext.close();
