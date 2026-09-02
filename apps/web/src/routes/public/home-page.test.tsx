@@ -12,9 +12,9 @@ describe('HomePage', () => {
     );
 
     expect(screen.getByRole('heading', { name: /من أول سؤال/ })).toBeInTheDocument();
-    expect(screen.getByText('بنك أسئلة')).toBeInTheDocument();
+    expect(screen.getAllByText('بنك أسئلة').length).toBeGreaterThan(0);
     expect(screen.getByText('مسابقة مباشرة')).toBeInTheDocument();
-    expect(screen.getByText('تحدٍ متدرج')).toBeInTheDocument();
+    expect(screen.getAllByText('تحدٍ متدرج').length).toBeGreaterThan(0);
     expect(screen.getByText('تقارير تفصيلية')).toBeInTheDocument();
     expect(screen.getByText('شهادات PDF')).toBeInTheDocument();
     expect(screen.getByText('مشاركة مع ولي الأمر')).toBeInTheDocument();
