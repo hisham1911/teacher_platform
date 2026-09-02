@@ -115,10 +115,11 @@ test('Part I: classroom assignment is visible only to recipients and resumes acr
   const deviceAContext = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const deviceAPage = await deviceAContext.newPage();
   await loginStudent(deviceAPage, studentA.accessCode);
-  await expect(deviceAPage.getByRole('heading', { name: 'أنشطتك الحالية' })).toBeVisible();
-  await expect(deviceAPage.getByText('اختبار E2E', { exact: true })).toBeVisible();
-  await expect(deviceAPage.getByText('جديد', { exact: true })).toBeVisible();
-  await deviceAPage.getByRole('button', { name: 'ابدأ' }).click();
+  const tasksA = deviceAPage.getByLabel('أنشطتك الحالية');
+  await expect(tasksA).toBeVisible();
+  await expect(tasksA.getByText('اختبار E2E', { exact: true })).toBeVisible();
+  await expect(tasksA.getByText('جديد', { exact: true })).toBeVisible();
+  await tasksA.getByRole('button', { name: 'ابدأ' }).click();
   await expect(deviceAPage).toHaveURL(/\/play\//, { timeout: 15_000 });
   await answerFirstQuestionAndLeave(deviceAPage);
   await deviceAContext.close();
@@ -127,19 +128,21 @@ test('Part I: classroom assignment is visible only to recipients and resumes acr
   const deviceA2Context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const deviceA2Page = await deviceA2Context.newPage();
   await loginStudent(deviceA2Page, studentA.accessCode);
-  await expect(deviceA2Page.getByText('اختبار E2E', { exact: true })).toBeVisible();
-  await expect(deviceA2Page.getByText('جاري', { exact: true })).toBeVisible();
-  await expect(deviceA2Page.getByText(/50% منجز/)).toBeVisible();
-  await deviceA2Page.getByRole('button', { name: 'أكمل' }).click();
+  const resumedTasksA = deviceA2Page.getByLabel('أنشطتك الحالية');
+  await expect(resumedTasksA.getByText('اختبار E2E', { exact: true })).toBeVisible();
+  await expect(resumedTasksA.getByText('جاري', { exact: true })).toBeVisible();
+  await expect(resumedTasksA.getByText(/50% منجز/)).toBeVisible();
+  await resumedTasksA.getByRole('button', { name: 'أكمل' }).click();
   await expect(deviceA2Page).toHaveURL(/\/play\//, { timeout: 15_000 });
   await finishFromSecondQuestion(deviceA2Page);
 
   await deviceA2Page.goto('/student/home');
-  await expect(deviceA2Page.getByText('اختبار E2E', { exact: true })).toBeVisible();
-  await expect(deviceA2Page.getByText('مكتمل', { exact: true }).first()).toBeVisible();
-  await expect(deviceA2Page.getByText('100%').first()).toBeVisible();
-  await expect(deviceA2Page.getByRole('button', { name: 'شاهد النتيجة' })).toBeVisible();
-  await deviceA2Page.getByRole('button', { name: 'شاهد النتيجة' }).click();
+  const completedTasksA = deviceA2Page.getByLabel('أنشطتك الحالية');
+  await expect(completedTasksA.getByText('اختبار E2E', { exact: true })).toBeVisible();
+  await expect(completedTasksA.getByText('مكتمل', { exact: true }).first()).toBeVisible();
+  await expect(completedTasksA.getByText('100%').first()).toBeVisible();
+  await expect(completedTasksA.getByRole('button', { name: 'شاهد النتيجة' })).toBeVisible();
+  await completedTasksA.getByRole('button', { name: 'شاهد النتيجة' }).click();
   await expect(deviceA2Page).toHaveURL(/\/play\//, { timeout: 15_000 });
   await expect(deviceA2Page.getByText('100%').first()).toBeVisible();
 
@@ -147,16 +150,18 @@ test('Part I: classroom assignment is visible only to recipients and resumes acr
   const deviceBContext = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const deviceBPage = await deviceBContext.newPage();
   await loginStudent(deviceBPage, studentB.accessCode);
-  await expect(deviceBPage.getByText('اختبار E2E', { exact: true })).toBeVisible();
-  await expect(deviceBPage.getByText('جديد', { exact: true })).toBeVisible();
-  await expect(deviceBPage.getByRole('button', { name: 'ابدأ' })).toBeVisible();
+  const tasksB = deviceBPage.getByLabel('أنشطتك الحالية');
+  await expect(tasksB.getByText('اختبار E2E', { exact: true })).toBeVisible();
+  await expect(tasksB.getByText('جديد', { exact: true })).toBeVisible();
+  await expect(tasksB.getByRole('button', { name: 'ابدأ' })).toBeVisible();
 
   // Student outside the class cannot infer or see the persistent assignment.
   const outsideContext = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const outsidePage = await outsideContext.newPage();
   await loginStudent(outsidePage, outsider.accessCode);
-  await expect(outsidePage.getByText('اختبار E2E', { exact: true })).toHaveCount(0);
-  await expect(outsidePage.getByText('لا يوجد شيء مطلوب منك الآن')).toBeVisible();
+  const outsideTasks = outsidePage.getByLabel('أنشطتك الحالية');
+  await expect(outsideTasks.getByText('اختبار E2E', { exact: true })).toHaveCount(0);
+  await expect(outsideTasks.getByText('لا يوجد شيء مطلوب منك الآن')).toBeVisible();
 
   // Teacher sees A's completed result linked to the same assignment while B is still not started.
   await teacherPage.goto(assignmentUrl);
