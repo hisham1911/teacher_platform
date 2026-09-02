@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using TeacherPlatform.Application.Abstractions;
 using TeacherPlatform.Application.Classrooms;
 using TeacherPlatform.Application.Tenancy;
 using TeacherPlatform.Domain.Classrooms;
@@ -10,9 +11,9 @@ public sealed class ClassroomService
 {
     private readonly AppDbContext _db;
     private readonly ITenantContext _tenantContext;
-    private readonly Application.Abstractions.IClock _clock;
+    private readonly IClock _clock;
 
-    public ClassroomService(AppDbContext db, ITenantContext tenantContext, Application.Abstractions.IClock clock)
+    public ClassroomService(AppDbContext db, ITenantContext tenantContext, IClock clock)
     {
         _db = db;
         _tenantContext = tenantContext;
