@@ -22,6 +22,9 @@ jobs:
       - name: Restore
         working-directory: backend
         run: dotnet restore
+      - name: Build
+        working-directory: backend
+        run: dotnet build --no-restore
       - name: Install EF tool
         run: dotnet tool install --global dotnet-ef --version 10.0.3
       - name: Generate Phase 2 migration
@@ -30,7 +33,8 @@ jobs:
           dotnet ef migrations add Phase2ClassesAssignments \
             --project src/TeacherPlatform.Infrastructure/TeacherPlatform.Infrastructure.csproj \
             --startup-project src/TeacherPlatform.Api/TeacherPlatform.Api.csproj \
-            --output-dir Persistence/Migrations
+            --output-dir Persistence/Migrations \
+            --no-build
       - name: Package generated migration
         working-directory: backend/src/TeacherPlatform.Infrastructure/Persistence/Migrations
         run: |
