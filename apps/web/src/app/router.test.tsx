@@ -98,6 +98,6 @@ describe('router — public product routes', () => {
 
   it('يعرض خطأ مفهومًا عندما يتعذر تحميل الاختبار العام', async () => {
     await renderRoute('/q/ABC123');
-    expect(screen.getByText(/تعذر تحميل بيانات الاختبار/)).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText(/تعذر تحميل بيانات الاختبار/)).toBeInTheDocument());
   });
 });
