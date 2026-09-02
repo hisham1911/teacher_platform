@@ -2,9 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using TeacherPlatform.Domain.Assignments;
 using TeacherPlatform.Domain.Classrooms;
-using TeacherPlatform.Domain.Quizzes;
 using TeacherPlatform.Domain.Sessions;
-using TeacherPlatform.Domain.Students;
 
 namespace TeacherPlatform.Infrastructure.Persistence.Configurations;
 
@@ -67,7 +65,7 @@ public sealed class AssignmentConfiguration : IEntityTypeConfiguration<Assignmen
         builder.HasOne(x => x.QuizVersion)
             .WithMany()
             .HasForeignKey(x => new { x.QuizVersionId, x.TenantId })
-            .HasPrincipalKey<QuizVersion>(x => new { x.Id, x.TenantId })
+            .HasPrincipalKey(x => new { x.Id, x.TenantId })
             .OnDelete(DeleteBehavior.NoAction);
 
         builder.HasOne(x => x.Session)
@@ -98,13 +96,13 @@ public sealed class AssignmentRecipientConfiguration : IEntityTypeConfiguration<
         builder.HasOne(x => x.Student)
             .WithMany()
             .HasForeignKey(x => new { x.StudentId, x.TenantId })
-            .HasPrincipalKey<Student>(x => new { x.Id, x.TenantId })
+            .HasPrincipalKey(x => new { x.Id, x.TenantId })
             .OnDelete(DeleteBehavior.NoAction);
 
         builder.HasOne(x => x.SourceClassroom)
             .WithMany()
             .HasForeignKey(x => new { x.SourceClassroomId, x.TenantId })
-            .HasPrincipalKey<Classroom>(x => new { x.Id, x.TenantId })
+            .HasPrincipalKey(x => new { x.Id, x.TenantId })
             .OnDelete(DeleteBehavior.NoAction);
     }
 }
