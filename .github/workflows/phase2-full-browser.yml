@@ -1,4 +1,5 @@
 name: Phase 2 Full Browser A-I
+# Final Phase 2 verification trigger after Part I selector hardening.
 
 on:
   push:
