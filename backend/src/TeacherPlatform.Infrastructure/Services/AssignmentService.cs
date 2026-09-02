@@ -33,7 +33,8 @@ public sealed class AssignmentService
     {
         var tenantId = RequireTenant();
         var now = _clock.UtcNow;
-        ValidateDates(request.AvailableAt, request.DueAt, now);
+        if (!AssignmentScheduleRules.IsValid(request.AvailableAt, request.DueAt, now))
+            throw new ServiceResultException("Validation", "DueAt must be later than AvailableAt/creation time.");
 
         var version = await _db.QuizVersions.AsNoTracking()
             .SingleOrDefaultAsync(x => x.Id == request.QuizVersionId, cancellationToken);
@@ -282,13 +283,6 @@ public sealed class AssignmentService
             if (!await _db.QuizSessions.IgnoreQueryFilters().AnyAsync(x => x.JoinCode == code, cancellationToken)) return code;
         }
         throw new ServiceResultException("Conflict", "Could not allocate a unique activity code. Try again.");
-    }
-
-    private static void ValidateDates(DateTime? availableAt, DateTime? dueAt, DateTime now)
-    {
-        if (dueAt is null) return;
-        var lowerBound = availableAt ?? now;
-        if (dueAt <= lowerBound) throw new ServiceResultException("Validation", "DueAt must be later than AvailableAt/creation time.");
     }
 
     private Guid RequireTenant() => _tenantContext.IsResolved && _tenantContext.TenantId is { } id && id != Guid.Empty
