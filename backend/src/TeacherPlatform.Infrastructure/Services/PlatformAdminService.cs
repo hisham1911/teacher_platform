@@ -662,15 +662,18 @@ public sealed class PlatformAdminService
 
     private static SubscriptionResponse ToSubscriptionResponse(
         Subscription subscription,
-        string? effectiveStatus = null) => new()
+        string? effectiveStatus = null)
     {
-        Id = subscription.Id,
-        TenantId = subscription.TenantId,
-        PlanId = subscription.PlanId,
-        PlanCode = subscription.Plan?.Code ?? string.Empty,
-        PlanName = subscription.Plan?.Name ?? string.Empty,
-        Status = effectiveStatus ?? subscription.Status.ToString(),
-        StartsAt = subscription.StartsAt,
-        EndsAt = subscription.EndsAt
-    };
+        return new SubscriptionResponse
+        {
+            Id = subscription.Id,
+            TenantId = subscription.TenantId,
+            PlanId = subscription.PlanId,
+            PlanCode = subscription.Plan?.Code ?? string.Empty,
+            PlanName = subscription.Plan?.Name ?? string.Empty,
+            Status = effectiveStatus ?? subscription.Status.ToString(),
+            StartsAt = subscription.StartsAt,
+            EndsAt = subscription.EndsAt
+        };
+    }
 }
