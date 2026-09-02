@@ -1,3 +1,4 @@
+import type { TenantSettings } from '../../types/auth';
 import { getActiveTenantId, getSessionSnapshot } from '../../lib/auth/session';
 import type {
   ActivateSubscriptionRequest,
@@ -16,10 +17,19 @@ import { authApi, resolveBaseUrl } from './endpoints';
 import { HttpError } from './http-error';
 
 interface CommercialRequestOptions {
-  method?: 'GET' | 'POST' | 'PUT';
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH';
   body?: unknown;
   signal?: AbortSignal;
   tenantId?: string;
+}
+
+export interface ControlledBrandingUpdate {
+  publicTeacherName?: string | null;
+  brandDisplayName?: string | null;
+  studentPortalWelcomeText?: string | null;
+  primaryColor?: string | null;
+  secondaryColor?: string | null;
+  supportContact?: string | null;
 }
 
 async function commercialRequest<T>(
@@ -75,6 +85,14 @@ export const commercialWorkspaceApi = {
       `/api/v1/tenants/${tenantId}/commercial`,
       { tenantId, signal },
     );
+  },
+  updateBranding(tenantId: string, payload: ControlledBrandingUpdate, signal?: AbortSignal) {
+    return commercialRequest<TenantSettings>(`/api/v1/tenants/${tenantId}/settings`, {
+      method: 'PATCH',
+      tenantId,
+      body: payload,
+      signal,
+    });
   },
 };
 
