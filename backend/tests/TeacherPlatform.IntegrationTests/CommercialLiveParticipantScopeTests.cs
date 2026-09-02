@@ -23,7 +23,7 @@ public sealed class CommercialLiveParticipantScopeTests : IClassFixture<TestWebA
     public Task DisposeAsync() => Task.CompletedTask;
 
     [Fact]
-    public async Task MaxLiveParticipants_DoesNotLimitSelfPaced_ButDoesLimitLive()
+    public async Task LiveQuota_IsLiveOnly_AndWorkspaceSuspensionBlocksPublicPlayer()
     {
         var teacherClient = _factory.CreateClient();
         var owner = await RegisterConfirmLoginAsync(teacherClient, "Live Scope Owner");
@@ -77,8 +77,35 @@ public sealed class CommercialLiveParticipantScopeTests : IClassFixture<TestWebA
 
         Assert.Equal(HttpStatusCode.OK, liveJoinOne.StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, liveJoinTwo.StatusCode);
-        var problem = await liveJoinTwo.Content.ReadFromJsonAsync<JsonElement>();
-        Assert.Equal("QuotaExceeded", problem.GetProperty("errorCode").GetString());
+        var liveProblem = await liveJoinTwo.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("QuotaExceeded", liveProblem.GetProperty("errorCode").GetString());
+
+        var suspend = await teacherClient.SendAsync(Authorized(
+            HttpMethod.Put,
+            $"/api/v1/platform/tenants/{tenantId}/status",
+            adminToken,
+            new { suspended = true, reason = "Public player suspension regression" }));
+        Assert.Equal(HttpStatusCode.OK, suspend.StatusCode);
+
+        var blockedStudent = _factory.CreateClient();
+        var blockedJoin = await blockedStudent.PostAsJsonAsync(
+            $"/api/v1/player/sessions/{selfPaced.JoinCode}/join",
+            new { displayName = "Blocked While Suspended" });
+        Assert.Equal(HttpStatusCode.Locked, blockedJoin.StatusCode);
+        var suspendedProblem = await blockedJoin.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("WorkspaceSuspended", suspendedProblem.GetProperty("errorCode").GetString());
+
+        var reactivate = await teacherClient.SendAsync(Authorized(
+            HttpMethod.Put,
+            $"/api/v1/platform/tenants/{tenantId}/status",
+            adminToken,
+            new { suspended = false, reason = "Regression reactivation" }));
+        Assert.Equal(HttpStatusCode.OK, reactivate.StatusCode);
+
+        var restoredJoin = await blockedStudent.PostAsJsonAsync(
+            $"/api/v1/player/sessions/{selfPaced.JoinCode}/join",
+            new { displayName = "Restored After Reactivation" });
+        Assert.Equal(HttpStatusCode.OK, restoredJoin.StatusCode);
     }
 
     private async Task<(string Email, string Token)> RegisterConfirmLoginAsync(
