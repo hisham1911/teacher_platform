@@ -30,7 +30,7 @@ test('Part J: student-first public home is interactive and mobile-safe', async (
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
   await expect(page.getByRole('heading', { name: /جاهز تبدأ؟/ })).toBeVisible();
-  await expect(page.getByLabel('رمز النشاط')).toBeVisible();
+  await expect(page.getByRole('textbox', { name: 'رمز النشاط' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'عندي كود طالب' })).toHaveAttribute('href', '/student');
   await expect(page.getByRole('link', { name: 'هل أنت معلم؟' })).toHaveAttribute('href', '/teachers');
   const joinButton = page.getByRole('button', { name: 'ابدأ النشاط' });
