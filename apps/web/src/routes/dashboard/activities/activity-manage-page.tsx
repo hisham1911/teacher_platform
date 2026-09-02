@@ -20,23 +20,61 @@ export default function ActivityManagePage() {
     enabled: Boolean(tenantId && quizId),
     staleTime: 0,
   });
+  const versionsQuery = useQuery({
+    queryKey: ['quiz-versions', tenantId, quizId],
+    queryFn: ({ signal }) => quizzesApi.listVersions(tenantId, quizId, signal),
+    enabled: Boolean(tenantId && quizId),
+  });
 
   const draft = draftQuery.data;
-  const incompatibleCount = useMemo(() => draft?.items.filter((item) => !isQuestionTypeAllowedForActivity(mode, item.questionType)).length ?? 0, [draft, mode]);
+  const publishedVersion = useMemo(
+    () => versionsQuery.data
+      ?.filter((version) => version.status !== 'Draft')
+      .sort((left, right) => right.versionNumber - left.versionNumber)[0] ?? null,
+    [versionsQuery.data],
+  );
+  const incompatibleCount = useMemo(
+    () => draft?.items.filter(
+      (item) => !isQuestionTypeAllowedForActivity(mode, item.questionType),
+    ).length ?? 0,
+    [draft, mode],
+  );
 
   const launchMutation = useMutation({
     mutationFn: async () => {
       if (!draft) throw new Error('missing-draft');
       return launchActivity({ tenantId, quizId, mode, draft });
     },
-    onSuccess: (result) => navigate(`/dashboard/activities/${quizId}/ready?sessionId=${result.session.id}&mode=${mode}`),
+    onSuccess: (result) => navigate(
+      `/dashboard/activities/${quizId}/ready?sessionId=${result.session.id}&mode=${mode}`,
+    ),
   });
 
   if (!tenantId || !quizId) return null;
-  if (draftQuery.isLoading) return <div role="status" className="teacher-surface animate-pulse p-6 text-sm text-slate-600">جارٍ فتح النشاط…</div>;
-  if (draftQuery.isError || !draft) return <div className="teacher-surface p-6"><p role="alert" className="font-bold text-rose-800">تعذر فتح النشاط.</p><Button className="mt-4" variant="secondary" onClick={() => void draftQuery.refetch()}>إعادة المحاولة</Button></div>;
+  if (draftQuery.isLoading) {
+    return (
+      <div role="status" className="teacher-surface animate-pulse p-6 text-sm text-slate-600">
+        جارٍ فتح النشاط…
+      </div>
+    );
+  }
+  if (draftQuery.isError || !draft) {
+    return (
+      <div className="teacher-surface p-6">
+        <p role="alert" className="font-bold text-rose-800">تعذر فتح النشاط.</p>
+        <Button className="mt-4" variant="secondary" onClick={() => void draftQuery.refetch()}>
+          إعادة المحاولة
+        </Button>
+      </div>
+    );
+  }
 
-  const canPrepare = draft.items.length > 0 && incompatibleCount === 0 && !launchMutation.isPending;
+  const canPrepare = draft.items.length > 0
+    && incompatibleCount === 0
+    && !launchMutation.isPending;
+  const assignUrl = publishedVersion
+    ? `/dashboard/activities/${quizId}/assign?versionId=${encodeURIComponent(publishedVersion.id)}&title=${encodeURIComponent(draft.title)}`
+    : null;
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 pb-10">
@@ -58,7 +96,7 @@ export default function ActivityManagePage() {
           <span aria-hidden="true" className="text-2xl">👁️</span><h2 className="mt-3 text-lg font-black text-slate-950">2. المعاينة</h2><p className="mt-1 text-sm leading-7 text-slate-600">راجع المحتوى كما سيظهر قبل إرساله.</p><span className="mt-3 inline-block text-sm font-black text-violet-700">فتح المعاينة ←</span>
         </Link>
         <a href="#deliver-activity" className="teacher-surface group p-5 transition hover:border-violet-300 hover:shadow-md">
-          <span aria-hidden="true" className="text-2xl">🚀</span><h2 className="mt-3 text-lg font-black text-slate-950">3. أوصله للطلاب</h2><p className="mt-1 text-sm leading-7 text-slate-600">شارك رابطًا أو جهّز مسابقة مباشرة.</p><span className="mt-3 inline-block text-sm font-black text-violet-700">اختيار الطريقة ↓</span>
+          <span aria-hidden="true" className="text-2xl">🚀</span><h2 className="mt-3 text-lg font-black text-slate-950">3. أوصله للطلاب</h2><p className="mt-1 text-sm leading-7 text-slate-600">أسنده لطلابك، شارك رابطًا، أو جهّز مسابقة مباشرة.</p><span className="mt-3 inline-block text-sm font-black text-violet-700">اختيار الطريقة ↓</span>
         </a>
       </section>
 
@@ -69,7 +107,29 @@ export default function ActivityManagePage() {
           <p className="mt-2 text-sm leading-7 text-slate-600">اختر التجربة المناسبة. English Spark تتولى تجهيز ما يلزم خلف الكواليس وتعرض لك الخطوة التالية فقط.</p>
         </div>
 
-        <div className="mt-5 grid gap-3 md:grid-cols-3">
+        <div className="mt-5">
+          {assignUrl ? (
+            <Link to={assignUrl} className="flex min-h-28 items-center gap-4 rounded-2xl border-2 border-violet-400 bg-violet-50 p-5 transition hover:bg-violet-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-100">
+              <span aria-hidden="true" className="text-3xl">🎯</span>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-lg font-black text-violet-950">إسناد لطلابي</h3>
+                <p className="mt-1 text-sm leading-7 text-violet-800">اختر فصلًا أو طلابًا محددين، وحدد موعدًا إن احتجت. سيظهر التكليف داخل بوابة الطالب.</p>
+              </div>
+              <span className="shrink-0 text-sm font-black text-violet-800">ابدأ ←</span>
+            </Link>
+          ) : (
+            <Link to={`/dashboard/quizzes/${quizId}/publish`} className="flex min-h-28 items-center gap-4 rounded-2xl border border-amber-300 bg-amber-50 p-5 transition hover:bg-amber-100">
+              <span aria-hidden="true" className="text-3xl">🎯</span>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-lg font-black text-amber-950">إسناد لطلابي</h3>
+                <p className="mt-1 text-sm leading-7 text-amber-800">ثبّت نسخة النشاط أولًا حتى يصل للطلاب نفس المحتوى الذي راجعته.</p>
+              </div>
+              <span className="shrink-0 text-sm font-black text-amber-900">تجهيز النشاط ←</span>
+            </Link>
+          )}
+        </div>
+
+        <div className="mt-4 grid gap-3 md:grid-cols-3">
           {ACTIVITY_MODES.map((definition) => {
             const selected = mode === definition.mode;
             return (
