@@ -116,7 +116,7 @@ test('English Spark golden path keeps the recommended teacher journey simple', a
   const joinInput = joinPortal.getByLabel('رمز النشاط');
   await joinInput.fill(`${webUrl}/play/${session.joinCode}?source=shared-message`);
   await expect(joinInput).toHaveValue(session.joinCode);
-  await joinPortal.getByRole('button', { name: 'دخول النشاط' }).click();
+  await joinPortal.getByRole('button', { name: 'فتح النشاط' }).click();
   await expect(joinPortal).toHaveURL(new RegExp(`/play/${session.joinCode}$`));
   await joinPortal.close();
 
