@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -34,7 +35,9 @@ public sealed class CommercialPlayerJoinFilter : IAsyncActionFilter
         _clock = clock;
     }
 
-    public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
+    public async Task OnActionExecutionAsync(
+        ActionExecutingContext context,
+        ActionExecutionDelegate next)
     {
         var controller = context.ActionDescriptor.RouteValues.GetValueOrDefault("controller");
         var action = context.ActionDescriptor.RouteValues.GetValueOrDefault("action");
@@ -46,14 +49,17 @@ public sealed class CommercialPlayerJoinFilter : IAsyncActionFilter
             return;
         }
 
-        if (!context.ActionArguments.TryGetValue("joinCode", out var rawJoinCode) || rawJoinCode is not string joinCode)
+        if (!context.ActionArguments.TryGetValue("joinCode", out var rawJoinCode)
+            || rawJoinCode is not string joinCode)
         {
             await next();
             return;
         }
 
         var normalized = joinCode.Trim().ToUpperInvariant();
-        var session = await _db.QuizSessions.IgnoreQueryFilters().AsNoTracking()
+        var session = await _db.QuizSessions
+            .IgnoreQueryFilters()
+            .AsNoTracking()
             .Where(item => item.JoinCode == normalized)
             .Select(item => new { item.Id, item.TenantId, item.Status })
             .SingleOrDefaultAsync(context.HttpContext.RequestAborted);
@@ -63,42 +69,75 @@ public sealed class CommercialPlayerJoinFilter : IAsyncActionFilter
             return;
         }
 
-        await using var transaction = await _db.Database.BeginTransactionAsync(context.HttpContext.RequestAborted);
+        await using var transaction = await _db.Database.BeginTransactionAsync(
+            context.HttpContext.RequestAborted);
         await _commercial.AcquireCapacityLockAsync(
-            session.TenantId, CommercialCapacity.LiveParticipants,
-            context.HttpContext.RequestAborted, session.Id);
+            session.TenantId,
+            CommercialCapacity.LiveParticipants,
+            context.HttpContext.RequestAborted,
+            session.Id);
 
         var isIdempotentRejoin = await HasValidExistingParticipantAsync(
-            context.HttpContext, session.Id, session.TenantId, context.HttpContext.RequestAborted);
+            context.HttpContext,
+            session.Id,
+            session.TenantId,
+            context.HttpContext.RequestAborted);
         if (!isIdempotentRejoin)
         {
-            var participantCount = await _db.SessionParticipants.IgnoreQueryFilters().LongCountAsync(
-                item => item.TenantId == session.TenantId && item.SessionId == session.Id,
-                context.HttpContext.RequestAborted);
+            var participantCount = await _db.SessionParticipants
+                .IgnoreQueryFilters()
+                .LongCountAsync(
+                    item => item.TenantId == session.TenantId && item.SessionId == session.Id,
+                    context.HttpContext.RequestAborted);
             var commercialLimit = await _commercial.GetCapacityLimitAsync(
-                session.TenantId, CommercialCapacity.LiveParticipants, context.HttpContext.RequestAborted);
-            var effectiveLimit = Math.Min(_sessionOptions.Value.MaxParticipantsPerSession, commercialLimit);
+                session.TenantId,
+                CommercialCapacity.LiveParticipants,
+                context.HttpContext.RequestAborted);
+            var effectiveLimit = Math.Min(
+                _sessionOptions.Value.MaxParticipantsPerSession,
+                commercialLimit);
             if (participantCount >= effectiveLimit)
-                throw new ServiceResultException("QuotaExceeded", $"This activity reached the live participant limit ({effectiveLimit}). Upgrade the plan to allow more participants.");
+            {
+                throw new ServiceResultException(
+                    "QuotaExceeded",
+                    $"This activity reached the live participant limit ({effectiveLimit}). Upgrade the plan to allow more participants.");
+            }
         }
 
         var executed = await next();
         if (executed.Exception is null || executed.ExceptionHandled)
+        {
             await transaction.CommitAsync(context.HttpContext.RequestAborted);
+        }
         else
+        {
             await transaction.RollbackAsync(context.HttpContext.RequestAborted);
+        }
     }
 
     private async Task<bool> HasValidExistingParticipantAsync(
-        HttpContext httpContext, Guid sessionId, Guid tenantId, CancellationToken cancellationToken)
+        HttpContext httpContext,
+        Guid sessionId,
+        Guid tenantId,
+        CancellationToken cancellationToken)
     {
         var cookieName = GuestTokenService.ResolveCookieName(_authOptions.Value.UseSecureCookie);
-        if (!httpContext.Request.Cookies.TryGetValue(cookieName, out var rawToken) || string.IsNullOrEmpty(rawToken)) return false;
+        if (!httpContext.Request.Cookies.TryGetValue(cookieName, out var rawToken)
+            || string.IsNullOrEmpty(rawToken))
+        {
+            return false;
+        }
+
         var tokenHash = GuestTokenService.ComputeHash(rawToken);
         var now = _clock.UtcNow;
-        return await _db.SessionParticipants.IgnoreQueryFilters().AsNoTracking().AnyAsync(
-            item => item.TenantId == tenantId && item.SessionId == sessionId
-                && item.GuestTokenHash == tokenHash && item.GuestTokenExpiresAt > now,
-            cancellationToken);
+        return await _db.SessionParticipants
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .AnyAsync(
+                item => item.TenantId == tenantId
+                    && item.SessionId == sessionId
+                    && item.GuestTokenHash == tokenHash
+                    && item.GuestTokenExpiresAt > now,
+                cancellationToken);
     }
 }
