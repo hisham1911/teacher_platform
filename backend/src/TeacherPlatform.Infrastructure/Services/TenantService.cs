@@ -495,18 +495,21 @@ public sealed class TenantService
     private static TenantDetailResponse ToDetail(
         Tenant tenant,
         TenantMemberRole role,
-        TenantSettings? settings) => new()
+        TenantSettings? settings)
     {
-        Id = tenant.Id,
-        Name = tenant.Name,
-        Slug = tenant.Slug,
-        CountryCode = tenant.CountryCode,
-        Timezone = tenant.Timezone,
-        DefaultLocale = tenant.DefaultLocale,
-        Status = tenant.Status.ToString(),
-        MyRole = role.ToString(),
-        Settings = ToSettingsDto(settings ?? new TenantSettings { TenantId = tenant.Id })
-    };
+        return new TenantDetailResponse
+        {
+            Id = tenant.Id,
+            Name = tenant.Name,
+            Slug = tenant.Slug,
+            CountryCode = tenant.CountryCode,
+            Timezone = tenant.Timezone,
+            DefaultLocale = tenant.DefaultLocale,
+            Status = tenant.Status.ToString(),
+            MyRole = role.ToString(),
+            Settings = ToSettingsDto(settings ?? new TenantSettings { TenantId = tenant.Id })
+        };
+    }
 
     private static TenantSettingsResponse ToSettingsDto(TenantSettings settings)
     {
