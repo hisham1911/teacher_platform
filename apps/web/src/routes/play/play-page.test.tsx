@@ -114,10 +114,9 @@ describe('PlayPage', () => {
     await waitFor(() =>
       expect(screen.getByRole('heading', { name: 'اختبار العلوم' })).toBeInTheDocument(),
     );
-    expect(screen.getByRole('button', { name: 'ابدأ الاختبار' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'ابدأ النشاط' })).toBeInTheDocument();
     expect(getSessionMock).toHaveBeenCalledWith('JOIN123', expect.anything());
   });
-
 
   it('يعرض دخول التحدي المتدرج كتجربة مهمة لا كاختبار تقليدي', async () => {
     getSessionMock.mockResolvedValue({ ...activeSession, mode: 'ProgressiveChallenge' });
@@ -136,25 +135,25 @@ describe('PlayPage', () => {
     renderPage();
 
     await waitFor(() =>
-      expect(screen.getByText('الجلسة لم تُفعَّل بعد. انتظر بدء النشاط.')).toBeInTheDocument(),
+      expect(screen.getByText('النشاط لم يبدأ بعد. انتظر إشارة المعلم.')).toBeInTheDocument(),
     );
-    expect(screen.queryByRole('button', { name: 'ابدأ الاختبار' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'ابدأ النشاط' })).not.toBeInTheDocument();
   });
 
   it('يعرض رسالة انتهاء عندما تكون الجلسة منتهية', async () => {
     getSessionMock.mockResolvedValue({ ...activeSession, status: 'Finished', canJoin: false });
     renderPage();
 
-    await waitFor(() => expect(screen.getByText('انتهت هذه الجلسة.')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('انتهى هذا النشاط.')).toBeInTheDocument());
   });
 
   it('يرفض اسمًا أقصر من حرفين دون استدعاء الخادم', async () => {
     getSessionMock.mockResolvedValue(activeSession);
     renderPage();
 
-    await waitFor(() => screen.getByRole('button', { name: 'ابدأ الاختبار' }));
+    await waitFor(() => screen.getByRole('button', { name: 'ابدأ النشاط' }));
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'أ' } });
-    fireEvent.click(screen.getByRole('button', { name: 'ابدأ الاختبار' }));
+    fireEvent.click(screen.getByRole('button', { name: 'ابدأ النشاط' }));
 
     expect(screen.getByText('الاسم قصير جدًا (حرفان على الأقل).')).toBeInTheDocument();
     expect(joinMock).not.toHaveBeenCalled();
@@ -164,9 +163,9 @@ describe('PlayPage', () => {
     getSessionMock.mockResolvedValue(activeSession);
     renderPage();
 
-    await waitFor(() => screen.getByRole('button', { name: 'ابدأ الاختبار' }));
+    await waitFor(() => screen.getByRole('button', { name: 'ابدأ النشاط' }));
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'ا'.repeat(51) } });
-    fireEvent.click(screen.getByRole('button', { name: 'ابدأ الاختبار' }));
+    fireEvent.click(screen.getByRole('button', { name: 'ابدأ النشاط' }));
 
     expect(screen.getByText('الاسم طويل جدًا (50 حرفًا كحد أقصى).')).toBeInTheDocument();
     expect(joinMock).not.toHaveBeenCalled();
@@ -177,9 +176,9 @@ describe('PlayPage', () => {
     joinMock.mockResolvedValue(joinResponse);
     renderPage();
 
-    await waitFor(() => screen.getByRole('button', { name: 'ابدأ الاختبار' }));
+    await waitFor(() => screen.getByRole('button', { name: 'ابدأ النشاط' }));
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'لاعب تجريبي' } });
-    fireEvent.click(screen.getByRole('button', { name: 'ابدأ الاختبار' }));
+    fireEvent.click(screen.getByRole('button', { name: 'ابدأ النشاط' }));
 
     await waitFor(() =>
       expect(screen.getByRole('heading', { name: /لاعب تجريبي/ })).toBeInTheDocument(),
@@ -208,12 +207,12 @@ describe('PlayPage', () => {
     joinMock.mockRejectedValue(new HttpError(409, {}));
     renderPage();
 
-    await waitFor(() => screen.getByRole('button', { name: 'ابدأ الاختبار' }));
+    await waitFor(() => screen.getByRole('button', { name: 'ابدأ النشاط' }));
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'لاعب متأخر' } });
-    fireEvent.click(screen.getByRole('button', { name: 'ابدأ الاختبار' }));
+    fireEvent.click(screen.getByRole('button', { name: 'ابدأ النشاط' }));
 
     await waitFor(() =>
-      expect(screen.getByText('الجلسة لم تعد تقبل منضمّين جددًا.')).toBeInTheDocument(),
+      expect(screen.getByText('النشاط لم يعد يقبل منضمّين جددًا.')).toBeInTheDocument(),
     );
   });
 
@@ -224,11 +223,10 @@ describe('PlayPage', () => {
     vi.mocked(playerApi.getCurrentQuestion).mockReturnValue(new Promise(() => {}));
     renderPage();
 
-    await waitFor(() => screen.getByRole('button', { name: 'ابدأ الاختبار' }));
+    await waitFor(() => screen.getByRole('button', { name: 'ابدأ النشاط' }));
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'لاعب عائد' } });
-    fireEvent.click(screen.getByRole('button', { name: 'ابدأ الاختبار' }));
+    fireEvent.click(screen.getByRole('button', { name: 'ابدأ النشاط' }));
 
-    // يجب أن يبدأ المحاولة مباشرة دون المرور بشاشة الاستعداد
     await waitFor(() => expect(startAttemptMock).toHaveBeenCalledWith('JOIN123'));
   });
 
@@ -269,14 +267,13 @@ describe('PlayPage', () => {
 
     renderPage();
 
-    await waitFor(() => screen.getByRole('button', { name: 'ابدأ الاختبار' }));
+    await waitFor(() => screen.getByRole('button', { name: 'ابدأ النشاط' }));
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'لاعب تجريبي' } });
-    fireEvent.click(screen.getByRole('button', { name: 'ابدأ الاختبار' }));
+    fireEvent.click(screen.getByRole('button', { name: 'ابدأ النشاط' }));
 
     await waitFor(() => screen.getByRole('button', { name: 'ابدأ الآن' }));
     fireEvent.click(screen.getByRole('button', { name: 'ابدأ الآن' }));
 
-    // انتظار ظهور شاشة اللعب قبل التفاعل مع الإجابة
     await waitFor(() => expect(screen.getByText('ما عاصمة مصر؟')).toBeInTheDocument());
 
     const submit = async () => {
@@ -284,18 +281,15 @@ describe('PlayPage', () => {
       fireEvent.click(screen.getByRole('button', { name: 'تثبيت الإجابة' }));
     };
 
-    // المحاولة الأولى تُرفض بـ InvalidAnswerPayload
     await submit();
     await waitFor(() =>
       expect(screen.getByText('تعذر حفظ الإجابة — البيانات غير صالحة. أعد المحاولة.')).toBeInTheDocument(),
     );
 
-    // لا انتقال للسؤال التالي ولا انهيار — ما زلنا على السؤال الأول
     expect(screen.getByText('سؤال 1 من 2')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'السؤال التالي ←' })).toBeInTheDocument();
     expect(screen.queryByText(/إجابة صحيحة/)).not.toBeInTheDocument();
 
-    // الزر عاد مفعّلًا — إعادة المحاولة بإجابة صالحة تنجح
     const submitButton = screen.getByRole('button', { name: 'تثبيت الإجابة' });
     expect(submitButton).toBeEnabled();
 
@@ -320,9 +314,9 @@ describe('PlayPage', () => {
       .mockResolvedValueOnce(secondQuestion);
 
     renderPage();
-    await waitFor(() => screen.getByRole('button', { name: 'ابدأ الاختبار' }));
+    await waitFor(() => screen.getByRole('button', { name: 'ابدأ النشاط' }));
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'لاعب تجريبي' } });
-    fireEvent.click(screen.getByRole('button', { name: 'ابدأ الاختبار' }));
+    fireEvent.click(screen.getByRole('button', { name: 'ابدأ النشاط' }));
     fireEvent.click(await screen.findByRole('button', { name: 'ابدأ الآن' }));
     await screen.findByText('السؤال الأول');
 
@@ -368,9 +362,9 @@ describe('PlayPage', () => {
     );
 
     renderPage();
-    await waitFor(() => screen.getByRole('button', { name: 'ابدأ الاختبار' }));
+    await waitFor(() => screen.getByRole('button', { name: 'ابدأ النشاط' }));
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'لاعب تجريبي' } });
-    fireEvent.click(screen.getByRole('button', { name: 'ابدأ الاختبار' }));
+    fireEvent.click(screen.getByRole('button', { name: 'ابدأ النشاط' }));
     await waitFor(() => screen.getByRole('button', { name: 'ابدأ الآن' }));
     fireEvent.click(screen.getByRole('button', { name: 'ابدأ الآن' }));
     await waitFor(() => expect(screen.getByText('السؤال الأخير')).toBeInTheDocument());
@@ -378,7 +372,7 @@ describe('PlayPage', () => {
     fireEvent.click(screen.getByRole('radio', { name: 'الإجابة الأولى' }));
     fireEvent.click(screen.getByRole('button', { name: 'تثبيت الإجابة' }));
 
-    await waitFor(() => expect(screen.getByRole('button', { name: 'إنهاء الاختبار' })).toBeDisabled());
+    await waitFor(() => expect(screen.getByRole('button', { name: 'إنهاء النشاط' })).toBeDisabled());
     expect(playerApi.finish).not.toHaveBeenCalled();
 
     completeAnswer?.({
@@ -389,7 +383,7 @@ describe('PlayPage', () => {
       revision: 1,
       serverNow: new Date().toISOString(),
     });
-    await waitFor(() => expect(screen.getByRole('button', { name: 'إنهاء الاختبار' })).toBeEnabled());
+    await waitFor(() => expect(screen.getByRole('button', { name: 'إنهاء النشاط' })).toBeEnabled());
   });
 
   it('يستعيد الجلسة من السيرفر عبر الكوكي ويستأنف المحاولة الجارية دون تفاعل', async () => {
@@ -399,9 +393,8 @@ describe('PlayPage', () => {
     vi.mocked(playerApi.getCurrentQuestion).mockReturnValue(new Promise(() => {}));
     renderPage();
 
-    // لا حاجة لكتابة الاسم — /me يقرّر الوجهة من الكوكي فقط، و std::localStorage غير مستخدم
     await waitFor(() => expect(startAttemptMock).toHaveBeenCalledWith('JOIN123'));
-    expect(screen.queryByRole('button', { name: 'ابدأ الاختبار' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'ابدأ النشاط' })).not.toBeInTheDocument();
     expect(getCurrentPlayerMock).toHaveBeenCalledWith('JOIN123');
     expect(localStorage.getItem('tp-player-name')).toBeNull();
   });
@@ -429,7 +422,7 @@ describe('PlayPage', () => {
     await waitFor(() => expect(screen.getByRole('heading', { name: 'لاعب سابق' })).toBeInTheDocument());
     expect(screen.getByText('لم تصل إلى درجة النجاح هذه المرة')).toBeInTheDocument();
     expect(screen.getByText('5 / 10')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'ابدأ الاختبار' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'ابدأ النشاط' })).not.toBeInTheDocument();
     expect(joinMock).not.toHaveBeenCalled();
     expect(getCurrentPlayerMock).toHaveBeenCalledWith('JOIN123');
   });
@@ -439,7 +432,7 @@ describe('PlayPage', () => {
     getCurrentPlayerMock.mockRejectedValue(new HttpError(401, {}));
     renderPage();
 
-    await waitFor(() => screen.getByRole('button', { name: 'ابدأ الاختبار' }));
+    await waitFor(() => screen.getByRole('button', { name: 'ابدأ النشاط' }));
     expect(getCurrentPlayerMock).toHaveBeenCalledWith('JOIN123');
     expect(localStorage.getItem('tp-player-name')).toBeNull();
   });
@@ -449,9 +442,9 @@ describe('PlayPage', () => {
     joinMock.mockResolvedValue(joinResponse);
     renderPage();
 
-    await waitFor(() => screen.getByRole('button', { name: 'ابدأ الاختبار' }));
+    await waitFor(() => screen.getByRole('button', { name: 'ابدأ النشاط' }));
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'لاعب تجريبي' } });
-    fireEvent.click(screen.getByRole('button', { name: 'ابدأ الاختبار' }));
+    fireEvent.click(screen.getByRole('button', { name: 'ابدأ النشاط' }));
 
     await waitFor(() =>
       expect(screen.getByRole('heading', { name: /لاعب تجريبي/ })).toBeInTheDocument(),
@@ -524,7 +517,6 @@ describe('PlayPage', () => {
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'متحدٍّ جديد' } });
     fireEvent.click(screen.getByRole('button', { name: 'ادخل إلى المهمة' }));
 
-    // شاشة استعداد مخصصة للتحدي قبل البدء
     expect(await screen.findByTestId('challenge-ready')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'ابدأ المهمة' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'ابدأ المهمة' }));
