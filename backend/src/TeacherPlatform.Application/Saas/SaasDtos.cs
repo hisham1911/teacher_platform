@@ -205,12 +205,52 @@ public static class CommercialPackageCatalog
 
 public class CreatePlanRequest
 {
+    private CommercialPlanContractDto _contract = new();
+    private bool _explicitContractAssigned;
+
     [Required, StringLength(40, MinimumLength = 2)]
     [RegularExpression("^[a-z0-9]+(?:-[a-z0-9]+)*$")]
     public string Code { get; set; } = string.Empty;
-    [Required, StringLength(120, MinimumLength = 2)] public string Name { get; set; } = string.Empty;
+
+    [Required, StringLength(120, MinimumLength = 2)]
+    public string Name { get; set; } = string.Empty;
+
     public bool IsActive { get; set; } = true;
-    [Required] public CommercialPlanContractDto Contract { get; set; } = new();
+
+    [Required]
+    public CommercialPlanContractDto Contract
+    {
+        get => _contract;
+        set
+        {
+            _contract = value ?? new CommercialPlanContractDto();
+            _explicitContractAssigned = true;
+        }
+    }
+
+    /// <summary>
+    /// Backward-compatible write alias for pre-v2 callers that submitted a flat `limits` object.
+    /// It becomes a Legacy package with compatibility entitlements and never overrides an explicit v2 contract.
+    /// </summary>
+    public PlanLimitsDto? Limits
+    {
+        get => null;
+        set
+        {
+            if (value is null || _explicitContractAssigned)
+            {
+                return;
+            }
+
+            _contract = new CommercialPlanContractDto
+            {
+                ContractVersion = CommercialContract.CurrentVersion,
+                Package = CommercialContract.GrandfatheredPackage,
+                Limits = value,
+                Entitlements = PlanEntitlementsDto.LegacyCompatibility()
+            };
+        }
+    }
 }
 
 public sealed class UpdatePlanRequest : CreatePlanRequest
