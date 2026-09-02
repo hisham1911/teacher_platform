@@ -45,7 +45,16 @@ describe('router — public product routes', () => {
   });
 
   it('يعرض بوابة الطالب المستقلة على /student للزائر غير المسجل', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('{}', { status: 401 })));
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+      if (url.includes('/api/v1/student-portal/status')) {
+        return new Response(JSON.stringify({ enabled: true }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+      return new Response('{}', { status: 401 });
+    }));
     await renderRoute('/student');
     await expectHeading('ادخل إلى مساحتك');
     expect(screen.getByLabelText('كود دخول الطالب')).toBeInTheDocument();
