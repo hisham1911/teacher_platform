@@ -87,7 +87,7 @@ test('progressive challenge teacher, player, resume, outcomes, and report', asyn
     response.request().method() === 'POST' && response.url().endsWith(`/sessions/${session.id}/activate`));
   await teacher.getByRole('button', { name: 'تفعيل الجلسة' }).click();
   expect((await activateResponsePromise).ok()).toBe(true);
-  await expect(teacher.getByText(/نشطة/)).toBeVisible();
+  await expect(teacher.getByText('اختبار E2E · التحدي المتدرج · نشطة', { exact: true })).toBeVisible();
   await expect(teacher.getByText(`/play/${session.joinCode}`, { exact: false })).toBeVisible();
 
   await player.goto(`/play/${session.joinCode}`);

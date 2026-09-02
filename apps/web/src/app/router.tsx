@@ -7,6 +7,7 @@ import { RequirePlatformAdmin } from '../features/auth/require-platform-admin';
 import { RequireTenant } from '../features/auth/require-tenant';
 
 const HomePage = lazy(() => import('../routes/public/home-page'));
+const TeachersPage = lazy(() => import('../routes/public/teachers-page'));
 const StudentJoinPage = lazy(() => import('../routes/public/student-join-page'));
 const PublicQuizPage = lazy(() => import('../routes/public/public-quiz-page'));
 const PublicResultPage = lazy(() => import('../routes/public/public-result-page'));
@@ -32,10 +33,16 @@ const ActivityNewPage = lazy(() => import('../routes/dashboard/activities/activi
 const ActivityManagePage = lazy(() => import('../routes/dashboard/activities/activity-manage-page'));
 const ActivityBuilderPage = lazy(() => import('../routes/dashboard/activities/activity-builder-page'));
 const ActivityBulkQuestionsPage = lazy(() => import('../routes/dashboard/activities/activity-bulk-questions-page'));
+const ActivityPreviewPage = lazy(() => import('../routes/dashboard/activities/activity-preview-page'));
 const ActivityReadyPage = lazy(() => import('../routes/dashboard/activities/activity-ready-page'));
 const StudentsPage = lazy(() => import('../routes/dashboard/students/students-page'));
 const StudentNewPage = lazy(() => import('../routes/dashboard/students/student-new-page'));
 const StudentDetailPage = lazy(() => import('../routes/dashboard/students/student-detail-page'));
+const ClassesPage = lazy(() => import('../routes/dashboard/classes/classes-page'));
+const ClassroomNewPage = lazy(() => import('../routes/dashboard/classes/classroom-new-page'));
+const ClassroomDetailPage = lazy(() => import('../routes/dashboard/classes/classroom-detail-page'));
+const AssignActivityPage = lazy(() => import('../routes/dashboard/assignments/assign-activity-page'));
+const AssignmentDetailPage = lazy(() => import('../routes/dashboard/assignments/assignment-detail-page'));
 
 const QuestionsPage = lazy(() => import('../routes/dashboard/questions/questions-page'));
 const QuestionNewPage = lazy(() => import('../routes/dashboard/questions/question-new-page'));
@@ -44,10 +51,7 @@ const QuestionPreviewPage = lazy(() => import('../routes/dashboard/questions/que
 const QuestionVersionsPage = lazy(() => import('../routes/dashboard/questions/question-versions-page'));
 
 const QuizzesPage = lazy(() => import('../routes/dashboard/quizzes/quizzes-page'));
-const QuizNewPage = lazy(() => import('../routes/dashboard/quizzes/quiz-new-page'));
 const QuizEditPage = lazy(() => import('../routes/dashboard/quizzes/quiz-edit-page'));
-const QuizPreviewPage = lazy(() => import('../routes/dashboard/quizzes/quiz-preview-page'));
-const QuizPublishPage = lazy(() => import('../routes/dashboard/quizzes/quiz-publish-page'));
 const QuizSessionsPage = lazy(() => import('../routes/dashboard/quizzes/quiz-sessions-page'));
 const SurveyBuilderPage = lazy(() => import('../routes/dashboard/surveys/survey-builder-page'));
 const SessionDetailPage = lazy(() => import('../routes/dashboard/sessions/session-detail-page'));
@@ -72,6 +76,7 @@ export const router = createBrowserRouter([
     ),
     children: [
       { path: '/', element: <HomePage /> },
+      { path: '/teachers', element: <TeachersPage /> },
       { path: '/join', element: <StudentJoinPage /> },
       { path: '/student', element: <StudentPortalLoginPage /> },
       { path: '/student/home', element: <StudentHomePage /> },
@@ -95,11 +100,17 @@ export const router = createBrowserRouter([
               { path: '/dashboard/activities/:quizId/manage', element: <ActivityManagePage /> },
               { path: '/dashboard/activities/:quizId/build', element: <ActivityBuilderPage /> },
               { path: '/dashboard/activities/:quizId/bulk', element: <ActivityBulkQuestionsPage /> },
+              { path: '/dashboard/activities/:quizId/preview', element: <ActivityPreviewPage /> },
               { path: '/dashboard/activities/:quizId/ready', element: <ActivityReadyPage /> },
+              { path: '/dashboard/activities/:quizId/assign', element: <AssignActivityPage /> },
               { path: '/dashboard/settings', element: <SettingsPage /> },
               { path: '/dashboard/students', element: <StudentsPage /> },
               { path: '/dashboard/students/new', element: <StudentNewPage /> },
               { path: '/dashboard/students/:studentId', element: <StudentDetailPage /> },
+              { path: '/dashboard/classes', element: <ClassesPage /> },
+              { path: '/dashboard/classes/new', element: <ClassroomNewPage /> },
+              { path: '/dashboard/classes/:classroomId', element: <ClassroomDetailPage /> },
+              { path: '/dashboard/assignments/:assignmentId', element: <AssignmentDetailPage /> },
               { path: '/dashboard/questions', element: <QuestionsPage /> },
               { path: '/dashboard/questions/bulk', element: <ActivityBulkQuestionsPage /> },
               { path: '/dashboard/questions/new', element: <QuestionNewPage /> },
@@ -107,10 +118,10 @@ export const router = createBrowserRouter([
               { path: '/dashboard/questions/:questionId/preview', element: <QuestionPreviewPage /> },
               { path: '/dashboard/questions/:questionId/versions', element: <QuestionVersionsPage /> },
               { path: '/dashboard/quizzes', element: <QuizzesPage /> },
-              { path: '/dashboard/quizzes/new', element: <QuizNewPage /> },
+              { path: '/dashboard/quizzes/new', element: <ActivityNewPage /> },
               { path: '/dashboard/quizzes/:quizId/edit', element: <QuizEditPage /> },
-              { path: '/dashboard/quizzes/:quizId/preview', element: <QuizPreviewPage /> },
-              { path: '/dashboard/quizzes/:quizId/publish', element: <QuizPublishPage /> },
+              { path: '/dashboard/quizzes/:quizId/preview', element: <ActivityPreviewPage /> },
+              { path: '/dashboard/quizzes/:quizId/publish', element: <ActivityManagePage /> },
               { path: '/dashboard/quizzes/:quizId/sessions', element: <QuizSessionsPage /> },
               { path: '/dashboard/quizzes/:quizId/survey', element: <SurveyBuilderPage /> },
               { path: '/dashboard/sessions/:sessionId', element: <SessionDetailPage /> },

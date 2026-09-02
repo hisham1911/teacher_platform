@@ -4,16 +4,23 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - 'preview/**'
+      - feature/english-spark-ux-foundation
+      - feature/student-portal-foundation
+      - feature/phase2-classes-assignments
+      - feature/phase4-commercial-saas
     paths:
       - 'apps/web/**'
       - 'backend/**'
       - 'e2e/**'
       - '.github/workflows/full-browser-e2e.yml'
-
-concurrency:
-  group: full-browser-${{ github.ref }}
-  cancel-in-progress: true
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'apps/web/**'
+      - 'backend/**'
+      - 'e2e/**'
+      - '.github/workflows/full-browser-e2e.yml'
 
 jobs:
   full-browser-e2e:
@@ -59,10 +66,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: npm
-          cache-dependency-path: |
-            apps/web/package-lock.json
-            e2e/package-lock.json
 
       - name: Restore backend
         working-directory: backend
@@ -132,7 +135,34 @@ jobs:
         working-directory: e2e
         run: node seed.mjs
 
-      - name: Run advanced builder regression
+      - name: Grant seeded teacher PlatformAdmin for commercial E2E only
+        shell: bash
+        run: |
+          email="$(node -p "require('./e2e/state.json').email")"
+          PGPASSWORD=postgres psql \
+            --host localhost \
+            --port 5432 \
+            --username postgres \
+            --dbname teacher_platform_e2e \
+            --set=email="$email" \
+            --set=ON_ERROR_STOP=1 <<'SQL'
+          INSERT INTO "AspNetUserRoles" ("UserId", "RoleId")
+          SELECT u."Id", r."Id"
+          FROM "AspNetUsers" AS u
+          CROSS JOIN "AspNetRoles" AS r
+          WHERE u."Email" = :'email'
+            AND r."Name" = 'PlatformAdmin'
+          ON CONFLICT DO NOTHING;
+
+          SELECT u."Email", r."Name"
+          FROM "AspNetUserRoles" AS ur
+          JOIN "AspNetUsers" AS u ON u."Id" = ur."UserId"
+          JOIN "AspNetRoles" AS r ON r."Id" = ur."RoleId"
+          WHERE u."Email" = :'email'
+            AND r."Name" = 'PlatformAdmin';
+          SQL
+
+      - name: Run consolidated builder compatibility regression
         working-directory: e2e
         run: npx playwright test tests/part-d-builder.spec.mjs --reporter=line
 
@@ -185,6 +215,18 @@ jobs:
       - name: Run persistent student portal Part H
         working-directory: e2e
         run: npx playwright test tests/part-h-student-portal.spec.mjs --reporter=line
+
+      - name: Run classes and assignments Part I
+        working-directory: e2e
+        run: npx playwright test tests/part-i-classes-assignments.spec.mjs --reporter=line
+
+      - name: Run Phase 3 product consolidation Part J
+        working-directory: e2e
+        run: npx playwright test tests/part-j-phase3-product-consolidation.spec.mjs --reporter=line
+
+      - name: Run commercial SaaS regression
+        working-directory: e2e
+        run: npx playwright test tests/part-i-commercial-saas.spec.mjs --reporter=line
 
       - name: Dump server logs on failure
         if: failure()

@@ -41,6 +41,9 @@ export interface TenantSettings {
   secondaryColor: string | null;
   publicTeacherName: string | null;
   certificateSignatureObjectKey: string | null;
+  brandDisplayName: string | null;
+  studentPortalWelcomeText: string | null;
+  supportContact: string | null;
   settingsJson: string;
 }
 

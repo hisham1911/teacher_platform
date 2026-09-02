@@ -8,21 +8,23 @@ using TeacherPlatform.Infrastructure.Persistence;
 
 namespace TeacherPlatform.Infrastructure.Services;
 
-/// <summary>
-/// إدارة سجل الطلاب داخل مساحة العمل. كل عمليات المعلم تمر عبر EF Global Filters وTenantSaveGuard؛
-/// الاستثناء الوحيد هو حل StudentCode من مسار اللاعب المجهول، وفيه يُستخدم IgnoreQueryFilters مع TenantId صريح مأخوذ من الجلسة نفسها.
-/// </summary>
 public sealed class StudentService
 {
     private readonly AppDbContext _db;
     private readonly ITenantContext _tenantContext;
     private readonly IClock _clock;
+    private readonly CommercialPolicyService _commercial;
 
-    public StudentService(AppDbContext db, ITenantContext tenantContext, IClock clock)
+    public StudentService(
+        AppDbContext db,
+        ITenantContext tenantContext,
+        IClock clock,
+        CommercialPolicyService commercial)
     {
         _db = db;
         _tenantContext = tenantContext;
         _clock = clock;
+        _commercial = commercial;
     }
 
     public async Task<IReadOnlyList<StudentResponse>> ListAsync(
@@ -33,7 +35,6 @@ public sealed class StudentService
         RequireTenant();
         var normalizedSearch = string.IsNullOrWhiteSpace(search) ? null : search.Trim();
         var query = _db.Students.AsNoTracking();
-
         if (!includeInactive)
         {
             query = query.Where(student => student.IsActive);
@@ -55,16 +56,35 @@ public sealed class StudentService
         return students.Select(ToResponse).ToList();
     }
 
-    public async Task<StudentResponse?> GetAsync(Guid studentId, CancellationToken cancellationToken)
+    public async Task<StudentResponse?> GetAsync(
+        Guid studentId,
+        CancellationToken cancellationToken)
     {
         RequireTenant();
-        var student = await _db.Students.AsNoTracking().SingleOrDefaultAsync(item => item.Id == studentId, cancellationToken);
+        var student = await _db.Students
+            .AsNoTracking()
+            .SingleOrDefaultAsync(item => item.Id == studentId, cancellationToken);
         return student is null ? null : ToResponse(student);
     }
 
-    public async Task<StudentResponse> CreateAsync(CreateStudentRequest request, CancellationToken cancellationToken)
+    public async Task<StudentResponse> CreateAsync(
+        CreateStudentRequest request,
+        CancellationToken cancellationToken)
     {
-        RequireTenant();
+        var tenantId = RequireTenant();
+        await using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
+        await _commercial.AcquireCapacityLockAsync(
+            tenantId,
+            CommercialCapacity.Students,
+            cancellationToken);
+        var activeStudents = await _db.Students.LongCountAsync(
+            student => student.IsActive,
+            cancellationToken);
+        await _commercial.EnsureCapacityAsync(
+            tenantId,
+            CommercialCapacity.Students,
+            activeStudents,
+            cancellationToken);
 
         for (var attempt = 0; attempt < 8; attempt += 1)
         {
@@ -77,11 +97,11 @@ public sealed class StudentService
                 Notes = NormalizeOptional(request.Notes),
                 IsActive = true
             };
-
             _db.Students.Add(student);
             try
             {
                 await _db.SaveChangesAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
                 return ToResponse(student);
             }
             catch (DbUpdateException exception) when (IsUniqueViolation(exception))
@@ -99,7 +119,9 @@ public sealed class StudentService
         CancellationToken cancellationToken)
     {
         RequireTenant();
-        var student = await _db.Students.SingleOrDefaultAsync(item => item.Id == studentId, cancellationToken);
+        var student = await _db.Students.SingleOrDefaultAsync(
+            item => item.Id == studentId,
+            cancellationToken);
         if (student is null)
         {
             return null;
@@ -118,16 +140,39 @@ public sealed class StudentService
         UpdateStudentStatusRequest request,
         CancellationToken cancellationToken)
     {
-        RequireTenant();
-        var student = await _db.Students.SingleOrDefaultAsync(item => item.Id == studentId, cancellationToken);
+        var tenantId = RequireTenant();
+        var student = await _db.Students.SingleOrDefaultAsync(
+            item => item.Id == studentId,
+            cancellationToken);
         if (student is null)
         {
             return null;
         }
 
         EnsureVersion(student, request.BaseVersion);
-        student.IsActive = request.IsActive;
 
+        if (request.IsActive && !student.IsActive)
+        {
+            await using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
+            await _commercial.AcquireCapacityLockAsync(
+                tenantId,
+                CommercialCapacity.Students,
+                cancellationToken);
+            var activeStudents = await _db.Students.LongCountAsync(
+                item => item.IsActive,
+                cancellationToken);
+            await _commercial.EnsureCapacityAsync(
+                tenantId,
+                CommercialCapacity.Students,
+                activeStudents,
+                cancellationToken);
+            student.IsActive = true;
+            await SaveWithConcurrencyAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+            return ToResponse(student);
+        }
+
+        student.IsActive = request.IsActive;
         if (!request.IsActive)
         {
             var now = _clock.UtcNow;
@@ -150,7 +195,9 @@ public sealed class StudentService
         CancellationToken cancellationToken)
     {
         RequireTenant();
-        var student = await _db.Students.SingleOrDefaultAsync(item => item.Id == studentId, cancellationToken);
+        var student = await _db.Students.SingleOrDefaultAsync(
+            item => item.Id == studentId,
+            cancellationToken);
         if (student is null)
         {
             return null;
@@ -160,7 +207,9 @@ public sealed class StudentService
         for (var attempt = 0; attempt < 8; attempt += 1)
         {
             var code = StudentCodeGenerator.Generate();
-            if (await _db.Students.AsNoTracking().AnyAsync(item => item.Id != studentId && item.StudentCode == code, cancellationToken))
+            if (await _db.Students.AsNoTracking().AnyAsync(
+                item => item.Id != studentId && item.StudentCode == code,
+                cancellationToken))
             {
                 continue;
             }
@@ -191,7 +240,9 @@ public sealed class StudentService
         CancellationToken cancellationToken)
     {
         RequireTenant();
-        if (!await _db.Students.AsNoTracking().AnyAsync(student => student.Id == studentId, cancellationToken))
+        if (!await _db.Students.AsNoTracking().AnyAsync(
+            student => student.Id == studentId,
+            cancellationToken))
         {
             throw new ServiceResultException("NotFound", "Student not found.");
         }
@@ -207,7 +258,9 @@ public sealed class StudentService
                 AttemptId = attempt.Id,
                 SessionId = attempt.SessionId,
                 QuizId = attempt.Session != null ? attempt.Session.QuizId : Guid.Empty,
-                QuizTitle = attempt.Session != null && attempt.Session.Quiz != null ? attempt.Session.Quiz.Title : string.Empty,
+                QuizTitle = attempt.Session != null && attempt.Session.Quiz != null
+                    ? attempt.Session.Quiz.Title
+                    : string.Empty,
                 SessionLabel = attempt.Session != null ? attempt.Session.Label : null,
                 Mode = attempt.Session != null ? attempt.Session.Mode.ToString() : string.Empty,
                 Status = attempt.Status.ToString(),
@@ -221,9 +274,6 @@ public sealed class StudentService
             .ToListAsync(cancellationToken);
     }
 
-    /// <summary>
-    /// حل هوية طالب من مسار Player المجهول. TenantId لا يأتي من العميل؛ المستدعي يمرره بعد حل الجلسة من JoinCode العالمي.
-    /// </summary>
     public async Task<StudentIdentity?> ResolveActiveByCodeAsync(
         Guid tenantId,
         string studentCode,
@@ -239,16 +289,25 @@ public sealed class StudentService
             .IgnoreQueryFilters()
             .AsNoTracking()
             .Where(student =>
-                student.TenantId == tenantId &&
-                student.StudentCode == normalizedCode &&
-                student.IsActive)
-            .Select(student => new StudentIdentity(student.Id, student.TenantId, student.FullName, student.StudentCode))
+                student.TenantId == tenantId
+                && student.StudentCode == normalizedCode
+                && student.IsActive)
+            .Select(student => new StudentIdentity(
+                student.Id,
+                student.TenantId,
+                student.FullName,
+                student.StudentCode))
             .SingleOrDefaultAsync(cancellationToken);
     }
 
-    private Guid RequireTenant() => _tenantContext.IsResolved && _tenantContext.TenantId is { } tenantId && tenantId != Guid.Empty
-        ? tenantId
-        : throw new ServiceResultException("TenantContextMissing", "Active tenant context is required.");
+    private Guid RequireTenant() =>
+        _tenantContext.IsResolved
+        && _tenantContext.TenantId is { } tenantId
+        && tenantId != Guid.Empty
+            ? tenantId
+            : throw new ServiceResultException(
+                "TenantContextMissing",
+                "Active tenant context is required.");
 
     private static StudentResponse ToResponse(Student student) => new()
     {
@@ -289,5 +348,6 @@ public sealed class StudentService
     private static ServiceResultException Conflict() =>
         new("Conflict", "The student was modified by someone else. Reload and try again.");
 
-    private static string? NormalizeOptional(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    private static string? NormalizeOptional(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }

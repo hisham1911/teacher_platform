@@ -101,7 +101,7 @@ test('English Spark golden path keeps the recommended teacher journey simple', a
 
   await expect(teacher).toHaveURL(new RegExp(`/dashboard/activities/.+/ready\\?sessionId=${session.id}&mode=ProgressiveChallenge$`));
   await expect(teacher.getByRole('heading', { name: 'النشاط جاهز 🎉' })).toBeVisible();
-  await expect(teacher.getByText('الدخول مفتوح للطلاب')).toBeVisible();
+  await expect(teacher.getByText('جاهز للطلاب')).toBeVisible();
   await expect(teacher.getByText(session.joinCode, { exact: true })).toBeVisible();
   await expect(teacher.getByRole('button', { name: 'نسخ الرابط' })).toBeVisible();
   await expect(teacher.getByRole('button', { name: 'نسخ رسالة للطلاب' })).toBeVisible();

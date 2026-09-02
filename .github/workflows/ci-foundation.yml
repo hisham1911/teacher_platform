@@ -1,15 +1,10 @@
 name: Foundation CI
 
 on:
-  workflow_dispatch:
   push:
-    branches:
-      - main
-      - 'preview/**'
-
-concurrency:
-  group: foundation-${{ github.ref }}
-  cancel-in-progress: true
+    branches: ['**']
+  pull_request:
+    branches: ['**']
 
 jobs:
   frontend:
@@ -23,12 +18,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: npm
-          cache-dependency-path: apps/web/package-lock.json
 
       - name: Install
         working-directory: apps/web
-        run: npm ci --registry https://registry.npmjs.org
+        run: npm install --registry https://registry.npmjs.org
 
       - name: Lint
         working-directory: apps/web

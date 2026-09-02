@@ -2,10 +2,24 @@ name: English Spark Golden Path E2E
 
 on:
   workflow_dispatch:
-
-concurrency:
-  group: golden-path-${{ github.ref }}
-  cancel-in-progress: true
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'apps/web/**'
+      - 'backend/**'
+      - 'e2e/**'
+      - '.github/workflows/english-spark-golden-path-e2e.yml'
+  push:
+    branches:
+      - main
+      - feature/english-spark-ux-foundation
+      - feature/student-portal-foundation
+    paths:
+      - 'apps/web/**'
+      - 'backend/**'
+      - 'e2e/**'
+      - '.github/workflows/english-spark-golden-path-e2e.yml'
 
 jobs:
   golden-path:
@@ -51,10 +65,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: npm
-          cache-dependency-path: |
-            apps/web/package-lock.json
-            e2e/package-lock.json
 
       - name: Restore backend
         working-directory: backend
@@ -77,11 +87,11 @@ jobs:
 
       - name: Install web dependencies
         working-directory: apps/web
-        run: npm ci --registry https://registry.npmjs.org
+        run: npm install --registry https://registry.npmjs.org
 
       - name: Install E2E dependencies
         working-directory: e2e
-        run: npm ci --registry https://registry.npmjs.org
+        run: npm install --registry https://registry.npmjs.org
 
       - name: Install Chromium
         working-directory: e2e

@@ -34,19 +34,20 @@ describe('router — public product routes', () => {
     vi.unstubAllGlobals();
   });
 
-  it('يعرض الصفحة الرئيسية على /', async () => {
+  it('يعرض الصفحة الرئيسية الموجهة للطالب على /', async () => {
     await renderRoute('/');
-    await expectHeading('من أول سؤال');
-    expect(screen.getAllByText('بنك أسئلة').length).toBeGreaterThan(0);
-    expect(screen.getByText('شهادات')).toBeInTheDocument();
+    await expectHeading(/جاهز تبدأ؟/);
+    expect(screen.getByLabelText('رمز النشاط')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'عندي كود طالب' })).toHaveAttribute('href', '/student');
+    expect(screen.getByRole('link', { name: 'هل أنت معلم؟' })).toHaveAttribute('href', '/teachers');
+  });
 
-    const activityLinks = screen.getAllByRole('link', { name: /ابدأ نشاطًا/ });
-    expect(activityLinks.length).toBeGreaterThan(0);
-    expect(activityLinks.every((link) => link.getAttribute('href') === '/join')).toBe(true);
-
-    const progressLinks = screen.getAllByRole('link', { name: /متابعة تقدمي/ });
-    expect(progressLinks.length).toBeGreaterThan(0);
-    expect(progressLinks.every((link) => link.getAttribute('href') === '/student')).toBe(true);
+  it('يعرض صفحة مستقلة للمعلمين على /teachers', async () => {
+    await renderRoute('/teachers');
+    await expectHeading(/اصنع النشاط، جرّبه/);
+    expect(screen.getAllByRole('link', { name: 'إنشاء حساب' })[0]!).toHaveAttribute('href', '/auth/signup');
+    expect(screen.getAllByRole('link', { name: 'تسجيل الدخول' })[0]!).toHaveAttribute('href', '/auth/login');
+    expect(screen.getAllByRole('link', { name: 'واجهة الطلاب' })[0]!).toHaveAttribute('href', '/');
   });
 
   it('يعرض الانضمام السريع للنشاط على /join', async () => {

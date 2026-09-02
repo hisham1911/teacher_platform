@@ -4,7 +4,7 @@ param(
     [int]$WebPort = 5173
 )
 
-# تشغيل E2E كامل من سطر واحد: API + Web + seed + مسار English Spark + الاستعادة بعد restart + المسابقة المباشرة.
+# تشغيل E2E كامل من سطر واحد: API + Web + seed + كل أجزاء A-I مع restart حقيقي قبل Part B.
 # المتطلبات: PostgreSQL محلية، قاعدة teacher_platform_e2e مُنشأة ومهاجرة، و dotnet + node متاحان.
 $ErrorActionPreference = "Stop"
 
@@ -70,6 +70,12 @@ function Stop-ProcessTree {
     Stop-Process -Id $ProcessId -Force -ErrorAction SilentlyContinue
 }
 
+function Run-Part {
+    param([string]$File, [string]$Label)
+    npx playwright test $File --reporter=line
+    if ($LASTEXITCODE -ne 0) { throw "Playwright $Label failed with exit code $LASTEXITCODE" }
+}
+
 if ($Stage -eq "all") {
     $locationPushed = $false
     try {
@@ -83,24 +89,21 @@ if ($Stage -eq "all") {
         $locationPushed = $true
         node seed.mjs
         if ($LASTEXITCODE -ne 0) { throw "E2E seed failed with exit code $LASTEXITCODE" }
-        npx playwright test tests/part-d-builder.spec.mjs --reporter=line
-        if ($LASTEXITCODE -ne 0) { throw "Playwright Part D builder failed with exit code $LASTEXITCODE" }
-        npx playwright test tests/part-f-english-spark-golden-path.spec.mjs --reporter=line
-        if ($LASTEXITCODE -ne 0) { throw "Playwright Part F English Spark golden path failed with exit code $LASTEXITCODE" }
-        npx playwright test tests/part-e-progressive.spec.mjs --reporter=line
-        if ($LASTEXITCODE -ne 0) { throw "Playwright Part E progressive challenge failed with exit code $LASTEXITCODE" }
-        npx playwright test tests/part-a.spec.mjs --reporter=line
-        if ($LASTEXITCODE -ne 0) { throw "Playwright Part A failed with exit code $LASTEXITCODE" }
+        Run-Part "tests/part-d-builder.spec.mjs" "Part D builder"
+        Run-Part "tests/part-f-english-spark-golden-path.spec.mjs" "Part F English Spark golden path"
+        Run-Part "tests/part-e-progressive.spec.mjs" "Part E progressive challenge"
+        Run-Part "tests/part-a.spec.mjs" "Part A"
 
         Write-Output "---- RESTARTING API (Part B scenario) ----"
         if ($null -ne $script:apiProcess) {
             Stop-ProcessTree -ProcessId $script:apiProcess.Id
         }
         Start-Api
-        npx playwright test tests/part-b.spec.mjs --reporter=line
-        if ($LASTEXITCODE -ne 0) { throw "Playwright Part B failed with exit code $LASTEXITCODE" }
-        npx playwright test tests/part-c-live.spec.mjs --reporter=line
-        if ($LASTEXITCODE -ne 0) { throw "Playwright Part C failed with exit code $LASTEXITCODE" }
+        Run-Part "tests/part-b.spec.mjs" "Part B"
+        Run-Part "tests/part-c-live.spec.mjs" "Part C"
+        Run-Part "tests/part-g-students.spec.mjs" "Part G students"
+        Run-Part "tests/part-h-student-portal.spec.mjs" "Part H student portal"
+        Run-Part "tests/part-i-classes-assignments.spec.mjs" "Part I classes assignments"
     }
     finally {
         if ($locationPushed) { Pop-Location }
@@ -120,8 +123,7 @@ elseif ($Stage -eq "live") {
         Start-Web
         Push-Location $e2eDir
         $locationPushed = $true
-        npx playwright test tests/part-c-live.spec.mjs --reporter=line
-        if ($LASTEXITCODE -ne 0) { throw "Playwright Part C failed with exit code $LASTEXITCODE" }
+        Run-Part "tests/part-c-live.spec.mjs" "Part C"
     }
     finally {
         if ($locationPushed) { Pop-Location }

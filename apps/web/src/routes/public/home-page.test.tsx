@@ -4,28 +4,17 @@ import { describe, expect, it } from 'vitest';
 import HomePage from './home-page';
 
 describe('HomePage', () => {
-  it('يعرض قدرات المنصة الحقيقية ويشغّل التجربة المصغرة', () => {
+  it('يضع دخول الطالب أولًا ويشغّل التجربة المصغرة', () => {
     render(
       <MemoryRouter>
         <HomePage />
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole('heading', { name: /من أول سؤال/ })).toBeInTheDocument();
-    expect(screen.getAllByText('بنك أسئلة').length).toBeGreaterThan(0);
-    expect(screen.getByText('مسابقة مباشرة')).toBeInTheDocument();
-    expect(screen.getAllByText('تحدٍ متدرج').length).toBeGreaterThan(0);
-    expect(screen.getByText('تقارير تفصيلية')).toBeInTheDocument();
-    expect(screen.getByText('شهادات PDF')).toBeInTheDocument();
-    expect(screen.getByText('مشاركة مع ولي الأمر')).toBeInTheDocument();
-
-    const activityLinks = screen.getAllByRole('link', { name: /ابدأ نشاطًا/ });
-    expect(activityLinks.length).toBeGreaterThan(0);
-    expect(activityLinks.every((link) => link.getAttribute('href') === '/join')).toBe(true);
-
-    const progressLinks = screen.getAllByRole('link', { name: /متابعة تقدمي/ });
-    expect(progressLinks.length).toBeGreaterThan(0);
-    expect(progressLinks.every((link) => link.getAttribute('href') === '/student')).toBe(true);
+    expect(screen.getByRole('heading', { name: /جاهز تبدأ/ })).toBeInTheDocument();
+    expect(screen.getByRole('form', { name: 'الدخول برمز النشاط' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'عندي كود طالب' })).toHaveAttribute('href', '/student');
+    expect(screen.getAllByRole('link', { name: /هل أنت معلم/ })[0]).toHaveAttribute('href', '/teachers');
 
     fireEvent.click(screen.getByRole('button', { name: 'كتاب' }));
     expect(screen.getByText(/إجابة صحيحة/)).toBeInTheDocument();
