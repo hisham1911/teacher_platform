@@ -17,9 +17,18 @@ export default function StudentPortalLoginPage() {
   const [accessCode, setAccessCode] = useState('');
   const [error, setError] = useState<string | null>(null);
 
+  const availabilityQuery = useQuery({
+    queryKey: ['student-portal', 'status'],
+    queryFn: ({ signal }) => studentPortalApi.status(signal),
+    retry: false,
+    staleTime: 60_000,
+  });
+  const portalEnabled = availabilityQuery.data?.enabled === true;
+
   const sessionQuery = useQuery({
     queryKey: ['student-portal', 'me'],
     queryFn: ({ signal }) => studentPortalApi.me(signal),
+    enabled: portalEnabled,
     retry: false,
     staleTime: 30_000,
   });
@@ -55,6 +64,37 @@ export default function StudentPortalLoginPage() {
     }
     setError(null);
     loginMutation.mutate(normalized);
+  }
+
+  if (availabilityQuery.isLoading) return <StudentLoading message="جارٍ فتح مساحتك…" />;
+
+  if (availabilityQuery.isError) {
+    return (
+      <StudentShell centered width="wide">
+        <section className="student-panel mx-auto w-full max-w-xl p-6 text-center sm:p-8">
+          <div aria-hidden="true" className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-xl">↻</div>
+          <h1 className="mt-4 text-2xl font-black text-[var(--student-ink)]">تعذر التحقق من مساحة الطالب</h1>
+          <p className="mt-2 text-sm leading-7 text-[var(--student-muted)]">تحقق من الاتصال ثم أعد المحاولة. الانضمام السريع للأنشطة ما زال متاحًا بشكل مستقل.</p>
+          <div className="mt-5 flex flex-col justify-center gap-2 sm:flex-row">
+            <StudentButton type="button" onClick={() => void availabilityQuery.refetch()}>إعادة المحاولة</StudentButton>
+            <Link to="/join" className="inline-flex min-h-11 items-center justify-center rounded-xl px-4 text-sm font-bold text-violet-700 hover:bg-violet-50">انضم لنشاط سريع</Link>
+          </div>
+        </section>
+      </StudentShell>
+    );
+  }
+
+  if (!portalEnabled) {
+    return (
+      <StudentShell centered width="wide">
+        <section className="student-panel mx-auto w-full max-w-xl p-6 text-center sm:p-8">
+          <div aria-hidden="true" className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-50 text-xl">✦</div>
+          <h1 className="mt-4 text-2xl font-black text-[var(--student-ink)]">مساحة الطالب غير متاحة الآن</h1>
+          <p className="mx-auto mt-2 max-w-md text-sm leading-7 text-[var(--student-muted)]">لم يتم تفعيل الدخول الدائم للطلاب في هذه البيئة بعد. يمكنك الاستمرار عبر أي نشاط يرسله لك المعلم.</p>
+          <Link to="/join" className="mt-5 inline-flex min-h-11 items-center justify-center rounded-xl bg-violet-700 px-5 text-sm font-black text-white hover:bg-violet-800">انضم لنشاط سريع</Link>
+        </section>
+      </StudentShell>
+    );
   }
 
   if (sessionQuery.isLoading) return <StudentLoading message="جارٍ فتح مساحتك…" />;

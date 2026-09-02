@@ -91,6 +91,12 @@ test('teacher can add an Arabic-named student through the name-only path', async
   await expect(page).toHaveURL(/\/dashboard\/students\/[0-9a-f-]+$/i);
   await expect(page.getByRole('heading', { name: 'هشام' })).toBeVisible();
   await expect(page.getByText(/تمت إضافة الطالب/)).toBeVisible();
+
+  const legacyDetails = page.locator('details').filter({ hasText: 'توافق مع الأنشطة القديمة' });
+  await expect(legacyDetails).toBeVisible();
+  await expect(legacyDetails).not.toHaveAttribute('open');
+  await expect(page.getByText(/^[A-Z0-9]{4}-[A-Z0-9]{4}$/)).toBeHidden();
+  await legacyDetails.locator('summary').click();
   await expect(page.getByText(/^[A-Z0-9]{4}-[A-Z0-9]{4}$/)).toBeVisible();
 
   await page.goto('/dashboard/students');

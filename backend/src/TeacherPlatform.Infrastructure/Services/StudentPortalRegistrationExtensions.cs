@@ -17,6 +17,8 @@ public static class StudentPortalRegistrationExtensions
 
         services.AddScoped<IPasswordHasher<StudentPortalCredential>, PasswordHasher<StudentPortalCredential>>();
         services.AddScoped<StudentPortalService>();
+        services.AddScoped<StudentPortalSessionCleanupService>();
+        services.AddHostedService<StudentPortalSessionCleanupWorker>();
         return services;
     }
 }

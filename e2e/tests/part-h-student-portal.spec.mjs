@@ -43,7 +43,16 @@ async function loginTeacher(page) {
   await expect(page).toHaveURL(/\/dashboard$/, { timeout: 15_000 });
 }
 
-async function answerSeedQuiz(page) {
+async function loginStudentPortal(page, accessCode) {
+  await page.goto('/student');
+  await expect(page.getByRole('heading', { name: 'ادخل إلى مساحتك' })).toBeVisible();
+  await page.getByLabel('كود دخول الطالب').fill(accessCode);
+  await page.getByRole('button', { name: 'دخول' }).click();
+  await expect(page).toHaveURL(/\/student\/home$/, { timeout: 15_000 });
+  await expect(page.getByRole('heading', { name: /أهلًا طالب/ })).toBeVisible();
+}
+
+async function startSeedQuizThroughFirstQuestion(page) {
   await expect(page.getByRole('button', { name: 'ابدأ الآن' })).toBeVisible();
   await page.getByRole('button', { name: 'ابدأ الآن' }).click();
 
@@ -52,8 +61,13 @@ async function answerSeedQuiz(page) {
   await page.getByRole('button', { name: 'تثبيت الإجابة' }).click();
   await expect(page.getByText(/إجابة صحيحة ✓/)).toBeVisible();
   await page.getByRole('button', { name: /السؤال التالي/ }).click();
-
   await expect(page.getByText('كم عدد أيام الأسبوع؟')).toBeVisible();
+  await expect(page.getByText('سؤال 2 من 2')).toBeVisible();
+}
+
+async function finishSeedQuizFromSecondQuestion(page) {
+  await expect(page.getByText('كم عدد أيام الأسبوع؟')).toBeVisible();
+  await expect(page.getByText('سؤال 2 من 2')).toBeVisible();
   await page.getByText('سبعة', { exact: true }).click();
   await page.getByRole('button', { name: 'تثبيت الإجابة' }).click();
   await expect(page.getByText(/إجابة صحيحة ✓/)).toBeVisible();
@@ -61,7 +75,7 @@ async function answerSeedQuiz(page) {
   await expect(page.getByText('100%').first()).toBeVisible();
 }
 
-test('persistent student portal login → automatic activity binding → progress home → reusable credential', async ({ browser, request }) => {
+test('persistent student portal supports cross-device resume and reusable credentials', async ({ browser, request }) => {
   test.setTimeout(120_000);
   const joinCode = await createPortalSession(request);
 
@@ -86,57 +100,81 @@ test('persistent student portal login → automatic activity binding → progres
   expect(accessCode).toMatch(/^[A-Z0-9]{4}(?:-[A-Z0-9]{4}){3}$/);
   await expect(teacherPage.getByText('انسخ الكود الآن')).toBeVisible();
   await expect(teacherPage.locator('code').filter({ hasText: accessCode })).toBeVisible();
+  await expect(teacherPage.getByTestId('student-portal-qr-code')).toBeVisible();
+  await expect(teacherPage.getByRole('button', { name: 'طباعة بطاقة الدخول' })).toBeVisible();
 
-  const studentContext = await browser.newContext({ viewport: { width: 390, height: 844 } });
-  const studentPage = await studentContext.newPage();
+  const deviceAContext = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const deviceAPage = await deviceAContext.newPage();
 
-  // Quick Join is activity-only and points persistent students to their separate portal.
-  await studentPage.goto('/join');
-  await expect(studentPage.getByRole('heading', { name: 'انضم لنشاط سريع' })).toBeVisible();
-  await expect(studentPage.getByLabel('رمز النشاط')).toBeVisible();
-  await expect(studentPage.getByRole('link', { name: 'الدخول إلى مساحتي' })).toHaveAttribute('href', '/student');
-  await expect(studentPage.getByLabel('كود دخول الطالب')).toHaveCount(0);
+  // Quick Join remains activity-only and points persistent students to their separate portal.
+  await deviceAPage.goto('/join');
+  await expect(deviceAPage.getByRole('heading', { name: 'انضم لنشاط سريع' })).toBeVisible();
+  await expect(deviceAPage.getByLabel('رمز النشاط')).toBeVisible();
+  await expect(deviceAPage.getByRole('link', { name: 'الدخول إلى مساحتي' })).toHaveAttribute('href', '/student');
+  await expect(deviceAPage.getByLabel('كود دخول الطالب')).toHaveCount(0);
 
-  await studentPage.goto('/student');
-  await expect(studentPage.getByRole('heading', { name: 'ادخل إلى مساحتك' })).toBeVisible();
-  await studentPage.getByLabel('كود دخول الطالب').fill(accessCode);
-  await studentPage.getByRole('button', { name: 'دخول' }).click();
-  await expect(studentPage).toHaveURL(/\/student\/home$/, { timeout: 15_000 });
-  await expect(studentPage.getByRole('heading', { name: /أهلًا طالب/ })).toBeVisible();
-  await expect(studentPage.getByText(state.email)).toHaveCount(0);
+  await loginStudentPortal(deviceAPage, accessCode);
+  await expect(deviceAPage.getByText(state.email)).toHaveCount(0);
 
-  const portalJoinPromise = studentPage.waitForResponse((response) =>
+  const portalJoinAPromise = deviceAPage.waitForResponse((response) =>
     response.request().method() === 'POST' && response.url().endsWith(`/player/sessions/${joinCode}/portal-join`));
-  await studentPage.goto(`/play/${joinCode}`);
-  const portalJoin = await portalJoinPromise;
-  expect(portalJoin.status(), await portalJoin.text()).toBe(200);
-  await expect(studentPage.getByPlaceholder('اكتب اسمك هنا')).toHaveCount(0);
-  await expect(studentPage.getByText('اختبار E2E', { exact: true })).toBeVisible();
+  await deviceAPage.goto(`/play/${joinCode}`);
+  const portalJoinA = await portalJoinAPromise;
+  expect(portalJoinA.status(), await portalJoinA.text()).toBe(200);
+  await expect(deviceAPage.getByPlaceholder('اكتب اسمك هنا')).toHaveCount(0);
+  await expect(deviceAPage.getByText('اختبار E2E', { exact: true })).toBeVisible();
 
-  const cookies = await studentContext.cookies();
-  const portalCookie = cookies.find((cookie) => cookie.name === 'tp-student');
-  const guestCookie = cookies.find((cookie) => cookie.name === 'tp-guest');
-  expect(portalCookie).toBeDefined();
-  expect(portalCookie.httpOnly).toBe(true);
-  expect(guestCookie).toBeDefined();
-  expect(guestCookie.httpOnly).toBe(true);
+  const deviceACookies = await deviceAContext.cookies();
+  const portalCookieA = deviceACookies.find((cookie) => cookie.name === 'tp-student');
+  const guestCookieA = deviceACookies.find((cookie) => cookie.name === 'tp-guest');
+  expect(portalCookieA).toBeDefined();
+  expect(portalCookieA.httpOnly).toBe(true);
+  expect(guestCookieA).toBeDefined();
+  expect(guestCookieA.httpOnly).toBe(true);
 
-  await answerSeedQuiz(studentPage);
-  await studentPage.goto('/student/home');
-  await expect(studentPage.getByRole('heading', { name: /أهلًا طالب/ })).toBeVisible();
-  const activityRow = studentPage.locator('div').filter({ hasText: 'اختبار E2E' }).filter({ hasText: '100%' }).first();
+  // Device A starts the managed attempt and stops at question 2.
+  await startSeedQuizThroughFirstQuestion(deviceAPage);
+
+  // Device B has no cookies. The same portal credential must resolve the same managed student
+  // and resume the in-progress attempt at question 2 rather than creating a new identity.
+  const deviceBContext = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const deviceBPage = await deviceBContext.newPage();
+  await loginStudentPortal(deviceBPage, accessCode);
+
+  const portalJoinBPromise = deviceBPage.waitForResponse((response) =>
+    response.request().method() === 'POST' && response.url().endsWith(`/player/sessions/${joinCode}/portal-join`));
+  await deviceBPage.goto(`/play/${joinCode}`);
+  const portalJoinB = await portalJoinBPromise;
+  expect(portalJoinB.status(), await portalJoinB.text()).toBe(200);
+  await expect(deviceBPage.getByPlaceholder('اكتب اسمك هنا')).toHaveCount(0);
+  await expect(deviceBPage.getByText('كم عدد أيام الأسبوع؟')).toBeVisible();
+  await expect(deviceBPage.getByText('سؤال 2 من 2')).toBeVisible();
+
+  const deviceBCookies = await deviceBContext.cookies();
+  const portalCookieB = deviceBCookies.find((cookie) => cookie.name === 'tp-student');
+  const guestCookieB = deviceBCookies.find((cookie) => cookie.name === 'tp-guest');
+  expect(portalCookieB).toBeDefined();
+  expect(portalCookieB.httpOnly).toBe(true);
+  expect(guestCookieB).toBeDefined();
+  expect(guestCookieB.httpOnly).toBe(true);
+
+  await finishSeedQuizFromSecondQuestion(deviceBPage);
+  await deviceBPage.goto('/student/home');
+  await expect(deviceBPage.getByRole('heading', { name: /أهلًا طالب/ })).toBeVisible();
+  const activityRow = deviceBPage.locator('div').filter({ hasText: 'اختبار E2E' }).filter({ hasText: '100%' }).first();
   await expect(activityRow).toBeVisible();
-  await expect(studentPage.getByText('مكتمل ✓')).toBeVisible();
+  await expect(deviceBPage.getByText('مكتمل ✓')).toBeVisible();
+  await expect(deviceBPage.getByRole('heading', { name: 'آخر محاولاتك' })).toBeVisible();
 
-  await studentPage.getByRole('button', { name: 'تسجيل الخروج' }).click();
-  await expect(studentPage).toHaveURL(/\/student$/);
-  await expect(studentPage.getByRole('heading', { name: 'ادخل إلى مساحتك' })).toBeVisible();
+  await deviceBPage.getByRole('button', { name: 'تسجيل الخروج' }).click();
+  await expect(deviceBPage).toHaveURL(/\/student$/);
+  await expect(deviceBPage.getByRole('heading', { name: 'ادخل إلى مساحتك' })).toBeVisible();
 
-  await studentPage.getByLabel('كود دخول الطالب').fill(accessCode);
-  await studentPage.getByRole('button', { name: 'دخول' }).click();
-  await expect(studentPage).toHaveURL(/\/student\/home$/, { timeout: 15_000 });
-  await expect(studentPage.getByText('اختبار E2E')).toBeVisible();
-  await expect(studentPage.getByText('100%').first()).toBeVisible();
+  await deviceBPage.getByLabel('كود دخول الطالب').fill(accessCode);
+  await deviceBPage.getByRole('button', { name: 'دخول' }).click();
+  await expect(deviceBPage).toHaveURL(/\/student\/home$/, { timeout: 15_000 });
+  await expect(deviceBPage.getByText('اختبار E2E')).toBeVisible();
+  await expect(deviceBPage.getByText('100%').first()).toBeVisible();
 
   const guestContext = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const guestPage = await guestContext.newPage();
@@ -147,6 +185,7 @@ test('persistent student portal login → automatic activity binding → progres
   await expect(guestPage.getByRole('button', { name: 'ابدأ الآن' })).toBeVisible();
 
   await guestContext.close();
-  await studentContext.close();
+  await deviceBContext.close();
+  await deviceAContext.close();
   await teacherContext.close();
 });

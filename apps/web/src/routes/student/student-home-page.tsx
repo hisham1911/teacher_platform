@@ -49,6 +49,15 @@ export default function StudentHomePage() {
 
   if (homeQuery.isLoading) return <StudentLoading message="جارٍ تجهيز مساحتك…" />;
   if (homeQuery.error instanceof HttpError && homeQuery.error.status === 401) return <StudentLoading message="جارٍ العودة إلى تسجيل الدخول…" />;
+  if (homeQuery.error instanceof HttpError && homeQuery.error.status === 404) {
+    return (
+      <StudentError
+        title="مساحة الطالب غير متاحة الآن"
+        message="الدخول الدائم للطلاب غير مفعّل في هذه البيئة. يمكنك الاستمرار عبر الانضمام السريع للأنشطة."
+        action={<Link to="/join" className="inline-flex min-h-11 items-center justify-center rounded-xl bg-violet-700 px-4 text-sm font-black text-white hover:bg-violet-800">انضم لنشاط سريع</Link>}
+      />
+    );
+  }
   if (homeQuery.isError || !homeQuery.data) {
     return (
       <StudentError
@@ -104,8 +113,8 @@ export default function StudentHomePage() {
         <section className="student-panel overflow-hidden">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-5 py-4 sm:px-6">
             <div>
-              <h2 className="text-lg font-black text-[var(--student-ink)]">آخر أنشطتك</h2>
-              <p className="mt-1 text-xs leading-6 text-[var(--student-muted)]">آخر ما لعبته أو أنهيته يظهر هنا.</p>
+              <h2 className="text-lg font-black text-[var(--student-ink)]">آخر محاولاتك</h2>
+              <p className="mt-1 text-xs leading-6 text-[var(--student-muted)]">أحدث المحاولات التي بدأتَها أو أنهيتها تظهر هنا.</p>
             </div>
             <Link to="/join" className="inline-flex min-h-11 items-center rounded-xl px-3 text-sm font-black text-violet-700 hover:bg-violet-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-100">انضم لنشاط سريع</Link>
           </div>
@@ -113,7 +122,7 @@ export default function StudentHomePage() {
           {recent.length === 0 ? (
             <div className="px-5 py-10 text-center sm:px-6">
               <div aria-hidden="true" className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-50 text-xl">⚡</div>
-              <h3 className="mt-3 font-black text-[var(--student-ink)]">لسه مفيش أنشطة هنا</h3>
+              <h3 className="mt-3 font-black text-[var(--student-ink)]">لسه مفيش محاولات هنا</h3>
               <p className="mx-auto mt-1 max-w-sm text-sm leading-7 text-[var(--student-muted)]">لما تدخل نشاط باستخدام رمز أو رابط، تقدمك ونتيجتك هيظهروا هنا تلقائيًا.</p>
               <Link to="/join" className="mt-4 inline-flex min-h-11 items-center justify-center rounded-xl bg-violet-700 px-4 text-sm font-black text-white hover:bg-violet-800">عندي رمز نشاط</Link>
             </div>
@@ -146,7 +155,7 @@ function ActivityRow({ activity }: { activity: StudentPortalActivity }) {
           <h3 dir="auto" className="truncate font-black text-[var(--student-ink)]">{activity.quizTitle}</h3>
           <span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${activity.canResume ? 'bg-amber-50 text-amber-800' : 'bg-slate-100 text-slate-600'}`}>{activityStatusLabel(activity)}</span>
         </div>
-        <p className="mt-1 text-xs text-[var(--student-muted)]">{activity.finishedAt ? `النتيجة: ${percentageLabel(activity.percentage)}` : 'النشاط محفوظ في تقدمك'}</p>
+        <p className="mt-1 text-xs text-[var(--student-muted)]">{activity.finishedAt ? `النتيجة: ${percentageLabel(activity.percentage)}` : 'المحاولة محفوظة في تقدمك'}</p>
       </div>
       {activity.canResume ? (
         <Link to={`/play/${encodeURIComponent(activity.joinCode)}`} className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-4 text-sm font-black text-emerald-800 hover:bg-emerald-100">متابعة</Link>

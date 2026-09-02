@@ -29,6 +29,16 @@ public sealed class StudentPortalController : ControllerBase
         _authOptions = authOptions;
     }
 
+    [HttpGet("status")]
+    [ProducesResponseType(typeof(StudentPortalAvailabilityResponse), StatusCodes.Status200OK)]
+    public IActionResult Status()
+    {
+        return Ok(new StudentPortalAvailabilityResponse
+        {
+            Enabled = _portalOptions.Value.Enabled
+        });
+    }
+
     [HttpPost("login")]
     [EnableRateLimiting(RateLimitPolicies.AuthEndpoints)]
     [ProducesResponseType(typeof(StudentPortalProfileResponse), StatusCodes.Status200OK)]

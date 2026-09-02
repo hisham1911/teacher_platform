@@ -2,6 +2,11 @@ using System.ComponentModel.DataAnnotations;
 
 namespace TeacherPlatform.Application.Students;
 
+public sealed class StudentPortalAvailabilityResponse
+{
+    public bool Enabled { get; set; }
+}
+
 public sealed class StudentPortalLoginRequest
 {
     [Required, StringLength(32, MinimumLength = 8)]

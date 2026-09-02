@@ -1,3 +1,7 @@
+export interface StudentPortalAvailability {
+  enabled: boolean;
+}
+
 export interface StudentPortalProfile {
   studentId: string;
   tenantId: string;

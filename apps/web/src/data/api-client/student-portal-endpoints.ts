@@ -2,6 +2,7 @@ import type { JoinSessionResponse } from '../../types/sessions';
 import type {
   StudentPortalAccessCode,
   StudentPortalAccessStatus,
+  StudentPortalAvailability,
   StudentPortalHome,
   StudentPortalProfile,
 } from '../../types/student-portal';
@@ -76,6 +77,9 @@ async function teacherPortalRequest<T>(
 }
 
 export const studentPortalApi = {
+  status(signal?: AbortSignal) {
+    return portalRequest<StudentPortalAvailability>('/api/v1/student-portal/status', { signal });
+  },
   login(accessCode: string, signal?: AbortSignal) {
     return portalRequest<StudentPortalProfile>('/api/v1/student-portal/login', {
       method: 'POST',

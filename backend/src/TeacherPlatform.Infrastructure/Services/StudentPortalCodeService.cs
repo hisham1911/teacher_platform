@@ -18,11 +18,10 @@ public static class StudentPortalCodeService
             throw new ArgumentOutOfRangeException(nameof(length));
         }
 
-        var bytes = RandomNumberGenerator.GetBytes(length);
         var chars = new char[length];
         for (var i = 0; i < length; i += 1)
         {
-            chars[i] = Alphabet[bytes[i] % Alphabet.Length];
+            chars[i] = Alphabet[RandomNumberGenerator.GetInt32(Alphabet.Length)];
         }
         return new string(chars);
     }
