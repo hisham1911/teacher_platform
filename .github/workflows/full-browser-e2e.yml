@@ -133,6 +133,33 @@ jobs:
         working-directory: e2e
         run: node seed.mjs
 
+      - name: Grant seeded teacher PlatformAdmin for commercial E2E only
+        shell: bash
+        run: |
+          email="$(node -p "require('./e2e/state.json').email")"
+          PGPASSWORD=postgres psql \
+            --host localhost \
+            --port 5432 \
+            --username postgres \
+            --dbname teacher_platform_e2e \
+            --set=email="$email" \
+            --set=ON_ERROR_STOP=1 <<'SQL'
+          INSERT INTO "AspNetUserRoles" ("UserId", "RoleId")
+          SELECT u."Id", r."Id"
+          FROM "AspNetUsers" AS u
+          CROSS JOIN "AspNetRoles" AS r
+          WHERE u."Email" = :'email'
+            AND r."Name" = 'PlatformAdmin'
+          ON CONFLICT DO NOTHING;
+
+          SELECT u."Email", r."Name"
+          FROM "AspNetUserRoles" AS ur
+          JOIN "AspNetUsers" AS u ON u."Id" = ur."UserId"
+          JOIN "AspNetRoles" AS r ON r."Id" = ur."RoleId"
+          WHERE u."Email" = :'email'
+            AND r."Name" = 'PlatformAdmin';
+          SQL
+
       - name: Run advanced builder regression
         working-directory: e2e
         run: npx playwright test tests/part-d-builder.spec.mjs --reporter=line
@@ -186,6 +213,10 @@ jobs:
       - name: Run persistent student portal Part H
         working-directory: e2e
         run: npx playwright test tests/part-h-student-portal.spec.mjs --reporter=line
+
+      - name: Run commercial SaaS Part I
+        working-directory: e2e
+        run: npx playwright test tests/part-i-commercial-saas.spec.mjs --reporter=line
 
       - name: Dump server logs on failure
         if: failure()
