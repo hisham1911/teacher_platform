@@ -51,7 +51,7 @@ vi.mock('../../data/api-client/commercial-endpoints', () => ({
         commercialStatus: 'Grandfathered',
         isGrandfathered: true,
         plan: null,
-        usage: { members: 1, students: 22, classes: null, activeAssignments: null },
+        usage: { members: 1, students: 22, classes: 3, activeAssignments: 4 },
       },
     ]),
     listUsers: vi.fn().mockResolvedValue([
@@ -81,7 +81,7 @@ describe('PlatformAdminPage commercial control plane', () => {
     expect(await screen.findByText('Maryam Academy')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Pilot' })).toBeInTheDocument();
     expect(screen.getByText('maryam@example.test')).toBeInTheDocument();
-    expect(screen.getByText('حساب حالي محفوظ')).toBeInTheDocument();
+    expect(screen.getAllByText('حساب حالي محفوظ')).toHaveLength(2);
     expect(screen.getByText('22')).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText('خطة Maryam Academy'), { target: { value: 'plan-1' } });
