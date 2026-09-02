@@ -94,7 +94,7 @@ public sealed class ManagedStudentJoinService
             .IgnoreQueryFilters()
             .AsNoTracking()
             .Where(item => item.Id == sessionId && item.TenantId == identity.TenantId)
-            .Select(item => new JoinableSession(item.Id, item.TenantId, item.Status, item.AccessKind))
+            .Select(item => new JoinableSession(item.Id, item.TenantId, item.Status, item.AccessKind, item.Mode))
             .SingleOrDefaultAsync(cancellationToken);
         if (session is null || session.AccessKind != SessionAccessKind.ManagedAssignment)
         {
@@ -128,6 +128,9 @@ public sealed class ManagedStudentJoinService
 
         using var tenantScope = _tenantContext.BeginBootstrap(session.TenantId);
         await using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
+
+        // Serialize participant creation per session. The commercial MaxLiveParticipants value is
+        // consulted only for Live; SelfPaced/Progressive keep the platform-wide session limit.
         await _commercial.AcquireCapacityLockAsync(
             session.TenantId,
             CommercialCapacity.LiveParticipants,
@@ -149,16 +152,28 @@ public sealed class ManagedStudentJoinService
         var participantCount = await _db.SessionParticipants.LongCountAsync(
             participant => participant.SessionId == session.Id,
             cancellationToken);
-        var commercialLimit = await _commercial.GetCapacityLimitAsync(
-            session.TenantId,
-            CommercialCapacity.LiveParticipants,
-            cancellationToken);
-        var effectiveLimit = Math.Min(_sessionOptions.Value.MaxParticipantsPerSession, commercialLimit);
+        var effectiveLimit = _sessionOptions.Value.MaxParticipantsPerSession;
+        if (session.Mode == SessionMode.Live)
+        {
+            var commercialLimit = await _commercial.GetCapacityLimitAsync(
+                session.TenantId,
+                CommercialCapacity.LiveParticipants,
+                cancellationToken);
+            effectiveLimit = Math.Min(effectiveLimit, commercialLimit);
+        }
+
         if (participantCount >= effectiveLimit)
         {
+            if (session.Mode == SessionMode.Live)
+            {
+                throw new ServiceResultException(
+                    "QuotaExceeded",
+                    $"This live activity reached the participant limit ({effectiveLimit}). Upgrade the plan to allow more live participants.");
+            }
+
             throw new ServiceResultException(
-                "QuotaExceeded",
-                $"This activity reached the live participant limit ({effectiveLimit}). Upgrade the plan to allow more participants.");
+                "Conflict",
+                "This activity has reached the participant limit.");
         }
 
         var rawToken = GuestTokenService.GenerateRawToken();
@@ -216,7 +231,7 @@ public sealed class ManagedStudentJoinService
             .IgnoreQueryFilters()
             .AsNoTracking()
             .Where(item => item.JoinCode == normalized)
-            .Select(item => new JoinableSession(item.Id, item.TenantId, item.Status, item.AccessKind))
+            .Select(item => new JoinableSession(item.Id, item.TenantId, item.Status, item.AccessKind, item.Mode))
             .SingleOrDefaultAsync(cancellationToken);
         if (session is null || (!allowAssignment && session.AccessKind == SessionAccessKind.ManagedAssignment))
         {
@@ -260,5 +275,6 @@ public sealed class ManagedStudentJoinService
         Guid Id,
         Guid TenantId,
         SessionStatus Status,
-        SessionAccessKind AccessKind);
+        SessionAccessKind AccessKind,
+        SessionMode Mode);
 }
