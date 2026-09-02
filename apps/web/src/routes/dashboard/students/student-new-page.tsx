@@ -8,9 +8,34 @@ import { studentsApi } from '../../../data/api-client/endpoints';
 import { HttpError } from '../../../data/api-client/http-error';
 import { getActiveTenantId } from '../../../lib/auth/session';
 
+function problemText(body: unknown, field: 'userMessageAr' | 'upgradeGuidanceAr'): string | null {
+  if (!body || typeof body !== 'object' || !(field in body)) return null;
+  const value = (body as Record<string, unknown>)[field];
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+function problemCode(body: unknown): string | null {
+  if (!body || typeof body !== 'object') return null;
+  const record = body as Record<string, unknown>;
+  const value = record.errorCode ?? record.title;
+  return typeof value === 'string' ? value : null;
+}
+
 function createStudentErrorMessage(error: unknown): string {
   if (!(error instanceof HttpError)) {
     return 'تعذر الاتصال بالخادم. تحقق من اتصالك بالإنترنت ثم أعد المحاولة.';
+  }
+
+  const code = problemCode(error.body);
+  if (code === 'QuotaExceeded' || code === 'SubscriptionInactive') {
+    const message = problemText(error.body, 'userMessageAr')
+      ?? 'لا تسمح الخطة الحالية بإضافة طالب جديد الآن.';
+    const guidance = problemText(error.body, 'upgradeGuidanceAr');
+    return guidance ? `${message} ${guidance}` : message;
+  }
+
+  if (code === 'WorkspaceSuspended') {
+    return problemText(error.body, 'userMessageAr') ?? 'مساحة العمل موقوفة حاليًا.';
   }
 
   if (error.status === 400 || error.status === 422) {
@@ -24,6 +49,9 @@ function createStudentErrorMessage(error: unknown): string {
   }
   if (error.status === 409) {
     return 'حدث تعارض مؤقت أثناء إنشاء الطالب. لم يتم حفظ نسخة مكررة؛ أعد المحاولة.';
+  }
+  if (error.status === 423) {
+    return 'مساحة العمل موقوفة حاليًا. تواصل مع إدارة المنصة لإعادة تفعيلها.';
   }
   if (error.status >= 500) {
     return 'حدث خطأ في الخدمة أثناء الحفظ. لم يتم حفظ الطالب؛ أعد المحاولة بعد قليل.';
@@ -48,7 +76,10 @@ export default function StudentNewPage() {
       grade: grade.trim() || null,
       notes: notes.trim() || null,
     }),
-    onSuccess: (student) => navigate(`/dashboard/students/${student.id}`, { replace: true, state: { justCreated: true } }),
+    onSuccess: (student) => navigate(`/dashboard/students/${student.id}`, {
+      replace: true,
+      state: { justCreated: true },
+    }),
     onError: (error) => setFormError(createStudentErrorMessage(error)),
   });
 
