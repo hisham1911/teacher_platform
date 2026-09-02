@@ -37,8 +37,14 @@ describe('router — public product routes', () => {
   it('يعرض الصفحة الرئيسية على /', async () => {
     await renderRoute('/');
     await expectHeading('تعلّم الإنجليزية بالممارسة');
-    expect(screen.getByRole('link', { name: /ابدأ نشاطًا/ })).toHaveAttribute('href', '/join');
-    expect(screen.getByRole('link', { name: /متابعة تقدمي/ })).toHaveAttribute('href', '/student');
+
+    const activityLinks = screen.getAllByRole('link', { name: /ابدأ نشاطًا/ });
+    expect(activityLinks.length).toBeGreaterThan(0);
+    expect(activityLinks.every((link) => link.getAttribute('href') === '/join')).toBe(true);
+
+    const progressLinks = screen.getAllByRole('link', { name: /متابعة تقدمي/ });
+    expect(progressLinks.length).toBeGreaterThan(0);
+    expect(progressLinks.every((link) => link.getAttribute('href') === '/student')).toBe(true);
   });
 
   it('يعرض الانضمام السريع للنشاط على /join', async () => {
