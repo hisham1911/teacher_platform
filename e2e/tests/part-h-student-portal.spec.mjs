@@ -111,7 +111,7 @@ test('persistent student portal login → automatic activity binding → progres
   const portalJoin = await portalJoinPromise;
   expect(portalJoin.status(), await portalJoin.text()).toBe(200);
   await expect(studentPage.getByPlaceholder('اكتب اسمك هنا')).toHaveCount(0);
-  await expect(studentPage.getByRole('heading', { name: 'اختبار E2E' })).toBeVisible();
+  await expect(studentPage.getByText('اختبار E2E', { exact: true })).toBeVisible();
 
   const cookies = await studentContext.cookies();
   const portalCookie = cookies.find((cookie) => cookie.name === 'tp-student');
