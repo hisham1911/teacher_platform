@@ -10,8 +10,9 @@ using TeacherPlatform.Infrastructure.Persistence;
 namespace TeacherPlatform.Infrastructure.Services;
 
 /// <summary>
-/// Wraps anonymous PlayerController.Join in the same transaction as the participant insert.
-/// This makes MaxLiveParticipants race-safe without branching or rewriting the player engine.
+/// Wraps anonymous PlayerController.Join for Live sessions in the same transaction as the
+/// participant insert. This makes MaxLiveParticipants race-safe without applying a Live-only
+/// commercial limit to SelfPaced or ProgressiveChallenge sessions.
 /// </summary>
 public sealed class CommercialPlayerJoinFilter : IAsyncActionFilter
 {
@@ -61,9 +62,11 @@ public sealed class CommercialPlayerJoinFilter : IAsyncActionFilter
             .IgnoreQueryFilters()
             .AsNoTracking()
             .Where(item => item.JoinCode == normalized)
-            .Select(item => new { item.Id, item.TenantId, item.Status })
+            .Select(item => new { item.Id, item.TenantId, item.Status, item.Mode })
             .SingleOrDefaultAsync(context.HttpContext.RequestAborted);
-        if (session is null || session.Status != SessionStatus.Active)
+        if (session is null
+            || session.Status != SessionStatus.Active
+            || session.Mode != SessionMode.Live)
         {
             await next();
             return;
@@ -100,7 +103,7 @@ public sealed class CommercialPlayerJoinFilter : IAsyncActionFilter
             {
                 throw new ServiceResultException(
                     "QuotaExceeded",
-                    $"This activity reached the live participant limit ({effectiveLimit}). Upgrade the plan to allow more participants.");
+                    $"This live activity reached the participant limit ({effectiveLimit}). Upgrade the plan to allow more live participants.");
             }
         }
 
