@@ -29,7 +29,13 @@ export default function ActivityPreviewPage() {
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6 pb-10">
       <header className="flex flex-wrap items-start justify-between gap-4">
-        <div><Link to={`/dashboard/activities/${quizId}/manage`} className="inline-flex min-h-11 items-center text-sm font-black text-slate-500 hover:text-violet-800">→ إدارة النشاط</Link><p className="mt-2 text-xs font-black tracking-[0.14em] text-violet-700">معاينة المعلم</p><h1 dir="auto" className="mt-1 text-2xl font-black text-slate-950">{draft.title}</h1><p className="mt-2 text-sm text-slate-600">{draft.items.length} سؤال · {draft.totalPoints} نقطة · {TIME_MODE_LABELS[draft.timeMode] ?? draft.timeMode}{draft.timeLimitSeconds ? ` (${draft.timeLimitSeconds} ثانية)` : ''} · النجاح {draft.passingPercentage}%</p></div>
+        <div>
+          <Link to={`/dashboard/activities/${quizId}/manage`} className="inline-flex min-h-11 items-center text-sm font-black text-slate-500 hover:text-violet-800">→ إدارة النشاط</Link>
+          <p className="mt-2 text-xs font-black tracking-[0.08em] text-violet-700">راجع قبل الإرسال</p>
+          <h1 className="mt-1 text-2xl font-black text-slate-950">معاينة النشاط</h1>
+          <h2 dir="auto" className="mt-2 text-lg font-black text-slate-800">{draft.title}</h2>
+          <p className="mt-2 text-sm text-slate-600">{draft.items.length} سؤال · {draft.totalPoints} نقطة · {TIME_MODE_LABELS[draft.timeMode] ?? draft.timeMode}{draft.timeLimitSeconds ? ` (${draft.timeLimitSeconds} ثانية)` : ''} · النجاح {draft.passingPercentage}%</p>
+        </div>
         <div className="flex flex-wrap gap-2"><Link to={`/dashboard/activities/${quizId}/build?mode=SelfPaced&editOnly=1`} className="inline-flex min-h-11 items-center rounded-xl border border-slate-300 bg-white px-4 text-sm font-black text-slate-700 hover:border-violet-300 hover:text-violet-800">تعديل المحتوى</Link><Link to={`/dashboard/activities/${quizId}/manage#deliver-activity`} className="inline-flex min-h-11 items-center rounded-xl bg-violet-700 px-4 text-sm font-black text-white hover:bg-violet-800">اختيار طريقة الوصول</Link></div>
       </header>
 

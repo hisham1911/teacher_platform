@@ -10,20 +10,20 @@ const workflows = [
   {
     icon: '🎮',
     title: 'نفس المحتوى، أكثر من طريقة للطلاب',
-    description: 'جهّز النشاط مرة ثم اختر ما يناسب الموقف: حل فردي، مسابقة مباشرة داخل الفصل، أو تحدٍ متدرج مستوى بعد مستوى.',
-    points: ['حل فردي', 'Live + لوحة صدارة', 'تحدٍ متدرج'],
+    description: 'جهّز النشاط مرة ثم اختر ما يناسب الموقف: إسناد لفصل أو طلاب محددين، رابط سريع، مسابقة مباشرة، أو تحدٍ متدرج مستوى بعد مستوى.',
+    points: ['إسناد لفصل أو طلاب', 'حل فردي', 'Live + لوحة صدارة', 'تحدٍ متدرج'],
   },
   {
     icon: '👨‍🎓',
     title: 'الطالب لا يبدأ من الصفر كل مرة',
-    description: 'احتفظ بقائمة طلابك، امنح كل طالب كود دخول لمساحته، واترك الانضمام السريع متاحًا للضيوف عندما تحتاج أقل قدر من الخطوات.',
-    points: ['قائمة طلاب دائمة', 'مساحة الطالب', 'دخول سريع للضيف'],
+    description: 'احتفظ بقائمة طلابك، رتّبهم في فصول، وامنح كل طالب كود دخول لمساحته ليرى المطلوب منه ويكمل من أي جهاز. ويظل الدخول السريع متاحًا عندما تحتاج أقل قدر من الخطوات.',
+    points: ['قائمة طلاب دائمة', 'فصول وإسنادات', 'مساحة الطالب', 'دخول سريع للضيف'],
   },
   {
     icon: '📊',
     title: 'بعد النشاط تعرف ماذا حدث فعلًا',
-    description: 'راجع المحاولات والنتائج، صدّر CSV، شارك نتيجة محدودة مع ولي الأمر، وأصدر شهادة للطالب المستحق.',
-    points: ['تقارير ومحاولات', 'مشاركة نتيجة محدودة', 'شهادات PDF'],
+    description: 'ابدأ من الإسناد لترى من وصل إليه النشاط ومن بدأ وأكمل، ثم افتح المحاولات والنتائج. ويمكنك أيضًا تصدير CSV، مشاركة نتيجة محدودة، وإصدار شهادة للطالب المستحق.',
+    points: ['تقدم الإسناد', 'تقارير ومحاولات', 'تصدير CSV', 'شهادات PDF'],
   },
 ] as const;
 
@@ -50,7 +50,7 @@ export default function TeachersPage() {
             <div className="max-w-3xl">
               <p className="text-sm font-black text-violet-700">English Spark Studio</p>
               <h1 className="mt-3 text-balance text-4xl font-black leading-[1.18] sm:text-5xl">اصنع النشاط، جرّبه، ثم أوصله للطلاب من نفس المكان.</h1>
-              <p className="mt-5 max-w-2xl text-base font-semibold leading-8 text-slate-600 sm:text-lg">بدل التنقل بين ملف للأسئلة وأداة للمسابقة وطريقة منفصلة للنتائج، English Spark تجمع دورة النشاط في Studio واضح وتترك التفاصيل التقنية خلف الكواليس.</p>
+              <p className="mt-5 max-w-2xl text-base font-semibold leading-8 text-slate-600 sm:text-lg">بدل التنقل بين ملف للأسئلة وأداة للمسابقة وطريقة منفصلة للنتائج، English Spark تجمع دورة النشاط في Studio واضح: ابنِ، عاين، ثم أسند أو شارك أو شغّل Live، وتابع ما حدث للطلاب بعد ذلك.</p>
               <div className="mt-7 flex flex-wrap gap-3">
                 <Link to="/auth/signup" className="inline-flex min-h-13 items-center justify-center rounded-xl bg-violet-700 px-6 text-sm font-black text-white shadow-[0_14px_30px_rgb(109_40_217/0.18)] hover:bg-violet-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-200">إنشاء حساب</Link>
                 <Link to="/auth/login" className="inline-flex min-h-13 items-center justify-center rounded-xl border border-violet-200 bg-white px-6 text-sm font-black text-violet-900 shadow-sm hover:bg-violet-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-200">تسجيل الدخول</Link>
@@ -63,8 +63,8 @@ export default function TeachersPage() {
                 {[
                   ['01', 'ابنِ النشاط', 'أسئلة جديدة، بنك الأسئلة، أو استيراد جماعي.'],
                   ['02', 'عاينه كطالب', 'تأكد من المحتوى قبل إرساله.'],
-                  ['03', 'اختر طريقة الوصول', 'شارك رابطًا أو شغّل مسابقة Live حسب الموقف.'],
-                  ['04', 'راجع النتائج', 'محاولات ودرجات وتقارير مرتبطة بالنشاط.'],
+                  ['03', 'اختر طريقة الوصول', 'أسند لفصل أو طلاب، شارك رابطًا، أو شغّل Live.'],
+                  ['04', 'تابع النتائج', 'ابدأ من الإسناد أو التشغيل ثم افتح محاولات الطلاب ونتائجهم.'],
                 ].map(([number, title, description]) => (
                   <li key={number} className="flex gap-3 rounded-2xl border border-white/10 bg-white/5 p-4">
                     <span dir="ltr" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-500/20 font-mono text-xs font-black text-violet-200">{number}</span>
@@ -80,7 +80,7 @@ export default function TeachersPage() {
           <div className="max-w-3xl">
             <p className="text-xs font-black tracking-[0.12em] text-violet-700">المشكلة أولًا</p>
             <h2 id="teacher-problems-title" className="mt-3 text-3xl font-black sm:text-4xl">الأدوات موجودة لخدمة شغلك، لا لزيادة الخطوات.</h2>
-            <p className="mt-4 text-base font-semibold leading-8 text-slate-600">الواجهة تستخدم لغة النشاط والطالب والنتيجة. النسخ والجلسات وحالات النشر تبقى تفاصيل داخلية ما دمت لا تحتاجها لاتخاذ قرار.</p>
+            <p className="mt-4 text-base font-semibold leading-8 text-slate-600">الواجهة تستخدم لغة النشاط والطالب والفصل والإسناد والنتيجة. تفاصيل النسخ وحالات الحفظ والتشغيل تبقى خلف الكواليس ما دمت لا تحتاجها لاتخاذ قرار.</p>
           </div>
           <div className="mt-8 grid gap-4 lg:grid-cols-2">
             {workflows.map((item) => (
@@ -98,7 +98,7 @@ export default function TeachersPage() {
 
         <section className="border-y border-slate-200 bg-white">
           <div className="mx-auto grid w-full max-w-7xl gap-8 px-4 py-14 sm:px-6 lg:grid-cols-[1fr_auto] lg:items-center">
-            <div><h2 className="text-3xl font-black">جاهز تفتح Studio؟</h2><p className="mt-3 max-w-2xl text-sm font-semibold leading-7 text-slate-600">ابدأ بنشاط واحد، جرّبه كطالب، ثم شاركه. لا تحتاج إعداد نظام تعليمي كامل قبل أول استخدام.</p></div>
+            <div><h2 className="text-3xl font-black">جاهز تفتح Studio؟</h2><p className="mt-3 max-w-2xl text-sm font-semibold leading-7 text-slate-600">ابدأ بنشاط واحد، جرّبه كطالب، ثم أسنده أو شاركه. لا تحتاج إعداد نظام تعليمي كامل قبل أول استخدام.</p></div>
             <div className="flex flex-wrap gap-2"><Link to="/auth/signup" className="inline-flex min-h-13 items-center justify-center rounded-xl bg-violet-700 px-6 text-sm font-black text-white hover:bg-violet-800">إنشاء حساب</Link><Link to="/auth/login" className="inline-flex min-h-13 items-center justify-center rounded-xl border border-slate-300 bg-white px-6 text-sm font-black text-slate-800 hover:bg-slate-50">تسجيل الدخول</Link></div>
           </div>
         </section>
