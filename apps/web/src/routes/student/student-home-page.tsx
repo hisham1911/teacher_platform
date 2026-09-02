@@ -2,18 +2,14 @@ import { useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router';
 import { HttpError } from '../../data/api-client/http-error';
+import { studentTasksApi } from '../../data/api-client/phase2-endpoints';
 import { studentPortalApi } from '../../data/api-client/student-portal-endpoints';
+import type { StudentTask, StudentTaskState } from '../../types/phase2';
 import type { StudentPortalActivity } from '../../types/student-portal';
 import { StudentButton, StudentError, StudentLoading, StudentShell } from '../play/student-ui';
 
-function firstName(fullName: string): string {
-  return fullName.trim().split(/\s+/)[0] || fullName;
-}
-
-function percentageLabel(value: number | null): string {
-  return value === null ? '—' : `${Math.round(value)}%`;
-}
-
+function firstName(fullName: string): string { return fullName.trim().split(/\s+/)[0] || fullName; }
+function percentageLabel(value: number | null): string { return value === null ? '—' : `${Math.round(value)}%`; }
 function activityStatusLabel(activity: StudentPortalActivity): string {
   if (activity.canResume) return 'قيد التقدم';
   if (activity.status === 'TimedOut') return 'انتهى الوقت';
@@ -23,145 +19,52 @@ function activityStatusLabel(activity: StudentPortalActivity): string {
 }
 
 export default function StudentHomePage() {
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
-
-  const homeQuery = useQuery({
-    queryKey: ['student-portal', 'home'],
-    queryFn: ({ signal }) => studentPortalApi.home(signal),
-    retry: false,
-    staleTime: 15_000,
-  });
-
-  useEffect(() => {
-    if (homeQuery.error instanceof HttpError && homeQuery.error.status === 401) {
-      navigate('/student', { replace: true });
-    }
-  }, [homeQuery.error, navigate]);
-
-  const logoutMutation = useMutation({
-    mutationFn: () => studentPortalApi.logout(),
-    onSettled: async () => {
-      queryClient.removeQueries({ queryKey: ['student-portal'] });
-      navigate('/student', { replace: true });
-    },
-  });
+  const navigate = useNavigate(); const queryClient = useQueryClient();
+  const homeQuery = useQuery({ queryKey: ['student-portal', 'home'], queryFn: ({ signal }) => studentPortalApi.home(signal), retry: false, staleTime: 15_000 });
+  const tasksQuery = useQuery({ queryKey: ['student-portal', 'tasks'], queryFn: ({ signal }) => studentTasksApi.list(signal), retry: false, staleTime: 10_000 });
+  useEffect(() => { if ((homeQuery.error instanceof HttpError && homeQuery.error.status === 401) || (tasksQuery.error instanceof HttpError && tasksQuery.error.status === 401)) navigate('/student', { replace: true }); }, [homeQuery.error, tasksQuery.error, navigate]);
+  const logoutMutation = useMutation({ mutationFn: () => studentPortalApi.logout(), onSettled: async () => { queryClient.removeQueries({ queryKey: ['student-portal'] }); navigate('/student', { replace: true }); } });
+  const startTask = useMutation({ mutationFn: (id: string) => studentTasksApi.start(id), onSuccess: (result) => navigate(`/play/${encodeURIComponent(result.joinCode)}`) });
 
   if (homeQuery.isLoading) return <StudentLoading message="جارٍ تجهيز مساحتك…" />;
   if (homeQuery.error instanceof HttpError && homeQuery.error.status === 401) return <StudentLoading message="جارٍ العودة إلى تسجيل الدخول…" />;
-  if (homeQuery.error instanceof HttpError && homeQuery.error.status === 404) {
-    return (
-      <StudentError
-        title="مساحة الطالب غير متاحة الآن"
-        message="الدخول الدائم للطلاب غير مفعّل في هذه البيئة. يمكنك الاستمرار عبر الانضمام السريع للأنشطة."
-        action={<Link to="/join" className="inline-flex min-h-11 items-center justify-center rounded-xl bg-violet-700 px-4 text-sm font-black text-white hover:bg-violet-800">انضم لنشاط سريع</Link>}
-      />
-    );
-  }
-  if (homeQuery.isError || !homeQuery.data) {
-    return (
-      <StudentError
-        title="تعذر فتح مساحتك"
-        message="لم نتمكن من تحميل بياناتك الآن. تحقق من الاتصال ثم أعد المحاولة."
-        action={<StudentButton type="button" onClick={() => void homeQuery.refetch()}>إعادة المحاولة</StudentButton>}
-      />
-    );
-  }
+  if (homeQuery.error instanceof HttpError && homeQuery.error.status === 404) return <StudentError title="مساحة الطالب غير متاحة الآن" message="الدخول الدائم للطلاب غير مفعّل في هذه البيئة." action={<Link to="/join" className="inline-flex min-h-11 items-center justify-center rounded-xl bg-violet-700 px-4 text-sm font-black text-white">انضم لنشاط سريع</Link>} />;
+  if (homeQuery.isError || !homeQuery.data) return <StudentError title="تعذر فتح مساحتك" message="لم نتمكن من تحميل بياناتك الآن. تحقق من الاتصال ثم أعد المحاولة." action={<StudentButton type="button" onClick={() => void homeQuery.refetch()}>إعادة المحاولة</StudentButton>} />;
 
-  const home = homeQuery.data;
-  const recent = home.recentActivities;
+  const home = homeQuery.data; const tasks = tasksQuery.data ?? []; const recent = home.recentActivities;
+  const newTasks = tasks.filter((task) => task.state === 'New');
+  const inProgress = tasks.filter((task) => task.state === 'InProgress');
+  const completed = tasks.filter((task) => task.state === 'Completed');
+  const upcoming = tasks.filter((task) => task.state === 'Upcoming');
+  const priority = inProgress[0] ?? newTasks[0] ?? upcoming[0] ?? null;
 
-  return (
-    <StudentShell width="wide">
-      <div className="student-enter space-y-5 pb-4">
-        <header className="student-panel overflow-hidden p-5 sm:p-7">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <p className="text-xs font-bold text-[var(--student-primary-strong)]">{home.profile.workspaceName}</p>
-              <h1 className="mt-1 text-2xl font-black text-[var(--student-ink)] sm:text-3xl">أهلًا {firstName(home.profile.fullName)} 👋</h1>
-              <p className="mt-2 text-sm leading-7 text-[var(--student-muted)]">دي مساحتك في English Spark. من هنا تكمل اللي بدأت وتراجع تقدمك.</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => logoutMutation.mutate()}
-              disabled={logoutMutation.isPending}
-              className="inline-flex min-h-11 items-center rounded-xl px-3 text-sm font-bold text-slate-500 hover:bg-slate-100 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-slate-200 disabled:opacity-50">
-              تسجيل الخروج
-            </button>
-          </div>
-        </header>
+  return <StudentShell width="wide"><div className="student-enter space-y-5 pb-4">
+    <header className="student-panel overflow-hidden p-5 sm:p-7"><div className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs font-bold text-[var(--student-primary-strong)]">{home.profile.workspaceName}</p><h1 className="mt-1 text-2xl font-black text-[var(--student-ink)] sm:text-3xl">أهلًا {firstName(home.profile.fullName)} 👋</h1><p className="mt-2 text-sm leading-7 text-[var(--student-muted)]">هنا ستجد المطلوب منك، وتكمل من نفس المكان حتى لو فتحت من جهاز آخر.</p></div><button type="button" onClick={() => logoutMutation.mutate()} disabled={logoutMutation.isPending} className="inline-flex min-h-11 items-center rounded-xl px-3 text-sm font-bold text-slate-500 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-slate-200 disabled:opacity-50">تسجيل الخروج</button></div></header>
 
-        {home.continueActivity ? (
-          <section className="student-panel overflow-hidden border-2 border-emerald-200 bg-gradient-to-l from-emerald-50 to-white p-5 sm:p-6" aria-labelledby="continue-title">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="min-w-0">
-                <p className="text-xs font-black text-emerald-700">أكمل من حيث توقفت</p>
-                <h2 id="continue-title" dir="auto" className="mt-1 truncate text-xl font-black text-[var(--student-ink)]">{home.continueActivity.quizTitle}</h2>
-                <p className="mt-1 text-sm text-[var(--student-muted)]">محاولتك محفوظة. تقدر ترجع لنفس النقطة مباشرة.</p>
-              </div>
-              <Link to={`/play/${encodeURIComponent(home.continueActivity.joinCode)}`} className="inline-flex min-h-12 shrink-0 items-center justify-center rounded-xl bg-[var(--student-primary)] px-5 text-sm font-black text-white shadow-sm hover:bg-[var(--student-primary-strong)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-100">متابعة النشاط</Link>
-            </div>
-          </section>
-        ) : null}
+    <section className="student-panel overflow-hidden" aria-labelledby="tasks-heading">
+      <div className="border-b border-slate-200 px-5 py-4 sm:px-6"><p className="text-xs font-black text-violet-700">المطلوب مني</p><h2 id="tasks-heading" className="mt-1 text-xl font-black text-[var(--student-ink)]">أنشطتك الحالية</h2><p className="mt-1 text-xs leading-6 text-[var(--student-muted)]">ابدأ الجديد، أكمل ما توقفت عنده، وراجع ما أنهيته.</p></div>
+      {tasksQuery.isLoading ? <p role="status" className="p-6 text-sm text-[var(--student-muted)]">جارٍ تحميل المطلوب منك…</p> : null}
+      {tasksQuery.isError && !(tasksQuery.error instanceof HttpError && tasksQuery.error.status === 401) ? <div className="p-5"><p role="alert" className="text-sm font-bold text-rose-800">تعذر تحميل الأنشطة المطلوبة الآن.</p><button type="button" onClick={() => void tasksQuery.refetch()} className="mt-3 min-h-11 rounded-xl bg-violet-50 px-4 text-sm font-black text-violet-800">إعادة المحاولة</button></div> : null}
+      {tasksQuery.isSuccess && tasks.length === 0 ? <div className="px-5 py-10 text-center"><div aria-hidden="true" className="text-3xl">✨</div><h3 className="mt-3 font-black text-[var(--student-ink)]">لا يوجد شيء مطلوب منك الآن</h3><p className="mx-auto mt-1 max-w-md text-sm leading-7 text-[var(--student-muted)]">عندما يرسل لك المعلم نشاطًا سيظهر هنا تلقائيًا.</p></div> : null}
+      {priority ? <div className="border-b border-violet-100 bg-gradient-to-l from-violet-50 to-white p-5 sm:p-6"><p className="text-xs font-black text-violet-700">الأهم الآن</p><TaskCard task={priority} prominent pending={startTask.isPending} onOpen={() => startTask.mutate(priority.id)} /></div> : null}
+      <div className="space-y-5 p-5 sm:p-6">{inProgress.length ? <TaskGroup title="جاري" tasks={inProgress.filter((task) => task.id !== priority?.id)} onOpen={(id) => startTask.mutate(id)} pending={startTask.isPending} /> : null}{newTasks.length ? <TaskGroup title="جديد" tasks={newTasks.filter((task) => task.id !== priority?.id)} onOpen={(id) => startTask.mutate(id)} pending={startTask.isPending} /> : null}{upcoming.length ? <TaskGroup title="قريبًا" tasks={upcoming.filter((task) => task.id !== priority?.id)} onOpen={(id) => startTask.mutate(id)} pending={startTask.isPending} /> : null}{completed.length ? <TaskGroup title="مكتمل" tasks={completed} onOpen={(id) => startTask.mutate(id)} pending={startTask.isPending} /> : null}</div>
+    </section>
 
-        <section aria-label="ملخص تقدمك" className="grid grid-cols-3 gap-2 sm:gap-4">
-          <SummaryCard value={String(home.summary.completedActivities)} label="أنشطة مكتملة" icon="✓" />
-          <SummaryCard value={percentageLabel(home.summary.averagePercentage)} label="متوسطك" icon="★" />
-          <SummaryCard value={String(home.summary.certificates)} label="شهادات" icon="◇" />
-        </section>
+    {startTask.isError ? <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm font-bold text-rose-800">تعذر فتح النشاط الآن. أعد المحاولة بعد قليل.</p> : null}
 
-        <section className="student-panel overflow-hidden">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-5 py-4 sm:px-6">
-            <div>
-              <h2 className="text-lg font-black text-[var(--student-ink)]">آخر محاولاتك</h2>
-              <p className="mt-1 text-xs leading-6 text-[var(--student-muted)]">أحدث المحاولات التي بدأتَها أو أنهيتها تظهر هنا.</p>
-            </div>
-            <Link to="/join" className="inline-flex min-h-11 items-center rounded-xl px-3 text-sm font-black text-violet-700 hover:bg-violet-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-100">انضم لنشاط سريع</Link>
-          </div>
+    {home.continueActivity ? <section className="student-panel overflow-hidden border-2 border-emerald-200 bg-gradient-to-l from-emerald-50 to-white p-5 sm:p-6" aria-labelledby="continue-title"><div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"><div className="min-w-0"><p className="text-xs font-black text-emerald-700">نشاط دخلته سابقًا</p><h2 id="continue-title" dir="auto" className="mt-1 truncate text-xl font-black text-[var(--student-ink)]">{home.continueActivity.quizTitle}</h2><p className="mt-1 text-sm text-[var(--student-muted)]">محاولتك محفوظة.</p></div><Link to={`/play/${encodeURIComponent(home.continueActivity.joinCode)}`} className="inline-flex min-h-12 shrink-0 items-center justify-center rounded-xl bg-[var(--student-primary)] px-5 text-sm font-black text-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-100">متابعة النشاط</Link></div></section> : null}
 
-          {recent.length === 0 ? (
-            <div className="px-5 py-10 text-center sm:px-6">
-              <div aria-hidden="true" className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-50 text-xl">⚡</div>
-              <h3 className="mt-3 font-black text-[var(--student-ink)]">لسه مفيش محاولات هنا</h3>
-              <p className="mx-auto mt-1 max-w-sm text-sm leading-7 text-[var(--student-muted)]">لما تدخل نشاط باستخدام رمز أو رابط، تقدمك ونتيجتك هيظهروا هنا تلقائيًا.</p>
-              <Link to="/join" className="mt-4 inline-flex min-h-11 items-center justify-center rounded-xl bg-violet-700 px-4 text-sm font-black text-white hover:bg-violet-800">عندي رمز نشاط</Link>
-            </div>
-          ) : (
-            <div className="divide-y divide-slate-200">
-              {recent.map((activity) => <ActivityRow key={activity.attemptId} activity={activity} />)}
-            </div>
-          )}
-        </section>
-      </div>
-    </StudentShell>
-  );
+    <section aria-label="ملخص تقدمك" className="grid grid-cols-3 gap-2 sm:gap-4"><SummaryCard value={String(home.summary.completedActivities)} label="أنشطة مكتملة" icon="✓" /><SummaryCard value={percentageLabel(home.summary.averagePercentage)} label="متوسطك" icon="★" /><SummaryCard value={String(home.summary.certificates)} label="شهادات" icon="◇" /></section>
+
+    <section className="student-panel overflow-hidden"><div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-5 py-4 sm:px-6"><div><h2 className="text-lg font-black text-[var(--student-ink)]">آخر محاولاتك</h2><p className="mt-1 text-xs leading-6 text-[var(--student-muted)]">الأنشطة التي دخلتها من رابط أو رمز تظهر هنا أيضًا.</p></div><Link to="/join" className="inline-flex min-h-11 items-center rounded-xl px-3 text-sm font-black text-violet-700 hover:bg-violet-50">انضم لنشاط سريع</Link></div>{recent.length === 0 ? <div className="px-5 py-10 text-center"><p className="text-sm text-[var(--student-muted)]">لا توجد محاولات سابقة بعد.</p></div> : <div className="divide-y divide-slate-200">{recent.map((activity) => <ActivityRow key={activity.attemptId} activity={activity} />)}</div>}</section>
+  </div></StudentShell>;
 }
 
-function SummaryCard({ value, label, icon }: { value: string; label: string; icon: string }) {
-  return (
-    <div className="student-panel px-3 py-4 text-center sm:px-5 sm:py-5">
-      <div aria-hidden="true" className="mx-auto mb-2 flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--student-violet-soft)] text-sm font-black text-violet-700">{icon}</div>
-      <p dir="ltr" className="text-xl font-black text-[var(--student-ink)] sm:text-2xl">{value}</p>
-      <p className="mt-1 text-[11px] font-bold leading-5 text-[var(--student-muted)] sm:text-xs">{label}</p>
-    </div>
-  );
+function TaskGroup({ title, tasks, onOpen, pending }: { title: string; tasks: StudentTask[]; onOpen: (id: string) => void; pending: boolean }) { if (!tasks.length) return null; return <section aria-label={title}><h3 className="mb-2 text-sm font-black text-[var(--student-ink)]">{title} <span className="text-[var(--student-muted)]">({tasks.length})</span></h3><div className="grid gap-3 sm:grid-cols-2">{tasks.map((task) => <TaskCard key={task.id} task={task} pending={pending} onOpen={() => onOpen(task.id)} />)}</div></section>; }
+function TaskCard({ task, onOpen, pending, prominent = false }: { task: StudentTask; onOpen: () => void; pending: boolean; prominent?: boolean }) {
+  const labels: Record<StudentTaskState, string> = { Upcoming: 'قريبًا', New: 'جديد', InProgress: 'جاري', Completed: 'مكتمل' };
+  const cta: Record<StudentTaskState, string> = { Upcoming: 'لم يحن موعده', New: 'ابدأ', InProgress: 'أكمل', Completed: 'شاهد النتيجة' };
+  return <article className={`${prominent ? '' : 'rounded-2xl border border-slate-200 bg-white p-4'} min-w-0`}><div className="flex items-start justify-between gap-2"><div className="min-w-0"><span className={`inline-flex rounded-full px-2 py-1 text-[10px] font-black ${task.state === 'New' ? 'bg-violet-100 text-violet-800' : task.state === 'InProgress' ? 'bg-amber-100 text-amber-800' : task.state === 'Completed' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'}`}>{labels[task.state]}</span><h4 dir="auto" className={`${prominent ? 'text-xl' : 'text-base'} mt-2 truncate font-black text-[var(--student-ink)]`}>{task.activityTitle}</h4></div>{task.state === 'Completed' ? <span dir="ltr" className="shrink-0 text-lg font-black text-emerald-700">{percentageLabel(task.resultPercentage)}</span> : null}</div>{task.dueAt ? <p className="mt-2 text-xs font-bold text-amber-800">حتى {new Date(task.dueAt).toLocaleString('ar-EG', { dateStyle: 'medium', timeStyle: 'short' })}</p> : task.availableAt && task.state === 'Upcoming' ? <p className="mt-2 text-xs text-[var(--student-muted)]">يفتح {new Date(task.availableAt).toLocaleString('ar-EG', { dateStyle: 'medium', timeStyle: 'short' })}</p> : null}{task.state === 'InProgress' ? <div className="mt-3"><div className="h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-amber-500" style={{ width: `${Math.max(3, Math.min(100, task.progressPercentage))}%` }} /></div><p className="mt-1 text-[10px] font-bold text-slate-500">{Math.round(task.progressPercentage)}% منجز</p></div> : null}<button type="button" onClick={onOpen} disabled={pending || task.state === 'Upcoming'} className={`mt-4 inline-flex min-h-12 w-full items-center justify-center rounded-xl px-4 text-sm font-black focus-visible:outline-none focus-visible:ring-4 ${task.state === 'Upcoming' ? 'cursor-not-allowed bg-slate-100 text-slate-500' : task.state === 'Completed' ? 'border border-emerald-200 bg-emerald-50 text-emerald-800 focus-visible:ring-emerald-100' : 'bg-[var(--student-primary)] text-white focus-visible:ring-violet-100'} disabled:opacity-60`}>{cta[task.state]}</button></article>;
 }
-
-function ActivityRow({ activity }: { activity: StudentPortalActivity }) {
-  return (
-    <div className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-      <div className="min-w-0">
-        <div className="flex flex-wrap items-center gap-2">
-          <h3 dir="auto" className="truncate font-black text-[var(--student-ink)]">{activity.quizTitle}</h3>
-          <span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${activity.canResume ? 'bg-amber-50 text-amber-800' : 'bg-slate-100 text-slate-600'}`}>{activityStatusLabel(activity)}</span>
-        </div>
-        <p className="mt-1 text-xs text-[var(--student-muted)]">{activity.finishedAt ? `النتيجة: ${percentageLabel(activity.percentage)}` : 'المحاولة محفوظة في تقدمك'}</p>
-      </div>
-      {activity.canResume ? (
-        <Link to={`/play/${encodeURIComponent(activity.joinCode)}`} className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-4 text-sm font-black text-emerald-800 hover:bg-emerald-100">متابعة</Link>
-      ) : (
-        <span dir="ltr" className="shrink-0 text-sm font-black text-[var(--student-primary-strong)]">{percentageLabel(activity.percentage)}</span>
-      )}
-    </div>
-  );
-}
+function SummaryCard({ value, label, icon }: { value: string; label: string; icon: string }) { return <div className="student-panel px-3 py-4 text-center sm:px-5 sm:py-5"><div aria-hidden="true" className="mx-auto mb-2 flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--student-violet-soft)] text-sm font-black text-violet-700">{icon}</div><p dir="ltr" className="text-xl font-black text-[var(--student-ink)] sm:text-2xl">{value}</p><p className="mt-1 text-[11px] font-bold leading-5 text-[var(--student-muted)] sm:text-xs">{label}</p></div>; }
+function ActivityRow({ activity }: { activity: StudentPortalActivity }) { return <div className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><h3 dir="auto" className="truncate font-black text-[var(--student-ink)]">{activity.quizTitle}</h3><span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${activity.canResume ? 'bg-amber-50 text-amber-800' : 'bg-slate-100 text-slate-600'}`}>{activityStatusLabel(activity)}</span></div><p className="mt-1 text-xs text-[var(--student-muted)]">{activity.finishedAt ? `النتيجة: ${percentageLabel(activity.percentage)}` : 'المحاولة محفوظة في تقدمك'}</p></div>{activity.canResume ? <Link to={`/play/${encodeURIComponent(activity.joinCode)}`} className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-4 text-sm font-black text-emerald-800 hover:bg-emerald-100">متابعة</Link> : <span dir="ltr" className="shrink-0 text-sm font-black text-[var(--student-primary-strong)]">{percentageLabel(activity.percentage)}</span>}</div>; }

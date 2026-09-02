@@ -36,6 +36,11 @@ const ActivityReadyPage = lazy(() => import('../routes/dashboard/activities/acti
 const StudentsPage = lazy(() => import('../routes/dashboard/students/students-page'));
 const StudentNewPage = lazy(() => import('../routes/dashboard/students/student-new-page'));
 const StudentDetailPage = lazy(() => import('../routes/dashboard/students/student-detail-page'));
+const ClassesPage = lazy(() => import('../routes/dashboard/classes/classes-page'));
+const ClassroomNewPage = lazy(() => import('../routes/dashboard/classes/classroom-new-page'));
+const ClassroomDetailPage = lazy(() => import('../routes/dashboard/classes/classroom-detail-page'));
+const AssignActivityPage = lazy(() => import('../routes/dashboard/assignments/assign-activity-page'));
+const AssignmentDetailPage = lazy(() => import('../routes/dashboard/assignments/assignment-detail-page'));
 
 const QuestionsPage = lazy(() => import('../routes/dashboard/questions/questions-page'));
 const QuestionNewPage = lazy(() => import('../routes/dashboard/questions/question-new-page'));
@@ -96,10 +101,15 @@ export const router = createBrowserRouter([
               { path: '/dashboard/activities/:quizId/build', element: <ActivityBuilderPage /> },
               { path: '/dashboard/activities/:quizId/bulk', element: <ActivityBulkQuestionsPage /> },
               { path: '/dashboard/activities/:quizId/ready', element: <ActivityReadyPage /> },
+              { path: '/dashboard/activities/:quizId/assign', element: <AssignActivityPage /> },
               { path: '/dashboard/settings', element: <SettingsPage /> },
               { path: '/dashboard/students', element: <StudentsPage /> },
               { path: '/dashboard/students/new', element: <StudentNewPage /> },
               { path: '/dashboard/students/:studentId', element: <StudentDetailPage /> },
+              { path: '/dashboard/classes', element: <ClassesPage /> },
+              { path: '/dashboard/classes/new', element: <ClassroomNewPage /> },
+              { path: '/dashboard/classes/:classroomId', element: <ClassroomDetailPage /> },
+              { path: '/dashboard/assignments/:assignmentId', element: <AssignmentDetailPage /> },
               { path: '/dashboard/questions', element: <QuestionsPage /> },
               { path: '/dashboard/questions/bulk', element: <ActivityBulkQuestionsPage /> },
               { path: '/dashboard/questions/new', element: <QuestionNewPage /> },
