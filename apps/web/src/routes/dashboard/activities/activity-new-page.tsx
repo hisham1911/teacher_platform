@@ -70,10 +70,6 @@ export default function ActivityNewPage() {
 
       <WizardProgress />
 
-      <div className="mt-3 text-center sm:text-left">
-        <Link to="/dashboard/quizzes/new" className="inline-flex min-h-10 items-center rounded-lg px-3 text-xs font-semibold text-slate-500 hover:bg-slate-50 hover:text-violet-800">إعدادات أكثر للنشاط</Link>
-      </div>
-
       <form onSubmit={onSubmit} className="mt-4 space-y-5">
         <section className="teacher-surface p-5 sm:p-7" aria-labelledby="activity-name-heading">
           <div className="flex items-start gap-4">
