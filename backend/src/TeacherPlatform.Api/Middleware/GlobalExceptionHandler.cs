@@ -12,13 +12,18 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
     private readonly ILogger<GlobalExceptionHandler> _logger;
     private readonly IOptions<AuthOptions> _authOptions;
 
-    public GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger, IOptions<AuthOptions> authOptions)
+    public GlobalExceptionHandler(
+        ILogger<GlobalExceptionHandler> logger,
+        IOptions<AuthOptions> authOptions)
     {
         _logger = logger;
         _authOptions = authOptions;
     }
 
-    public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
+    public async ValueTask<bool> TryHandleAsync(
+        HttpContext httpContext,
+        Exception exception,
+        CancellationToken cancellationToken)
     {
         int statusCode;
         string title;
@@ -49,7 +54,8 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
                     "QuotaExceeded" => StatusCodes.Status403Forbidden,
                     "EntitlementRequired" => StatusCodes.Status403Forbidden,
                     "SubscriptionInactive" => StatusCodes.Status403Forbidden,
-                    "WorkspaceSuspended" => StatusCodes.Status403Forbidden,
+                    "WorkspaceSuspended" => StatusCodes.Status423Locked,
+                    "TenantContextMismatch" => StatusCodes.Status403Forbidden,
                     "LiveModeNotAvailable" => StatusCodes.Status400BadRequest,
                     "InvalidAnswerPayload" => StatusCodes.Status400BadRequest,
                     "FileTooLarge" => StatusCodes.Status413PayloadTooLarge,
@@ -63,25 +69,37 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
                     DeleteStaleGuestCookie(httpContext.Response);
                 }
 
-                _logger.LogWarning("Request failed. Code={ErrorCode} TraceId={TraceId}", serviceError.ErrorCode, httpContext.TraceIdentifier);
+                _logger.LogWarning(
+                    "Request failed. Code={ErrorCode} TraceId={TraceId}",
+                    serviceError.ErrorCode,
+                    httpContext.TraceIdentifier);
                 break;
 
             case CrossTenantWriteRejectedException crossTenant:
                 statusCode = StatusCodes.Status403Forbidden;
                 title = "CrossTenantOperationRejected";
-                _logger.LogWarning(crossTenant, "Cross-tenant mutation blocked. TraceId={TraceId}", httpContext.TraceIdentifier);
+                _logger.LogWarning(
+                    crossTenant,
+                    "Cross-tenant mutation blocked. TraceId={TraceId}",
+                    httpContext.TraceIdentifier);
                 break;
 
             case TenantWriteWithoutContextException noContext:
                 statusCode = StatusCodes.Status500InternalServerError;
                 title = "InternalError";
-                _logger.LogError(noContext, "Tenant-owned write without resolved tenant context. TraceId={TraceId}", httpContext.TraceIdentifier);
+                _logger.LogError(
+                    noContext,
+                    "Tenant-owned write without resolved tenant context. TraceId={TraceId}",
+                    httpContext.TraceIdentifier);
                 break;
 
             default:
                 statusCode = StatusCodes.Status500InternalServerError;
                 title = "InternalError";
-                _logger.LogError(exception, "Unhandled exception. TraceId={TraceId}", httpContext.TraceIdentifier);
+                _logger.LogError(
+                    exception,
+                    "Unhandled exception. TraceId={TraceId}",
+                    httpContext.TraceIdentifier);
                 break;
         }
 
@@ -91,35 +109,58 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
         {
             type = $"https://httpstatuses.com/{statusCode}",
             title,
+            errorCode = title,
             status = statusCode,
             detail = statusCode >= 500 ? "An unexpected error occurred." : exception.Message,
+            userMessageAr = CommercialUserMessageAr(title),
+            upgradeGuidanceAr = CommercialUpgradeGuidanceAr(title),
             traceId = httpContext.TraceIdentifier
         }, cancellationToken);
         return true;
     }
 
+    private static string? CommercialUserMessageAr(string errorCode) => errorCode switch
+    {
+        "QuotaExceeded" => "وصلت مساحة العمل إلى الحد المسموح في الخطة الحالية.",
+        "EntitlementRequired" => "هذه الميزة غير متاحة في الخطة الحالية.",
+        "SubscriptionInactive" => "لا يوجد اشتراك تجاري نشط يسمح بهذه العملية حاليًا.",
+        "WorkspaceSuspended" => "مساحة العمل موقوفة حاليًا.",
+        _ => null
+    };
+
+    private static string? CommercialUpgradeGuidanceAr(string errorCode) => errorCode switch
+    {
+        "QuotaExceeded" => "حرر جزءًا من السعة أو اطلب ترقية الخطة ثم أعد المحاولة.",
+        "EntitlementRequired" => "اطلب خطة تتضمن هذه الميزة ثم أعد المحاولة.",
+        "SubscriptionInactive" => "راجع حالة الاشتراك أو تاريخ الانتهاء مع إدارة المنصة.",
+        _ => null
+    };
+
     private void DeleteStaleGuestCookie(HttpResponse response)
     {
         var options = _authOptions.Value;
-        response.Cookies.Delete(GuestTokenService.ResolveCookieName(options.UseSecureCookie), new CookieOptions
-        {
-            HttpOnly = true,
-            Secure = options.UseSecureCookie,
-            SameSite = options.CookieSameSite switch
+        response.Cookies.Delete(
+            GuestTokenService.ResolveCookieName(options.UseSecureCookie),
+            new CookieOptions
             {
-                "Lax" => SameSiteMode.Lax,
-                "None" => SameSiteMode.None,
-                _ => SameSiteMode.Strict
-            },
-            Path = "/",
-            IsEssential = true
-        });
+                HttpOnly = true,
+                Secure = options.UseSecureCookie,
+                SameSite = options.CookieSameSite switch
+                {
+                    "Lax" => SameSiteMode.Lax,
+                    "None" => SameSiteMode.None,
+                    _ => SameSiteMode.Strict
+                },
+                Path = "/",
+                IsEssential = true
+            });
     }
 }
 
 public sealed class CorrelationIdMiddleware
 {
     private readonly RequestDelegate _next;
+
     public CorrelationIdMiddleware(RequestDelegate next) => _next = next;
 
     public async Task InvokeAsync(HttpContext context)
