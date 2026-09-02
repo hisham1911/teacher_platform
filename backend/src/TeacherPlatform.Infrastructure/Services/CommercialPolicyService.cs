@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using TeacherPlatform.Application.Abstractions;
 using TeacherPlatform.Application.Saas;
+using TeacherPlatform.Domain.Sessions;
 using TeacherPlatform.Domain.Tenancy;
 using TeacherPlatform.Infrastructure.Persistence;
 
@@ -28,23 +29,49 @@ public sealed class CommercialPolicyService
         _clock = clock;
     }
 
-    public async Task<CommercialWorkspaceStateResponse> GetWorkspaceStateAsync(Guid tenantId, CancellationToken cancellationToken)
+    public async Task<CommercialWorkspaceStateResponse> GetWorkspaceStateAsync(
+        Guid tenantId,
+        CancellationToken cancellationToken)
     {
-        var tenant = await _db.Tenants.IgnoreQueryFilters().AsNoTracking()
+        var tenant = await _db.Tenants
+            .IgnoreQueryFilters()
+            .AsNoTracking()
             .SingleOrDefaultAsync(item => item.Id == tenantId, cancellationToken)
             ?? throw new ServiceResultException("NotFound", "Workspace not found.");
         var resolved = await _resolver.ResolveAsync(tenantId, cancellationToken);
-        var memberCount = await _db.TenantMemberships.IgnoreQueryFilters().AsNoTracking()
-            .LongCountAsync(item => item.TenantId == tenantId && item.Status == TenantMembershipStatus.Active, cancellationToken);
-        var studentCount = await _db.Students.IgnoreQueryFilters().AsNoTracking()
-            .LongCountAsync(item => item.TenantId == tenantId && item.IsActive, cancellationToken);
+        var memberCount = await _db.TenantMemberships
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .LongCountAsync(
+                item => item.TenantId == tenantId && item.Status == TenantMembershipStatus.Active,
+                cancellationToken);
+        var studentCount = await _db.Students
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .LongCountAsync(
+                item => item.TenantId == tenantId && item.IsActive,
+                cancellationToken);
+        var classCount = await _db.Classrooms
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .LongCountAsync(
+                item => item.TenantId == tenantId && item.IsActive,
+                cancellationToken);
+        var activeAssignmentCount = await _db.Assignments
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .LongCountAsync(
+                item => item.TenantId == tenantId && item.Session!.Status == SessionStatus.Active,
+                cancellationToken);
 
         return new CommercialWorkspaceStateResponse
         {
             TenantId = tenantId,
             CommercialStatus = tenant.Status == TenantStatus.Active ? resolved.CommercialStatus : "Suspended",
             IsGrandfathered = resolved.IsGrandfathered,
-            Subscription = resolved.Subscription is null ? null : ToSubscriptionResponse(resolved.Subscription, resolved.CommercialStatus),
+            Subscription = resolved.Subscription is null
+                ? null
+                : ToSubscriptionResponse(resolved.Subscription, resolved.CommercialStatus),
             Plan = resolved.Plan is null ? null : PlanLimitResolver.ToPlanResponse(resolved.Plan),
             Limits = resolved.Contract.Limits,
             Entitlements = resolved.Contract.Entitlements,
@@ -52,45 +79,86 @@ public sealed class CommercialPolicyService
             {
                 Members = memberCount,
                 Students = studentCount,
-                Classes = null,
-                ActiveAssignments = null
+                Classes = classCount,
+                ActiveAssignments = activeAssignmentCount
             }
         };
     }
 
-    public async Task<CommercialPlanContractDto> RequireWorkspaceMutationAsync(Guid tenantId, CancellationToken cancellationToken)
+    public async Task<CommercialPlanContractDto> RequireWorkspaceMutationAsync(
+        Guid tenantId,
+        CancellationToken cancellationToken)
     {
-        var tenantStatus = await _db.Tenants.IgnoreQueryFilters().AsNoTracking()
+        var tenantStatus = await _db.Tenants
+            .IgnoreQueryFilters()
+            .AsNoTracking()
             .Where(item => item.Id == tenantId)
             .Select(item => (TenantStatus?)item.Status)
             .SingleOrDefaultAsync(cancellationToken);
-        if (tenantStatus is null) throw new ServiceResultException("NotFound", "Workspace not found.");
-        if (tenantStatus != TenantStatus.Active) throw new ServiceResultException("WorkspaceSuspended", "This workspace is suspended.");
+        if (tenantStatus is null)
+        {
+            throw new ServiceResultException("NotFound", "Workspace not found.");
+        }
+
+        if (tenantStatus != TenantStatus.Active)
+        {
+            throw new ServiceResultException("WorkspaceSuspended", "This workspace is suspended.");
+        }
 
         var resolved = await _resolver.ResolveAsync(tenantId, cancellationToken);
         if (!resolved.IsGrandfathered && resolved.CommercialStatus != "Active")
-            throw new ServiceResultException("SubscriptionInactive", "This workspace does not have an active commercial subscription.");
+        {
+            throw new ServiceResultException(
+                "SubscriptionInactive",
+                "This workspace does not have an active commercial subscription.");
+        }
+
         return resolved.Contract;
     }
 
-    public async Task<bool> HasEntitlementAsync(Guid tenantId, string entitlement, CancellationToken cancellationToken)
+    public async Task<bool> HasEntitlementAsync(
+        Guid tenantId,
+        string entitlement,
+        CancellationToken cancellationToken)
     {
-        var tenantActive = await _db.Tenants.IgnoreQueryFilters().AsNoTracking()
-            .AnyAsync(item => item.Id == tenantId && item.Status == TenantStatus.Active, cancellationToken);
-        if (!tenantActive) return false;
+        var tenantActive = await _db.Tenants
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .AnyAsync(
+                item => item.Id == tenantId && item.Status == TenantStatus.Active,
+                cancellationToken);
+        if (!tenantActive)
+        {
+            return false;
+        }
+
         var resolved = await _resolver.ResolveAsync(tenantId, cancellationToken);
-        if (!resolved.IsGrandfathered && resolved.CommercialStatus != "Active") return false;
+        if (!resolved.IsGrandfathered && resolved.CommercialStatus != "Active")
+        {
+            return false;
+        }
+
         return resolved.Contract.Entitlements.Has(entitlement);
     }
 
-    public async Task RequireEntitlementAsync(Guid tenantId, string entitlement, CancellationToken cancellationToken)
+    public async Task RequireEntitlementAsync(
+        Guid tenantId,
+        string entitlement,
+        CancellationToken cancellationToken)
     {
         var contract = await RequireWorkspaceMutationAsync(tenantId, cancellationToken);
         if (!contract.Entitlements.Has(entitlement))
-            throw new ServiceResultException("EntitlementRequired", $"The '{entitlement}' feature is not included in the current plan.");
+        {
+            throw new ServiceResultException(
+                "EntitlementRequired",
+                $"The '{entitlement}' feature is not included in the current plan.");
+        }
     }
 
-    public async Task<int> GetCapacityLimitAsync(Guid tenantId, CommercialCapacity capacity, CancellationToken cancellationToken)
+    public async Task<int> GetCapacityLimitAsync(
+        Guid tenantId,
+        CommercialCapacity capacity,
+        CancellationToken cancellationToken)
     {
         var limits = (await RequireWorkspaceMutationAsync(tenantId, cancellationToken)).Limits;
         return capacity switch
@@ -104,11 +172,19 @@ public sealed class CommercialPolicyService
         };
     }
 
-    public async Task EnsureCapacityAsync(Guid tenantId, CommercialCapacity capacity, long currentValue, CancellationToken cancellationToken)
+    public async Task EnsureCapacityAsync(
+        Guid tenantId,
+        CommercialCapacity capacity,
+        long currentValue,
+        CancellationToken cancellationToken)
     {
         var limit = await GetCapacityLimitAsync(tenantId, capacity, cancellationToken);
         if (currentValue >= limit)
-            throw new ServiceResultException("QuotaExceeded", $"This workspace reached its {CapacityKey(capacity)} limit ({limit}). Upgrade the plan or free capacity and try again.");
+        {
+            throw new ServiceResultException(
+                "QuotaExceeded",
+                $"This workspace reached its {CapacityKey(capacity)} limit ({limit}). Upgrade the plan or free capacity and try again.");
+        }
     }
 
     public async Task AcquireCapacityLockAsync(
@@ -118,11 +194,17 @@ public sealed class CommercialPolicyService
         Guid? scopeId = null)
     {
         if (_db.Database.CurrentTransaction is null)
-            throw new InvalidOperationException("A database transaction is required before acquiring a commercial capacity lock.");
+        {
+            throw new InvalidOperationException(
+                "A database transaction is required before acquiring a commercial capacity lock.");
+        }
+
         var key = scopeId is Guid scoped
             ? $"commercial:{tenantId:N}:{CapacityKey(capacity)}:{scoped:N}"
             : $"commercial:{tenantId:N}:{CapacityKey(capacity)}";
-        await _db.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(hashtextextended({key}, 0));", cancellationToken);
+        await _db.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT pg_advisory_xact_lock(hashtextextended({key}, 0));",
+            cancellationToken);
     }
 
     public DateTime UtcNow => _clock.UtcNow;
@@ -137,7 +219,9 @@ public sealed class CommercialPolicyService
         _ => capacity.ToString().ToLowerInvariant()
     };
 
-    private static SubscriptionResponse ToSubscriptionResponse(Domain.Saas.Subscription subscription, string effectiveStatus) => new()
+    private static SubscriptionResponse ToSubscriptionResponse(
+        Domain.Saas.Subscription subscription,
+        string effectiveStatus) => new()
     {
         Id = subscription.Id,
         TenantId = subscription.TenantId,
