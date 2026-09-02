@@ -35,28 +35,28 @@ const productStories = [
     eyebrow: 'أنشئ أسرع',
     title: 'ابنِ النشاط من محتوى تقدر تستخدمه مرة بعد مرة',
     description: 'أنشئ سؤالًا بسرعة، اسحب أسئلة من بنك الأسئلة، أضف الميديا، أو استورد مجموعة كاملة من Excel وCSV مع مراجعة قبل الحفظ.',
-    highlights: ['بنك أسئلة + ميديا', 'استيراد Excel / CSV', 'إنشاء جماعي للأسئلة'],
+    highlights: ['بنك أسئلة + ميديا', 'استيراد Excel / CSV', 'إنشاء جماعي'],
   },
   {
     icon: '⚡',
     eyebrow: 'شغّل بطريقتك',
     title: 'نفس المحتوى يتحول إلى أكثر من تجربة للطالب',
     description: 'شغّله كنشاط فردي، أو مسابقة مباشرة داخل الفصل، أو تحدٍ متدرج ينتهي عند الخطأ ويُظهر التقدم مستوى بعد مستوى.',
-    highlights: ['Self-paced', 'Live + Leaderboard', 'Progressive Challenge'],
+    highlights: ['نشاط فردي', 'Live + لوحة صدارة', 'تحدٍ متدرج'],
   },
   {
     icon: '👥',
     eyebrow: 'تابع الطلاب',
     title: 'الضيف يدخل فورًا، والطالب الدائم يرجع لمساحته وتقدمه',
-    description: 'رمز نشاط للدخول السريع، وقائمة طلاب دائمة بأكواد شخصية وStudent Portal لاستكمال المحاولات ومراجعة النشاط من جديد.',
-    highlights: ['Quick Join', 'Student Roster', 'Student Portal'],
+    description: 'رمز نشاط للدخول السريع، وقائمة طلاب دائمة بأكواد شخصية، ومساحة طالب تحفظ المحاولات وتسهّل الرجوع للنشاط من جديد.',
+    highlights: ['دخول سريع', 'قائمة طلاب', 'مساحة الطالب'],
   },
   {
     icon: '📊',
     eyebrow: 'اعرف النتيجة',
     title: 'كل محاولة تتحول إلى معلومة تقدر تتصرف على أساسها',
     description: 'راجع النتائج والتفاصيل، صدّر CSV، قِس أثر النشاط باستبيان، وشارك النتيجة مع ولي الأمر أو أصدر شهادة PDF عند الاستحقاق.',
-    highlights: ['Reports + CSV', 'Impact Survey', 'PDF Certificate + Parent Share'],
+    highlights: ['تقارير + CSV', 'استبيان أثر', 'شهادة + مشاركة النتيجة'],
   },
 ] as const;
 
@@ -100,8 +100,8 @@ export default function HomePage() {
             <span className="mt-1 block bg-gradient-to-l from-emerald-600 via-violet-700 to-fuchsia-600 bg-clip-text text-transparent">لحد النتيجة والشهادة.</span>
           </h1>
 
-          <p className="mt-5 max-w-2xl text-base font-semibold leading-8 text-slate-650 sm:text-lg sm:leading-9">
-            English Spark تجمع إنشاء الأنشطة، اللعب الفردي والمباشر، إدارة الطلاب، والتقارير والشهادات في مكان واحد؛ عشان تحوّل الدرس من أسئلة متفرقة إلى تجربة كاملة تقدر تقيس نتيجتها.
+          <p className="mt-5 max-w-2xl text-base font-semibold leading-8 text-slate-600 sm:text-lg sm:leading-9">
+            ابنِ نشاطك مرة، وشغّله كنشاط فردي أو مسابقة Live أو تحدٍ متدرج. English Spark تحفظ المحاولات، تجمع النتائج، وتكمل الرحلة حتى الاستبيان والشهادة—من غير ما توزّع شغلك على أدوات وملفات مختلفة.
           </p>
 
           <div className="mt-7 flex flex-wrap gap-3">
@@ -123,9 +123,9 @@ export default function HomePage() {
 
       <section aria-labelledby="product-story-heading" className="relative z-10">
         <div className="mx-auto max-w-3xl text-center">
-          <p className="text-xs font-black tracking-[0.12em] text-violet-700">مش مجرد Quiz Builder</p>
-          <h2 id="product-story-heading" className="mt-3 text-3xl font-black leading-tight text-slate-950 sm:text-4xl">ابنِ النشاط، شغّله، تابع الطلاب، واعرف النتيجة</h2>
-          <p className="mx-auto mt-4 max-w-2xl text-sm font-semibold leading-7 text-slate-600 sm:text-base">بدل ما تستخدم أداة للأسئلة، وأداة للمسابقة، وملف للنتائج، وطريقة منفصلة للشهادات—English Spark تجمع دورة النشاط كلها في تجربة واحدة.</p>
+          <p className="text-xs font-black tracking-[0.12em] text-violet-700">English Spark في الشغل الحقيقي</p>
+          <h2 id="product-story-heading" className="mt-3 text-3xl font-black leading-tight text-slate-950 sm:text-4xl">أكثر من اختبار. دورة نشاط كاملة.</h2>
+          <p className="mx-auto mt-4 max-w-2xl text-sm font-semibold leading-7 text-slate-600 sm:text-base">بدل أداة للأسئلة، وأداة للمسابقة، وملف للنتائج، وطريقة منفصلة للشهادات؛ كل خطوة في رحلة النشاط موجودة في مكان واحد.</p>
         </div>
 
         <div className="mt-8 grid gap-4 lg:grid-cols-2">
@@ -156,9 +156,9 @@ export default function HomePage() {
 
         <div className="relative z-10">
           <div className="max-w-3xl">
-            <p className="text-xs font-black tracking-[0.12em] text-amber-300">داخل المنصة فعلًا</p>
-            <h2 id="capabilities-heading" className="mt-3 text-3xl font-black leading-tight sm:text-4xl">أدوات تغطي رحلة النشاط من البداية للنهاية</h2>
-            <p className="mt-4 max-w-2xl text-sm font-semibold leading-7 text-slate-300 sm:text-base">كل نقطة هنا جزء من المنتج الحالي، وليست وعودًا لميزات مستقبلية.</p>
+            <p className="text-xs font-black tracking-[0.12em] text-amber-300">كل أدواتك في مكان واحد</p>
+            <h2 id="capabilities-heading" className="mt-3 text-3xl font-black leading-tight sm:text-4xl">من صناعة المحتوى إلى متابعة النتيجة</h2>
+            <p className="mt-4 max-w-2xl text-sm font-semibold leading-7 text-slate-300 sm:text-base">كل اللي تحتاجه لتصنع تجربة كاملة للطالب من غير ما تشتت شغلك بين منصات وملفات وروابط مختلفة.</p>
           </div>
 
           <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -198,7 +198,7 @@ export default function HomePage() {
           <span aria-hidden="true" className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-200 text-2xl">🎒</span>
           <p className="mt-5 text-xs font-black text-emerald-800">للطالب</p>
           <h2 className="mt-2 text-2xl font-black leading-tight text-slate-950 sm:text-3xl">يدخل بسرعة… ويرجع لتقدمه لما يحتاج</h2>
-          <p className="mt-3 text-sm font-semibold leading-7 text-slate-650 sm:text-base">النشاط السريع لا يحتاج حسابًا. ولو الطالب له ملف دائم، يدخل بكوده الشخصي لمساحته ويرى محاولاته ويكمل بدل ما يبدأ كل مرة من جديد.</p>
+          <p className="mt-3 text-sm font-semibold leading-7 text-slate-600 sm:text-base">النشاط السريع لا يحتاج حسابًا. ولو الطالب له ملف دائم، يدخل بكوده الشخصي لمساحته ويرى محاولاته ويكمل بدل ما يبدأ كل مرة من جديد.</p>
           <div className="mt-6 grid gap-3 sm:grid-cols-2">
             <Link to="/join" className="inline-flex min-h-12 items-center justify-center rounded-xl bg-emerald-600 px-5 text-sm font-black text-white transition hover:bg-emerald-700">ابدأ نشاطًا</Link>
             <Link to="/student" className="inline-flex min-h-12 items-center justify-center rounded-xl border border-emerald-200 bg-white px-5 text-sm font-black text-emerald-900 transition hover:bg-emerald-100">متابعة تقدمي</Link>
@@ -209,7 +209,7 @@ export default function HomePage() {
           <span aria-hidden="true" className="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-200 text-2xl">🧑‍🏫</span>
           <p className="mt-5 text-xs font-black text-violet-800">للمعلم أو الأكاديمية</p>
           <h2 className="mt-2 text-2xl font-black leading-tight text-slate-950 sm:text-3xl">جهّز التجربة مرة… وخلّي المتابعة منظمة</h2>
-          <p className="mt-3 text-sm font-semibold leading-7 text-slate-650 sm:text-base">بنك أسئلة، أنشطة قابلة لإعادة الاستخدام، طلاب دائمون، تقارير وشهادات؛ بدل ما تتوزع العملية بين نماذج وملفات وروابط مختلفة.</p>
+          <p className="mt-3 text-sm font-semibold leading-7 text-slate-600 sm:text-base">بنك أسئلة، أنشطة قابلة لإعادة الاستخدام، طلاب دائمون، تقارير وشهادات؛ بدل ما تتوزع العملية بين نماذج وملفات وروابط مختلفة.</p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Link to="/auth/login" className="inline-flex min-h-12 items-center justify-center rounded-xl bg-violet-700 px-5 text-sm font-black text-white transition hover:bg-violet-800">دخول المعلم</Link>
             <Link to="/auth/signup" className="inline-flex min-h-12 items-center justify-center rounded-xl border border-violet-200 bg-white px-5 text-sm font-black text-violet-900 transition hover:bg-violet-100">ابدأ حسابك</Link>
