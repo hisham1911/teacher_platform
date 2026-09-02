@@ -4,14 +4,14 @@ namespace TeacherPlatform.Application.Classrooms;
 
 public sealed class CreateClassroomRequest
 {
-    [Required, StringLength(100, MinimumLength = 1)]
+    [Required, StringLength(100, MinimumLength = 1), RegularExpression(@".*\S.*", ErrorMessage = "Name must contain at least one non-whitespace character.")]
     public string Name { get; init; } = string.Empty;
     [StringLength(30)] public string? AcademicYear { get; init; }
 }
 
 public sealed class UpdateClassroomRequest
 {
-    [Required, StringLength(100, MinimumLength = 1)]
+    [Required, StringLength(100, MinimumLength = 1), RegularExpression(@".*\S.*", ErrorMessage = "Name must contain at least one non-whitespace character.")]
     public string Name { get; init; } = string.Empty;
     [StringLength(30)] public string? AcademicYear { get; init; }
     public uint BaseVersion { get; init; }

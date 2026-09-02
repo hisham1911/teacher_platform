@@ -2,9 +2,20 @@ namespace TeacherPlatform.Application.Assignments;
 
 public sealed class CreateAssignmentRequest
 {
+    private IReadOnlyList<Guid> _classroomIds = [];
+    private IReadOnlyList<Guid> _studentIds = [];
+
     public Guid QuizVersionId { get; init; }
-    public IReadOnlyList<Guid> ClassroomIds { get; init; } = [];
-    public IReadOnlyList<Guid> StudentIds { get; init; } = [];
+    public IReadOnlyList<Guid> ClassroomIds
+    {
+        get => _classroomIds;
+        init => _classroomIds = value ?? [];
+    }
+    public IReadOnlyList<Guid> StudentIds
+    {
+        get => _studentIds;
+        init => _studentIds = value ?? [];
+    }
     public DateTime? AvailableAt { get; init; }
     public DateTime? DueAt { get; init; }
 }
