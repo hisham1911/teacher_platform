@@ -125,6 +125,99 @@ namespace TeacherPlatform.Infrastructure.Persistence.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("TeacherPlatform.Domain.Assignments.Assignment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("AvailableAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DueAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("QuizVersionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("SessionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SessionId")
+                        .IsUnique();
+
+                    b.HasIndex("QuizVersionId", "TenantId");
+
+                    b.HasIndex("SessionId", "TenantId")
+                        .IsUnique();
+
+                    b.HasIndex("TenantId", "AvailableAt");
+
+                    b.HasIndex("TenantId", "DueAt");
+
+                    b.HasIndex("TenantId", "QuizVersionId");
+
+                    b.ToTable("Assignments", (string)null);
+                });
+
+            modelBuilder.Entity("TeacherPlatform.Domain.Assignments.AssignmentRecipient", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AssignmentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("SourceClassroomId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("StudentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasAlternateKey("Id", "TenantId");
+
+                    b.HasIndex("AssignmentId", "TenantId");
+
+                    b.HasIndex("SourceClassroomId", "TenantId");
+
+                    b.HasIndex("StudentId", "TenantId");
+
+                    b.HasIndex("TenantId", "SourceClassroomId");
+
+                    b.HasIndex("TenantId", "StudentId");
+
+                    b.HasIndex("TenantId", "AssignmentId", "StudentId")
+                        .IsUnique();
+
+                    b.ToTable("AssignmentRecipients", (string)null);
+                });
+
             modelBuilder.Entity("TeacherPlatform.Domain.Certificates.Certificate", b =>
                 {
                     b.Property<Guid>("Id")
@@ -336,6 +429,77 @@ namespace TeacherPlatform.Infrastructure.Persistence.Migrations
                     b.HasIndex("AttemptId", "TenantId");
 
                     b.ToTable("ParentResultShares", (string)null);
+                });
+
+            modelBuilder.Entity("TeacherPlatform.Domain.Classrooms.Classroom", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AcademicYear")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "IsActive");
+
+                    b.HasIndex("TenantId", "Name");
+
+                    b.ToTable("Classrooms", (string)null);
+                });
+
+            modelBuilder.Entity("TeacherPlatform.Domain.Classrooms.ClassroomStudent", b =>
+                {
+                    b.Property<Guid>("ClassroomId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("StudentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("AddedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("ClassroomId", "StudentId");
+
+                    b.HasIndex("ClassroomId", "TenantId");
+
+                    b.HasIndex("StudentId", "TenantId");
+
+                    b.HasIndex("TenantId", "ClassroomId");
+
+                    b.HasIndex("TenantId", "StudentId");
+
+                    b.ToTable("ClassroomStudents", (string)null);
                 });
 
             modelBuilder.Entity("TeacherPlatform.Domain.Identity.ApplicationRole", b =>
@@ -1522,6 +1686,9 @@ namespace TeacherPlatform.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<int>("AccessKind")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime?>("ActivatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -2185,6 +2352,56 @@ namespace TeacherPlatform.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("TeacherPlatform.Domain.Assignments.Assignment", b =>
+                {
+                    b.HasOne("TeacherPlatform.Domain.Quizzes.QuizVersion", "QuizVersion")
+                        .WithMany()
+                        .HasForeignKey("QuizVersionId", "TenantId")
+                        .HasPrincipalKey("Id", "TenantId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("TeacherPlatform.Domain.Sessions.QuizSession", "Session")
+                        .WithOne()
+                        .HasForeignKey("TeacherPlatform.Domain.Assignments.Assignment", "SessionId", "TenantId")
+                        .HasPrincipalKey("TeacherPlatform.Domain.Sessions.QuizSession", "Id", "TenantId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("QuizVersion");
+
+                    b.Navigation("Session");
+                });
+
+            modelBuilder.Entity("TeacherPlatform.Domain.Assignments.AssignmentRecipient", b =>
+                {
+                    b.HasOne("TeacherPlatform.Domain.Assignments.Assignment", "Assignment")
+                        .WithMany("Recipients")
+                        .HasForeignKey("AssignmentId", "TenantId")
+                        .HasPrincipalKey("Id", "TenantId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("TeacherPlatform.Domain.Classrooms.Classroom", "SourceClassroom")
+                        .WithMany()
+                        .HasForeignKey("SourceClassroomId", "TenantId")
+                        .HasPrincipalKey("Id", "TenantId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("TeacherPlatform.Domain.Students.Student", "Student")
+                        .WithMany()
+                        .HasForeignKey("StudentId", "TenantId")
+                        .HasPrincipalKey("Id", "TenantId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Assignment");
+
+                    b.Navigation("SourceClassroom");
+
+                    b.Navigation("Student");
+                });
+
             modelBuilder.Entity("TeacherPlatform.Domain.Certificates.Certificate", b =>
                 {
                     b.HasOne("TeacherPlatform.Domain.Sessions.Attempt", "Attempt")
@@ -2216,6 +2433,36 @@ namespace TeacherPlatform.Infrastructure.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("Attempt");
+                });
+
+            modelBuilder.Entity("TeacherPlatform.Domain.Classrooms.Classroom", b =>
+                {
+                    b.HasOne("TeacherPlatform.Domain.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("TeacherPlatform.Domain.Classrooms.ClassroomStudent", b =>
+                {
+                    b.HasOne("TeacherPlatform.Domain.Classrooms.Classroom", "Classroom")
+                        .WithMany("Students")
+                        .HasForeignKey("ClassroomId", "TenantId")
+                        .HasPrincipalKey("Id", "TenantId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("TeacherPlatform.Domain.Students.Student", "Student")
+                        .WithMany()
+                        .HasForeignKey("StudentId", "TenantId")
+                        .HasPrincipalKey("Id", "TenantId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Classroom");
+
+                    b.Navigation("Student");
                 });
 
             modelBuilder.Entity("TeacherPlatform.Domain.Identity.RefreshToken", b =>
@@ -2612,9 +2859,19 @@ namespace TeacherPlatform.Infrastructure.Persistence.Migrations
                     b.Navigation("Tenant");
                 });
 
+            modelBuilder.Entity("TeacherPlatform.Domain.Assignments.Assignment", b =>
+                {
+                    b.Navigation("Recipients");
+                });
+
             modelBuilder.Entity("TeacherPlatform.Domain.Certificates.CertificateTemplate", b =>
                 {
                     b.Navigation("Certificates");
+                });
+
+            modelBuilder.Entity("TeacherPlatform.Domain.Classrooms.Classroom", b =>
+                {
+                    b.Navigation("Students");
                 });
 
             modelBuilder.Entity("TeacherPlatform.Domain.Identity.ApplicationUser", b =>

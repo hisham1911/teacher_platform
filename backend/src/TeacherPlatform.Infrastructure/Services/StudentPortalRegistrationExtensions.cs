@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,6 +20,12 @@ public static class StudentPortalRegistrationExtensions
         services.AddScoped<StudentPortalService>();
         services.AddScoped<StudentPortalSessionCleanupService>();
         services.AddHostedService<StudentPortalSessionCleanupWorker>();
+
+        // Phase 2 builds on the persistent student identity and reuses the existing Player engine.
+        services.AddScoped<ClassroomService>();
+        services.AddScoped<AssignmentService>();
+        services.AddScoped<AssignmentSessionGuardService>();
+        services.AddSingleton<IStartupFilter, AssignmentSessionJoinGuardStartupFilter>();
         return services;
     }
 }
