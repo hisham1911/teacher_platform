@@ -45,9 +45,9 @@ describe('router — public product routes', () => {
   it('يعرض صفحة مستقلة للمعلمين على /teachers', async () => {
     await renderRoute('/teachers');
     await expectHeading(/اصنع النشاط، جرّبه/);
-    expect(screen.getByRole('link', { name: 'إنشاء حساب' }).first()).toHaveAttribute('href', '/auth/signup');
-    expect(screen.getByRole('link', { name: 'تسجيل الدخول' }).first()).toHaveAttribute('href', '/auth/login');
-    expect(screen.getByRole('link', { name: 'واجهة الطلاب' }).first()).toHaveAttribute('href', '/');
+    expect(screen.getAllByRole('link', { name: 'إنشاء حساب' })[0]!).toHaveAttribute('href', '/auth/signup');
+    expect(screen.getAllByRole('link', { name: 'تسجيل الدخول' })[0]!).toHaveAttribute('href', '/auth/login');
+    expect(screen.getAllByRole('link', { name: 'واجهة الطلاب' })[0]!).toHaveAttribute('href', '/');
   });
 
   it('يعرض الانضمام السريع للنشاط على /join', async () => {
