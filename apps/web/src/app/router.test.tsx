@@ -34,19 +34,19 @@ describe('router — public product routes', () => {
     vi.unstubAllGlobals();
   });
 
-  it('يعرض الصفحة الرئيسية على /', async () => {
+  it('يعرض الصفحة الرئيسية الموجهة للطالب على /', async () => {
     await renderRoute('/');
-    await expectHeading('من أول سؤال');
-    expect(screen.getAllByText('بنك أسئلة').length).toBeGreaterThan(0);
-    expect(screen.getByText('شهادات')).toBeInTheDocument();
+    await expectHeading('جاهز؟');
+    expect(screen.getByText('مسابقة مباشرة')).toBeInTheDocument();
+    expect(screen.getByText('تحدّي متدرّج')).toBeInTheDocument();
 
-    const activityLinks = screen.getAllByRole('link', { name: /ابدأ نشاطًا/ });
+    const activityLinks = screen.getAllByRole('link', { name: /معايا رمز نشاط/ });
     expect(activityLinks.length).toBeGreaterThan(0);
     expect(activityLinks.every((link) => link.getAttribute('href') === '/join')).toBe(true);
 
-    const progressLinks = screen.getAllByRole('link', { name: /متابعة تقدمي/ });
-    expect(progressLinks.length).toBeGreaterThan(0);
-    expect(progressLinks.every((link) => link.getAttribute('href') === '/student')).toBe(true);
+    const portalLinks = screen.getAllByRole('link', { name: /مساحتي/ });
+    expect(portalLinks.length).toBeGreaterThan(0);
+    expect(portalLinks.every((link) => link.getAttribute('href') === '/student')).toBe(true);
   });
 
   it('يعرض الانضمام السريع للنشاط على /join', async () => {
