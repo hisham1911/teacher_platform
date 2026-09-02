@@ -18,29 +18,26 @@ public sealed class PlatformAdminController : ControllerBase
 
     public PlatformAdminController(PlatformAdminService service) => _service = service;
 
+    [HttpGet("packages")]
+    public async Task<IActionResult> ListPackages(CancellationToken cancellationToken) =>
+        Ok(await _service.ListPackagesAsync(cancellationToken));
+
     [HttpGet("plans")]
     public async Task<IActionResult> ListPlans(CancellationToken cancellationToken) =>
         Ok(await _service.ListPlansAsync(cancellationToken));
 
     [HttpPost("plans")]
-    public async Task<IActionResult> CreatePlan(
-        [FromBody] CreatePlanRequest request,
-        CancellationToken cancellationToken)
+    public async Task<IActionResult> CreatePlan([FromBody] CreatePlanRequest request, CancellationToken cancellationToken)
     {
-        var (error, result) = await _service.CreatePlanAsync(
-            request, RequireActorId(), HttpContext.TraceIdentifier, cancellationToken);
+        var (error, result) = await _service.CreatePlanAsync(request, RequireActorId(), HttpContext.TraceIdentifier, cancellationToken);
         if (error is not null) throw error;
         return Created($"/api/v1/platform/plans/{result!.Id}", result);
     }
 
     [HttpPut("plans/{planId:guid}")]
-    public async Task<IActionResult> UpdatePlan(
-        Guid planId,
-        [FromBody] UpdatePlanRequest request,
-        CancellationToken cancellationToken)
+    public async Task<IActionResult> UpdatePlan(Guid planId, [FromBody] UpdatePlanRequest request, CancellationToken cancellationToken)
     {
-        var (error, result) = await _service.UpdatePlanAsync(
-            planId, request, RequireActorId(), HttpContext.TraceIdentifier, cancellationToken);
+        var (error, result) = await _service.UpdatePlanAsync(planId, request, RequireActorId(), HttpContext.TraceIdentifier, cancellationToken);
         if (error is not null) throw error;
         return Ok(result);
     }
@@ -48,6 +45,18 @@ public sealed class PlatformAdminController : ControllerBase
     [HttpGet("tenants")]
     public async Task<IActionResult> ListTenants(CancellationToken cancellationToken) =>
         Ok(await _service.ListTenantsAsync(cancellationToken));
+
+    [HttpPut("tenants/{tenantId:guid}/status")]
+    public async Task<IActionResult> UpdateTenantStatus(
+        Guid tenantId,
+        [FromBody] UpdatePlatformTenantStatusRequest request,
+        CancellationToken cancellationToken)
+    {
+        var error = await _service.UpdateTenantStatusAsync(
+            tenantId, request, RequireActorId(), HttpContext.TraceIdentifier, cancellationToken);
+        if (error is not null) throw error;
+        return Ok(new { suspended = request.Suspended });
+    }
 
     [HttpGet("users")]
     public async Task<IActionResult> ListUsers(CancellationToken cancellationToken) =>

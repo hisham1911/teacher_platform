@@ -7,33 +7,18 @@ using TeacherPlatform.Infrastructure.Services;
 
 namespace TeacherPlatform.Api.Middleware;
 
-/// <summary>
-/// معالج الأخطاء العام:
-/// - ServiceResultException => 4xx مع ErrorCode تقني (بلا تفاصيل أمنية زائدة).
-/// - CrossTenantWriteRejectedException => 403.
-/// - الباقي => 500 عام بدون تفاصيل داخلية.
-/// لا يسرّب Tokens أو Passwords أو Stack traces للعميل.
-/// عند 401 على مسارات اللاعب (player) مع رمز ضيف منتهي/بُطّل، يُحذف كوكي الضيف العالق
-/// حتى لا يتكرر 401 بلا نهاية — حذف الكوكي هنا بعد Response.Clear() الذي يُنفَّذ قبل انع��ال
-/// هذا المعالج (Set-Cookie من الكنترولر كان سيُمْسَح).
-/// </summary>
 public sealed class GlobalExceptionHandler : IExceptionHandler
 {
     private readonly ILogger<GlobalExceptionHandler> _logger;
     private readonly IOptions<AuthOptions> _authOptions;
 
-    public GlobalExceptionHandler(
-        ILogger<GlobalExceptionHandler> logger,
-        IOptions<AuthOptions> authOptions)
+    public GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger, IOptions<AuthOptions> authOptions)
     {
         _logger = logger;
         _authOptions = authOptions;
     }
 
-    public async ValueTask<bool> TryHandleAsync(
-        HttpContext httpContext,
-        Exception exception,
-        CancellationToken cancellationToken)
+    public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
     {
         int statusCode;
         string title;
@@ -61,9 +46,12 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
                     "CertificateNotReady" => StatusCodes.Status409Conflict,
                     "CertificateNotEligible" => StatusCodes.Status403Forbidden,
                     "Forbidden" => StatusCodes.Status403Forbidden,
+                    "QuotaExceeded" => StatusCodes.Status403Forbidden,
+                    "EntitlementRequired" => StatusCodes.Status403Forbidden,
+                    "SubscriptionInactive" => StatusCodes.Status403Forbidden,
+                    "WorkspaceSuspended" => StatusCodes.Status403Forbidden,
                     "LiveModeNotAvailable" => StatusCodes.Status400BadRequest,
                     "InvalidAnswerPayload" => StatusCodes.Status400BadRequest,
-                    "QuotaExceeded" => StatusCodes.Status403Forbidden,
                     "FileTooLarge" => StatusCodes.Status413PayloadTooLarge,
                     _ => StatusCodes.Status400BadRequest
                 };
@@ -75,27 +63,19 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
                     DeleteStaleGuestCookie(httpContext.Response);
                 }
 
-                _logger.LogWarning(
-                    "Request failed. Code={ErrorCode} TraceId={TraceId}",
-                    serviceError.ErrorCode, httpContext.TraceIdentifier);
+                _logger.LogWarning("Request failed. Code={ErrorCode} TraceId={TraceId}", serviceError.ErrorCode, httpContext.TraceIdentifier);
                 break;
 
             case CrossTenantWriteRejectedException crossTenant:
                 statusCode = StatusCodes.Status403Forbidden;
                 title = "CrossTenantOperationRejected";
-                _logger.LogWarning(
-                    crossTenant,
-                    "Cross-tenant mutation blocked. TraceId={TraceId}",
-                    httpContext.TraceIdentifier);
+                _logger.LogWarning(crossTenant, "Cross-tenant mutation blocked. TraceId={TraceId}", httpContext.TraceIdentifier);
                 break;
 
             case TenantWriteWithoutContextException noContext:
                 statusCode = StatusCodes.Status500InternalServerError;
                 title = "InternalError";
-                _logger.LogError(
-                    noContext,
-                    "Tenant-owned write without resolved tenant context. TraceId={TraceId}",
-                    httpContext.TraceIdentifier);
+                _logger.LogError(noContext, "Tenant-owned write without resolved tenant context. TraceId={TraceId}", httpContext.TraceIdentifier);
                 break;
 
             default:
@@ -115,15 +95,9 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
             detail = statusCode >= 500 ? "An unexpected error occurred." : exception.Message,
             traceId = httpContext.TraceIdentifier
         }, cancellationToken);
-
         return true;
     }
 
-    /// <summary>
-    /// يحذف كوكي ضيف اللاعب العالق (رمز منتهي/بُطّل) بنفس الاسم والسمات الأصلية —
-    /// Path=/, HttpOnly، Secure حسب الإعدادات وSameSite من الإعدادات. أي كوكي فاسد
-    /// عند أي 401 على مسارات اللاعب (ولا يوجد كوكي صالح) ⇒ المتصفح يتخلّص منه.
-    /// </summary>
     private void DeleteStaleGuestCookie(HttpResponse response)
     {
         var options = _authOptions.Value;
@@ -143,11 +117,9 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
     }
 }
 
-/// <summary>يضيف X-Request-Id لكل استجابة لربط السجلات.</summary>
 public sealed class CorrelationIdMiddleware
 {
     private readonly RequestDelegate _next;
-
     public CorrelationIdMiddleware(RequestDelegate next) => _next = next;
 
     public async Task InvokeAsync(HttpContext context)
@@ -158,7 +130,6 @@ public sealed class CorrelationIdMiddleware
             context.Response.Headers.Append("X-Request-Id", requestId);
             return Task.CompletedTask;
         });
-
         await _next(context);
     }
 }

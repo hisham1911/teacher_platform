@@ -19,4 +19,8 @@ public static class UsageMetrics
     public const string Attempts = "Attempts";
     public const string StorageBytes = "StorageBytes";
     public const string CertificatesIssued = "CertificatesIssued";
+    public const string Students = "Students";
+    public const string Members = "Members";
+    public const string Classes = "Classes";
+    public const string ActiveAssignments = "ActiveAssignments";
 }
