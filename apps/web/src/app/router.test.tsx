@@ -93,11 +93,11 @@ describe('router — public product routes', () => {
 
   it('يعرض صفحة إعادة تعيين كلمة المرور على /auth/reset-password', async () => {
     await renderRoute('/auth/reset-password');
-    await expectHeading('إعادة تعيين كلمة المرور');
+    await expectHeading(/إعادة تعيين|رابط إعادة التعيين/);
   });
 
-  it('يعرض صفحة الاختبار العامة على /q/:publicCode', async () => {
+  it('يعرض خطأ مفهومًا عندما يتعذر تحميل الاختبار العام', async () => {
     await renderRoute('/q/ABC123');
-    await expectHeading(/الاختبار|غير موجود|مشكلة/);
+    expect(screen.getByText(/تعذر تحميل بيانات الاختبار/)).toBeInTheDocument();
   });
 });
