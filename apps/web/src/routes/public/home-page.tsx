@@ -178,7 +178,7 @@ function InteractiveDemo() {
   const [score, setScore] = useState(0);
   const [finished, setFinished] = useState(false);
 
-  const question = demoQuestions[questionIndex];
+  const question = demoQuestions[questionIndex] ?? demoQuestions[0];
   const answered = selectedIndex !== null;
   const selectedCorrect = answered && selectedIndex === question.correctIndex;
   const isLastQuestion = questionIndex === demoQuestions.length - 1;
