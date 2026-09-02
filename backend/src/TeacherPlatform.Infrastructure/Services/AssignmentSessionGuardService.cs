@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using TeacherPlatform.Application.Abstractions;
 using TeacherPlatform.Domain.Sessions;
 using TeacherPlatform.Infrastructure.Persistence;
 
