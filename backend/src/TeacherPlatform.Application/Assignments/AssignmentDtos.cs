@@ -37,6 +37,18 @@ public sealed class AssignmentDetailResponse : AssignmentResponse
     public IReadOnlyList<AssignmentRecipientResponse> Recipients { get; init; } = [];
 }
 
+public sealed class AssignmentResultResponse
+{
+    public Guid StudentId { get; init; }
+    public string StudentName { get; init; } = string.Empty;
+    public Guid? AttemptId { get; init; }
+    public string? Status { get; init; }
+    public decimal? Score { get; init; }
+    public decimal? MaxScore { get; init; }
+    public decimal? Percentage { get; init; }
+    public bool? Passed { get; init; }
+}
+
 public sealed class StudentTaskResponse
 {
     public Guid Id { get; init; }
