@@ -7,6 +7,7 @@ import { commercialWorkspaceApi } from '../../data/api-client/commercial-endpoin
 import { tenantTransferApi, tenantsApi } from '../../data/api-client/endpoints';
 import { HttpError } from '../../data/api-client/http-error';
 import { getActiveTenantId } from '../../lib/auth/session';
+import type { PlanEntitlements } from '../../types/saas';
 
 interface BrandingDraft {
   publicTeacherName: string;
@@ -17,23 +18,18 @@ interface BrandingDraft {
   supportContact: string;
 }
 
-const entitlementLabels: Array<[keyof NonNullable<ReturnType<typeof entitlementShape>>, string]> = [
+type WorkspaceEntitlementKey = keyof Pick<
+  PlanEntitlements,
+  'bulkImport' | 'advancedReports' | 'certificates' | 'customBranding' | 'dataExport'
+>;
+
+const entitlementLabels: Array<[WorkspaceEntitlementKey, string]> = [
   ['bulkImport', 'استيراد جماعي'],
   ['advancedReports', 'تقارير متقدمة'],
   ['certificates', 'شهادات'],
   ['customBranding', 'هوية مساحة العمل'],
   ['dataExport', 'تصدير البيانات'],
 ];
-
-function entitlementShape() {
-  return {
-    bulkImport: false,
-    advancedReports: false,
-    certificates: false,
-    customBranding: false,
-    dataExport: false,
-  };
-}
 
 function statusLabel(status?: string) {
   switch (status) {
