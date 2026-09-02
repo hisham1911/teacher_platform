@@ -41,6 +41,7 @@ export default function StudentsPage() {
           <p className="mt-2 text-base leading-8 text-slate-600">أضف الطالب مرة واحدة، وسيكون له كود ثابت يستخدمه في كل الأنشطة.</p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
+          <Link to="/dashboard/classes" className="inline-flex min-h-12 shrink-0 items-center justify-center rounded-xl border border-violet-200 bg-violet-50 px-4 text-sm font-bold text-violet-800 shadow-sm transition hover:bg-violet-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-100">الفصول</Link>
           <Link to="/join" className="inline-flex min-h-12 shrink-0 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-violet-300 hover:text-violet-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-100">فتح واجهة الطالب</Link>
           <Link to="/dashboard/students/new" className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-violet-700 px-5 text-sm font-bold text-white shadow-sm transition hover:bg-violet-800 hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-200"><span aria-hidden="true" className="text-lg leading-none">＋</span>إضافة طالب</Link>
         </div>
