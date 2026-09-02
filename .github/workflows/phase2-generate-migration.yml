@@ -1,0 +1,44 @@
+name: Phase 2 Generate Migration
+
+on:
+  push:
+    branches:
+      - feature/phase2-classes-assignments
+    paths:
+      - .github/workflows/phase2-generate-migration.yml
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    env:
+      ASPNETCORE_ENVIRONMENT: Testing
+      ConnectionStrings__DefaultConnection: Host=localhost;Port=5432;Database=teacher_platform_design;Username=postgres;Password=postgres
+      DataProtection__KeysDirectory: /tmp/teacher-platform-keys-ci
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Restore
+        working-directory: backend
+        run: dotnet restore
+      - name: Install EF tool
+        run: dotnet tool install --global dotnet-ef --version 10.0.3
+      - name: Generate Phase 2 migration
+        working-directory: backend
+        run: |
+          dotnet ef migrations add Phase2ClassesAssignments \
+            --project src/TeacherPlatform.Infrastructure/TeacherPlatform.Infrastructure.csproj \
+            --startup-project src/TeacherPlatform.Api/TeacherPlatform.Api.csproj \
+            --output-dir Persistence/Migrations
+      - name: Package generated migration
+        working-directory: backend/src/TeacherPlatform.Infrastructure/Persistence/Migrations
+        run: |
+          mkdir -p /tmp/phase2-migration
+          cp *Phase2ClassesAssignments*.cs /tmp/phase2-migration/
+          cp AppDbContextModelSnapshot.cs /tmp/phase2-migration/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: phase2-ef-migration
+          path: /tmp/phase2-migration
+          if-no-files-found: error
