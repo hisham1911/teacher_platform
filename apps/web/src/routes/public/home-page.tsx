@@ -47,7 +47,7 @@ export default function HomePage() {
             </div>
 
             <h1 className="mt-6 text-4xl font-black leading-[1.12] text-slate-950 sm:text-5xl lg:text-7xl">
-              التعلّم يبدأ
+              التعلّم يبدأ{' '}
               <span className="mt-1 block bg-gradient-to-l from-emerald-600 via-violet-700 to-fuchsia-600 bg-clip-text text-transparent">بشرارة.</span>
             </h1>
 
