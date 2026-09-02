@@ -67,8 +67,9 @@ const login = await post('/api/v1/auth/login', { email, password: 'SecurePasswor
 const token = login.accessToken;
 console.log('[seed] logged in');
 
+const tenantName = `E2E Space ${Date.now() % 100000}`;
 const tenant = await post('/api/v1/tenants', {
-  name: `E2E Space ${Date.now() % 100000}`,
+  name: tenantName,
   slug: `e2e-${Date.now().toString(36)}`,
   countryCode: 'EG',
   timezone: 'Africa/Cairo',
@@ -106,13 +107,19 @@ const quiz = await post(`/api/v1/tenants/${tenantId}/quizzes`, {
 const quizId = quiz.id;
 
 for (const questionId of [q1, q2]) {
-  await post(`/api/v1/tenants/${tenantId}/quizzes/${quizId}/draft/items`,
-    { questionId, points: 5, isRequired: true }, token);
+  await post(
+    `/api/v1/tenants/${tenantId}/quizzes/${quizId}/draft/items`,
+    { questionId, points: 5, isRequired: true },
+    token,
+  );
 }
 
 const draft = await get(`/api/v1/tenants/${tenantId}/quizzes/${quizId}/draft`, token);
-await post(`/api/v1/tenants/${tenantId}/quizzes/${quizId}/publish`,
-  { baseVersion: draft.version }, token);
+await post(
+  `/api/v1/tenants/${tenantId}/quizzes/${quizId}/publish`,
+  { baseVersion: draft.version },
+  token,
+);
 
 const survey = await post(`/api/v1/tenants/${tenantId}/surveys`, {
   quizId,
@@ -137,27 +144,43 @@ const survey = await post(`/api/v1/tenants/${tenantId}/surveys`, {
     { questionType: 'ShortText', prompt: 'ملاحظة إضافية', isRequired: false, options: [] },
   ],
 }, token);
-await post(`/api/v1/tenants/${tenantId}/surveys/${survey.id}/publish`,
-  { baseVersion: survey.version }, token);
+await post(
+  `/api/v1/tenants/${tenantId}/surveys/${survey.id}/publish`,
+  { baseVersion: survey.version },
+  token,
+);
 
-const session = await post(`/api/v1/tenants/${tenantId}/quizzes/${quizId}/sessions`,
-  { mode: 'SelfPaced', label: 'حصة E2E' }, token);
+const session = await post(
+  `/api/v1/tenants/${tenantId}/quizzes/${quizId}/sessions`,
+  { mode: 'SelfPaced', label: 'حصة E2E' },
+  token,
+);
 const sessionId = session.id;
 const joinCode = session.joinCode;
 
-await post(`/api/v1/tenants/${tenantId}/quizzes/${quizId}/sessions/${sessionId}/activate`,
-  { baseVersion: session.version }, token);
+await post(
+  `/api/v1/tenants/${tenantId}/quizzes/${quizId}/sessions/${sessionId}/activate`,
+  { baseVersion: session.version },
+  token,
+);
 
-const liveSession = await post(`/api/v1/tenants/${tenantId}/quizzes/${quizId}/sessions`,
-  { mode: 'Live', label: 'مسابقة E2E مباشرة' }, token);
-await post(`/api/v1/tenants/${tenantId}/quizzes/${quizId}/sessions/${liveSession.id}/activate`,
-  { baseVersion: liveSession.version }, token);
+const liveSession = await post(
+  `/api/v1/tenants/${tenantId}/quizzes/${quizId}/sessions`,
+  { mode: 'Live', label: 'مسابقة E2E مباشرة' },
+  token,
+);
+await post(
+  `/api/v1/tenants/${tenantId}/quizzes/${quizId}/sessions/${liveSession.id}/activate`,
+  { baseVersion: liveSession.version },
+  token,
+);
 
 const state = {
   api: API,
   joinCode,
   email,
   tenantId,
+  tenantName,
   quizId,
   sessionId,
   liveSessionId: liveSession.id,
