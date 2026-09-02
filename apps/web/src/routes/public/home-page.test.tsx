@@ -12,8 +12,14 @@ describe('HomePage', () => {
     );
 
     expect(screen.getByRole('heading', { name: /تعلّم الإنجليزية بالممارسة/ })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /ابدأ نشاطًا/ })).toHaveAttribute('href', '/join');
-    expect(screen.getByRole('link', { name: /متابعة تقدمي/ })).toHaveAttribute('href', '/student');
+
+    const activityLinks = screen.getAllByRole('link', { name: /ابدأ نشاطًا/ });
+    expect(activityLinks.length).toBeGreaterThan(0);
+    expect(activityLinks.every((link) => link.getAttribute('href') === '/join')).toBe(true);
+
+    const progressLinks = screen.getAllByRole('link', { name: /متابعة تقدمي/ });
+    expect(progressLinks.length).toBeGreaterThan(0);
+    expect(progressLinks.every((link) => link.getAttribute('href') === '/student')).toBe(true);
 
     fireEvent.click(screen.getByRole('button', { name: 'كتاب' }));
     expect(screen.getByText(/إجابة صحيحة/)).toBeInTheDocument();
