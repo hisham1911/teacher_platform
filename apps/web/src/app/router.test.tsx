@@ -2,6 +2,8 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryRouter } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { studentPortalApi } from '../data/api-client/student-portal-endpoints';
+import { HttpError } from '../data/api-client/http-error';
 import { router } from './router';
 
 async function renderRoute(initialPath: string) {
@@ -27,6 +29,7 @@ describe('router — public product routes', () => {
   });
 
   afterEach(() => {
+    vi.restoreAllMocks();
     vi.unstubAllEnvs();
     vi.unstubAllGlobals();
   });
@@ -45,16 +48,9 @@ describe('router — public product routes', () => {
   });
 
   it('يعرض بوابة الطالب المستقلة على /student للزائر غير المسجل', async () => {
-    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
-      const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
-      if (url.includes('/api/v1/student-portal/status')) {
-        return new Response(JSON.stringify({ enabled: true }), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        });
-      }
-      return new Response('{}', { status: 401 });
-    }));
+    vi.spyOn(studentPortalApi, 'status').mockResolvedValue({ enabled: true });
+    vi.spyOn(studentPortalApi, 'me').mockRejectedValue(new HttpError(401, null));
+
     await renderRoute('/student');
     await expectHeading('ادخل إلى مساحتك');
     expect(screen.getByLabelText('كود دخول الطالب')).toBeInTheDocument();
