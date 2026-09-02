@@ -101,7 +101,7 @@ afterEach(() => {
 describe('SettingsPage commercial workspace', () => {
   it('shows the current commercial capacities without exposing them to the student experience', async () => {
     renderPage();
-    expect(await screen.findByText('Maryam Academy')).toBeInTheDocument();
+    expect(await screen.findByDisplayValue('Maryam Academy')).toBeInTheDocument();
     expect(await screen.findByText('حساب حالي محفوظ')).toBeInTheDocument();
     expect(screen.getByText('الطلاب')).toBeInTheDocument();
     expect(screen.getByText(/يُربط بعد مزامنة Classes \+ Assignments/)).toBeInTheDocument();
