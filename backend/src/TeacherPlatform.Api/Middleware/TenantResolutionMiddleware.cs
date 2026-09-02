@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using TeacherPlatform.Application.Tenancy;
 using TeacherPlatform.Domain.Tenancy;
+using TeacherPlatform.Infrastructure.Persistence;
 using TeacherPlatform.Infrastructure.Services;
 
 namespace TeacherPlatform.Api.Middleware;
