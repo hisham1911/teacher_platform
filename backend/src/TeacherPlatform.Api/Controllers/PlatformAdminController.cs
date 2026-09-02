@@ -15,8 +15,13 @@ namespace TeacherPlatform.Api.Controllers;
 public sealed class PlatformAdminController : ControllerBase
 {
     private readonly PlatformAdminService _service;
+    private readonly IClock _clock;
 
-    public PlatformAdminController(PlatformAdminService service) => _service = service;
+    public PlatformAdminController(PlatformAdminService service, IClock clock)
+    {
+        _service = service;
+        _clock = clock;
+    }
 
     [HttpGet("packages")]
     public async Task<IActionResult> ListPackages(CancellationToken cancellationToken) =>
@@ -80,6 +85,13 @@ public sealed class PlatformAdminController : ControllerBase
         [FromBody] ActivateSubscriptionRequest request,
         CancellationToken cancellationToken)
     {
+        if (request.StartsAt is DateTime startsAt && startsAt > _clock.UtcNow)
+        {
+            throw new ServiceResultException(
+                "ValidationError",
+                "Future subscription scheduling is not supported safely yet. Activate the plan at its intended start time.");
+        }
+
         var (error, result) = await _service.ActivateSubscriptionAsync(
             tenantId, request, RequireActorId(), HttpContext.TraceIdentifier, cancellationToken);
         if (error is not null) throw error;
