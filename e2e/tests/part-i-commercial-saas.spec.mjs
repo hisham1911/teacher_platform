@@ -8,6 +8,17 @@ const state = JSON.parse(readFileSync(join(e2eDir, 'state.json'), 'utf8'));
 const apiUrl = process.env.API_URL || 'http://localhost:5000';
 const password = 'SecurePassword123!';
 
+async function apiGet(request, path, token) {
+  const response = await request.get(`${apiUrl}${path}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  });
+  const text = await response.text();
+  if (!response.ok()) {
+    throw new Error(`GET ${path} -> ${response.status()}: ${text}`);
+  }
+  return text ? JSON.parse(text) : null;
+}
+
 async function apiPost(request, path, body, token) {
   const response = await request.post(`${apiUrl}${path}`, {
     data: body,
@@ -59,18 +70,26 @@ async function prepareCommercialPlans(request) {
   const login = await loginApi(request);
   expect(login.user.platformRoles).toContain('PlatformAdmin');
 
+  // Earlier Full Browser parts intentionally create managed students in the same
+  // seeded workspace. Build the quota around the real current usage so this test
+  // remains isolated from execution order while still proving allow -> block -> upgrade.
+  const tenants = await apiGet(request, '/api/v1/platform/tenants', login.accessToken);
+  const workspace = tenants.find((tenant) => tenant.id === state.tenantId);
+  expect(workspace).toBeDefined();
+  const currentStudents = workspace.usage?.students ?? 0;
+
   const suffix = `${Date.now()}`.slice(-7);
   const teacherPlan = await apiPost(request, '/api/v1/platform/plans', {
     code: `e2e-teacher-${suffix}`,
     name: `E2E Teacher ${suffix}`,
     isActive: true,
-    contract: contract({ packageName: 'Teacher', maxStudents: 1, bulkImport: false }),
+    contract: contract({ packageName: 'Teacher', maxStudents: currentStudents + 1, bulkImport: false }),
   }, login.accessToken);
   const proPlan = await apiPost(request, '/api/v1/platform/plans', {
     code: `e2e-pro-${suffix}`,
     name: `E2E Teacher Pro ${suffix}`,
     isActive: true,
-    contract: contract({ packageName: 'TeacherPro', maxStudents: 3, bulkImport: true }),
+    contract: contract({ packageName: 'TeacherPro', maxStudents: currentStudents + 3, bulkImport: true }),
   }, login.accessToken);
 
   await apiPost(
