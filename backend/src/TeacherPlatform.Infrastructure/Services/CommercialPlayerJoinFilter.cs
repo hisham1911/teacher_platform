@@ -39,8 +39,8 @@ public sealed class CommercialPlayerJoinFilter : IAsyncActionFilter
         ActionExecutingContext context,
         ActionExecutionDelegate next)
     {
-        var controller = context.ActionDescriptor.RouteValues.GetValueOrDefault("controller");
-        var action = context.ActionDescriptor.RouteValues.GetValueOrDefault("action");
+        context.ActionDescriptor.RouteValues.TryGetValue("controller", out var controller);
+        context.ActionDescriptor.RouteValues.TryGetValue("action", out var action);
         if (!string.Equals(controller, "Player", StringComparison.Ordinal)
             || !string.Equals(action, "Join", StringComparison.Ordinal)
             || !HttpMethods.IsPost(context.HttpContext.Request.Method))
