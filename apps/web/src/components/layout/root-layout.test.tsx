@@ -18,10 +18,12 @@ function renderLayout(path = '/dashboard') {
 }
 
 describe('RootLayout', () => {
-  it('يعرض روابط التنقل العامة للزائر', () => {
+  it('يفصل الصفحة العامة للطالب عن تنقل Studio', () => {
     clearSession();
     const view = renderLayout('/');
-    expect(screen.getByRole('link', { name: /تسجيل الدخول/ })).toBeInTheDocument();
+    expect(screen.getByText('محتوى')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /تسجيل الدخول/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('navigation', { name: 'التنقل الرئيسي' })).not.toBeInTheDocument();
     view.unmount();
   });
 

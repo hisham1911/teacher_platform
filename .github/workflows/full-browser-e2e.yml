@@ -162,7 +162,7 @@ jobs:
             AND r."Name" = 'PlatformAdmin';
           SQL
 
-      - name: Run advanced builder regression
+      - name: Run consolidated builder compatibility regression
         working-directory: e2e
         run: npx playwright test tests/part-d-builder.spec.mjs --reporter=line
 
@@ -220,7 +220,11 @@ jobs:
         working-directory: e2e
         run: npx playwright test tests/part-i-classes-assignments.spec.mjs --reporter=line
 
-      - name: Run commercial SaaS Part J
+      - name: Run Phase 3 product consolidation Part J
+        working-directory: e2e
+        run: npx playwright test tests/part-j-phase3-product-consolidation.spec.mjs --reporter=line
+
+      - name: Run commercial SaaS regression
         working-directory: e2e
         run: npx playwright test tests/part-i-commercial-saas.spec.mjs --reporter=line
 

@@ -9,6 +9,8 @@ namespace TeacherPlatform.Api.Middleware;
 /// <summary>
 /// Resolves tenant context from the route/header and rejects suspended memberships/workspaces before tenant services run.
 /// Tenant identity and status are always loaded from the server; X-Tenant-Id is only a workspace selector.
+/// PlatformAdmin API routes are deliberately excluded: they are protected by the PlatformAdmin policy and must be able
+/// to inspect/reactivate a suspended workspace without the tenant-level suspension guard blocking the administrative action.
 /// </summary>
 public sealed class TenantResolutionMiddleware
 {
@@ -22,6 +24,12 @@ public sealed class TenantResolutionMiddleware
         TenantContext tenantContext,
         TenantBypassService bypass)
     {
+        if (context.Request.Path.StartsWithSegments("/api/v1/platform"))
+        {
+            await _next(context);
+            return;
+        }
+
         if (TryGetRouteTenantId(context, out var routeTenantId))
         {
             if (!(context.User.Identity?.IsAuthenticated ?? false))

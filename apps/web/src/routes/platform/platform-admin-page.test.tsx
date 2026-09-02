@@ -82,7 +82,7 @@ describe('PlatformAdminPage commercial control plane', () => {
     expect(screen.getByRole('heading', { name: 'Pilot' })).toBeInTheDocument();
     expect(screen.getByText('maryam@example.test')).toBeInTheDocument();
     expect(screen.getAllByText('حساب حالي محفوظ')).toHaveLength(2);
-    expect(screen.getByText('22')).toBeInTheDocument();
+    expect(screen.getByText(new Intl.NumberFormat('ar-EG').format(22))).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText('خطة Maryam Academy'), { target: { value: 'plan-1' } });
     fireEvent.click(screen.getByRole('button', { name: 'تغيير الخطة' }));

@@ -13,7 +13,13 @@ vi.mock('../../../data/api-client/endpoints', async (importOriginal) => {
   };
 });
 
+vi.mock('../../../data/api-client/phase2-endpoints', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../data/api-client/phase2-endpoints')>();
+  return { ...actual, assignmentsApi: { ...actual.assignmentsApi, list: vi.fn() } };
+});
+
 const { quizzesApi, sessionsApi } = await import('../../../data/api-client/endpoints');
+const { assignmentsApi } = await import('../../../data/api-client/phase2-endpoints');
 
 function renderPage() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -26,7 +32,12 @@ describe('ReportsIndexPage', () => {
     localStorage.setItem('teacher-platform:active-tenant-id', 'tenant-1');
   });
 
-  it('يقود المستخدم من النشاط إلى نتائج جلسة موجودة', async () => {
+  it('يبدأ بالإسنادات ثم يترك نتائج التشغيلات السريعة متاحة', async () => {
+    vi.mocked(assignmentsApi.list).mockResolvedValue([{
+      id: 'assignment-1', quizVersionId: 'version-1', quizId: 'quiz-1', activityTitle: 'اختبار العلوم',
+      availableAt: null, dueAt: '2026-01-10T00:00:00Z', recipientCount: 8, startedCount: 5, completedCount: 3,
+      version: 1, createdAt: '2026-01-01T00:00:00Z',
+    }]);
     vi.mocked(quizzesApi.list).mockResolvedValue({
       items: [{ id: 'quiz-1', title: 'اختبار العلوم', slug: 'science', status: 'Published', currentPublishedVersionNumber: 1, itemCount: 5, createdAt: '2026-01-01', updatedAt: '2026-01-01' }],
       page: 1, pageSize: 100, totalItems: 1, totalPages: 1,
@@ -38,18 +49,20 @@ describe('ReportsIndexPage', () => {
 
     renderPage();
 
-    expect(await screen.findByText('الحصة الأولى')).toBeInTheDocument();
-    expect(screen.getAllByText('اختبار العلوم').length).toBeGreaterThan(1);
-    expect(screen.getByText('ذاتي الإيقاع')).toBeInTheDocument();
-    expect(screen.getByText('3')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'تقدم الطلاب في الأنشطة المرسلة' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'تقدم الطلاب' })).toHaveAttribute('href', '/dashboard/assignments/assignment-1');
+    expect(screen.getByText('الحصة الأولى')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'تشغيلات النشاط السابقة' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'فتح النتائج' })).toHaveAttribute('href', '/dashboard/reports/session-1?quizId=quiz-1');
   });
 
-  it('يشرح الخطوة التالية عندما لا توجد أنشطة', async () => {
+  it('يشرح الخطوة التالية عندما لا توجد إسنادات أو تشغيلات', async () => {
+    vi.mocked(assignmentsApi.list).mockResolvedValue([]);
     vi.mocked(quizzesApi.list).mockResolvedValue({ items: [], page: 1, pageSize: 100, totalItems: 0, totalPages: 0 });
     renderPage();
-    expect(await screen.findByText('لا توجد نتائج بعد')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'إنشاء نشاط' })).toBeInTheDocument();
+    expect(await screen.findByText('لا توجد إسنادات بعد')).toBeInTheDocument();
+    expect(screen.getByText('لا توجد تشغيلات بعد')).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: 'إنشاء نشاط' }).length).toBeGreaterThan(0);
     expect(sessionsApi.list).not.toHaveBeenCalled();
   });
 });
