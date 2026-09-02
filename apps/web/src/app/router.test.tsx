@@ -36,8 +36,9 @@ describe('router — public product routes', () => {
 
   it('يعرض الصفحة الرئيسية على /', async () => {
     await renderRoute('/');
-    await expectHeading('التعلّم يبدأ بشرارة');
-    expect(screen.getByRole('link', { name: /دخول الطالب بالرمز/ })).toHaveAttribute('href', '/join');
+    await expectHeading('تعلّم الإنجليزية بالممارسة');
+    expect(screen.getByRole('link', { name: /ابدأ نشاطًا/ })).toHaveAttribute('href', '/join');
+    expect(screen.getByRole('link', { name: /متابعة تقدمي/ })).toHaveAttribute('href', '/student');
   });
 
   it('يعرض الانضمام السريع للنشاط على /join', async () => {
