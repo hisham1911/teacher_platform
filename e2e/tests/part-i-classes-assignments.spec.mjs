@@ -40,6 +40,12 @@ async function loginStudent(page, accessCode) {
   await expect(page).toHaveURL(/\/student\/home$/, { timeout: 15_000 });
 }
 
+async function taskCard(page, title = 'اختبار E2E') {
+  const card = page.locator('article').filter({ hasText: title }).first();
+  await expect(card).toBeVisible({ timeout: 15_000 });
+  return card;
+}
+
 async function answerFirstQuestionAndLeave(page) {
   await expect(page.getByRole('button', { name: 'ابدأ الآن' })).toBeVisible({ timeout: 15_000 });
   await page.getByRole('button', { name: 'ابدأ الآن' }).click();
@@ -58,7 +64,7 @@ async function finishFromSecondQuestion(page) {
   await page.getByText('سبعة', { exact: true }).click();
   await page.getByRole('button', { name: 'تثبيت الإجابة' }).click();
   await expect(page.getByText(/إجابة صحيحة ✓/)).toBeVisible();
-  await page.getByRole('button', { name: 'إنهاء الاختبار' }).click();
+  await page.getByRole('button', { name: 'إنهاء النشاط' }).click();
   await expect(page.getByText('100%').first()).toBeVisible();
 }
 
@@ -78,7 +84,6 @@ test('Part I: classroom assignment is visible only to recipients and resumes acr
   const studentB = await createStudentAndPortalCode(teacherPage, studentBName);
   const outsider = await createStudentAndPortalCode(teacherPage, outsiderName);
 
-  // Teacher creates a classroom and adds A + B from the existing Student Roster.
   await teacherPage.goto('/dashboard/classes/new');
   await teacherPage.getByLabel('اسم الفصل').fill(classroomName);
   await teacherPage.getByLabel(/السنة الدراسية/).fill('2026 / 2027');
@@ -89,15 +94,14 @@ test('Part I: classroom assignment is visible only to recipients and resumes acr
   await teacherPage.getByRole('button', { name: new RegExp(studentBName) }).click();
   await expect(teacherPage.getByRole('listitem').filter({ hasText: studentBName })).toBeVisible();
   await expect(teacherPage.getByText(/طلاب الفصل/)).toContainText('(2)');
-  await expect(teacherPage.getByText(outsiderName)).toBeVisible(); // available to add, but deliberately not a member
+  await expect(teacherPage.getByText(outsiderName)).toBeVisible();
 
-  // Published seed activity exposes the human Build → Preview → Assign / Share / Live decision.
   await teacherPage.goto(`/dashboard/activities/${state.quizId}/manage`);
-  await expect(teacherPage.getByRole('heading', { name: 'ماذا تريد أن تفعل بالنشاط؟' })).toBeVisible();
-  await expect(teacherPage.getByRole('link', { name: /إسناد لطلابي/ })).toBeVisible();
+  await expect(teacherPage.getByRole('heading', { name: 'إسناد، مشاركة، أو Live' })).toBeVisible();
+  await expect(teacherPage.getByRole('button', { name: /إسناد النشاط/ })).toBeVisible();
   await expect(teacherPage.getByRole('button', { name: /مشاركة رابط/ })).toBeVisible();
   await expect(teacherPage.getByRole('button', { name: /بدء Live/ })).toBeVisible();
-  await teacherPage.getByRole('link', { name: /إسناد لطلابي/ }).click();
+  await teacherPage.getByRole('button', { name: /إسناد النشاط/ }).click();
   await expect(teacherPage).toHaveURL(/\/dashboard\/activities\/[0-9a-f-]+\/assign\?/i);
   await expect(teacherPage.getByRole('heading', { name: 'إسناد النشاط' })).toBeVisible();
 
@@ -111,59 +115,48 @@ test('Part I: classroom assignment is visible only to recipients and resumes acr
   await expect(teacherPage.getByText('اختبار E2E', { exact: true })).toBeVisible();
   await expect(teacherPage.getByText('وصل إلى').locator('..')).toContainText('2');
 
-  // Student A sees a new task, starts it, answers halfway, and exits.
   const deviceAContext = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const deviceAPage = await deviceAContext.newPage();
   await loginStudent(deviceAPage, studentA.accessCode);
-  const tasksA = deviceAPage.getByLabel('أنشطتك الحالية');
-  await expect(tasksA).toBeVisible();
-  await expect(tasksA.getByText('اختبار E2E', { exact: true })).toBeVisible();
-  await expect(tasksA.getByText('جديد', { exact: true })).toBeVisible();
-  await tasksA.getByRole('button', { name: 'ابدأ' }).click();
+  const taskA = await taskCard(deviceAPage);
+  await expect(taskA.getByText('جديد', { exact: true })).toBeVisible();
+  await taskA.getByRole('button', { name: 'ابدأ' }).click();
   await expect(deviceAPage).toHaveURL(/\/play\//, { timeout: 15_000 });
   await answerFirstQuestionAndLeave(deviceAPage);
   await deviceAContext.close();
 
-  // Fresh browser/device logs in with the same persistent identity and resumes question 2.
   const deviceA2Context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const deviceA2Page = await deviceA2Context.newPage();
   await loginStudent(deviceA2Page, studentA.accessCode);
-  const resumedTasksA = deviceA2Page.getByLabel('أنشطتك الحالية');
-  await expect(resumedTasksA.getByText('اختبار E2E', { exact: true })).toBeVisible();
-  await expect(resumedTasksA.getByText('جاري', { exact: true })).toBeVisible();
-  await expect(resumedTasksA.getByText(/50% منجز/)).toBeVisible();
-  await resumedTasksA.getByRole('button', { name: 'أكمل' }).click();
+  const resumedTaskA = await taskCard(deviceA2Page);
+  await expect(resumedTaskA.getByText('أكمل', { exact: true })).toBeVisible();
+  await expect(resumedTaskA.getByText(/50% منجز/)).toBeVisible();
+  await resumedTaskA.getByRole('button', { name: 'أكمل' }).click();
   await expect(deviceA2Page).toHaveURL(/\/play\//, { timeout: 15_000 });
   await finishFromSecondQuestion(deviceA2Page);
 
   await deviceA2Page.goto('/student/home');
-  const completedTasksA = deviceA2Page.getByLabel('أنشطتك الحالية');
-  await expect(completedTasksA.getByText('اختبار E2E', { exact: true })).toBeVisible();
-  await expect(completedTasksA.getByText('مكتمل', { exact: true }).first()).toBeVisible();
-  await expect(completedTasksA.getByText('100%').first()).toBeVisible();
-  await expect(completedTasksA.getByRole('button', { name: 'شاهد النتيجة' })).toBeVisible();
-  await completedTasksA.getByRole('button', { name: 'شاهد النتيجة' }).click();
+  const completedTaskA = await taskCard(deviceA2Page);
+  await expect(completedTaskA.getByText('انتهيت', { exact: true })).toBeVisible();
+  await expect(completedTaskA.getByText('100%').first()).toBeVisible();
+  await expect(completedTaskA.getByRole('button', { name: 'شاهد النتيجة' })).toBeVisible();
+  await completedTaskA.getByRole('button', { name: 'شاهد النتيجة' }).click();
   await expect(deviceA2Page).toHaveURL(/\/play\//, { timeout: 15_000 });
   await expect(deviceA2Page.getByText('100%').first()).toBeVisible();
 
-  // Student B was in the class snapshot and sees the same task as New.
   const deviceBContext = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const deviceBPage = await deviceBContext.newPage();
   await loginStudent(deviceBPage, studentB.accessCode);
-  const tasksB = deviceBPage.getByLabel('أنشطتك الحالية');
-  await expect(tasksB.getByText('اختبار E2E', { exact: true })).toBeVisible();
-  await expect(tasksB.getByText('جديد', { exact: true })).toBeVisible();
-  await expect(tasksB.getByRole('button', { name: 'ابدأ' })).toBeVisible();
+  const taskB = await taskCard(deviceBPage);
+  await expect(taskB.getByText('جديد', { exact: true })).toBeVisible();
+  await expect(taskB.getByRole('button', { name: 'ابدأ' })).toBeVisible();
 
-  // Student outside the class cannot infer or see the persistent assignment.
   const outsideContext = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const outsidePage = await outsideContext.newPage();
   await loginStudent(outsidePage, outsider.accessCode);
-  const outsideTasks = outsidePage.getByLabel('أنشطتك الحالية');
-  await expect(outsideTasks.getByText('اختبار E2E', { exact: true })).toHaveCount(0);
-  await expect(outsideTasks.getByText('لا يوجد شيء مطلوب منك الآن')).toBeVisible();
+  await expect(outsidePage.locator('article').filter({ hasText: 'اختبار E2E' })).toHaveCount(0);
+  await expect(outsidePage.getByText('لا يوجد شيء مطلوب منك الآن')).toBeVisible();
 
-  // Teacher sees A's completed result linked to the same assignment while B is still not started.
   await teacherPage.goto(assignmentUrl);
   await expect(teacherPage.getByRole('heading', { name: 'تقدم الطلاب' })).toBeVisible();
   const rowA = teacherPage.getByRole('listitem').filter({ hasText: studentAName });
@@ -173,7 +166,6 @@ test('Part I: classroom assignment is visible only to recipients and resumes acr
   await expect(rowA.getByRole('link', { name: 'التفاصيل' })).toBeVisible();
   await expect(rowB).toContainText('لم يبدأ');
 
-  // Quick Join remains a separate, guest-first surface; Part H exercises a complete guest run.
   await outsidePage.goto('/join');
   await expect(outsidePage.getByRole('heading', { name: 'انضم لنشاط سريع' })).toBeVisible();
   await expect(outsidePage.getByLabel('رمز النشاط')).toBeVisible();
