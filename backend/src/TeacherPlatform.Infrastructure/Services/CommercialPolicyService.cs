@@ -221,15 +221,18 @@ public sealed class CommercialPolicyService
 
     private static SubscriptionResponse ToSubscriptionResponse(
         Domain.Saas.Subscription subscription,
-        string effectiveStatus) => new()
+        string effectiveStatus)
     {
-        Id = subscription.Id,
-        TenantId = subscription.TenantId,
-        PlanId = subscription.PlanId,
-        PlanCode = subscription.Plan?.Code ?? string.Empty,
-        PlanName = subscription.Plan?.Name ?? string.Empty,
-        Status = effectiveStatus,
-        StartsAt = subscription.StartsAt,
-        EndsAt = subscription.EndsAt
-    };
+        return new SubscriptionResponse
+        {
+            Id = subscription.Id,
+            TenantId = subscription.TenantId,
+            PlanId = subscription.PlanId,
+            PlanCode = subscription.Plan?.Code ?? string.Empty,
+            PlanName = subscription.Plan?.Name ?? string.Empty,
+            Status = effectiveStatus,
+            StartsAt = subscription.StartsAt,
+            EndsAt = subscription.EndsAt
+        };
+    }
 }
