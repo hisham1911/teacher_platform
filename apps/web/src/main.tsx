@@ -4,6 +4,7 @@ import { App } from './app/App';
 import './index.css';
 import './studio-ui.css';
 import './challenge-mission.css';
+import './routes/public/home-page.css';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
