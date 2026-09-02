@@ -45,15 +45,16 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Restore backend and apply fresh migrations
+      - name: Restore, build and apply fresh migrations
         working-directory: backend
         run: |
           dotnet restore
+          dotnet build --no-restore
           dotnet tool install --global dotnet-ef --version 10.0.3
-          dotnet ef database update --project src/TeacherPlatform.Infrastructure/TeacherPlatform.Infrastructure.csproj --startup-project src/TeacherPlatform.Api/TeacherPlatform.Api.csproj --no-build || {
-            dotnet build --no-restore
-            dotnet ef database update --project src/TeacherPlatform.Infrastructure/TeacherPlatform.Infrastructure.csproj --startup-project src/TeacherPlatform.Api/TeacherPlatform.Api.csproj --no-build
-          }
+          dotnet ef database update \
+            --project src/TeacherPlatform.Infrastructure/TeacherPlatform.Infrastructure.csproj \
+            --startup-project src/TeacherPlatform.Api/TeacherPlatform.Api.csproj \
+            --no-build
       - name: Install frontend and browser dependencies
         run: |
           npm ci --prefix apps/web
