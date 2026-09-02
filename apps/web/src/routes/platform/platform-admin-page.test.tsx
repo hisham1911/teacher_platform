@@ -5,28 +5,29 @@ import { describe, expect, it, vi } from 'vitest';
 import { commercialPlatformApi } from '../../data/api-client/commercial-endpoints';
 import PlatformAdminPage from './platform-admin-page';
 
-const limits = {
-  maxQuizzesPerTenant: 10,
-  maxQuestionsPerQuiz: 20,
-  maxPublishedQuizzesPerTenant: 5,
-  maxAttemptsPerMonth: 100,
-  maxStorageBytes: 1_048_576,
-  maxCertificatesPerMonth: 100,
-  maxStudents: 150,
-  maxMembers: 1,
-  maxClasses: 10,
-  maxActiveAssignments: 20,
-  maxLiveParticipants: 50,
-};
-
-const entitlements = {
-  bulkImport: false,
-  advancedReports: false,
-  certificates: false,
-  customBranding: false,
-  dataExport: false,
-  customDomain: false,
-};
+const { limits, entitlements } = vi.hoisted(() => ({
+  limits: {
+    maxQuizzesPerTenant: 10,
+    maxQuestionsPerQuiz: 20,
+    maxPublishedQuizzesPerTenant: 5,
+    maxAttemptsPerMonth: 100,
+    maxStorageBytes: 1_048_576,
+    maxCertificatesPerMonth: 100,
+    maxStudents: 150,
+    maxMembers: 1,
+    maxClasses: 10,
+    maxActiveAssignments: 20,
+    maxLiveParticipants: 50,
+  },
+  entitlements: {
+    bulkImport: false,
+    advancedReports: false,
+    certificates: false,
+    customBranding: false,
+    dataExport: false,
+    customDomain: false,
+  },
+}));
 
 vi.mock('../../data/api-client/commercial-endpoints', () => ({
   commercialPlatformApi: {
