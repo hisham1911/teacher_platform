@@ -18,10 +18,20 @@ function renderLayout(path = '/dashboard') {
 }
 
 describe('RootLayout', () => {
-  it('يعرض روابط التنقل العامة للزائر', () => {
+  it('يجعل تنقل الصفحة الرئيسية موجهًا للطالب مع إبقاء دخول المعلم ثانويًا', () => {
     clearSession();
     const view = renderLayout('/');
-    expect(screen.getByRole('link', { name: /تسجيل الدخول/ })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'رمز نشاط' })).toHaveAttribute('href', '/join');
+    expect(screen.getByRole('link', { name: 'مساحتي' })).toHaveAttribute('href', '/student');
+    expect(screen.getByRole('link', { name: 'للمعلم' })).toHaveAttribute('href', '/auth/login');
+    expect(screen.queryByRole('link', { name: 'تسجيل الدخول' })).not.toBeInTheDocument();
+    view.unmount();
+  });
+
+  it('يحافظ على تسجيل دخول المعلم في الصفحات العامة الأخرى', () => {
+    clearSession();
+    const view = renderLayout('/privacy');
+    expect(screen.getByRole('link', { name: 'تسجيل الدخول' })).toHaveAttribute('href', '/auth/login');
     view.unmount();
   });
 
