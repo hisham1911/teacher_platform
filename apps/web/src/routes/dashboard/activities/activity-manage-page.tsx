@@ -62,7 +62,7 @@ export default function ActivityManagePage() {
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <Link to="/dashboard/quizzes" className="inline-flex min-h-11 items-center text-sm font-bold text-slate-500 hover:text-violet-800">→ الأنشطة</Link>
-          <p className="mt-2 text-xs font-black tracking-[0.16em] text-violet-700">ACTIVITY</p>
+          <p className="mt-2 text-xs font-black tracking-[0.08em] text-violet-700">إدارة النشاط</p>
           <h1 dir="auto" className="mt-1 text-3xl font-black text-slate-950">{draft.title}</h1>
           <p className="mt-2 text-sm text-slate-600">{draft.items.length} سؤال · كل خطوة التالية من نفس المكان</p>
         </div>
@@ -78,10 +78,10 @@ export default function ActivityManagePage() {
         </Link>
       </section>
 
-      <section className="teacher-surface p-5 sm:p-6" aria-labelledby="next-action-heading">
-        <p className="text-xs font-black tracking-[0.16em] text-amber-700">3. أوصله للطلاب</p>
+      <section id="deliver-activity" className="teacher-surface scroll-mt-24 p-5 sm:p-6" aria-labelledby="next-action-heading">
+        <p className="text-xs font-black tracking-[0.08em] text-amber-700">3. أوصله للطلاب</p>
         <h2 id="next-action-heading" className="mt-1 text-2xl font-black text-slate-950">إسناد، مشاركة، أو Live</h2>
-        <p className="mt-2 text-sm leading-7 text-slate-600">اختر ما يناسب الموقف؛ تجهيز النسخة والوصول يتم خلف الكواليس.</p>
+        <p className="mt-2 text-sm leading-7 text-slate-600">اختر ما يناسب الموقف؛ حفظ الحالة الصحيحة وتجهيز الوصول يتمان خلف الكواليس.</p>
 
         <div className="mt-5 grid gap-3 md:grid-cols-3">
           <button type="button" disabled={!canAssign} onClick={() => assignMutation.mutate()} className="min-h-44 rounded-2xl border-2 border-violet-500 bg-violet-50 p-5 text-right shadow-sm transition hover:bg-violet-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-100 disabled:cursor-not-allowed disabled:opacity-60">
