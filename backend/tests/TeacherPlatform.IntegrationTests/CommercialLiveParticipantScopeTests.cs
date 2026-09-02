@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
+using TeacherPlatform.Application.Abstractions;
 using TeacherPlatform.Domain.Identity;
 using TeacherPlatform.IntegrationTests.Infrastructure;
 
