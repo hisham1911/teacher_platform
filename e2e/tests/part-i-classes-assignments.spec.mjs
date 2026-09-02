@@ -129,7 +129,7 @@ test('Part I: classroom assignment is visible only to recipients and resumes acr
   const deviceA2Page = await deviceA2Context.newPage();
   await loginStudent(deviceA2Page, studentA.accessCode);
   const resumedTaskA = await taskCard(deviceA2Page);
-  await expect(resumedTaskA.getByText('أكمل', { exact: true })).toBeVisible();
+  await expect(resumedTaskA.getByRole('button', { name: 'أكمل' })).toBeVisible();
   await expect(resumedTaskA.getByText(/50% منجز/)).toBeVisible();
   await resumedTaskA.getByRole('button', { name: 'أكمل' }).click();
   await expect(deviceA2Page).toHaveURL(/\/play\//, { timeout: 15_000 });
