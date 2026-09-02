@@ -4,21 +4,16 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - feature/english-spark-ux-foundation
-      - feature/student-portal-foundation
+      - 'preview/**'
     paths:
       - 'apps/web/**'
       - 'backend/**'
       - 'e2e/**'
       - '.github/workflows/full-browser-e2e.yml'
-  pull_request:
-    branches:
-      - main
-    paths:
-      - 'apps/web/**'
-      - 'backend/**'
-      - 'e2e/**'
-      - '.github/workflows/full-browser-e2e.yml'
+
+concurrency:
+  group: full-browser-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   full-browser-e2e:
@@ -64,6 +59,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            apps/web/package-lock.json
+            e2e/package-lock.json
 
       - name: Restore backend
         working-directory: backend
