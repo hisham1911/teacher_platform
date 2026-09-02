@@ -1,7 +1,7 @@
 using System.Security.Claims;
 using TeacherPlatform.Application.Tenancy;
-using TeacherPlatform.Infrastructure.Services;
 using TeacherPlatform.Domain.Tenancy;
+using TeacherPlatform.Infrastructure.Services;
 
 namespace TeacherPlatform.Api.Middleware;
 
@@ -16,7 +16,10 @@ public sealed class TenantResolutionMiddleware
 
     public TenantResolutionMiddleware(RequestDelegate next) => _next = next;
 
-    public async Task InvokeAsync(HttpContext context, TenantContext tenantContext, TenantBypassService bypass)
+    public async Task InvokeAsync(
+        HttpContext context,
+        TenantContext tenantContext,
+        TenantBypassService bypass)
     {
         if (TryGetRouteTenantId(context, out var routeTenantId))
         {
@@ -28,33 +31,60 @@ public sealed class TenantResolutionMiddleware
 
             if (context.Request.Headers.TryGetValue("X-Tenant-Id", out var headerValue)
                 && !string.IsNullOrWhiteSpace(headerValue)
-                && (!Guid.TryParse(headerValue.ToString(), out var headerTenantId) || headerTenantId != routeTenantId))
+                && (!Guid.TryParse(headerValue.ToString(), out var headerTenantId)
+                    || headerTenantId != routeTenantId))
             {
-                await WriteProblemAsync(context, StatusCodes.Status400BadRequest, "Tenant route/header mismatch.", "TenantMismatch");
+                await WriteProblemAsync(
+                    context,
+                    StatusCodes.Status400BadRequest,
+                    "Tenant route/header mismatch.",
+                    "TenantMismatch");
                 return;
             }
 
-            var userIdValue = context.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? context.User.FindFirstValue("sub");
+            var userIdValue = context.User.FindFirstValue(ClaimTypes.NameIdentifier)
+                ?? context.User.FindFirstValue("sub");
             if (!Guid.TryParse(userIdValue, out var userId))
             {
-                await WriteProblemAsync(context, StatusCodes.Status401Unauthorized, "Unauthorized.", "Unauthorized");
+                await WriteProblemAsync(
+                    context,
+                    StatusCodes.Status401Unauthorized,
+                    "Unauthorized.",
+                    "Unauthorized");
                 return;
             }
 
-            var membership = await bypass.FindMembershipIncludeTenantIgnoreFiltersAsync(routeTenantId, userId, context.RequestAborted);
+            var membership = await bypass.FindMembershipIncludeTenantIgnoreFiltersAsync(
+                routeTenantId,
+                userId,
+                context.RequestAborted);
             if (membership is null)
             {
-                await WriteProblemAsync(context, StatusCodes.Status404NotFound, "Workspace not found or you are not a member.", "NotFound");
+                await WriteProblemAsync(
+                    context,
+                    StatusCodes.Status404NotFound,
+                    "Workspace not found or you are not a member.",
+                    "NotFound");
                 return;
             }
+
             if (membership.Status != TenantMembershipStatus.Active)
             {
-                await WriteProblemAsync(context, StatusCodes.Status403Forbidden, "Your membership is suspended.", "MembershipSuspended");
+                await WriteProblemAsync(
+                    context,
+                    StatusCodes.Status403Forbidden,
+                    "Your membership is suspended.",
+                    "MembershipSuspended");
                 return;
             }
+
             if (membership.Tenant?.Status != TenantStatus.Active)
             {
-                await WriteProblemAsync(context, StatusCodes.Status403Forbidden, "This workspace is suspended.", "WorkspaceSuspended");
+                await WriteProblemAsync(
+                    context,
+                    StatusCodes.Status423Locked,
+                    "This workspace is suspended.",
+                    "WorkspaceSuspended");
                 return;
             }
 
@@ -66,10 +96,14 @@ public sealed class TenantResolutionMiddleware
             && context.Request.Headers.TryGetValue("X-Tenant-Id", out var headerOnly)
             && Guid.TryParse(headerOnly.ToString(), out var headerTenantGuid))
         {
-            var userIdValue = context.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? context.User.FindFirstValue("sub");
+            var userIdValue = context.User.FindFirstValue(ClaimTypes.NameIdentifier)
+                ?? context.User.FindFirstValue("sub");
             if (Guid.TryParse(userIdValue, out var userId))
             {
-                var membership = await bypass.FindMembershipIncludeTenantIgnoreFiltersAsync(headerTenantGuid, userId, context.RequestAborted);
+                var membership = await bypass.FindMembershipIncludeTenantIgnoreFiltersAsync(
+                    headerTenantGuid,
+                    userId,
+                    context.RequestAborted);
                 if (membership is not null
                     && membership.Status == TenantMembershipStatus.Active
                     && membership.Tenant?.Status == TenantStatus.Active)
@@ -91,7 +125,11 @@ public sealed class TenantResolutionMiddleware
             && Guid.TryParse(routeValue.ToString(), out tenantId);
     }
 
-    private static async Task WriteProblemAsync(HttpContext context, int statusCode, string detail, string code)
+    private static async Task WriteProblemAsync(
+        HttpContext context,
+        int statusCode,
+        string detail,
+        string code)
     {
         context.Response.StatusCode = statusCode;
         context.Response.ContentType = "application/problem+json";
@@ -99,8 +137,15 @@ public sealed class TenantResolutionMiddleware
         {
             type = $"https://httpstatuses.com/{statusCode}",
             title = code,
+            errorCode = code,
             status = statusCode,
             detail,
+            userMessageAr = code switch
+            {
+                "WorkspaceSuspended" => "مساحة العمل موقوفة حاليًا.",
+                "MembershipSuspended" => "عضويتك في مساحة العمل موقوفة حاليًا.",
+                _ => null
+            },
             traceId = context.TraceIdentifier
         });
     }
