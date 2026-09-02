@@ -6,6 +6,7 @@ using TeacherPlatform.Application.Options;
 using TeacherPlatform.Application.Sessions;
 using TeacherPlatform.Application.Students;
 using TeacherPlatform.Domain.Sessions;
+using TeacherPlatform.Domain.Tenancy;
 using TeacherPlatform.Infrastructure.Persistence;
 
 namespace TeacherPlatform.Infrastructure.Services;
@@ -124,6 +125,18 @@ public sealed class ManagedStudentJoinService
         if (session.TenantId != studentTenantId)
         {
             throw new ServiceResultException("NotFound", "Student identity is not valid for this activity.");
+        }
+
+        var tenantStatus = await _db.Tenants
+            .AsNoTracking()
+            .Where(item => item.Id == session.TenantId)
+            .Select(item => (TenantStatus?)item.Status)
+            .SingleOrDefaultAsync(cancellationToken);
+        if (tenantStatus == TenantStatus.Suspended)
+        {
+            throw new ServiceResultException(
+                "WorkspaceSuspended",
+                "This workspace is suspended and cannot accept student joins right now.");
         }
 
         using var tenantScope = _tenantContext.BeginBootstrap(session.TenantId);
