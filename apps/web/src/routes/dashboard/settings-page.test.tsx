@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -47,8 +47,8 @@ vi.mock('../../data/api-client/commercial-endpoints', () => ({
         maxCertificatesPerMonth: 10_000,
         maxStudents: 100_000,
         maxMembers: 10_000,
-        maxClasses: 100_000,
-        maxActiveAssignments: 100_000,
+        maxClasses: 25,
+        maxActiveAssignments: 40,
         maxLiveParticipants: 10_000,
       },
       entitlements: {
@@ -59,7 +59,7 @@ vi.mock('../../data/api-client/commercial-endpoints', () => ({
         dataExport: true,
         customDomain: false,
       },
-      usage: { members: 1, students: 2, classes: null, activeAssignments: null },
+      usage: { members: 1, students: 2, classes: 3, activeAssignments: 4 },
     }),
     updateBranding: vi.fn().mockResolvedValue({}),
   },
@@ -103,8 +103,14 @@ describe('SettingsPage commercial workspace', () => {
     renderPage();
     expect(await screen.findByDisplayValue('Maryam Academy')).toBeInTheDocument();
     expect(await screen.findByText('حساب حالي محفوظ')).toBeInTheDocument();
-    expect(screen.getByText('الطلاب')).toBeInTheDocument();
-    expect(screen.getByText(/يُربط بعد مزامنة Classes \+ Assignments/)).toBeInTheDocument();
+
+    const classesCard = screen.getByText('الفصول').closest('div');
+    const assignmentsCard = screen.getByText('التكليفات النشطة').closest('div');
+    expect(classesCard).not.toBeNull();
+    expect(assignmentsCard).not.toBeNull();
+    expect(within(classesCard!).getByText(/٣\s*\/\s*٢٥/)).toBeInTheDocument();
+    expect(within(assignmentsCard!).getByText(/٤\s*\/\s*٤٠/)).toBeInTheDocument();
+    expect(screen.queryByText(/يُربط بعد مزامنة Classes \+ Assignments/)).not.toBeInTheDocument();
     expect(commercialWorkspaceApi.get).toHaveBeenCalledWith('tenant-1', expect.any(AbortSignal));
   });
 
