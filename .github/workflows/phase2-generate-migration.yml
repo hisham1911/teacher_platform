@@ -7,6 +7,9 @@ on:
     paths:
       - .github/workflows/phase2-generate-migration.yml
 
+permissions:
+  contents: write
+
 jobs:
   generate:
     runs-on: ubuntu-latest
@@ -16,6 +19,8 @@ jobs:
       DataProtection__KeysDirectory: /tmp/teacher-platform-keys-ci
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: feature/phase2-classes-assignments
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
@@ -35,14 +40,11 @@ jobs:
             --startup-project src/TeacherPlatform.Api/TeacherPlatform.Api.csproj \
             --output-dir Persistence/Migrations \
             --no-build
-      - name: Package generated migration
-        working-directory: backend/src/TeacherPlatform.Infrastructure/Persistence/Migrations
+      - name: Commit generated EF files to Phase 2 branch
+        shell: bash
         run: |
-          mkdir -p /tmp/phase2-migration
-          cp *Phase2ClassesAssignments*.cs /tmp/phase2-migration/
-          cp AppDbContextModelSnapshot.cs /tmp/phase2-migration/
-      - uses: actions/upload-artifact@v4
-        with:
-          name: phase2-ef-migration
-          path: /tmp/phase2-migration
-          if-no-files-found: error
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add backend/src/TeacherPlatform.Infrastructure/Persistence/Migrations/
+          git commit -m "feat(phase2): add classes assignments migration"
+          git push origin HEAD:feature/phase2-classes-assignments
