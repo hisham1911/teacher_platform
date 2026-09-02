@@ -6,19 +6,14 @@ public sealed class CreateClassroomRequest
 {
     [Required, StringLength(100, MinimumLength = 1)]
     public string Name { get; init; } = string.Empty;
-
-    [StringLength(30)]
-    public string? AcademicYear { get; init; }
+    [StringLength(30)] public string? AcademicYear { get; init; }
 }
 
 public sealed class UpdateClassroomRequest
 {
     [Required, StringLength(100, MinimumLength = 1)]
     public string Name { get; init; } = string.Empty;
-
-    [StringLength(30)]
-    public string? AcademicYear { get; init; }
-
+    [StringLength(30)] public string? AcademicYear { get; init; }
     public uint BaseVersion { get; init; }
 }
 
@@ -28,12 +23,9 @@ public sealed class UpdateClassroomStatusRequest
     public uint BaseVersion { get; init; }
 }
 
-public sealed class ClassroomStudentRequest
-{
-    public Guid StudentId { get; init; }
-}
+public sealed class ClassroomStudentRequest { public Guid StudentId { get; init; } }
 
-public sealed class ClassroomResponse
+public class ClassroomResponse
 {
     public Guid Id { get; init; }
     public string Name { get; init; } = string.Empty;

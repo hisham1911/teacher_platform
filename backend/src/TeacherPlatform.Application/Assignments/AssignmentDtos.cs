@@ -1,5 +1,3 @@
-using System.ComponentModel.DataAnnotations;
-
 namespace TeacherPlatform.Application.Assignments;
 
 public sealed class CreateAssignmentRequest
@@ -19,7 +17,7 @@ public sealed class AssignmentRecipientResponse
     public string? SourceClassroomName { get; init; }
 }
 
-public sealed class AssignmentResponse
+public class AssignmentResponse
 {
     public Guid Id { get; init; }
     public Guid QuizVersionId { get; init; }
