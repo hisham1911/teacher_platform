@@ -80,8 +80,8 @@ test('survives API restart + finish + result + F5 (Part B)', async ({ page }) =>
   await page.getByRole('button', { name: 'دخول إلى English Spark' }).click();
   await expect(page).toHaveURL(/\/dashboard$/, { timeout: 15_000 });
   await page.goto('/dashboard/reports');
-  await expect(page.getByRole('heading', { name: 'النتائج والتقارير' })).toBeVisible();
-  await page.getByRole('combobox', { name: 'الاختبار' }).selectOption(quizId);
+  await expect(page.getByRole('heading', { name: 'النتائج' })).toBeVisible();
+  await page.getByRole('combobox', { name: 'النشاط' }).selectOption(quizId);
   await page.locator(`a[href="/dashboard/reports/${sessionId}?quizId=${quizId}"]`).click();
   await expect(page.getByRole('heading', { name: 'تقرير اختبار E2E' })).toBeVisible();
   const studentRow = page.getByRole('row').filter({ hasText: 'طالب E2E' });
