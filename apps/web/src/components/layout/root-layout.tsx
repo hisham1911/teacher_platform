@@ -74,17 +74,28 @@ export function RootLayout({ children }: { children: ReactNode }) {
 
   if (!session.user) {
     const onLoginPage = location.pathname === '/auth/login';
+    const onHomePage = location.pathname === '/';
     return (
       <div className="spark-public-shell flex min-h-dvh flex-col" dir="rtl">
         <header className="sticky top-0 z-40 border-b border-violet-100/80 bg-white/88 backdrop-blur-xl">
           <div className="mx-auto flex min-h-16 w-full max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
             <EnglishSparkBrand to="/" compact />
             <nav className="flex items-center gap-2" aria-label="التنقل الرئيسي">
-              <Link to="/" className="hidden min-h-11 items-center rounded-xl px-3 text-sm font-semibold text-slate-600 hover:bg-white hover:text-violet-800 sm:inline-flex">الرئيسية</Link>
-              {onLoginPage ? (
-                <Link to="/auth/signup" className="inline-flex min-h-11 items-center justify-center rounded-xl border border-violet-200 bg-white px-4 text-sm font-bold text-violet-800 shadow-sm hover:bg-violet-50">إنشاء حساب</Link>
+              {onHomePage ? (
+                <>
+                  <Link to="/join" className="inline-flex min-h-11 items-center justify-center rounded-xl border border-emerald-200 bg-white px-3 text-sm font-black text-emerald-800 shadow-sm hover:bg-emerald-50 sm:px-4">رمز نشاط</Link>
+                  <Link to="/student" className="inline-flex min-h-11 items-center justify-center rounded-xl bg-emerald-600 px-3 text-sm font-black text-white shadow-sm hover:bg-emerald-700 sm:px-4">مساحتي</Link>
+                  <Link to="/auth/login" className="hidden min-h-11 items-center rounded-xl px-3 text-sm font-bold text-slate-500 hover:bg-violet-50 hover:text-violet-800 sm:inline-flex">للمعلم</Link>
+                </>
               ) : (
-                <Link to="/auth/login" className="inline-flex min-h-11 items-center justify-center rounded-xl bg-violet-700 px-4 text-sm font-bold text-white shadow-sm hover:bg-violet-800">تسجيل الدخول</Link>
+                <>
+                  <Link to="/" className="hidden min-h-11 items-center rounded-xl px-3 text-sm font-semibold text-slate-600 hover:bg-white hover:text-violet-800 sm:inline-flex">الرئيسية</Link>
+                  {onLoginPage ? (
+                    <Link to="/auth/signup" className="inline-flex min-h-11 items-center justify-center rounded-xl border border-violet-200 bg-white px-4 text-sm font-bold text-violet-800 shadow-sm hover:bg-violet-50">إنشاء حساب</Link>
+                  ) : (
+                    <Link to="/auth/login" className="inline-flex min-h-11 items-center justify-center rounded-xl bg-violet-700 px-4 text-sm font-bold text-white shadow-sm hover:bg-violet-800">تسجيل الدخول</Link>
+                  )}
+                </>
               )}
             </nav>
           </div>
