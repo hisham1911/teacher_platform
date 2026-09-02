@@ -340,6 +340,7 @@ public sealed class PlatformAdminService
             return null;
         }
 
+        using var bootstrap = _tenantContext.BeginBootstrap(tenantId);
         tenant.Status = target;
         tenant.UpdatedAt = _clock.UtcNow;
         if (request.Suspended)
