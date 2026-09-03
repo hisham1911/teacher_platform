@@ -4,37 +4,10 @@
 
 .spark-home-world {
   background:
-    radial-gradient(circle at 12% 8%, rgb(254 240 138 / 0.5), transparent 24rem),
-    radial-gradient(circle at 88% 12%, rgb(221 214 254 / 0.72), transparent 28rem),
-    radial-gradient(circle at 78% 42%, rgb(167 243 208 / 0.42), transparent 30rem),
-    radial-gradient(circle at 10% 62%, rgb(186 230 253 / 0.42), transparent 28rem),
-    radial-gradient(circle at 86% 86%, rgb(251 207 232 / 0.38), transparent 27rem),
-    linear-gradient(180deg, #fffdf8 0%, #f8f6ff 34%, #f4fbff 66%, #fffdf8 100%);
-}
-
-.spark-home-world::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image:
-    radial-gradient(circle, rgb(109 40 217 / 0.12) 1.2px, transparent 1.2px),
-    linear-gradient(rgb(255 255 255 / 0.32) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(255 255 255 / 0.32) 1px, transparent 1px);
-  background-position: 0 0, 0 0, 0 0;
-  background-size: 26px 26px, 96px 96px, 96px 96px;
-  -webkit-mask-image: linear-gradient(to bottom, black 0%, transparent 34%, black 58%, transparent 100%);
-  mask-image: linear-gradient(to bottom, black 0%, transparent 34%, black 58%, transparent 100%);
-  opacity: 0.32;
-}
-
-.spark-home-world::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(115deg, transparent 0 46%, rgb(255 255 255 / 0.45) 46% 47%, transparent 47% 100%),
-    linear-gradient(65deg, transparent 0 64%, rgb(255 255 255 / 0.36) 64% 65%, transparent 65% 100%);
-  opacity: 0.28;
+    radial-gradient(circle at 8% 6%, oklch(0.955 0.04 72 / 0.55), transparent 28rem),
+    radial-gradient(circle at 94% 14%, oklch(0.95 0.035 292 / 0.4), transparent 28rem),
+    radial-gradient(circle at 50% 80%, oklch(0.96 0.025 163 / 0.35), transparent 32rem),
+    linear-gradient(180deg, oklch(0.995 0.004 292), oklch(0.975 0.01 292));
 }
 
 .spark-home-grid {
@@ -46,42 +19,6 @@
   mask-image: linear-gradient(to bottom, black, transparent 94%);
 }
 
-.spark-home-float {
-  animation: spark-home-float 5.2s ease-in-out infinite;
-}
-
-.spark-home-float-delayed {
-  animation: spark-home-float-delayed 6.1s ease-in-out infinite;
-}
-
-@keyframes spark-home-float {
-  0%, 100% {
-    transform: translateY(0) rotate(5deg);
-  }
-  50% {
-    transform: translateY(-10px) rotate(-3deg);
-  }
-}
-
-@keyframes spark-home-float-delayed {
-  0%, 100% {
-    transform: translateY(0) rotate(-6deg);
-  }
-  50% {
-    transform: translateY(9px) rotate(3deg);
-  }
-}
-
-@media (max-width: 640px) {
-  .spark-home-world::before {
-    background-size: 22px 22px, 72px 72px, 72px 72px;
-    opacity: 0.24;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .spark-home-float,
-  .spark-home-float-delayed {
-    animation: none;
-  }
+  /* No decorative animations remain on the homepage. */
 }

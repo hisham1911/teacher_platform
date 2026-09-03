@@ -1,4 +1,5 @@
 import { Link } from 'react-router';
+import { PublicBackdrop } from '../../components/layout/root-layout';
 
 const workflows = [
   {
@@ -29,26 +30,23 @@ const workflows = [
 
 export default function TeachersPage() {
   return (
-    <div className="min-h-dvh overflow-x-hidden bg-slate-50 text-slate-950" dir="rtl">
-      <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl">
-        <div className="mx-auto flex min-h-18 w-full max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+    <div className="spark-public-shell relative min-h-dvh overflow-x-hidden text-slate-950" dir="rtl">
+      <PublicBackdrop />
+      <header className="relative z-40 mx-auto flex min-h-18 w-full max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <Link to="/teachers" className="inline-flex min-h-11 items-center gap-2.5 rounded-xl focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-200">
             <span aria-hidden="true" className="spark-brand-mark flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 via-fuchsia-500 to-violet-700 text-xl text-white">✦</span>
             <span><span className="block font-black tracking-wide">English Spark</span><span className="block text-[10px] font-bold text-violet-600">للمعلمين والأكاديميات</span></span>
           </Link>
           <nav className="flex items-center gap-2" aria-label="تنقل صفحة المعلمين">
             <Link to="/" className="hidden min-h-11 items-center rounded-xl px-3 text-sm font-bold text-slate-600 hover:bg-slate-100 sm:inline-flex">واجهة الطلاب</Link>
-            <Link to="/auth/login" className="inline-flex min-h-11 items-center rounded-xl px-3 text-sm font-black text-violet-800 hover:bg-violet-50">تسجيل الدخول</Link>
+            <Link to="/auth/login" className="inline-flex min-h-11 items-center rounded-xl px-3 text-sm font-black text-violet-800 hover:bg-white/50">تسجيل الدخول</Link>
           </nav>
-        </div>
       </header>
 
-      <main>
-        <section className="relative overflow-hidden border-b border-violet-100 bg-white">
-          <div aria-hidden="true" className="absolute inset-0 bg-[radial-gradient(circle_at_80%_10%,rgb(221_214_254/0.8),transparent_28rem),radial-gradient(circle_at_15%_70%,rgb(167_243_208/0.38),transparent_25rem)]" />
+      <main className="animate-page-enter">
+        <section className="relative overflow-hidden border-b border-violet-100/50">
           <div className="relative mx-auto grid min-h-[36rem] w-full max-w-7xl items-center gap-10 px-4 py-14 sm:px-6 lg:grid-cols-[1.08fr_0.92fr] lg:py-20">
             <div className="max-w-3xl">
-              <p className="text-sm font-black text-violet-700">English Spark Studio</p>
               <h1 className="mt-3 text-balance text-4xl font-black leading-[1.18] sm:text-5xl">اصنع النشاط، جرّبه، ثم أوصله للطلاب من نفس المكان.</h1>
               <p className="mt-5 max-w-2xl text-base font-semibold leading-8 text-slate-600 sm:text-lg">بدل التنقل بين ملف للأسئلة وأداة للمسابقة وطريقة منفصلة للنتائج، English Spark تجمع دورة النشاط في Studio واضح: ابنِ، عاين، ثم أسند أو شارك أو شغّل Live، وتابع ما حدث للطلاب بعد ذلك.</p>
               <div className="mt-7 flex flex-wrap gap-3">
@@ -61,13 +59,13 @@ export default function TeachersPage() {
               <p className="text-xs font-black text-amber-300">المسار اليومي</p>
               <ol className="mt-4 space-y-3">
                 {[
-                  ['01', 'ابنِ النشاط', 'أسئلة جديدة، بنك الأسئلة، أو استيراد جماعي.'],
-                  ['02', 'عاينه كطالب', 'تأكد من المحتوى قبل إرساله.'],
-                  ['03', 'اختر طريقة الوصول', 'أسند لفصل أو طلاب، شارك رابطًا، أو شغّل Live.'],
-                  ['04', 'تابع النتائج', 'ابدأ من الإسناد أو التشغيل ثم افتح محاولات الطلاب ونتائجهم.'],
-                ].map(([number, title, description]) => (
-                  <li key={number} className="flex gap-3 rounded-2xl border border-white/10 bg-white/5 p-4">
-                    <span dir="ltr" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-500/20 font-mono text-xs font-black text-violet-200">{number}</span>
+                  ['ابنِ النشاط', 'أسئلة جديدة، بنك الأسئلة، أو استيراد جماعي.'],
+                  ['عاينه كطالب', 'تأكد من المحتوى قبل إرساله.'],
+                  ['اختر طريقة الوصول', 'أسند لفصل أو طلاب، شارك رابطًا، أو شغّل Live.'],
+                  ['تابع النتائج', 'ابدأ من الإسناد أو التشغيل ثم افتح محاولات الطلاب ونتائجهم.'],
+                ].map(([title, description]) => (
+                  <li key={title} className="flex gap-3 rounded-2xl border border-white/10 bg-white/5 p-4">
+                    <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-violet-400/60" />
                     <div><h2 className="font-black">{title}</h2><p className="mt-1 text-xs font-semibold leading-6 text-slate-300">{description}</p></div>
                   </li>
                 ))}
@@ -78,13 +76,12 @@ export default function TeachersPage() {
 
         <section className="mx-auto w-full max-w-7xl px-4 py-14 sm:px-6 sm:py-20" aria-labelledby="teacher-problems-title">
           <div className="max-w-3xl">
-            <p className="text-xs font-black tracking-[0.12em] text-violet-700">المشكلة أولًا</p>
             <h2 id="teacher-problems-title" className="mt-3 text-3xl font-black sm:text-4xl">الأدوات موجودة لخدمة شغلك، لا لزيادة الخطوات.</h2>
             <p className="mt-4 text-base font-semibold leading-8 text-slate-600">الواجهة تستخدم لغة النشاط والطالب والفصل والإسناد والنتيجة. تفاصيل النسخ وحالات الحفظ والتشغيل تبقى خلف الكواليس ما دمت لا تحتاجها لاتخاذ قرار.</p>
           </div>
           <div className="mt-8 grid gap-4 lg:grid-cols-2">
             {workflows.map((item) => (
-              <article key={item.title} className="rounded-[1.6rem] border border-slate-200 bg-white p-6 shadow-sm sm:p-7">
+              <article key={item.title} className="rounded-[1.6rem] border border-slate-200 bg-white/85 p-6 shadow-sm backdrop-blur-xl transition-all hover:-translate-y-1 hover:shadow-lg sm:p-7">
                 <span aria-hidden="true" className="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-50 text-2xl">{item.icon}</span>
                 <h3 className="mt-4 text-xl font-black">{item.title}</h3>
                 <p className="mt-2 text-sm font-semibold leading-7 text-slate-600">{item.description}</p>
@@ -96,7 +93,7 @@ export default function TeachersPage() {
           </div>
         </section>
 
-        <section className="border-y border-slate-200 bg-white">
+        <section className="border-y border-slate-200 bg-white/85 backdrop-blur-xl">
           <div className="mx-auto grid w-full max-w-7xl gap-8 px-4 py-14 sm:px-6 lg:grid-cols-[1fr_auto] lg:items-center">
             <div><h2 className="text-3xl font-black">جاهز تفتح Studio؟</h2><p className="mt-3 max-w-2xl text-sm font-semibold leading-7 text-slate-600">ابدأ بنشاط واحد، جرّبه كطالب، ثم أسنده أو شاركه. لا تحتاج إعداد نظام تعليمي كامل قبل أول استخدام.</p></div>
             <div className="flex flex-wrap gap-2"><Link to="/auth/signup" className="inline-flex min-h-13 items-center justify-center rounded-xl bg-violet-700 px-6 text-sm font-black text-white hover:bg-violet-800">إنشاء حساب</Link><Link to="/auth/login" className="inline-flex min-h-13 items-center justify-center rounded-xl border border-slate-300 bg-white px-6 text-sm font-black text-slate-800 hover:bg-slate-50">تسجيل الدخول</Link></div>

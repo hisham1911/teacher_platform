@@ -1,5 +1,7 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 
+import { PublicBackdrop } from '../../components/layout/root-layout';
+
 const shellWidths = {
   narrow: 'max-w-xl',
   wide: 'max-w-4xl',
@@ -16,53 +18,14 @@ export function StudentShell({
 }) {
   return (
     <main className="student-shell relative min-h-dvh overflow-x-clip" dir="rtl">
-      <StudentBackdrop />
+      <PublicBackdrop />
       <div className={`relative z-10 mx-auto flex min-h-dvh w-full ${shellWidths[width]} flex-col px-4 sm:px-6`}>
         <StudentSparkBrand />
-        <div className={`flex flex-1 flex-col pb-5 pt-2 ${centered ? 'justify-center pb-8 sm:pb-10' : 'sm:pt-4'}`}>
+        <div className={`animate-page-enter flex flex-1 flex-col pb-5 pt-2 ${centered ? 'justify-center pb-8 sm:pb-10' : 'sm:pt-4'}`}>
           {children}
         </div>
       </div>
     </main>
-  );
-}
-
-function StudentBackdrop() {
-  return (
-    <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
-      <svg className="absolute inset-0 h-full w-full" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" fill="none">
-        <circle cx="122" cy="150" r="92" fill="var(--student-violet-soft)" opacity="0.7" />
-        <circle cx="1320" cy="190" r="132" fill="#FEF3C7" opacity="0.65" />
-        <circle cx="1265" cy="760" r="170" fill="#D1FAE5" opacity="0.7" />
-        <circle cx="120" cy="775" r="138" fill="#E0F2FE" opacity="0.6" />
-
-        <g opacity="0.13" stroke="var(--student-violet)" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M64 278h82v66H64z" />
-          <path d="M64 278l41 29 41-29" />
-          <path d="M1288 350c22-23 59-22 80 1 19 21 17 54-4 73l-34 31-34-31c-22-20-25-53-8-74Z" />
-          <path d="M179 622h84M221 580v84" />
-          <path d="m1140 646 15 31 34 5-25 24 6 34-30-16-30 16 6-34-25-24 34-5 15-31Z" />
-        </g>
-
-        <g fill="var(--student-primary)" opacity="0.12" fontFamily="ui-rounded, system-ui, sans-serif" fontWeight="900">
-          <text x="76" y="122" fontSize="72">Aa</text>
-          <text x="1215" y="145" fontSize="62">Bb</text>
-          <text x="80" y="820" fontSize="64">123</text>
-          <text x="1260" y="700" fontSize="88">?</text>
-        </g>
-
-        <g opacity="0.16" fill="var(--student-orange)">
-          <path d="m292 130 6 13 14 6-14 6-6 13-6-13-14-6 14-6 6-13Z" />
-          <path d="m1048 194 7 15 15 7-15 7-7 15-7-15-15-7 15-7 7-15Z" />
-          <path d="m404 760 5 11 11 5-11 5-5 11-5-11-11-5 11-5 5-11Z" />
-        </g>
-
-        <g transform="translate(1090 92) rotate(18)" opacity="0.13">
-          <rect width="94" height="24" rx="12" fill="var(--student-orange)" />
-          <path d="M0 0-23 12 0 24V0Z" fill="var(--student-ink)" />
-        </g>
-      </svg>
-    </div>
   );
 }
 

@@ -60,7 +60,7 @@ export default function SignupPage() {
           <br />
           بعد تأكيد البريد، تستطيع تسجيل الدخول.
         </p>
-        <Link to="/auth/login" className="text-sm font-medium text-sky-700 underline underline-offset-4">
+        <Link to="/auth/login" className="text-sm font-medium text-violet-700 underline underline-offset-4">
           العودة إلى تسجيل الدخول
         </Link>
       </section>
@@ -68,7 +68,17 @@ export default function SignupPage() {
   }
 
   return (
-    <section className="mx-auto max-w-md rounded-2xl bg-white p-8 shadow-sm">
+    <div className="animate-page-enter mx-auto grid w-full max-w-5xl overflow-hidden rounded-3xl border border-violet-100 bg-white/85 shadow-[0_28px_80px_rgb(76_29_149/0.12)] backdrop-blur-2xl lg:grid-cols-[0.9fr_1.1fr]">
+      <aside className="relative hidden overflow-hidden bg-gradient-to-br from-violet-800 via-indigo-800 to-slate-950 p-10 text-white lg:flex lg:flex-col lg:justify-center">
+        <span aria-hidden="true" className="absolute -left-20 -top-16 h-72 w-72 rounded-full bg-fuchsia-400/20 blur-3xl" />
+        <span aria-hidden="true" className="absolute -bottom-20 right-0 h-72 w-72 rounded-full bg-amber-300/15 blur-3xl" />
+        <div className="relative">
+          <span className="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-black text-amber-200">ENGLISH SPARK</span>
+          <h2 className="mt-6 text-4xl font-black leading-tight">ابدأ رحلتك<br />في دقائق.</h2>
+          <p className="mt-4 max-w-md text-base leading-8 text-violet-100">أنشئ مساحتك التعليمية، ابنِ أول نشاط، وشاركه مع طلابك مباشرة. كل شيء جاهز من أول خطوة.</p>
+        </div>
+      </aside>
+      <section className="p-5 sm:p-8 lg:p-10">
       <h1 className="mb-2 text-xl font-bold text-slate-900">إنشاء حساب جديد</h1>
       <p className="mb-6 text-sm text-slate-600">ابدأ بإنشاء مساحتك التعليمية الخاصة.</p>
 
@@ -140,18 +150,19 @@ export default function SignupPage() {
 
         <p className="text-center text-xs leading-6 text-slate-500">
           بإنشاء الحساب أنت توافق على{' '}
-          <Link className="font-medium text-sky-700 underline underline-offset-4" to="/terms">شروط الاستخدام</Link>
+          <Link className="font-medium text-violet-700 underline underline-offset-4" to="/terms">شروط الاستخدام</Link>
           {' '}وتقر بقراءة{' '}
-          <Link className="font-medium text-sky-700 underline underline-offset-4" to="/privacy">سياسة الخصوصية</Link>.
+          <Link className="font-medium text-violet-700 underline underline-offset-4" to="/privacy">سياسة الخصوصية</Link>.
         </p>
       </form>
 
       <p className="mt-6 text-center text-sm text-slate-600">
         لديك حساب بالفعل؟{' '}
-        <Link to="/auth/login" className="font-medium text-sky-700 underline underline-offset-4">
+        <Link to="/auth/login" className="font-medium text-violet-700 underline underline-offset-4">
           تسجيل الدخول
         </Link>
       </p>
-    </section>
+      </section>
+    </div>
   );
 }

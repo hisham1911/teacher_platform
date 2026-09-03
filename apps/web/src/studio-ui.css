@@ -1,5 +1,5 @@
 :root {
-  font-family: 'Cairo', 'Segoe UI', Tahoma, system-ui, sans-serif;
+  /* font-family inherited from index.css */
   font-synthesis: none;
   font-kerning: normal;
   text-rendering: optimizeLegibility;

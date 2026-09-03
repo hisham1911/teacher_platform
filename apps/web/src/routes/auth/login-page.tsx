@@ -69,7 +69,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="mx-auto grid w-full max-w-5xl overflow-hidden rounded-3xl border border-violet-100 bg-white shadow-[0_28px_80px_rgb(76_29_149/0.12)] lg:grid-cols-[0.9fr_1.1fr]">
+    <div className="animate-page-enter mx-auto grid w-full max-w-5xl overflow-hidden rounded-3xl border border-violet-100 bg-white/85 shadow-[0_28px_80px_rgb(76_29_149/0.12)] backdrop-blur-2xl lg:grid-cols-[0.9fr_1.1fr]">
       <aside className="relative hidden overflow-hidden bg-gradient-to-br from-violet-800 via-indigo-800 to-slate-950 p-10 text-white lg:flex lg:flex-col lg:justify-between">
         <span aria-hidden="true" className="absolute -left-20 -top-16 h-72 w-72 rounded-full bg-fuchsia-400/20 blur-3xl" />
         <span aria-hidden="true" className="absolute -bottom-20 right-0 h-72 w-72 rounded-full bg-amber-300/15 blur-3xl" />

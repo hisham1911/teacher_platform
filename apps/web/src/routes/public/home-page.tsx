@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
+import { PublicBackdrop } from '../../components/layout/root-layout';
 import { extractJoinCode, normalizeJoinCode } from './student-join-input';
 
 type DemoQuestion = {
@@ -40,7 +41,7 @@ const studentMoments = [
 export default function HomePage() {
   return (
     <div className="spark-student-home min-h-dvh overflow-x-hidden bg-[var(--student-bg)] text-slate-950" dir="rtl">
-      <PageBackdrop />
+      <PublicBackdrop />
       <header className="relative z-20 mx-auto flex min-h-18 w-full max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
         <Link to="/" className="inline-flex min-h-11 items-center gap-2.5 rounded-xl focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-200">
           <span aria-hidden="true" className="spark-brand-mark flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 via-fuchsia-500 to-violet-700 text-xl text-white">✦</span>
@@ -49,15 +50,12 @@ export default function HomePage() {
         <Link to="/teachers" className="inline-flex min-h-11 items-center rounded-xl px-3 text-sm font-black text-violet-800 hover:bg-white/70 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-200">هل أنت معلم؟</Link>
       </header>
 
-      <main className="relative z-10 mx-auto w-full max-w-7xl px-4 pb-16 sm:px-6 sm:pb-24">
+      <main className="animate-page-enter relative z-10 mx-auto w-full max-w-7xl px-4 pb-16 sm:px-6 sm:pb-24">
         <section className="grid min-h-[calc(100dvh-5rem)] items-center gap-8 py-6 lg:grid-cols-[0.95fr_1.05fr] lg:gap-12 lg:py-10">
           <div className="max-w-2xl">
-            <p className="inline-flex min-h-11 items-center gap-2 rounded-full border border-white/90 bg-white/75 px-4 text-sm font-black text-violet-800 shadow-sm backdrop-blur">
-              <span aria-hidden="true">🎮</span> مكانك للعب والتقدم
-            </p>
-            <h1 className="mt-5 text-balance text-4xl font-black leading-[1.15] text-slate-950 sm:text-5xl lg:text-6xl">
+            <h1 className="mt-5 text-balance text-4xl font-black leading-[1.18] text-slate-950 sm:text-5xl">
               جاهز تبدأ؟
-              <span className="mt-2 block bg-gradient-to-l from-emerald-600 via-violet-700 to-fuchsia-600 bg-clip-text text-transparent">ادخل النشاط وخليك في اللعبة.</span>
+              <span className="mt-1 block text-[var(--spark-violet)]">ادخل النشاط وابدأ.</span>
             </h1>
             <p className="mt-5 max-w-xl text-base font-semibold leading-8 text-slate-600 sm:text-lg">
               عندك رمز نشاط من المعلم؟ اكتبه هنا. وعندك كود طالب؟ ادخل لمساحتك وتابع ما بدأت ونتائجك من نفس المكان.
@@ -76,13 +74,12 @@ export default function HomePage() {
 
         <section aria-labelledby="student-moments-title" className="py-8 sm:py-12">
           <div className="max-w-2xl">
-            <p className="text-xs font-black tracking-[0.12em] text-violet-700">داخل English Spark</p>
             <h2 id="student-moments-title" className="mt-2 text-3xl font-black leading-tight sm:text-4xl">كل خطوة واضحة من غير قوائم معقدة</h2>
             <p className="mt-3 text-sm font-semibold leading-7 text-slate-600 sm:text-base">الرابط أو الرمز يأخذك للنشاط مباشرة، ومساحة الطالب تجمع التقدم والنتائج التي تخصك.</p>
           </div>
           <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {studentMoments.map(([icon, title, description]) => (
-              <article key={title} className="rounded-[1.5rem] border border-white/90 bg-white/74 p-5 shadow-[0_16px_45px_rgb(76_29_149/0.07)] backdrop-blur-xl">
+              <article key={title} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-shadow duration-200 hover:shadow-lg">
                 <span aria-hidden="true" className="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-50 text-2xl">{icon}</span>
                 <h3 className="mt-4 text-lg font-black">{title}</h3>
                 <p className="mt-2 text-sm font-semibold leading-7 text-slate-600">{description}</p>
@@ -91,14 +88,14 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="my-8 overflow-hidden rounded-[2rem] bg-slate-950 p-6 text-white shadow-[0_26px_70px_rgb(15_23_42/0.2)] sm:p-9">
+        <section className="my-8 overflow-hidden rounded-2xl bg-slate-950 p-6 text-white shadow-[0_26px_70px_rgb(15_23_42/0.2)] sm:p-9">
           <div className="grid gap-7 lg:grid-cols-[1fr_auto] lg:items-center">
             <div>
               <p className="text-xs font-black tracking-[0.12em] text-amber-300">ترجع كل مرة بنفسك</p>
               <h2 className="mt-2 text-3xl font-black">عندك كود طالب؟ مساحتك مستنياك.</h2>
               <p className="mt-3 max-w-2xl text-sm font-semibold leading-7 text-slate-300 sm:text-base">سجّل بكودك الشخصي لتكمل محاولة بدأتَها، تراجع آخر نتائجك، وتجد شهاداتك في مكان واحد.</p>
             </div>
-            <Link to="/student" className="inline-flex min-h-13 items-center justify-center rounded-xl bg-white px-6 text-sm font-black text-slate-950 hover:bg-violet-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-300">الدخول إلى مساحتي</Link>
+            <Link to="/student" className="inline-flex min-h-13 items-center justify-center rounded-xl bg-white px-6 text-sm font-black text-slate-950 shadow-sm transition-shadow hover:shadow-lg hover:bg-violet-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-300">الدخول إلى مساحتي</Link>
           </div>
         </section>
       </main>
@@ -133,7 +130,7 @@ function ActivityCodeCard() {
   }
 
   return (
-    <form onSubmit={submit} className="mt-7 rounded-[1.5rem] border border-white/90 bg-white/78 p-4 shadow-[0_18px_50px_rgb(76_29_149/0.1)] backdrop-blur-xl sm:p-5" aria-label="الدخول برمز النشاط">
+    <form onSubmit={submit} className="mt-7 rounded-2xl border border-slate-200 bg-white/85 p-4 shadow-lg backdrop-blur-xl sm:p-5" aria-label="الدخول برمز النشاط">
       <label htmlFor="home-join-code" className="text-sm font-black text-slate-800">رمز النشاط</label>
       <div className="mt-2 flex flex-col gap-2 sm:flex-row">
         <input
@@ -190,8 +187,6 @@ function MiniGame() {
 
   return (
     <section className="relative mx-auto w-full max-w-xl" aria-label="تجربة مصغرة">
-      <div aria-hidden="true" className="spark-home-float absolute -right-2 -top-5 z-20 flex h-14 w-14 rotate-6 items-center justify-center rounded-2xl bg-amber-300 text-2xl shadow-lg sm:-right-6">⭐</div>
-      <div aria-hidden="true" className="spark-home-float-delayed absolute -bottom-4 -left-2 z-20 flex h-12 w-12 -rotate-6 items-center justify-center rounded-2xl bg-emerald-300 text-xl shadow-lg sm:-left-5">⚡</div>
       <div className="overflow-hidden rounded-[2rem] border border-white/90 bg-white/86 shadow-[0_28px_80px_rgb(76_29_149/0.16)] backdrop-blur-xl">
         <div className="bg-gradient-to-l from-violet-800 via-indigo-800 to-slate-950 px-5 py-4 text-white">
           <div className="flex items-center justify-between gap-3">
@@ -240,6 +235,4 @@ function MiniGame() {
   );
 }
 
-function PageBackdrop() {
-  return <div aria-hidden="true" className="spark-home-world pointer-events-none fixed inset-0 -z-0" />;
-}
+// Removed PageBackdrop, using PublicBackdrop from root-layout

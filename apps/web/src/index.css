@@ -1,7 +1,7 @@
 @import 'tailwindcss';
 
 :root {
-  font-family: 'Segoe UI', Tahoma, system-ui, sans-serif;
+  font-family: 'Cairo', system-ui, sans-serif;
   font-kerning: normal;
   --spark-violet: oklch(0.51 0.22 292);
   --spark-violet-strong: oklch(0.43 0.2 292);
@@ -36,14 +36,67 @@
   --live-amber: oklch(0.82 0.16 82);
 }
 
-body {
-  @apply bg-slate-50 text-slate-900 antialiased;
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-15px) rotate(3deg); }
+}
+@keyframes float-medium {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-10px) rotate(-2deg); }
+}
+.animate-float-slow { animation: float-slow 8s ease-in-out infinite; }
+.animate-float-medium { animation: float-medium 6s ease-in-out infinite; }
+
+@keyframes page-enter {
+  0% { opacity: 0; transform: translateY(12px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.animate-page-enter {
+  animation: page-enter 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-float-slow,
+  .animate-float-medium,
+  .animate-page-enter {
+    animation: none;
+    transform: none;
+  }
+}
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased;
+  }
+
+  button {
+    @apply transition-transform active:scale-[0.97];
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--teacher-violet-soft);
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--teacher-violet);
+  }
 }
 
 .spark-public-shell {
   background:
-    radial-gradient(circle at 12% 8%, oklch(0.94 0.055 78 / 0.34), transparent 22rem),
-    radial-gradient(circle at 90% 12%, oklch(0.94 0.05 292 / 0.5), transparent 24rem),
+    radial-gradient(circle at 8% 6%, oklch(0.955 0.04 72 / 0.55), transparent 28rem),
+    radial-gradient(circle at 94% 14%, oklch(0.95 0.035 292 / 0.4), transparent 28rem),
+    radial-gradient(circle at 50% 80%, oklch(0.96 0.025 163 / 0.35), transparent 32rem),
     linear-gradient(180deg, oklch(0.995 0.004 292), oklch(0.975 0.01 292));
 }
 

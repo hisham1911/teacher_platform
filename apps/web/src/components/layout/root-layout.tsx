@@ -85,7 +85,8 @@ export function RootLayout({ children }: { children: ReactNode }) {
   if (!session.user) {
     const onLoginPage = location.pathname === '/auth/login';
     return (
-      <div className="spark-public-shell flex min-h-dvh flex-col" dir="rtl">
+      <div className="spark-public-shell relative flex min-h-dvh flex-col overflow-x-clip" dir="rtl">
+        <PublicBackdrop />
         <header className="sticky top-0 z-40 border-b border-violet-100/80 bg-white/88 backdrop-blur-xl">
           <div className="mx-auto flex min-h-16 w-full max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
             <EnglishSparkBrand to="/" compact />
@@ -99,7 +100,7 @@ export function RootLayout({ children }: { children: ReactNode }) {
             </nav>
           </div>
         </header>
-        <main id="main-content" className="mx-auto w-full max-w-7xl flex-1 px-4 py-5 sm:px-6 sm:py-9">{children}</main>
+        <main id="main-content" className="animate-page-enter mx-auto w-full max-w-7xl flex-1 px-4 py-5 sm:px-6 sm:py-9">{children}</main>
         <PublicFooter />
       </div>
     );
@@ -181,7 +182,7 @@ function EnglishSparkBrand({ to, compact = false }: { to: string; compact?: bool
   return (
     <Link to={to} className="inline-flex min-h-11 items-center gap-2.5 text-base font-bold text-slate-950 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-100">
       <span aria-hidden="true" className={`spark-brand-mark ${compact ? 'h-10 w-10 text-xl' : 'h-11 w-11 text-2xl'} flex items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 via-fuchsia-500 to-violet-700 text-white`}>✦</span>
-      <span className="leading-tight"><span className="block tracking-wide">English Spark</span>{!compact ? <span className="block text-[9px] font-bold tracking-[0.19em] text-violet-600">LEARN • PLAY • EXPLORE</span> : null}</span>
+      <span className="leading-tight"><span className="block tracking-wide">English Spark</span></span>
     </Link>
   );
 }
@@ -195,5 +196,57 @@ function MobileStudioNavigation({ pathname }: { pathname: string }) {
 }
 
 function PublicFooter() {
-  return <footer className="border-t border-violet-100/80 bg-white/70 backdrop-blur"><div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-3 px-4 py-4 text-xs text-slate-500 sm:px-6"><span className="font-semibold">English Spark</span><nav aria-label="روابط السياسات" className="flex items-center gap-4"><Link className="min-h-11 content-center hover:text-violet-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-100" to="/privacy">الخصوصية</Link><Link className="min-h-11 content-center hover:text-violet-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-100" to="/terms">الشروط</Link></nav></div></footer>;
+  return <footer className="relative z-10 border-t border-violet-100/80 bg-white/70 backdrop-blur"><div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-3 px-4 py-4 text-xs text-slate-500 sm:px-6"><span className="font-semibold">English Spark</span><nav aria-label="روابط السياسات" className="flex items-center gap-4"><Link className="min-h-11 content-center hover:text-violet-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-100" to="/privacy">الخصوصية</Link><Link className="min-h-11 content-center hover:text-violet-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-100" to="/terms">الشروط</Link></nav></div></footer>;
+}
+
+export function PublicBackdrop() {
+  return (
+    <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-0 overflow-hidden">
+      <svg className="absolute inset-0 h-full w-full" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" fill="none">
+        {/* Soft Glowing Orbs */}
+        <circle cx="122" cy="150" r="92" fill="var(--teacher-violet-soft)" opacity="0.6" className="animate-float-slow" />
+        <circle cx="1320" cy="190" r="132" fill="#FEF3C7" opacity="0.6" className="animate-float-medium" />
+        <circle cx="1265" cy="760" r="170" fill="#D1FAE5" opacity="0.6" className="animate-float-slow" style={{ animationDelay: '-2s' }} />
+        <circle cx="120" cy="775" r="138" fill="#E0F2FE" opacity="0.5" className="animate-float-medium" style={{ animationDelay: '-4s' }} />
+
+        {/* Abstract Lines */}
+        <g opacity="0.08" stroke="var(--teacher-violet)" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" className="animate-float-slow" style={{ animationDelay: '-1s' }}>
+          <path d="M64 278h82v66H64z" />
+          <path d="M64 278l41 29 41-29" />
+          <path d="M1288 350c22-23 59-22 80 1 19 21 17 54-4 73l-34 31-34-31c-22-20-25-53-8-74Z" />
+          <path d="M179 622h84M221 580v84" />
+          <path d="m1140 646 15 31 34 5-25 24 6 34-30-16-30 16 6-34-25-24 34-5 15-31Z" />
+        </g>
+
+        {/* Typography & Math */}
+        <g fill="var(--student-primary)" opacity="0.06" fontFamily="ui-rounded, system-ui, sans-serif" fontWeight="900" className="animate-float-medium" style={{ animationDelay: '-3s' }}>
+          <text x="76" y="122" fontSize="72">Aa</text>
+          <text x="1215" y="145" fontSize="62">Bb</text>
+          <text x="80" y="820" fontSize="64">123</text>
+          <text x="1260" y="700" fontSize="88">?</text>
+          <text x="350" y="200" fontSize="54">+</text>
+          <text x="1050" y="800" fontSize="54">=</text>
+        </g>
+
+        {/* Floating Stars & Sparkles */}
+        <g opacity="0.1" fill="var(--student-orange)" className="animate-float-slow" style={{ animationDelay: '-5s' }}>
+          <path d="m292 130 6 13 14 6-14 6-6 13-6-13-14-6 14-6 6-13Z" />
+          <path d="m1048 194 7 15 15 7-15 7-7 15-7-15-15-7 15-7 7-15Z" />
+          <path d="m404 760 5 11 11 5-11 5-5 11-5-11-11-5 11-5 5-11Z" />
+          <path d="m1120 400 4 9 9 4-9 4-4 9-4-9-9-4 9-4 4-9Z" />
+          <path d="m220 500 4 9 9 4-9 4-4 9-4-9-9-4 9-4 4-9Z" />
+        </g>
+
+        {/* Magical Elements */}
+        <g transform="translate(1090 92) rotate(18)" opacity="0.1" className="animate-float-medium" style={{ animationDelay: '-2s' }}>
+          <rect width="94" height="24" rx="12" fill="var(--student-orange)" />
+          <path d="M0 0-23 12 0 24V0Z" fill="var(--student-ink)" />
+        </g>
+        <g transform="translate(250 820) rotate(-15)" opacity="0.08" className="animate-float-slow" style={{ animationDelay: '-4s' }}>
+          <rect width="70" height="18" rx="9" fill="var(--student-violet)" />
+          <path d="M70 0l18 9-18 9V0Z" fill="var(--student-primary)" />
+        </g>
+      </svg>
+    </div>
+  );
 }
