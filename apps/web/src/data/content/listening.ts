@@ -130,4 +130,195 @@ Waiter: Certainly! Your order will be ready in ten minutes.`,
       },
     ],
   },
+  {
+    slug: 'fluent-podcast-ep1',
+    titleEn: 'Fluent English Podcast — Episode 1',
+    titleAr: 'بودكاست إنجليزي طليق — الحلقة الأولى',
+    level: 'easy',
+    mediaUrl: '/content/videos/fluent-podcast-ep1.mp4',
+    posterUrl: '/content/videos/posters/fluent-podcast-ep1.jpg',
+    audioScript: `Presenter 1: Hi everyone! Welcome back.
+Presenter 2: In today's episode, we share helpful phrases and tips for learning everyday spoken English naturally!`,
+    questions: [
+      {
+        id: 'pod1-1',
+        prompt: 'What is the podcast episode focused on?',
+        options: [
+          { text: 'Everyday spoken English', isCorrect: true },
+          { text: 'Cooking Italian food', isCorrect: false },
+          { text: 'History of airplanes', isCorrect: false },
+          { text: 'Computer coding', isCorrect: false },
+        ],
+      },
+      {
+        id: 'pod1-2',
+        prompt: 'What did the presenters say at the beginning of the podcast?',
+        options: [
+          { text: 'Hi everyone! Welcome back.', isCorrect: true },
+          { text: 'Goodbye and see you next year.', isCorrect: false },
+          { text: 'Please turn off the lights.', isCorrect: false },
+          { text: 'We are closing today.', isCorrect: false },
+        ],
+      },
+      {
+        id: 'pod1-3',
+        prompt: 'Which skill is improved most by listening to podcasts regularly?',
+        options: [
+          { text: 'Listening comprehension and pronunciation', isCorrect: true },
+          { text: 'Handwriting speed', isCorrect: false },
+          { text: 'Physical fitness', isCorrect: false },
+          { text: 'Drawing skills', isCorrect: false },
+        ],
+      },
+    ],
+  },
+  {
+    slug: 'fluent-podcast-ep2',
+    titleEn: 'Fluent English Podcast — Episode 2',
+    titleAr: 'بودكاست إنجليزي طليق — الحلقة الثانية',
+    level: 'medium',
+    mediaUrl: '/content/videos/fluent-podcast-ep2.mp4',
+    posterUrl: '/content/videos/posters/fluent-podcast-ep2.jpg',
+    audioScript: `Host: Hi everyone! Welcome to our English podcast. Today we talk about communication and learning new vocabulary every day.`,
+    questions: [
+      {
+        id: 'pod2-1',
+        prompt: 'What is the main topic of this podcast dialogue?',
+        options: [
+          { text: 'Communication and daily vocabulary', isCorrect: true },
+          { text: 'Buying a new smartphone', isCorrect: false },
+          { text: 'Riding a bicycle in the rain', isCorrect: false },
+          { text: 'Playing chess', isCorrect: false },
+        ],
+      },
+      {
+        id: 'pod2-2',
+        prompt: 'Complete the sentence: "Welcome to our English ___"',
+        options: [
+          { text: 'podcast', isCorrect: true },
+          { text: 'stadium', isCorrect: false },
+          { text: 'airport', isCorrect: false },
+          { text: 'kitchen', isCorrect: false },
+        ],
+      },
+      {
+        id: 'pod2-3',
+        prompt: 'What advice does the podcast emphasize for learners?',
+        options: [
+          { text: 'Practice listening and learn words daily', isCorrect: true },
+          { text: 'Stop speaking completely', isCorrect: false },
+          { text: 'Never use English outside school', isCorrect: false },
+          { text: 'Memorize the whole dictionary in one hour', isCorrect: false },
+        ],
+      },
+    ],
+  },
+  {
+    slug: 'prepositions-game',
+    titleEn: 'Prepositions of Place Challenge',
+    titleAr: 'تحدي حروف الجر المكانية',
+    level: 'easy',
+    mediaUrl: '/content/videos/prepositions-game.mp4',
+    posterUrl: '/content/videos/posters/prepositions-game.jpg',
+    audioScript: `Watch the colored cups game to master: in, on, under, behind, next to, between, near, in front of.`,
+    questions: [
+      {
+        id: 'prep-1',
+        prompt: 'Which preposition means "داخل الشيء" (inside something)?',
+        options: [
+          { text: 'in', isCorrect: true },
+          { text: 'under', isCorrect: false },
+          { text: 'behind', isCorrect: false },
+          { text: 'between', isCorrect: false },
+        ],
+      },
+      {
+        id: 'prep-2',
+        prompt: 'When something is "تحت الشيء", which word is used?',
+        options: [
+          { text: 'under', isCorrect: true },
+          { text: 'on', isCorrect: false },
+          { text: 'next to', isCorrect: false },
+          { text: 'in front of', isCorrect: false },
+        ],
+      },
+      {
+        id: 'prep-3',
+        prompt: 'The ball is ___ the two cups (بين الكوبين):',
+        options: [
+          { text: 'between', isCorrect: true },
+          { text: 'near', isCorrect: false },
+          { text: 'on', isCorrect: false },
+          { text: 'in', isCorrect: false },
+        ],
+      },
+      {
+        id: 'prep-4',
+        prompt: 'Which phrase means "بجانب" أو "بجوار"?',
+        options: [
+          { text: 'next to', isCorrect: true },
+          { text: 'behind', isCorrect: false },
+          { text: 'in', isCorrect: false },
+          { text: 'under', isCorrect: false },
+        ],
+      },
+    ],
+  },
+  {
+    slug: 'daily-sentences',
+    titleEn: 'Daily Sentences & Verb Patterns',
+    titleAr: 'جمل الاستخدام اليومي وصيغ الأفعال',
+    level: 'medium',
+    mediaUrl: '/content/videos/daily-sentences.mp4',
+    posterUrl: '/content/videos/posters/daily-sentences.jpg',
+    audioScript: `Daily Use Sentences — Structure: Verb + Preposition + Gerund (-ing form).
+Examples:
+- I look forward to seeing you soon.
+- She apologized for being late.
+- They insisted on paying the bill.
+- We dream of owning a house.
+- He succeeded in passing the exam.`,
+    questions: [
+      {
+        id: 'ds-1',
+        prompt: 'Complete: "I look forward to ___ you soon."',
+        options: [
+          { text: 'seeing', isCorrect: true },
+          { text: 'see', isCorrect: false },
+          { text: 'saw', isCorrect: false },
+          { text: 'seen', isCorrect: false },
+        ],
+      },
+      {
+        id: 'ds-2',
+        prompt: 'Complete: "She apologized for ___ late."',
+        options: [
+          { text: 'being', isCorrect: true },
+          { text: 'be', isCorrect: false },
+          { text: 'was', isCorrect: false },
+          { text: 'been', isCorrect: false },
+        ],
+      },
+      {
+        id: 'ds-3',
+        prompt: 'What form of the verb follows a preposition in this structure?',
+        options: [
+          { text: 'Gerund (-ing form)', isCorrect: true },
+          { text: 'Past simple (ed)', isCorrect: false },
+          { text: 'Base verb only', isCorrect: false },
+          { text: 'Infinitive with to', isCorrect: false },
+        ],
+      },
+      {
+        id: 'ds-4',
+        prompt: 'Complete: "They insisted on ___ the bill."',
+        options: [
+          { text: 'paying', isCorrect: true },
+          { text: 'pay', isCorrect: false },
+          { text: 'paid', isCorrect: false },
+          { text: 'pays', isCorrect: false },
+        ],
+      },
+    ],
+  },
 ];

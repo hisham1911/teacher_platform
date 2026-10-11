@@ -7,7 +7,8 @@ export const grammarTopics: GrammarTopic[] = [
     titleAr: 'المضارع البسيط',
     description: 'يستخدم للتحدث عن عادات وتكرار وحقائق عامة',
     imageUrl: '/content/grammar/present-simple.jpg',
-    videoUrl: '', // سيُضاف عند توفر رابط YouTube
+    videoUrl: '/content/videos/present-simple-podcast.mp4',
+    posterUrl: '/content/videos/posters/present-simple-podcast.jpg',
     questions: [
       {
         id: 'ps-1',
@@ -61,7 +62,8 @@ export const grammarTopics: GrammarTopic[] = [
     titleAr: 'المضارع المستمر',
     description: 'يستخدم للتحدث عما يحدث الآن في هذه اللحظة',
     imageUrl: '/content/grammar/present-progressive.jpg',
-    videoUrl: '',
+    videoUrl: '/content/videos/present-progressive-quiz.mp4',
+    posterUrl: '/content/videos/posters/present-progressive-quiz.jpg',
     questions: [
       {
         id: 'pp-1',
@@ -331,7 +333,8 @@ export const grammarTopics: GrammarTopic[] = [
     titleAr: 'المستقبل البسيط',
     description: 'يستخدم للتحدث عن قرارات وتوقعات وخطط مستقبلية',
     imageUrl: '/content/grammar/simple-future.jpg',
-    videoUrl: '',
+    videoUrl: '/content/videos/will-vs-going-to.mp4',
+    posterUrl: '/content/videos/posters/will-vs-going-to.jpg',
     questions: [
       {
         id: 'sf-1',
@@ -439,7 +442,8 @@ export const grammarTopics: GrammarTopic[] = [
     titleAr: 'المستقبل التام',
     description: 'يستخدم للتحدث عن حدث سيكتمل قبل نقطة زمنية معينة في المستقبل',
     imageUrl: '/content/grammar/future-perfect.jpg',
-    videoUrl: '',
+    videoUrl: '/content/videos/future-perfect.mp4',
+    posterUrl: '/content/videos/posters/future-perfect.jpg',
     questions: [
       {
         id: 'fup-1',
@@ -483,6 +487,61 @@ export const grammarTopics: GrammarTopic[] = [
           { text: 'completed', isCorrect: true },
           { text: 'completing', isCorrect: false },
           { text: 'completes', isCorrect: false },
+        ],
+      },
+    ],
+  },
+  {
+    slug: 'relative-clauses',
+    titleEn: 'Relative Clauses',
+    titleAr: 'ضمائر الوصل',
+    description: 'تستخدم لربط الجمل وتقديم معلومات إضافية عن الأسماء (who, which, that, where)',
+    imageUrl: '/content/videos/posters/relative-clauses.jpg',
+    videoUrl: '/content/videos/relative-clauses.mp4',
+    posterUrl: '/content/videos/posters/relative-clauses.jpg',
+    questions: [
+      {
+        id: 'rc-1',
+        prompt: 'The teacher ___ teaches us English is very kind.',
+        hint: 'نستخدم who للإشارة إلى الأشخاص (people)',
+        options: [
+          { text: 'who', isCorrect: true },
+          { text: 'which', isCorrect: false },
+          { text: 'where', isCorrect: false },
+          { text: 'when', isCorrect: false },
+        ],
+      },
+      {
+        id: 'rc-2',
+        prompt: 'This is the book ___ I bought yesterday.',
+        hint: 'نستخدم which أو that للأشياء والجماد (things)',
+        options: [
+          { text: 'who', isCorrect: false },
+          { text: 'whom', isCorrect: false },
+          { text: 'which', isCorrect: true },
+          { text: 'where', isCorrect: false },
+        ],
+      },
+      {
+        id: 'rc-3',
+        prompt: 'This is the school ___ my sister studies.',
+        hint: 'نستخدم where للأماكن (places)',
+        options: [
+          { text: 'which', isCorrect: false },
+          { text: 'where', isCorrect: true },
+          { text: 'who', isCorrect: false },
+          { text: 'when', isCorrect: false },
+        ],
+      },
+      {
+        id: 'rc-4',
+        prompt: 'The student ___ won the award is in our class.',
+        hint: 'ضمير الوصل المناسب للشخص العاقل هو who',
+        options: [
+          { text: 'who', isCorrect: true },
+          { text: 'which', isCorrect: false },
+          { text: 'where', isCorrect: false },
+          { text: 'whose', isCorrect: false },
         ],
       },
     ],

@@ -12,6 +12,7 @@ import {
 import { PublicBackdrop } from '../../components/layout/root-layout';
 import { PortalNav, PortalFooter } from '../../components/portal/portal-nav';
 import { InlineQuiz } from '../../components/portal/inline-quiz';
+import { PortalVideoPlayer } from '../../components/portal/portal-video-player';
 import { listeningActivities } from '../../data/content/listening';
 
 export default function ListeningActivityPage() {
@@ -88,15 +89,11 @@ export default function ListeningActivityPage() {
             {/* Media / Video / Audio */}
             <div className="mt-6">
               {activity.mediaUrl ? (
-                <div className="overflow-hidden rounded-2xl bg-slate-900 shadow-md aspect-video">
-                  <iframe
-                    src={activity.mediaUrl}
-                    title={activity.titleEn}
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                    className="h-full w-full"
-                  />
-                </div>
+                <PortalVideoPlayer
+                  src={activity.mediaUrl}
+                  poster={activity.posterUrl}
+                  title={activity.titleEn}
+                />
               ) : (
                 <div className="rounded-2xl border border-purple-100 bg-gradient-to-br from-purple-50/70 via-white to-pink-50/40 p-5 sm:p-8 text-center">
                   <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-600 to-pink-600 text-white shadow-md shadow-purple-600/20 mb-3">

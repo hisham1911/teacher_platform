@@ -18,7 +18,8 @@ export interface GrammarTopic {
   titleAr: string;
   description: string;
   imageUrl: string;
-  videoUrl?: string; // YouTube embed URL
+  videoUrl?: string;
+  posterUrl?: string;
   questions: QuizQuestion[];
 }
 
@@ -36,8 +37,9 @@ export interface ListeningActivity {
   titleEn: string;
   titleAr: string;
   level: 'easy' | 'medium' | 'hard';
-  mediaUrl: string; // YouTube embed URL
-  audioScript?: string; // نص المحادثة أو المقطع للاستماع
+  mediaUrl: string;
+  posterUrl?: string;
+  audioScript?: string;
   questions: QuizQuestion[];
 }
 

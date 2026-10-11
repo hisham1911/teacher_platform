@@ -11,6 +11,7 @@ import { PublicBackdrop } from '../../components/layout/root-layout';
 import { PortalNav, PortalFooter } from '../../components/portal/portal-nav';
 import { InlineQuiz } from '../../components/portal/inline-quiz';
 import { ImageLightbox } from '../../components/portal/image-lightbox';
+import { PortalVideoPlayer } from '../../components/portal/portal-video-player';
 import { grammarTopics } from '../../data/content/grammar';
 
 export default function GrammarTopicPage() {
@@ -86,15 +87,11 @@ export default function GrammarTopicPage() {
                   </div>
                   <h3 className="text-base font-black text-slate-900">شرح مرئي إثرائي</h3>
                 </div>
-                <div className="overflow-hidden rounded-2xl bg-slate-900 shadow-md aspect-video">
-                  <iframe
-                    src={topic.videoUrl}
-                    title={topic.titleEn}
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                    className="h-full w-full"
-                  />
-                </div>
+                <PortalVideoPlayer
+                  src={topic.videoUrl}
+                  poster={topic.posterUrl}
+                  title={topic.titleEn}
+                />
               </div>
             )}
           </div>

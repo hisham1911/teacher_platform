@@ -1,5 +1,5 @@
 import { Link } from 'react-router';
-import { Headphones, ArrowLeft, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Headphones, ArrowLeft, Sparkles, CheckCircle2, Video } from 'lucide-react';
 import { PublicBackdrop } from '../../components/layout/root-layout';
 import { PortalNav, PortalFooter } from '../../components/portal/portal-nav';
 import { listeningActivities } from '../../data/content/listening';
@@ -53,6 +53,22 @@ export default function ListeningIndexPage() {
               className="group flex flex-col justify-between overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white/90 p-5 sm:p-6 shadow-xs backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-purple-300 hover:shadow-xl hover:shadow-purple-900/10 active:translate-y-0"
             >
               <div>
+                {activity.posterUrl && (
+                  <div className="relative mb-4 aspect-video overflow-hidden rounded-xl sm:rounded-2xl bg-slate-950">
+                    <img
+                      src={activity.posterUrl}
+                      alt={activity.titleAr}
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent" />
+                    <span className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-full bg-slate-950/80 px-2 py-0.5 text-[10px] font-bold text-white backdrop-blur-md">
+                      <Video className="h-3 w-3 text-rose-400" />
+                      <span>فيديو</span>
+                    </span>
+                  </div>
+                )}
+
                 <div className="mb-3 flex items-center justify-between">
                   <span className="rounded-lg bg-slate-100 px-2 py-0.5 text-xs font-black text-slate-600">
                     نشاط #{index + 1}
@@ -74,8 +90,17 @@ export default function ListeningIndexPage() {
                 </p>
 
                 <div className="mt-3.5 flex items-center gap-2 text-xs font-semibold text-slate-500">
-                  <Headphones className="h-4 w-4 text-purple-500" />
-                  <span>مقطع ناطق بالإنجليزية + نص مسموع</span>
+                  {activity.mediaUrl ? (
+                    <>
+                      <Video className="h-4 w-4 text-rose-500" />
+                      <span>مقطع فيديو كرتوني + أسئلة تفاعلية</span>
+                    </>
+                  ) : (
+                    <>
+                      <Headphones className="h-4 w-4 text-purple-500" />
+                      <span>مقطع ناطق بالإنجليزية + نص مسموع</span>
+                    </>
+                  )}
                 </div>
               </div>
 

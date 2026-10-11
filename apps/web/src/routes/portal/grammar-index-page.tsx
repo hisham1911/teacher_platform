@@ -1,5 +1,5 @@
 import { Link } from 'react-router';
-import { BookOpen, ArrowLeft, CheckCircle2, Sparkles } from 'lucide-react';
+import { BookOpen, ArrowLeft, CheckCircle2, Sparkles, Video } from 'lucide-react';
 import { PublicBackdrop } from '../../components/layout/root-layout';
 import { PortalNav, PortalFooter } from '../../components/portal/portal-nav';
 import { grammarTopics } from '../../data/content/grammar';
@@ -54,10 +54,16 @@ export default function GrammarIndexPage() {
 
               {/* Card Body */}
               <div className="flex flex-1 flex-col p-4 sm:p-5">
-                <div className="mb-2 flex items-center justify-between">
+                <div className="mb-2 flex items-center justify-between gap-2">
                   <span className="text-[11px] font-black tracking-widest text-violet-700">
                     {topic.titleEn.toUpperCase()}
                   </span>
+                  {topic.videoUrl && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-black text-rose-700 border border-rose-200/60 shadow-2xs">
+                      <Video className="h-3 w-3 text-rose-600" />
+                      <span>فيديو كرتوني</span>
+                    </span>
+                  )}
                 </div>
                 <h2 className="text-base sm:text-lg font-black text-slate-900 group-hover:text-violet-900 transition-colors">
                   {topic.titleAr}
