@@ -1,0 +1,84 @@
+import { describe, it, expect, beforeEach } from 'vitest';
+import {
+  validateCommentContent,
+  guestbookClient,
+} from './guestbook-client';
+
+describe('Guestbook Client & Validation', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  describe('validateCommentContent', () => {
+    it('accepts thoughtful, educational comments', () => {
+      const result = validateCommentContent('مبادرة رائعة ومفيدة جداً للمعلمة مريم شكراً لكِ');
+      expect(result.isValid).toBe(true);
+    });
+
+    it('rejects comments that are too short', () => {
+      const result = validateCommentContent('أه');
+      expect(result.isValid).toBe(false);
+      expect(result.error).toContain('قصير');
+    });
+
+    it('rejects comments containing external links', () => {
+      const result = validateCommentContent('زوروا موقعنا https://example.com لمزيد من التفاصيل');
+      expect(result.isValid).toBe(false);
+      expect(result.error).toContain('الروابط');
+    });
+
+    it('rejects comments containing phone numbers', () => {
+      const result = validateCommentContent('تواصلوا معي على 0501234567');
+      expect(result.isValid).toBe(false);
+      expect(result.error).toContain('الهواتف');
+    });
+  });
+
+  describe('guestbookClient CRUD operations with Local Fallback', () => {
+    it('returns default entries when initialized', async () => {
+      const entries = await guestbookClient.getEntries();
+      expect(entries.length).toBeGreaterThanOrEqual(4);
+      expect(entries[0]?.name).toBeTruthy();
+    });
+
+    it('adds a new entry and increments count', async () => {
+      const created = await guestbookClient.addEntry({
+        name: 'طالبة مجتهدة',
+        role: 'طالبة — الصف الأول متوسط',
+        message: 'أحببت التمارين كثيراً والمسابقات التفاعلية',
+      });
+
+      expect(created.id).toBeTruthy();
+      expect(created.name).toBe('طالبة مجتهدة');
+
+      const all = await guestbookClient.getEntries();
+      expect(all.some((e) => e.name === 'طالبة مجتهدة')).toBe(true);
+    });
+
+    it('increments likes on entry', async () => {
+      const entries = await guestbookClient.getEntries();
+      const first = entries[0]!;
+      const initialLikes = first.likes;
+
+      const updatedLikes = await guestbookClient.likeEntry(first.id, initialLikes);
+      expect(updatedLikes).toBe(initialLikes + 1);
+    });
+
+    it('rejects deletion with wrong teacher passcode and deletes with valid passcode', async () => {
+      const created = await guestbookClient.addEntry({
+        name: 'تجربة حذف',
+        role: 'زائر',
+        message: 'رسالة للتجربة سيتم حذفها',
+      });
+
+      const failed = await guestbookClient.deleteEntry(created.id, 'wrong_pass');
+      expect(failed).toBe(false);
+
+      const success = await guestbookClient.deleteEntry(created.id, 'maryam2026');
+      expect(success).toBe(true);
+
+      const all = await guestbookClient.getEntries();
+      expect(all.some((e) => e.id === created.id)).toBe(false);
+    });
+  });
+});

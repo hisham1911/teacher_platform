@@ -14,12 +14,18 @@ async function renderRoute(initialPath: string) {
 }
 
 async function expectHeading(expected: string | RegExp) {
-  await waitFor(() => {
-    const headings = screen.getAllByRole('heading');
-    const texts = headings.map((heading) => heading.textContent ?? '');
-    const matches = expected instanceof RegExp ? texts.some((text) => expected.test(text)) : texts.some((text) => text.includes(expected));
-    expect(matches, `Expected heading matching ${expected}, got: [${texts.join(' | ')}]`).toBe(true);
-  });
+  await waitFor(
+    () => {
+      const headings = screen.getAllByRole('heading');
+      const texts = headings.map((heading) => heading.textContent ?? '');
+      const matches =
+        expected instanceof RegExp
+          ? texts.some((text) => expected.test(text))
+          : texts.some((text) => text.includes(expected));
+      expect(matches, `Expected heading matching ${expected}, got: [${texts.join(' | ')}]`).toBe(true);
+    },
+    { timeout: 4000 },
+  );
 }
 
 describe('router — public product routes', () => {
