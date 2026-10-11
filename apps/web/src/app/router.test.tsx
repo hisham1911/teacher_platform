@@ -34,12 +34,18 @@ describe('router — public product routes', () => {
     vi.unstubAllGlobals();
   });
 
-  it('يعرض الصفحة الرئيسية الموجهة للطالب على /', async () => {
+  it('يعرض الصفحة الرئيسية لبوابة English Spark على /', async () => {
     await renderRoute('/');
+    await expectHeading(/تعلّم الإنجليزية/);
+    expect(screen.getAllByRole('link', { name: /المسابقات/ })[0]!).toHaveAttribute('href', '/competitions');
+    expect(screen.getAllByRole('link', { name: /ابدأ بالقواعد والتمارين/ })[0]!).toHaveAttribute('href', '/grammar');
+    expect(screen.getAllByRole('link', { name: /الكتابة/ })[0]!).toHaveAttribute('href', '/writing');
+  });
+
+  it('يعرض صفحة الانضمام للطلاب على /home', async () => {
+    await renderRoute('/home');
     await expectHeading(/جاهز تبدأ؟/);
     expect(screen.getByLabelText('رمز النشاط')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'عندي كود طالب' })).toHaveAttribute('href', '/student');
-    expect(screen.getByRole('link', { name: 'هل أنت معلم؟' })).toHaveAttribute('href', '/teachers');
   });
 
   it('يعرض صفحة مستقلة للمعلمين على /teachers', async () => {

@@ -64,6 +64,22 @@ const PlatformAdminPage = lazy(() => import('../routes/platform/platform-admin-p
 
 const PlayPage = lazy(() => import('../routes/play/play-page'));
 
+const PortalHomePage = lazy(() => import('../routes/portal/portal-home-page'));
+const GrammarIndexPage = lazy(() => import('../routes/portal/grammar-index-page'));
+const GrammarTopicPage = lazy(() => import('../routes/portal/grammar-topic-page'));
+const ReadingIndexPage = lazy(() => import('../routes/portal/reading-index-page'));
+const ReadingPassagePage = lazy(() => import('../routes/portal/reading-passage-page'));
+const ListeningIndexPage = lazy(() => import('../routes/portal/listening-index-page'));
+const ListeningActivityPage = lazy(() => import('../routes/portal/listening-activity-page'));
+const SpeakingIndexPage = lazy(() => import('../routes/portal/speaking-index-page'));
+const WritingIndexPage = lazy(() => import('../routes/portal/writing-index-page'));
+const WritingActivityPage = lazy(() => import('../routes/portal/writing-activity-page'));
+const CompetitionsIndexPage = lazy(() => import('../routes/portal/competitions-index-page'));
+const PlacementTestPage = lazy(() => import('../routes/portal/placement-test-page'));
+const SpeedChallengePage = lazy(() => import('../routes/portal/speed-challenge-page'));
+const MillionChallengePage = lazy(() => import('../routes/portal/million-challenge-page'));
+const GuestbookPage = lazy(() => import('../routes/portal/guestbook-page'));
+
 export const router = createBrowserRouter([
   {
     errorElement: <RouteErrorPage />,
@@ -75,7 +91,24 @@ export const router = createBrowserRouter([
       </RootLayout>
     ),
     children: [
-      { path: '/', element: <HomePage /> },
+      { path: '/', element: <PortalHomePage /> },
+      { path: '/home', element: <HomePage /> },
+      { path: '/portal', element: <PortalHomePage /> },
+      { path: '/grammar', element: <GrammarIndexPage /> },
+      { path: '/grammar/:topicSlug', element: <GrammarTopicPage /> },
+      { path: '/reading', element: <ReadingIndexPage /> },
+      { path: '/reading/:passageSlug', element: <ReadingPassagePage /> },
+      { path: '/listening', element: <ListeningIndexPage /> },
+      { path: '/listening/:activitySlug', element: <ListeningActivityPage /> },
+      { path: '/writing', element: <WritingIndexPage /> },
+      { path: '/writing/:promptSlug', element: <WritingActivityPage /> },
+      { path: '/speaking', element: <SpeakingIndexPage /> },
+      { path: '/competitions', element: <CompetitionsIndexPage /> },
+      { path: '/competitions/million', element: <MillionChallengePage /> },
+      { path: '/competitions/placement', element: <PlacementTestPage /> },
+      { path: '/competitions/speed', element: <SpeedChallengePage /> },
+      { path: '/challenge', element: <MillionChallengePage /> },
+      { path: '/guestbook', element: <GuestbookPage /> },
       { path: '/teachers', element: <TeachersPage /> },
       { path: '/join', element: <StudentJoinPage /> },
       { path: '/student', element: <StudentPortalLoginPage /> },
