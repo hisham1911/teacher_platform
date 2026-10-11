@@ -1,0 +1,585 @@
+import { useState, useEffect } from 'react';
+import {
+  MessageCircleQuestion,
+  Send,
+  Heart,
+  Sparkles,
+  User,
+  CheckCircle2,
+  AlertCircle,
+  Trash2,
+  ShieldCheck,
+  Lock,
+  X,
+  Loader2,
+  CornerDownLeft,
+} from 'lucide-react';
+import {
+  guestbookClient,
+  type GuestbookEntry,
+  validateCommentContent,
+  checkRateLimit,
+  TEACHER_PASSCODE_HASH,
+} from '../../data/api-client/guestbook-client';
+
+interface LessonDiscussionProps {
+  topicSlug: string;
+  topicTitle: string;
+}
+
+const ROLE_OPTIONS = [
+  { label: 'طالبة — متوسطة الجرادية', value: 'طالبة — متوسطة الجرادية' },
+  { label: 'طالبة — ثانوية الجرادية', value: 'طالبة — ثانوية الجرادية' },
+  { label: 'ولي أمر طالبـ/ـة', value: 'ولي أمر' },
+  { label: 'معلمـ/ـة أو كادر تعليمي', value: 'كادر تعليمي' },
+  { label: 'زائر / مهتم باللغة', value: 'زائر مهتم' },
+];
+
+function formatTimeAgo(dateString: string): string {
+  try {
+    const date = new Date(dateString);
+    const diffSec = Math.floor((Date.now() - date.getTime()) / 1000);
+    if (diffSec < 60) return 'الآن';
+    const diffMin = Math.floor(diffSec / 60);
+    if (diffMin < 60) return `منذ ${diffMin} دقيقة`;
+    const diffHour = Math.floor(diffMin / 60);
+    if (diffHour < 24) return `منذ ${diffHour} ساعة`;
+    const diffDay = Math.floor(diffHour / 24);
+    if (diffDay === 1) return 'أمس';
+    if (diffDay < 7) return `منذ ${diffDay} أيام`;
+    return date.toLocaleDateString('ar-SA');
+  } catch {
+    return 'مؤخراً';
+  }
+}
+
+export function LessonDiscussion({ topicSlug, topicTitle }: LessonDiscussionProps) {
+  const [entries, setEntries] = useState<GuestbookEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [name, setName] = useState('');
+  const [role, setRole] = useState('طالبة — متوسطة الجرادية');
+  const [message, setMessage] = useState('');
+  const [honeypot, setHoneypot] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState(false);
+
+  // Teacher Moderation & Reply State
+  const [isTeacherAdmin, setIsTeacherAdmin] = useState(false);
+  const [teacherAdminModalOpen, setTeacherAdminModalOpen] = useState(false);
+  const [passcode, setPasscode] = useState('');
+  const [passcodeError, setPasscodeError] = useState(false);
+  const [activeReplyId, setActiveReplyId] = useState<string | null>(null);
+  const [teacherReplyText, setTeacherReplyText] = useState('');
+  const [replySubmitting, setReplySubmitting] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    setLoading(true);
+    guestbookClient
+      .getEntries(topicSlug)
+      .then((data) => {
+        if (mounted) {
+          setEntries(data);
+          setLoading(false);
+        }
+      })
+      .catch(() => {
+        if (mounted) setLoading(false);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [topicSlug]);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setErrorMsg('');
+
+    if (honeypot) return;
+
+    const rateCheck = checkRateLimit();
+    if (!rateCheck.isAllowed) {
+      setErrorMsg(`يرجى الانتظار ${rateCheck.remainingSeconds} ثانية قبل إضافة استفسار آخر.`);
+      return;
+    }
+
+    const validation = validateCommentContent(message);
+    if (!validation.isValid) {
+      setErrorMsg(validation.error || 'يرجى مراجعة محتوى الاستفسار.');
+      return;
+    }
+
+    if (!name.trim()) {
+      setErrorMsg('يرجى كتابة الاسم.');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const created = await guestbookClient.addEntry({
+        name: name.trim(),
+        role: role.trim(),
+        message: message.trim(),
+        topicSlug,
+      });
+
+      setEntries((prev) => [created, ...prev]);
+      setName('');
+      setMessage('');
+      setSuccessMsg(true);
+      setTimeout(() => setSuccessMsg(false), 5000);
+    } catch {
+      setErrorMsg('تعذر حفظ الاستفسار، يرجى المحاولة لاحقاً.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleLike(id: string, currentLikes: number) {
+    setEntries((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, likes: item.likes + 1 } : item))
+    );
+    await guestbookClient.likeEntry(id, currentLikes, topicSlug);
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm('هل أنتِ متأكدة من حذف هذا الاستفسار نهائياً؟')) return;
+    const ok = await guestbookClient.deleteEntry(id, passcode, topicSlug);
+    if (ok) {
+      setEntries((prev) => prev.filter((item) => item.id !== id));
+    }
+  }
+
+  async function handleTeacherReplySubmit(id: string) {
+    if (!teacherReplyText.trim()) return;
+    setReplySubmitting(true);
+    try {
+      const ok = await guestbookClient.addTeacherReply(
+        id,
+        teacherReplyText.trim(),
+        passcode,
+        topicSlug
+      );
+      if (ok) {
+        setEntries((prev) =>
+          prev.map((item) =>
+            item.id === id
+              ? {
+                  ...item,
+                  teacherReply: teacherReplyText.trim(),
+                  repliedAt: new Date().toISOString(),
+                }
+              : item
+          )
+        );
+        setActiveReplyId(null);
+        setTeacherReplyText('');
+      } else {
+        alert('حدث خطأ في التحقق من رمز مرور المعلمة.');
+      }
+    } finally {
+      setReplySubmitting(false);
+    }
+  }
+
+  function handleUnlockAdmin(e: React.FormEvent) {
+    e.preventDefault();
+    if (passcode.trim() === TEACHER_PASSCODE_HASH) {
+      setIsTeacherAdmin(true);
+      setTeacherAdminModalOpen(false);
+      setPasscodeError(false);
+    } else {
+      setPasscodeError(true);
+    }
+  }
+
+  return (
+    <section className="mt-10 rounded-2xl sm:rounded-3xl border border-violet-100 bg-white/95 p-5 shadow-sm backdrop-blur-xl sm:p-8" aria-label="استفسارات الدرس">
+      {/* Header */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-5">
+        <div className="flex items-start gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-violet-100 text-violet-700 shadow-xs">
+            <MessageCircleQuestion className="h-6 w-6" />
+          </div>
+          <div>
+            <h2 className="text-lg sm:text-xl font-black text-slate-900">
+              اسألي المعلمة مريم حول الدرس
+            </h2>
+            <p className="mt-0.5 text-xs sm:text-sm font-semibold text-slate-500">
+              هل توجد نقطة غير واضحة في قاعدة ({topicTitle})؟ اطرحي سؤالكِ هنا وستجيبكِ المعلمة
+            </p>
+          </div>
+        </div>
+
+        {/* Teacher Mode Button */}
+        <div>
+          {isTeacherAdmin ? (
+            <div className="flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-800 border border-emerald-200">
+              <ShieldCheck className="h-4 w-4 text-emerald-600" />
+              <span>وضع إجابة المعلمة مفعّل</span>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setTeacherAdminModalOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/90 bg-slate-50/80 px-3 py-2 text-xs font-bold text-slate-600 transition hover:bg-violet-50 hover:text-violet-700 hover:border-violet-200"
+            >
+              <Lock className="h-3.5 w-3.5" />
+              <span>دخول المعلمة للإجابة</span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Question Form */}
+      <form onSubmit={handleSubmit} className="mt-6 rounded-2xl bg-violet-50/40 p-4 sm:p-5 border border-violet-100/70">
+        <h3 className="text-sm font-black text-violet-900 mb-3 flex items-center gap-1.5">
+          <Sparkles className="h-4 w-4 text-violet-600" />
+          <span>كتابة استفسار أو سؤال جديد</span>
+        </h3>
+
+        {/* Honeypot for bots */}
+        <input
+          type="text"
+          value={honeypot}
+          onChange={(e) => setHoneypot(e.target.value)}
+          tabIndex={-1}
+          autoComplete="off"
+          className="hidden"
+          aria-hidden="true"
+        />
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+          <div>
+            <label htmlFor={`name-input-${topicSlug}`} className="block text-xs font-bold text-slate-700 mb-1">
+              الاسم الكريم:
+            </label>
+            <input
+              id={`name-input-${topicSlug}`}
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="مثال: رغد الحربي"
+              maxLength={40}
+              className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs sm:text-sm font-medium text-slate-800 placeholder-slate-400 focus:border-violet-500 focus:outline-hidden focus:ring-2 focus:ring-violet-200"
+              required
+            />
+          </div>
+
+          <div>
+            <label htmlFor={`role-select-${topicSlug}`} className="block text-xs font-bold text-slate-700 mb-1">
+              صفتك:
+            </label>
+            <select
+              id={`role-select-${topicSlug}`}
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs sm:text-sm font-medium text-slate-800 focus:border-violet-500 focus:outline-hidden focus:ring-2 focus:ring-violet-200"
+            >
+              {ROLE_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label htmlFor={`question-text-${topicSlug}`} className="block text-xs font-bold text-slate-700 mb-1">
+            سؤالكِ أو استفساركِ حول القاعدة:
+          </label>
+          <textarea
+            id={`question-text-${topicSlug}`}
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder={`مثال: أستاذة مريم، متى أستخدم هذه الصيغة في جمل النفي؟`}
+            rows={3}
+            maxLength={350}
+            className="w-full resize-none rounded-xl border border-slate-200 bg-white p-3 text-xs sm:text-sm font-medium text-slate-800 placeholder-slate-400 focus:border-violet-500 focus:outline-hidden focus:ring-2 focus:ring-violet-200"
+            required
+          />
+          <div className="mt-1 flex items-center justify-between text-[11px] text-slate-400">
+            <span>الرجاء عدم إدراج أرقام هواتف أو روابط خارجية</span>
+            <span>{message.length} / 350</span>
+          </div>
+        </div>
+
+        {errorMsg && (
+          <div className="mt-3 flex items-center gap-2 rounded-xl bg-rose-50 p-2.5 text-xs font-bold text-rose-700 border border-rose-200">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <span>{errorMsg}</span>
+          </div>
+        )}
+
+        {successMsg && (
+          <div className="mt-3 flex items-center gap-2 rounded-xl bg-emerald-50 p-2.5 text-xs font-bold text-emerald-700 border border-emerald-200">
+            <CheckCircle2 className="h-4 w-4 shrink-0" />
+            <span>تم إرسال استفساركِ بنجاح! ستجيب المعلمة مريم عليه قريباً.</span>
+          </div>
+        )}
+
+        <div className="mt-4 flex justify-end">
+          <button
+            type="submit"
+            disabled={submitting || !message.trim() || !name.trim()}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-violet-700 px-5 py-2.5 text-xs sm:text-sm font-black text-white shadow-sm shadow-violet-700/20 transition hover:bg-violet-800 disabled:opacity-50"
+          >
+            {submitting ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>جاري الإرسال...</span>
+              </>
+            ) : (
+              <>
+                <Send className="h-4 w-4 rotate-180" />
+                <span>إرسال الاستفسار</span>
+              </>
+            )}
+          </button>
+        </div>
+      </form>
+
+      {/* Discussion List */}
+      <div className="mt-8 space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-black text-slate-800">
+            استفسارات الطالبات ({entries.length})
+          </h3>
+          <span className="text-xs text-slate-400">
+            محدث مباشرة
+          </span>
+        </div>
+
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-10 text-slate-400">
+            <Loader2 className="h-7 w-7 animate-spin text-violet-600 mb-2" />
+            <p className="text-xs font-bold">جاري تحميل الاستفسارات...</p>
+          </div>
+        ) : entries.length === 0 ? (
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 py-10 text-center">
+            <MessageCircleQuestion className="h-10 w-10 text-slate-300 mb-2" />
+            <p className="text-sm font-bold text-slate-600">لا توجد استفسارات بعد حول هذه القاعدة</p>
+            <p className="text-xs text-slate-400 mt-1">كوني أول من يطرح سؤالاً على المعلمة مريم!</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {entries.map((entry) => (
+              <div
+                key={entry.id}
+                className="group relative rounded-2xl border border-slate-100 bg-slate-50/60 p-4 transition hover:border-violet-200 hover:bg-violet-50/20"
+              >
+                {/* Entry Header */}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-violet-100 text-violet-700 font-black text-xs">
+                      <User className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs sm:text-sm font-black text-slate-900">
+                          {entry.name}
+                        </span>
+                        <span className="rounded-md bg-slate-200/70 px-2 py-0.5 text-[10px] font-bold text-slate-600">
+                          {entry.role}
+                        </span>
+                      </div>
+                      <span className="text-[11px] font-medium text-slate-400">
+                        {formatTimeAgo(entry.createdAt)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1">
+                    {/* Like button */}
+                    <button
+                      type="button"
+                      onClick={() => handleLike(entry.id, entry.likes)}
+                      className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-bold text-slate-500 hover:bg-rose-50 hover:text-rose-600 transition"
+                      title="إعجاب بالسؤال"
+                    >
+                      <Heart className="h-3.5 w-3.5" />
+                      <span>{entry.likes}</span>
+                    </button>
+
+                    {/* Teacher Admin Actions */}
+                    {isTeacherAdmin && (
+                      <div className="flex items-center gap-1 mr-1 border-r border-slate-200 pr-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveReplyId(activeReplyId === entry.id ? null : entry.id);
+                            setTeacherReplyText(entry.teacherReply || '');
+                          }}
+                          className="rounded-lg bg-violet-100 px-2 py-1 text-[11px] font-black text-violet-800 hover:bg-violet-200"
+                        >
+                          {entry.teacherReply ? 'تعديل الإجابة' : 'إجابة المعلمة'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(entry.id)}
+                          className="rounded-lg p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition"
+                          title="حذف الاستفسار"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Entry Message */}
+                <p className="mt-3 text-xs sm:text-sm font-medium leading-relaxed text-slate-800">
+                  {entry.message}
+                </p>
+
+                {/* Teacher Reply Card (if answered) */}
+                {entry.teacherReply && (
+                  <div className="mt-3.5 rounded-xl border border-violet-200/80 bg-white p-3.5 shadow-xs">
+                    <div className="flex items-center justify-between border-b border-violet-100/60 pb-2 mb-2">
+                      <div className="flex items-center gap-1.5">
+                        <div className="flex h-5 w-5 items-center justify-center rounded-full bg-violet-600 text-white">
+                          <Sparkles className="h-3 w-3" />
+                        </div>
+                        <span className="text-xs font-black text-violet-900">
+                          إجابة المعلمة مريم
+                        </span>
+                        <span className="rounded-sm bg-violet-100 px-1.5 py-0.2 text-[10px] font-bold text-violet-700">
+                          معلمة المادة
+                        </span>
+                      </div>
+                      {entry.repliedAt && (
+                        <span className="text-[10px] text-slate-400">
+                          {formatTimeAgo(entry.repliedAt)}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs sm:text-sm font-medium leading-relaxed text-slate-700">
+                      {entry.teacherReply}
+                    </p>
+                  </div>
+                )}
+
+                {/* Teacher Inline Reply Box (when activeReplyId === entry.id) */}
+                {isTeacherAdmin && activeReplyId === entry.id && (
+                  <div className="mt-3 rounded-xl border border-violet-300 bg-violet-50/80 p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-black text-violet-900 flex items-center gap-1">
+                        <CornerDownLeft className="h-3.5 w-3.5 text-violet-700" />
+                        <span>كتابة إجابة المعلمة مريم على هذا السؤال:</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setActiveReplyId(null)}
+                        className="text-slate-400 hover:text-slate-600"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                    <textarea
+                      value={teacherReplyText}
+                      onChange={(e) => setTeacherReplyText(e.target.value)}
+                      placeholder="اكتبي توضيحكِ وإجابتكِ للطالبة هنا..."
+                      rows={3}
+                      className="w-full resize-none rounded-lg border border-violet-200 bg-white p-2.5 text-xs font-medium text-slate-800 placeholder-slate-400 focus:border-violet-500 focus:outline-hidden focus:ring-1 focus:ring-violet-300"
+                    />
+                    <div className="mt-2 flex justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setActiveReplyId(null)}
+                        className="rounded-lg px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-200/50"
+                      >
+                        إلغاء
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleTeacherReplySubmit(entry.id)}
+                        disabled={replySubmitting || !teacherReplyText.trim()}
+                        className="inline-flex items-center gap-1 rounded-lg bg-violet-700 px-4 py-1.5 text-xs font-black text-white hover:bg-violet-800 disabled:opacity-50"
+                      >
+                        {replySubmitting ? (
+                          <>
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            <span>جاري الحفظ...</span>
+                          </>
+                        ) : (
+                          <span>حفظ ونشر الإجابة</span>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Teacher Admin Modal */}
+      {teacherAdminModalOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs"
+        >
+          <div className="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl border border-slate-100">
+            <button
+              type="button"
+              onClick={() => setTeacherAdminModalOpen(false)}
+              className="absolute left-4 top-4 rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+              aria-label="إغلاق"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-100 text-violet-700 mb-3">
+              <Lock className="h-6 w-6" />
+            </div>
+
+            <h3 className="text-base font-black text-slate-900">
+              دخول المعلمة للإجابة والإدارة
+            </h3>
+            <p className="mt-1 text-xs text-slate-500 font-medium">
+              يرجى إدخال رمز المرور الخاص بالمعلمة مريم لتفعيل وضع كتابة الإجابات وإدارة الاستفسارات.
+            </p>
+
+            <form onSubmit={handleUnlockAdmin} className="mt-4 space-y-3">
+              <div>
+                <label htmlFor={`teacher-passcode-${topicSlug}`} className="block text-xs font-bold text-slate-700 mb-1">
+                  رمز المرور:
+                </label>
+                <input
+                  id={`teacher-passcode-${topicSlug}`}
+                  type="password"
+                  value={passcode}
+                  onChange={(e) => {
+                    setPasscode(e.target.value);
+                    setPasscodeError(false);
+                  }}
+                  placeholder="أدخلي رمز المرور..."
+                  className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs sm:text-sm font-medium text-slate-800 placeholder-slate-400 focus:border-violet-500 focus:outline-hidden focus:ring-2 focus:ring-violet-200"
+                  autoFocus
+                />
+              </div>
+
+              {passcodeError && (
+                <p className="text-xs font-bold text-rose-600 flex items-center gap-1">
+                  <AlertCircle className="h-3.5 w-3.5" />
+                  <span>رمز المرور غير صحيح.</span>
+                </p>
+              )}
+
+              <button
+                type="submit"
+                className="w-full rounded-xl bg-violet-700 py-2.5 text-xs sm:text-sm font-black text-white hover:bg-violet-800 transition"
+              >
+                تأكيد الدخول
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}

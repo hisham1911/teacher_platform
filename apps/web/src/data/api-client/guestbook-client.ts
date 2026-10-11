@@ -5,14 +5,17 @@ export interface GuestbookEntry {
   message: string;
   createdAt: string;
   likes: number;
+  topicSlug?: string;
+  teacherReply?: string;
+  repliedAt?: string;
 }
 
 const STORAGE_KEY = 'english_spark_guestbook_entries_v1';
 const RATE_LIMIT_KEY = 'english_spark_last_comment_time';
-const TEACHER_PASSCODE_HASH = 'maryam2026'; // رمز مرور المعلمة لإدارة التعليقات
+export const TEACHER_PASSCODE_HASH = 'maryam2026'; // رمز مرور المعلمة لإدارة التعليقات
 
-// تعليقات أولية ملهمة وموثوقة
-const DEFAULT_ENTRIES: GuestbookEntry[] = [
+// تعليقات عامة أولية لسجل الزوار
+const DEFAULT_GUESTBOOK_ENTRIES: GuestbookEntry[] = [
   {
     id: 'entry-1',
     name: 'سارة خالد',
@@ -47,6 +50,88 @@ const DEFAULT_ENTRIES: GuestbookEntry[] = [
   },
 ];
 
+// استفسارات وأسئلة افتراضية مجابة من المعلمة مريم لكل درس
+const DEFAULT_LESSON_QUESTIONS: Record<string, GuestbookEntry[]> = {
+  'present-simple': [
+    {
+      id: 'q-ps-1',
+      name: 'شهد عبدالله',
+      role: 'طالبة — الصف الثاني متوسط',
+      message: 'أستاذة مريم، متى نستخدم does ومتى نستخدم do في صياغة السؤال؟',
+      createdAt: new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString(),
+      likes: 8,
+      topicSlug: 'present-simple',
+      teacherReply: 'أهلاً بكِ يا شهد 🌸! نستخدم Does مع الفاعل المفرد (He, She, It) مثل: Does he play? ونستخدم Do مع الجمع والضمائر (I, You, We, They). ودائماً بعدهما يعود الفعل لأصله بدون s.',
+      repliedAt: new Date(Date.now() - 2 * 24 * 3600 * 1000 + 3600 * 1000).toISOString(),
+    },
+    {
+      id: 'q-ps-2',
+      name: 'ريم القحطاني',
+      role: 'طالبة — الصف الأول متوسط',
+      message: 'شكراً أستاذة على الشرح الكرتوني، بطاقة الدرس واضحة جداً وسهلت علي الواجب!',
+      createdAt: new Date(Date.now() - 1 * 24 * 3600 * 1000).toISOString(),
+      likes: 5,
+      topicSlug: 'present-simple',
+    },
+  ],
+  'present-progressive': [
+    {
+      id: 'q-pp-1',
+      name: 'ليان أحمد',
+      role: 'طالبة — الصف الثالث متوسط',
+      message: 'أستاذة، هل كل الأفعال تقبل إضافة ing في المضارع المستمر؟',
+      createdAt: new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString(),
+      likes: 9,
+      topicSlug: 'present-progressive',
+      teacherReply: 'سؤال ذكي ومميز يا ليان! هناك أفعال المشاعر والحواس والإدراك (Stative Verbs) مثل: like, love, know, believe عادةً لا تأتي بصيغة المستمر ونستخدم معها المضارع البسيط.',
+      repliedAt: new Date(Date.now() - 2 * 24 * 3600 * 1000 + 7200 * 1000).toISOString(),
+    },
+  ],
+  'relative-clauses': [
+    {
+      id: 'q-rc-1',
+      name: 'أثير محمد',
+      role: 'طالبة — المرحلة الثانوية',
+      message: 'أستاذة مريم، ما الفرق بين who و which في ضمائر الوصل؟',
+      createdAt: new Date(Date.now() - 1 * 24 * 3600 * 1000).toISOString(),
+      likes: 7,
+      topicSlug: 'relative-clauses',
+      teacherReply: 'أهلاً يا أثير! نستخدم who للأشخاص العاقلين (People) مثل: The teacher who..., ونستخدم which للأشياء والحيوانات وغير العاقل (Things) مثل: The book which...',
+      repliedAt: new Date(Date.now() - 1 * 24 * 3600 * 1000 + 4000 * 1000).toISOString(),
+    },
+  ],
+  'simple-future': [
+    {
+      id: 'q-sf-1',
+      name: 'أم جنى (ولي أمر)',
+      role: 'ولي أمر',
+      message: 'فيديو Will vs Be Going To رائع وممتع جداً، ابنتي فهمت الفرق فوراً من أول مشاهدة.',
+      createdAt: new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString(),
+      likes: 12,
+      topicSlug: 'simple-future',
+      teacherReply: 'أسعدني جداً ذلك أختي الفاضلة! هدفنا تبسيط القواعد وجعلها تجربة ممتعة وبصرية لبناتنا الطالبات. شكراً لدعمكِ 🌷',
+      repliedAt: new Date(Date.now() - 2 * 24 * 3600 * 1000 + 5000 * 1000).toISOString(),
+    },
+  ],
+  'future-perfect': [
+    {
+      id: 'q-fp-1',
+      name: 'خلود العتيبي',
+      role: 'طالبة — المرحلة الثانوية',
+      message: 'أستاذة، متى يكتمل الحدث في المستقبل التام بالضبط؟',
+      createdAt: new Date(Date.now() - 1 * 24 * 3600 * 1000).toISOString(),
+      likes: 4,
+      topicSlug: 'future-perfect',
+      teacherReply: 'أهلاً يا خلود! المستقبل التام يعبر عن حدث سينتهي تماماً قبل وقت محدد في المستقبل، وغالباً نستخدم معه عبارة (By next week, By 2027, By tomorrow).',
+      repliedAt: new Date(Date.now() - 1 * 24 * 3600 * 1000 + 3000 * 1000).toISOString(),
+    },
+  ],
+};
+
+function getStorageKey(topicSlug?: string) {
+  return topicSlug ? `${STORAGE_KEY}_topic_${topicSlug}` : STORAGE_KEY;
+}
+
 function getSupabaseConfig() {
   const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
   const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
@@ -59,24 +144,31 @@ function getSupabaseConfig() {
   return null;
 }
 
-// قراءة التعليقات المحفوظة محلياً (Fallback)
-function getLocalEntries(): GuestbookEntry[] {
+function getLocalEntries(topicSlug?: string): GuestbookEntry[] {
+  const key = getStorageKey(topicSlug);
+  const defaultList = topicSlug
+    ? DEFAULT_LESSON_QUESTIONS[topicSlug] || []
+    : DEFAULT_GUESTBOOK_ENTRIES;
+
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(key);
     if (!raw) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_ENTRIES));
-      return DEFAULT_ENTRIES;
+      if (defaultList.length > 0) {
+        localStorage.setItem(key, JSON.stringify(defaultList));
+      }
+      return defaultList;
     }
     const parsed = JSON.parse(raw) as GuestbookEntry[];
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_ENTRIES;
+    return Array.isArray(parsed) ? parsed : defaultList;
   } catch {
-    return DEFAULT_ENTRIES;
+    return defaultList;
   }
 }
 
-function saveLocalEntries(entries: GuestbookEntry[]) {
+function saveLocalEntries(entries: GuestbookEntry[], topicSlug?: string) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+    const key = getStorageKey(topicSlug);
+    localStorage.setItem(key, JSON.stringify(entries));
   } catch {
     // ignore
   }
@@ -88,10 +180,10 @@ function saveLocalEntries(entries: GuestbookEntry[]) {
 export function validateCommentContent(message: string): { isValid: boolean; error?: string } {
   const trimmed = message.trim();
   if (trimmed.length < 3) {
-    return { isValid: false, error: 'التعليق قصير جداً (أقل من 3 أحرف)' };
+    return { isValid: false, error: 'الرسالة قصيرة جداً (أقل من 3 أحرف)' };
   }
   if (trimmed.length > 350) {
-    return { isValid: false, error: 'التعليق طويل جداً (الحد الأقصى 350 حرفاً)' };
+    return { isValid: false, error: 'الرسالة طويلة جداً (الحد الأقصى 350 حرفاً)' };
   }
 
   // منع نشر الروابط الإلكترونية في تعليقات المدرسة
@@ -135,12 +227,16 @@ export function recordCommentTime() {
 }
 
 export const guestbookClient = {
-  async getEntries(): Promise<GuestbookEntry[]> {
+  async getEntries(topicSlug?: string): Promise<GuestbookEntry[]> {
     const config = getSupabaseConfig();
     if (config) {
       try {
+        const queryFilter = topicSlug
+          ? `&topic_slug=eq.${encodeURIComponent(topicSlug)}`
+          : `&topic_slug=is.null`;
+
         const res = await fetch(
-          `${config.url}/rest/v1/guestbook_entries?select=*&order=created_at.desc&limit=60`,
+          `${config.url}/rest/v1/guestbook_entries?select=*${queryFilter}&order=created_at.desc&limit=50`,
           {
             headers: {
               apikey: config.anonKey,
@@ -149,13 +245,16 @@ export const guestbookClient = {
           }
         );
         if (res.ok) {
-          const rows = await res.json() as Array<{
+          const rows = (await res.json()) as Array<{
             id: string | number;
             name: string;
             role: string;
             message: string;
             created_at: string;
             likes: number;
+            topic_slug?: string;
+            teacher_reply?: string;
+            replied_at?: string;
           }>;
           return rows.map((r) => ({
             id: String(r.id),
@@ -164,16 +263,24 @@ export const guestbookClient = {
             message: r.message,
             createdAt: r.created_at,
             likes: Number(r.likes || 0),
+            topicSlug: r.topic_slug,
+            teacherReply: r.teacher_reply,
+            repliedAt: r.replied_at,
           }));
         }
       } catch {
         // Fallback to local storage if network or table issue
       }
     }
-    return getLocalEntries();
+    return getLocalEntries(topicSlug);
   },
 
-  async addEntry(entry: { name: string; role: string; message: string }): Promise<GuestbookEntry> {
+  async addEntry(entry: {
+    name: string;
+    role: string;
+    message: string;
+    topicSlug?: string;
+  }): Promise<GuestbookEntry> {
     const config = getSupabaseConfig();
     if (config) {
       try {
@@ -189,6 +296,7 @@ export const guestbookClient = {
             name: entry.name.trim(),
             role: entry.role.trim(),
             message: entry.message.trim(),
+            topic_slug: entry.topicSlug ?? null,
             likes: 1,
           }),
         });
@@ -201,6 +309,9 @@ export const guestbookClient = {
             message: string;
             created_at: string;
             likes: number;
+            topic_slug?: string;
+            teacher_reply?: string;
+            replied_at?: string;
           }>;
           if (inserted && inserted[0]) {
             const row = inserted[0];
@@ -212,6 +323,9 @@ export const guestbookClient = {
               message: row.message,
               createdAt: row.created_at,
               likes: Number(row.likes || 1),
+              topicSlug: row.topic_slug,
+              teacherReply: row.teacher_reply,
+              repliedAt: row.replied_at,
             };
           }
         }
@@ -224,19 +338,20 @@ export const guestbookClient = {
     const newLocal: GuestbookEntry = {
       id: `local-${Date.now()}`,
       name: entry.name.trim(),
-      role: entry.role.trim() || 'طالب/ـة زائر',
+      role: entry.role.trim() || 'طالبة زائرة',
       message: entry.message.trim(),
       createdAt: new Date().toISOString(),
       likes: 1,
+      topicSlug: entry.topicSlug,
     };
-    const current = getLocalEntries();
+    const current = getLocalEntries(entry.topicSlug);
     const updated = [newLocal, ...current];
-    saveLocalEntries(updated);
+    saveLocalEntries(updated, entry.topicSlug);
     recordCommentTime();
     return newLocal;
   },
 
-  async likeEntry(id: string, currentLikes: number): Promise<number> {
+  async likeEntry(id: string, currentLikes: number, topicSlug?: string): Promise<number> {
     const newLikes = currentLikes + 1;
     const config = getSupabaseConfig();
     if (config) {
@@ -256,15 +371,54 @@ export const guestbookClient = {
     }
 
     // Also update local storage
-    const current = getLocalEntries();
+    const current = getLocalEntries(topicSlug);
     const updated = current.map((item) =>
       item.id === id ? { ...item, likes: newLikes } : item
     );
-    saveLocalEntries(updated);
+    saveLocalEntries(updated, topicSlug);
     return newLikes;
   },
 
-  async deleteEntry(id: string, passcode: string): Promise<boolean> {
+  async addTeacherReply(
+    id: string,
+    reply: string,
+    passcode: string,
+    topicSlug?: string
+  ): Promise<boolean> {
+    if (passcode.trim() !== TEACHER_PASSCODE_HASH) {
+      return false;
+    }
+
+    const nowIso = new Date().toISOString();
+    const config = getSupabaseConfig();
+    if (config) {
+      try {
+        await fetch(`${config.url}/rest/v1/guestbook_entries?id=eq.${id}`, {
+          method: 'PATCH',
+          headers: {
+            apikey: config.anonKey,
+            Authorization: `Bearer ${config.anonKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            teacher_reply: reply.trim(),
+            replied_at: nowIso,
+          }),
+        });
+      } catch {
+        // ignore
+      }
+    }
+
+    const current = getLocalEntries(topicSlug);
+    const updated = current.map((item) =>
+      item.id === id ? { ...item, teacherReply: reply.trim(), repliedAt: nowIso } : item
+    );
+    saveLocalEntries(updated, topicSlug);
+    return true;
+  },
+
+  async deleteEntry(id: string, passcode: string, topicSlug?: string): Promise<boolean> {
     if (passcode.trim() !== TEACHER_PASSCODE_HASH) {
       return false;
     }
@@ -284,9 +438,9 @@ export const guestbookClient = {
       }
     }
 
-    const current = getLocalEntries();
+    const current = getLocalEntries(topicSlug);
     const updated = current.filter((item) => item.id !== id);
-    saveLocalEntries(updated);
+    saveLocalEntries(updated, topicSlug);
     return true;
   },
 };

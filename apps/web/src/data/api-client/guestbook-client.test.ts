@@ -80,5 +80,46 @@ describe('Guestbook Client & Validation', () => {
       const all = await guestbookClient.getEntries();
       expect(all.some((e) => e.id === created.id)).toBe(false);
     });
+
+    it('isolates entries by topicSlug and returns seed Q&A', async () => {
+      const psEntries = await guestbookClient.getEntries('present-simple');
+      expect(psEntries.length).toBeGreaterThanOrEqual(1);
+      expect(psEntries.some((e) => e.teacherReply !== undefined)).toBe(true);
+
+      const generalEntries = await guestbookClient.getEntries();
+      expect(generalEntries.some((e) => e.topicSlug === 'present-simple')).toBe(false);
+    });
+
+    it('allows teacher to reply with valid passcode and rejects with invalid passcode', async () => {
+      const topic = 'relative-clauses';
+      const question = await guestbookClient.addEntry({
+        name: 'طالبة تسأل',
+        role: 'طالبة',
+        message: 'متى نستخدم whose؟',
+        topicSlug: topic,
+      });
+
+      const failedReply = await guestbookClient.addTeacherReply(
+        question.id,
+        'إجابة غير مصرحة',
+        'wrong-pass',
+        topic
+      );
+      expect(failedReply).toBe(false);
+
+      const successReply = await guestbookClient.addTeacherReply(
+        question.id,
+        'نستخدم whose للملكية (Possession)',
+        'maryam2026',
+        topic
+      );
+      expect(successReply).toBe(true);
+
+      const topicEntries = await guestbookClient.getEntries(topic);
+      const updated = topicEntries.find((e) => e.id === question.id);
+      expect(updated?.teacherReply).toBe('نستخدم whose للملكية (Possession)');
+      expect(updated?.repliedAt).toBeDefined();
+    });
   });
 });
+

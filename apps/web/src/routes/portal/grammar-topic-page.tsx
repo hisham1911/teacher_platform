@@ -10,6 +10,7 @@ import {
 import { PublicBackdrop } from '../../components/layout/root-layout';
 import { PortalNav, PortalFooter } from '../../components/portal/portal-nav';
 import { InlineQuiz } from '../../components/portal/inline-quiz';
+import { LessonDiscussion } from '../../components/portal/lesson-discussion';
 import { ImageLightbox } from '../../components/portal/image-lightbox';
 import { PortalVideoPlayer } from '../../components/portal/portal-video-player';
 import { grammarTopics } from '../../data/content/grammar';
@@ -114,6 +115,9 @@ export default function GrammarTopicPage() {
             <InlineQuiz key={topic.slug} questions={topic.questions} />
           </div>
         )}
+
+        {/* Lesson Q&A Discussion */}
+        <LessonDiscussion topicSlug={topic.slug} topicTitle={topic.titleAr} />
 
         {/* Bottom Navigation */}
         <div className="mt-10 flex flex-col items-stretch sm:items-center justify-between gap-3 border-t border-slate-200/80 pt-6 sm:flex-row">
