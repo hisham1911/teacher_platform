@@ -38,8 +38,16 @@ function isStudioNavActive(pathname: string, target: string) {
 
 function isStandaloneExperience(pathname: string) {
   return pathname === '/'
+    || pathname === '/portal'
+    || pathname === '/home'
     || pathname === '/teachers'
     || pathname === '/join'
+    || pathname === '/speaking'
+    || pathname === '/challenge'
+    || pathname === '/guestbook'
+    || pathname.startsWith('/grammar')
+    || pathname.startsWith('/reading')
+    || pathname.startsWith('/listening')
     || pathname.startsWith('/play/')
     || pathname.startsWith('/student')
     || pathname.startsWith('/q/')

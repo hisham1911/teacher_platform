@@ -1,0 +1,10 @@
+node_modules
+.git
+.vs
+backend/bin
+backend/obj
+e2e
+tests
+docs
+*.mp4
+*.webp

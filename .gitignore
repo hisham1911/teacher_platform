@@ -59,3 +59,15 @@ e2e/visual-results/
 e2e/state.json
 e2e/storage*.json
 e2e/*.log
+e2e/screenshots*/
+e2e/*.json
+e2e/*.mjs
+
+# Vercel & local logs
+.vercel/
+*.log
+apps/web/*.log
+
+# Client raw source assets archive
+assets/
+
