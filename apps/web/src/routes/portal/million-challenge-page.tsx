@@ -1,5 +1,14 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
+import {
+  Award,
+  Trophy,
+  RotateCcw,
+  Sparkles,
+  ChevronRight,
+  CheckCircle2,
+  XCircle,
+} from 'lucide-react';
 import { PortalNav, PortalFooter } from '../../components/portal/portal-nav';
 import { challengeQuestions } from '../../data/content/challenge';
 
@@ -7,7 +16,9 @@ type Stage = 'welcome' | 'playing' | 'result';
 
 function playTone(type: 'correct' | 'wrong' | 'win') {
   try {
-    const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    const AudioCtx =
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
     if (!AudioCtx) return;
     const ctx = new AudioCtx();
     if (type === 'correct') {
@@ -46,7 +57,7 @@ function playTone(type: 'correct' | 'wrong' | 'win') {
       });
     }
   } catch {
-    // AudioContext blocked or unsupported
+    // AudioContext blocked
   }
 }
 
@@ -76,15 +87,15 @@ export default function MillionChallengePage() {
     if (!current) return;
     const picked = current.options[optIdx];
     if (!picked) return;
-    
+
     setSelected(optIdx);
     const correct = picked.isCorrect;
     setIsCorrectFeedback(correct);
     playTone(correct ? 'correct' : 'wrong');
-    
+
     const earned = current.points;
     const level = currentLevel;
-    
+
     setTimeout(() => {
       if (correct) {
         setTotalPoints((prev) => prev + earned);
@@ -101,7 +112,7 @@ export default function MillionChallengePage() {
         setFinalLevel(level);
         setStage('result');
       }
-    }, 2000);
+    }, 1800);
   }
 
   function handleRestart() {
@@ -114,94 +125,98 @@ export default function MillionChallengePage() {
     setIsCorrectFeedback(null);
   }
 
-  // Animation class for the container when feedback is shown
-  const flashClass = isCorrectFeedback === true 
-    ? 'challenge-flash-ok' 
-    : isCorrectFeedback === false 
-      ? 'challenge-flash-bad' 
+  const flashClass =
+    isCorrectFeedback === true
+      ? 'challenge-flash-ok'
+      : isCorrectFeedback === false
+      ? 'challenge-flash-bad'
       : '';
 
   return (
     <div className="challenge-shell flex min-h-dvh flex-col" dir="rtl">
-      {/* 
-        We use the standard PortalNav but force a dark theme for the nav 
-        if we want, or just let it be standard and isolate the challenge shell below.
-        Actually, for a fully immersive game show, we might hide the nav or style it differently.
-        Since PortalNav is fixed, we'll just include it.
-      */}
       <PortalNav />
 
-      <main className="relative z-10 flex flex-1 flex-col items-center justify-center px-4 py-12">
+      <main className="relative z-10 flex flex-1 flex-col items-center justify-center px-4 py-8 sm:py-12">
+        {/* Breadcrumb on Mobile/Desktop */}
+        <div className="mb-4 self-start max-w-6xl w-full mx-auto flex items-center gap-1.5 text-xs font-bold text-sky-200/70">
+          <Link to="/competitions" className="hover:text-amber-400 transition">
+            المسابقات
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5" />
+          <span className="text-amber-400 font-black">مسابقة المليون</span>
+        </div>
+
         {stage === 'welcome' && (
-          <div className="challenge-panel challenge-enter w-full max-w-xl p-8 text-center sm:p-12">
-            <span className="mb-6 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 text-3xl shadow-[0_0_30px_rgba(251,191,36,0.3)]">
-              🏆
+          <div className="challenge-panel challenge-enter w-full max-w-xl p-6 text-center sm:p-12">
+            <span className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 text-slate-950 shadow-[0_0_30px_rgba(251,191,36,0.3)]">
+              <Award className="h-9 w-9" />
             </span>
-            <p className="text-sm font-black tracking-[0.2em] text-[var(--challenge-accent)]">
+            <p className="text-xs font-black tracking-[0.2em] text-[var(--challenge-accent)]">
               MILLION CHALLENGE
             </p>
-            <h1 className="mt-3 text-4xl font-black text-white sm:text-5xl">مسابقة المليون</h1>
-            
-            <div className="mt-8 rounded-2xl bg-white/5 p-6 text-right">
-              <ul className="flex flex-col gap-4 text-sm font-semibold leading-relaxed text-sky-100">
-                <li className="flex items-start gap-3">
-                  <span className="mt-1 text-[var(--challenge-accent)]">1.</span>
-                  التحدي يتكون من 15 سؤال متدرج الصعوبة في قواعد ومفردات اللغة الإنجليزية.
+            <h1 className="mt-2 text-3xl font-black text-white sm:text-5xl">مسابقة المليون</h1>
+
+            <div className="mt-6 rounded-2xl bg-white/5 p-5 text-right border border-white/10">
+              <ul className="flex flex-col gap-3 text-xs sm:text-sm font-semibold leading-relaxed text-sky-100">
+                <li className="flex items-start gap-2.5">
+                  <span className="text-[var(--challenge-accent)] font-black">1.</span>
+                  <span>15 سؤالاً متدرجة الصعوبة في قواعد ومفردات اللغة الإنجليزية.</span>
                 </li>
-                <li className="flex items-start gap-3">
-                  <span className="mt-1 text-[var(--challenge-accent)]">2.</span>
-                  الإجابة الصحيحة تنقلك للمستوى التالي وتزيد نقاطك.
+                <li className="flex items-start gap-2.5">
+                  <span className="text-[var(--challenge-accent)] font-black">2.</span>
+                  <span>الإجابة الصحيحة ترفعك للمستوى التالي وتزيد مجموع نقاطك.</span>
                 </li>
-                <li className="flex items-start gap-3">
-                  <span className="mt-1 text-rose-400">3.</span>
-                  إجابة واحدة خاطئة تنهي التحدي فوراً وتخسر فرصتك في المليون!
+                <li className="flex items-start gap-2.5">
+                  <span className="text-rose-400 font-black">3.</span>
+                  <span>خطأ واحد ينهي الجولة فوراً — التركيز مطلوب للوصول للقمة!</span>
                 </li>
               </ul>
             </div>
 
-            <div className="mt-8">
+            <div className="mt-6">
               <input
                 type="text"
                 placeholder="اكتب اسمك هنا للبدء..."
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full rounded-2xl bg-white/10 px-6 py-4 text-center text-lg font-bold text-white placeholder-white/40 outline-none ring-2 ring-white/10 transition-all focus:bg-white/15 focus:ring-[var(--challenge-accent)]"
+                className="w-full rounded-2xl bg-white/10 px-5 py-3.5 text-center text-base sm:text-lg font-bold text-white placeholder-white/40 outline-none ring-2 ring-white/10 transition-all focus:bg-white/15 focus:ring-[var(--challenge-accent)]"
                 maxLength={30}
               />
             </div>
-            
+
             <button
+              type="button"
               onClick={handleStart}
               disabled={name.trim().length < 2}
-              className="mt-6 w-full rounded-2xl bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500 px-8 py-5 text-lg font-black text-slate-950 shadow-[0_0_30px_rgba(251,191,36,0.35)] transition-all hover:scale-[1.02] hover:shadow-[0_0_40px_rgba(251,191,36,0.5)] active:scale-[0.98] disabled:opacity-40 disabled:hover:scale-100"
+              className="mt-5 w-full flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500 px-8 py-4 text-base font-black text-slate-950 shadow-[0_0_30px_rgba(251,191,36,0.35)] transition hover:brightness-105 active:scale-[0.98] disabled:opacity-40"
             >
-              ابدأ التحدي الآن ✨
+              <Sparkles className="h-5 w-5" />
+              <span>ابدأ التحدي الآن</span>
             </button>
           </div>
         )}
 
         {stage === 'playing' && question && (
-          <div className="w-full max-w-6xl gap-8 lg:grid lg:grid-cols-12">
-            
+          <div className="w-full max-w-6xl gap-6 lg:grid lg:grid-cols-12">
             {/* Desktop Ladder Sidebar */}
             <div className="hidden lg:col-span-3 lg:block">
-              <div className="challenge-panel challenge-enter flex h-full flex-col-reverse justify-between rounded-2xl p-6">
+              <div className="challenge-panel challenge-enter flex h-full flex-col-reverse justify-between rounded-2xl p-5 border border-white/10">
                 {challengeQuestions.map((q, idx) => {
                   const isCurrent = idx === currentLevel;
                   const isPassed = idx < currentLevel;
                   const isMilestone = (idx + 1) % 5 === 0;
-                  
+
                   return (
-                    <div 
+                    <div
                       key={idx}
-                      className={`flex items-center justify-between rounded-lg px-4 py-2 text-sm font-bold transition-all ${
-                        isCurrent 
-                          ? 'bg-[var(--challenge-accent)] text-slate-900 shadow-[0_0_15px_rgba(251,191,36,0.3)]' 
+                      className={`flex items-center justify-between rounded-lg px-3.5 py-1.5 text-xs font-bold transition-all ${
+                        isCurrent
+                          ? 'bg-[var(--challenge-accent)] text-slate-900 shadow-[0_0_15px_rgba(251,191,36,0.3)]'
                           : isPassed
-                            ? 'text-emerald-400'
-                            : isMilestone
-                              ? 'text-white'
-                              : 'text-sky-200/50'
+                          ? 'text-emerald-400 font-semibold'
+                          : isMilestone
+                          ? 'text-white font-bold'
+                          : 'text-sky-200/50'
                       }`}
                     >
                       <span>{idx + 1}</span>
@@ -215,37 +230,50 @@ export default function MillionChallengePage() {
             {/* Main Question Area */}
             <div className="lg:col-span-9">
               {/* Mobile Header / Ladder info */}
-              <div className="mb-6 flex items-center justify-between rounded-2xl bg-white/5 px-6 py-4 text-sm font-bold text-sky-200 lg:hidden">
+              <div className="mb-4 flex items-center justify-between rounded-2xl bg-white/5 px-5 py-3 text-xs sm:text-sm font-bold text-sky-200 lg:hidden border border-white/10">
                 <span>المستوى {question.level} من 15</span>
-                <span className="flex items-center gap-2 text-[var(--challenge-accent)]">
+                <span className="flex items-center gap-1.5 text-[var(--challenge-accent)] font-black">
                   ♦ {question.points.toLocaleString()} نقطة
                 </span>
               </div>
 
-              <div className={`challenge-panel challenge-enter p-8 sm:p-12 ${flashClass}`}>
-                <p className="text-center text-2xl font-black leading-relaxed text-white sm:text-3xl" dir="ltr">
+              <div className={`challenge-panel challenge-enter p-6 sm:p-10 ${flashClass}`}>
+                <p
+                  className="text-center text-xl sm:text-2xl font-black leading-relaxed text-white select-text"
+                  dir="ltr"
+                >
                   {question.prompt}
                 </p>
 
                 {isCorrectFeedback !== null && (
-                  <div className="mt-8 flex justify-center">
-                    <div className={isCorrectFeedback ? 'challenge-feedback-ok' : 'challenge-feedback-bad'}>
-                      {isCorrectFeedback ? 'إجابة صحيحة! ننتقل للسؤال التالي...' : 'إجابة خاطئة! انتهى التحدي.'}
+                  <div className="mt-5 flex justify-center">
+                    <div
+                      className={
+                        isCorrectFeedback ? 'challenge-feedback-ok' : 'challenge-feedback-bad'
+                      }
+                    >
+                      {isCorrectFeedback
+                        ? 'إجابة صحيحة! ننتقل للسؤال التالي...'
+                        : 'إجابة خاطئة! انتهى التحدي.'}
                     </div>
                   </div>
                 )}
               </div>
 
-              <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {/* 4 Options on Mobile & Desktop */}
+              <div className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
                 {question.options.map((opt, idx) => {
-                  const letter = String.fromCharCode(65 + idx); // A, B, C, D
-                  let stateClass = 'bg-slate-800/60 border-slate-700 text-sky-100 hover:bg-slate-700 hover:border-slate-500';
-                  
+                  const letter = String.fromCharCode(65 + idx);
+                  let stateClass =
+                    'bg-slate-800/70 border-slate-700 text-sky-100 hover:bg-slate-700 hover:border-slate-500';
+
                   if (selected !== null) {
                     if (opt.isCorrect) {
-                      stateClass = 'bg-emerald-900/80 border-emerald-500 text-emerald-100 shadow-[0_0_20px_rgba(16,185,129,0.3)]';
+                      stateClass =
+                        'bg-emerald-900/90 border-emerald-500 text-emerald-100 shadow-[0_0_20px_rgba(16,185,129,0.3)]';
                     } else if (idx === selected && !opt.isCorrect) {
-                      stateClass = 'bg-rose-900/80 border-rose-500 text-rose-100 shadow-[0_0_20px_rgba(244,63,94,0.3)]';
+                      stateClass =
+                        'bg-rose-900/90 border-rose-500 text-rose-100 shadow-[0_0_20px_rgba(244,63,94,0.3)]';
                     } else {
                       stateClass = 'bg-slate-800/30 border-slate-800 text-slate-500 opacity-50';
                     }
@@ -254,17 +282,30 @@ export default function MillionChallengePage() {
                   return (
                     <button
                       key={opt.text + idx}
+                      type="button"
                       onClick={() => handleSelect(idx)}
                       disabled={selected !== null}
-                      className={`group relative flex w-full items-center gap-4 overflow-hidden rounded-2xl border-2 px-5 py-4.5 transition-all duration-300 ${stateClass}`}
+                      className={`group relative flex w-full items-center gap-3 overflow-hidden rounded-xl sm:rounded-2xl border-2 px-4 py-3.5 sm:py-4 transition-all duration-200 active:scale-[0.99] min-h-[52px] ${stateClass}`}
                       dir="ltr"
                     >
-                      <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sm font-black transition-colors ${
-                        selected !== null ? 'bg-black/30 text-white' : 'bg-white/10 text-amber-300 group-hover:bg-[var(--challenge-accent)] group-hover:text-slate-950'
-                      }`}>
+                      <span
+                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-xs sm:text-sm font-black transition-colors ${
+                          selected !== null
+                            ? 'bg-black/30 text-white'
+                            : 'bg-white/10 text-amber-300 group-hover:bg-[var(--challenge-accent)] group-hover:text-slate-950'
+                        }`}
+                      >
                         {letter}
                       </span>
-                      <span className="text-lg font-bold text-left flex-1">{opt.text}</span>
+                      <span className="text-sm sm:text-base font-bold text-left flex-1">
+                        {opt.text}
+                      </span>
+                      {selected !== null && opt.isCorrect && (
+                        <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" />
+                      )}
+                      {selected !== null && idx === selected && !opt.isCorrect && (
+                        <XCircle className="h-5 w-5 text-rose-400 shrink-0" />
+                      )}
                     </button>
                   );
                 })}
@@ -274,38 +315,46 @@ export default function MillionChallengePage() {
         )}
 
         {stage === 'result' && (
-          <div className={`challenge-panel challenge-enter w-full max-w-xl p-8 text-center sm:p-12 ${finalLevel >= 15 ? 'challenge-result-win' : 'challenge-result-lose'}`}>
-            <span className="mb-6 inline-flex h-20 w-20 items-center justify-center rounded-3xl bg-white/10 text-5xl shadow-xl backdrop-blur-md">
-              {finalLevel >= 15 ? '👑' : finalLevel >= 10 ? '🌟' : finalLevel >= 5 ? '👏' : '📚'}
+          <div
+            className={`challenge-panel challenge-enter w-full max-w-xl p-6 text-center sm:p-10 ${
+              finalLevel >= 15 ? 'challenge-result-win' : 'challenge-result-lose'
+            }`}
+          >
+            <span className="mb-4 inline-flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-2xl sm:rounded-3xl bg-white/10 text-white shadow-xl backdrop-blur-md">
+              <Trophy className="h-8 w-8 sm:h-10 sm:w-10 text-amber-400" />
             </span>
-            
-            <h2 className="text-3xl font-black text-white sm:text-4xl">
-              {finalLevel >= 15 ? `أسطورة يا ${name}! ربحت المليون!` : `حظ أوفر يا ${name}!`}
+
+            <h2 className="text-2xl sm:text-4xl font-black text-white">
+              {finalLevel >= 15
+                ? `أسطورة يا ${name}! ربحت المليون!`
+                : `محاولة رائعة يا ${name}!`}
             </h2>
-            
-            <p className="mt-4 text-lg font-bold text-sky-200">
-              وصلت للمستوى <span className="text-white">{finalLevel}</span> من 15
+
+            <p className="mt-2 text-sm sm:text-base font-bold text-sky-200">
+              وصلت للمستوى <span className="text-white font-black">{finalLevel}</span> من 15
             </p>
-            
-            <div className="mt-6 inline-flex items-center gap-3 rounded-2xl bg-black/40 px-8 py-4">
-              <span className="text-sm font-bold text-sky-300">الرصيد النهائي:</span>
-              <span className="text-3xl font-black text-[var(--challenge-accent)]">
+
+            <div className="mt-5 inline-flex items-center gap-2.5 rounded-2xl bg-black/40 px-6 py-3 border border-white/10">
+              <span className="text-xs sm:text-sm font-bold text-sky-300">الرصيد النهائي:</span>
+              <span className="text-2xl sm:text-3xl font-black text-[var(--challenge-accent)]">
                 ♦ {totalPoints.toLocaleString()}
               </span>
             </div>
 
-            <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-              <button 
-                onClick={handleRestart} 
-                className="w-full rounded-2xl bg-[var(--challenge-accent)] px-8 py-4 text-sm font-black text-slate-950 transition-transform hover:scale-105 sm:w-auto"
+            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <button
+                type="button"
+                onClick={handleRestart}
+                className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-[var(--challenge-accent)] px-7 py-3.5 text-xs sm:text-sm font-black text-slate-950 transition hover:brightness-105 active:scale-95 sm:w-auto"
               >
-                العب مرة أخرى
+                <RotateCcw className="h-4 w-4" />
+                <span>العب مرة أخرى</span>
               </button>
-              <Link 
-                to="/" 
-                className="w-full rounded-2xl border-2 border-white/20 bg-transparent px-8 py-4 text-sm font-black text-white transition-colors hover:bg-white/10 sm:w-auto"
+              <Link
+                to="/competitions"
+                className="w-full inline-flex items-center justify-center rounded-2xl border border-white/20 bg-white/5 px-6 py-3.5 text-xs sm:text-sm font-bold text-white transition hover:bg-white/10 sm:w-auto"
               >
-                العودة للرئيسية
+                العودة لقسم المسابقات
               </Link>
             </div>
           </div>

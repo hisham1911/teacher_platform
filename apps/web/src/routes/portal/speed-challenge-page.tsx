@@ -1,5 +1,15 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router';
+import {
+  Timer,
+  Clock,
+  Flame,
+  Trophy,
+  RotateCcw,
+  ChevronRight,
+  ArrowLeft,
+  Sparkles,
+} from 'lucide-react';
 import { PublicBackdrop } from '../../components/layout/root-layout';
 import { PortalNav, PortalFooter } from '../../components/portal/portal-nav';
 import { speedQuestions } from '../../data/content/competitions';
@@ -78,12 +88,12 @@ export default function SpeedChallengePage() {
   const [wrongCount, setWrongCount] = useState(0);
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
 
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const totalQuestions = speedQuestions.length;
-  const currentQ = speedQuestions[currentIndex % totalQuestions];
+  // Pick question by looping through pool
+  const currentQ = speedQuestions[currentIndex % speedQuestions.length];
 
-  // Start game handler
+  // Start / Restart game
   function handleStart() {
     if (playerName.trim().length < 2) return;
     setGameState('playing');
@@ -157,16 +167,16 @@ export default function SpeedChallengePage() {
   }
 
   // Title rank evaluation
-  let rankTitle = 'مشارك رائع 🌟';
+  let rankTitle = 'مشارك رائع';
   let rankDesc = 'بداية جيدة! كل تدريب إضافي سيزيد من سرعتك ودقتك.';
   if (score >= 250) {
-    rankTitle = 'أسطورة السرعة والذكاء ⚡⚡⚡';
+    rankTitle = 'أسطورة السرعة والذكاء';
     rankDesc = 'أداء استثنائي وخارق! سرعة بديهة ودقة عالية تضعك في قمة الأبطال.';
   } else if (score >= 150) {
-    rankTitle = 'المفكر الصاروخي 🚀';
+    rankTitle = 'المفكر الصاروخي';
     rankDesc = 'سرعة فائقة وتركيز مدهش! استطعت إحراز نقاط رائعة جداً.';
   } else if (score >= 80) {
-    rankTitle = 'بطل متقدّم 🔥';
+    rankTitle = 'بطل متقدّم';
     rankDesc = 'سرعة جيدة وتركيز ممتاز! يمكنك كسر رقمك القياسي بمحاولة ثانية.';
   }
 
@@ -175,42 +185,54 @@ export default function SpeedChallengePage() {
       <PublicBackdrop />
       <PortalNav />
 
-      <main className="relative z-10 mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center px-4 py-10">
+      <main className="relative z-10 mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center px-4 py-8 sm:py-10">
+        {/* Breadcrumb */}
+        <div className="mb-4 self-start flex items-center gap-1.5 text-xs font-bold text-slate-500">
+          <Link to="/competitions" className="hover:text-violet-700 transition">
+            المسابقات
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5" />
+          <span className="text-rose-700 font-black">تحدي السرعة 60 ثانية</span>
+        </div>
+
         {/* LOBBY STAGE */}
         {gameState === 'lobby' && (
-          <div className="w-full rounded-3xl border border-white/80 bg-white/90 p-6 text-center shadow-xl backdrop-blur-xl sm:p-12">
-            <span className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-rose-500 via-pink-600 to-amber-500 text-4xl text-white shadow-lg shadow-rose-500/20">
-              ⚡
+          <div className="w-full rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white/95 p-6 text-center shadow-xs sm:p-10 backdrop-blur-xl">
+            <span className="mx-auto flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-2xl sm:rounded-3xl bg-gradient-to-br from-rose-500 via-pink-600 to-amber-500 text-white shadow-lg shadow-rose-500/20">
+              <Timer className="h-8 w-8 sm:h-10 sm:w-10" />
             </span>
-            <span className="mt-4 inline-block text-xs font-black tracking-widest text-rose-600">
+            <span className="mt-4 inline-flex items-center gap-1 text-xs font-black tracking-widest text-rose-600">
+              <Sparkles className="h-3 w-3" />
               60-SECOND SPEED CHALLENGE
             </span>
-            <h1 className="mt-2 text-3xl font-black text-slate-950 sm:text-5xl">تحدي السرعة 60 ثانية</h1>
-            <p className="mx-auto mt-4 max-w-lg text-sm font-semibold leading-relaxed text-slate-600 sm:text-base">
+            <h1 className="mt-1 text-2xl sm:text-4xl font-black text-slate-950">
+              تحدي السرعة 60 ثانية
+            </h1>
+            <p className="mx-auto mt-2.5 max-w-lg text-xs sm:text-sm font-semibold leading-relaxed text-slate-600">
               لديك 60 ثانية لحل أكبر قدر ممكن من الأسئلة السريعة! كل إجابة صحيحة تمنحك نقاطاً، وكل 3 إجابات متتالية تضاعف نقاطك 🔥
             </p>
 
-            <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-3 text-right">
-              <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4">
-                <span className="text-xl">⏱️</span>
-                <h2 className="mt-2 text-sm font-bold text-slate-900">60 ثانية فقط</h2>
-                <p className="text-xs text-slate-500">الوقت يمر بسرعة</p>
+            <div className="mt-6 grid grid-cols-1 gap-2.5 sm:grid-cols-3 text-right">
+              <div className="rounded-xl border border-slate-100 bg-slate-50/80 p-3.5">
+                <Clock className="h-5 w-5 text-amber-500" />
+                <h2 className="mt-2 text-xs sm:text-sm font-bold text-slate-900">60 ثانية فقط</h2>
+                <p className="text-[11px] text-slate-500">الوقت يمر بسرعة</p>
               </div>
-              <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4">
-                <span className="text-xl">🔥</span>
-                <h2 className="mt-2 text-sm font-bold text-slate-900">مضاعف الحماس</h2>
-                <p className="text-xs text-slate-500">نقاط مضاعفة مع التتابع</p>
+              <div className="rounded-xl border border-slate-100 bg-slate-50/80 p-3.5">
+                <Flame className="h-5 w-5 text-rose-500" />
+                <h2 className="mt-2 text-xs sm:text-sm font-bold text-slate-900">مضاعف الحماس</h2>
+                <p className="text-[11px] text-slate-500">نقاط مضاعفة مع التتابع</p>
               </div>
-              <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4">
-                <span className="text-xl">🏆</span>
-                <h2 className="mt-2 text-sm font-bold text-slate-900">رقم قياسي</h2>
-                <p className="text-xs text-slate-500">نافس وتصدر المراتب</p>
+              <div className="rounded-xl border border-slate-100 bg-slate-50/80 p-3.5">
+                <Trophy className="h-5 w-5 text-purple-500" />
+                <h2 className="mt-2 text-xs sm:text-sm font-bold text-slate-900">رقم قياسي</h2>
+                <p className="text-[11px] text-slate-500">نافس وتصدر المراتب</p>
               </div>
             </div>
 
-            <div className="mx-auto mt-8 max-w-sm">
-              <label htmlFor="speed-player-name" className="mb-2 block text-right text-xs font-bold text-slate-700">
-                اسم اللاعب:
+            <div className="mx-auto mt-6 max-w-sm">
+              <label htmlFor="speed-player-name" className="mb-1.5 block text-right text-xs font-bold text-slate-700">
+                اسم المتسابق:
               </label>
               <input
                 id="speed-player-name"
@@ -218,16 +240,16 @@ export default function SpeedChallengePage() {
                 value={playerName}
                 onChange={(e) => setPlayerName(e.target.value)}
                 placeholder="اكتب اسمك للبدء..."
-                className="w-full rounded-2xl border border-slate-300 bg-white px-5 py-3.5 text-center text-base font-bold text-slate-900 placeholder-slate-400 focus:border-rose-500 focus:outline-none focus:ring-4 focus:ring-rose-100"
+                className="w-full rounded-2xl border border-slate-300 bg-white px-5 py-3 text-center text-sm sm:text-base font-bold text-slate-900 placeholder-slate-400 focus:border-rose-500 focus:outline-none focus:ring-4 focus:ring-rose-100"
               />
               <button
                 type="button"
                 onClick={handleStart}
                 disabled={playerName.trim().length < 2}
-                className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-rose-500 to-amber-500 py-4 text-base font-black text-white shadow-lg shadow-rose-500/25 transition-all hover:brightness-110 active:scale-95 disabled:opacity-40"
+                className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-rose-500 to-amber-500 py-3.5 text-xs sm:text-sm font-black text-white shadow-md shadow-rose-500/25 transition hover:brightness-110 active:scale-95 disabled:opacity-40"
               >
-                <span>انطلق الآن!</span>
-                <span aria-hidden="true">⚡</span>
+                <span>انطلق في التحدي!</span>
+                <ArrowLeft className="h-4 w-4" />
               </button>
             </div>
           </div>
@@ -235,19 +257,19 @@ export default function SpeedChallengePage() {
 
         {/* PLAYING STAGE */}
         {gameState === 'playing' && currentQ && (
-          <div className="w-full rounded-3xl border border-slate-800 bg-slate-850 p-6 sm:p-10 shadow-2xl">
+          <div className="w-full rounded-2xl sm:rounded-3xl border border-slate-800 bg-slate-900 p-5 sm:p-8 shadow-2xl text-white">
             {/* Header: Score, Timer, Streak */}
-            <div className="mb-6 flex items-center justify-between">
+            <div className="mb-5 flex items-center justify-between">
               {/* Score */}
               <div className="flex flex-col">
-                <span className="text-xs font-bold text-slate-400">النقاط</span>
-                <span className="text-2xl font-black text-amber-400">{score}</span>
+                <span className="text-[11px] font-bold text-slate-400">النقاط</span>
+                <span className="text-xl sm:text-2xl font-black text-amber-400">{score}</span>
               </div>
 
               {/* Timer */}
               <div className="flex flex-col items-center">
                 <div
-                  className={`flex h-14 w-14 items-center justify-center rounded-2xl border-2 text-xl font-black transition-colors ${
+                  className={`flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl border-2 text-lg sm:text-xl font-black transition-colors ${
                     timeLeft <= 10
                       ? 'border-rose-500 bg-rose-500/20 text-rose-400 animate-pulse'
                       : 'border-slate-700 bg-slate-800 text-white'
@@ -255,14 +277,14 @@ export default function SpeedChallengePage() {
                 >
                   {timeLeft}
                 </div>
-                <span className="mt-1 text-[11px] font-bold text-slate-400">ثانية</span>
+                <span className="mt-0.5 text-[10px] font-bold text-slate-400">ثانية</span>
               </div>
 
               {/* Streak */}
               <div className="flex flex-col items-end">
-                <span className="text-xs font-bold text-slate-400">التتابع</span>
+                <span className="text-[11px] font-bold text-slate-400">التتابع</span>
                 <span
-                  className={`text-2xl font-black transition-transform ${
+                  className={`text-xl sm:text-2xl font-black transition-transform ${
                     streak >= 3 ? 'text-rose-400 scale-110' : 'text-slate-300'
                   }`}
                 >
@@ -272,7 +294,7 @@ export default function SpeedChallengePage() {
             </div>
 
             {/* Time progress bar */}
-            <div className="mb-8 h-2 w-full overflow-hidden rounded-full bg-slate-800">
+            <div className="mb-6 h-2 w-full overflow-hidden rounded-full bg-slate-800">
               <div
                 className={`h-full transition-all duration-1000 ${
                   timeLeft <= 10 ? 'bg-rose-500' : 'bg-gradient-to-r from-amber-400 to-rose-500'
@@ -283,28 +305,28 @@ export default function SpeedChallengePage() {
 
             {/* Question Card */}
             <div
-              className={`mb-6 rounded-2xl border p-6 text-center transition-all ${
+              className={`mb-5 rounded-2xl border p-5 text-center transition-all ${
                 feedback === 'correct'
-                  ? 'border-emerald-500 bg-emerald-950/50'
+                  ? 'border-emerald-500 bg-emerald-950/60'
                   : feedback === 'wrong'
-                  ? 'border-rose-500 bg-rose-950/50'
+                  ? 'border-rose-500 bg-rose-950/60'
                   : 'border-slate-800 bg-slate-800/80'
               }`}
             >
               <span className="text-xs font-bold text-slate-400">{currentQ.category}</span>
-              <p className="mt-3 text-2xl font-black leading-snug sm:text-3xl text-white" dir="ltr">
+              <p className="mt-2 text-xl sm:text-2xl font-black leading-snug text-white select-text" dir="ltr">
                 {currentQ.prompt}
               </p>
             </div>
 
             {/* 4 Quick Options */}
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2" dir="ltr">
+            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2" dir="ltr">
               {currentQ.options.map((opt, oIdx) => (
                 <button
                   key={oIdx}
                   type="button"
                   onClick={() => handleAnswer(opt.isCorrect)}
-                  className="rounded-2xl border border-slate-700 bg-slate-800/90 p-4 text-center text-lg font-black text-white shadow-sm transition-all hover:border-amber-400 hover:bg-slate-750 active:scale-95"
+                  className="rounded-xl sm:rounded-2xl border border-slate-700 bg-slate-800/90 p-3.5 sm:p-4 text-center text-base sm:text-lg font-black text-white shadow-xs transition hover:border-amber-400 hover:bg-slate-750 active:scale-95 min-h-[50px]"
                 >
                   {opt.text}
                 </button>
@@ -315,55 +337,56 @@ export default function SpeedChallengePage() {
 
         {/* TIME'S UP STAGE */}
         {gameState === 'timesup' && (
-          <div className="w-full rounded-3xl border border-white/80 bg-white/95 p-6 text-center shadow-xl backdrop-blur-xl sm:p-12">
-            <span className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-amber-400 via-rose-500 to-purple-600 text-4xl text-white shadow-lg">
-              🏁
+          <div className="w-full rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white/95 p-6 text-center shadow-xs sm:p-10 backdrop-blur-xl">
+            <span className="mx-auto flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-2xl sm:rounded-3xl bg-gradient-to-br from-amber-400 via-rose-500 to-purple-600 text-white shadow-lg shadow-amber-500/20">
+              <Trophy className="h-8 w-8 sm:h-10 sm:w-10" />
             </span>
-            <span className="mt-4 inline-block text-xs font-black uppercase tracking-wider text-rose-600">
+            <span className="mt-4 inline-block text-xs font-black tracking-wider text-rose-600">
               TIME IS UP!
             </span>
-            <h1 className="mt-2 text-3xl font-black text-slate-950 sm:text-4xl">انتهت الـ 60 ثانية!</h1>
+            <h1 className="mt-1 text-2xl sm:text-4xl font-black text-slate-950">انتهت الـ 60 ثانية!</h1>
 
-            <div className="my-6 rounded-2xl border border-amber-300 bg-amber-50/90 p-4">
+            <div className="my-5 rounded-2xl border border-amber-300 bg-amber-50/90 p-4">
               <span className="text-xs font-bold text-amber-800">الرتبة المحققة لـ {playerName}:</span>
-              <h2 className="mt-1 text-2xl font-black text-amber-900">{rankTitle}</h2>
+              <h2 className="mt-1 text-xl sm:text-2xl font-black text-amber-900">{rankTitle}</h2>
               <p className="mt-1 text-xs text-amber-700">{rankDesc}</p>
             </div>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
-                <span className="text-xs font-bold text-slate-500">مجموع النقاط</span>
-                <div className="mt-1 text-2xl font-black text-amber-600">{score}</div>
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+              <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+                <span className="text-[11px] font-bold text-slate-500">مجموع النقاط</span>
+                <div className="mt-1 text-xl sm:text-2xl font-black text-amber-600">{score}</div>
               </div>
-              <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
-                <span className="text-xs font-bold text-slate-500">إجابات صحيحة</span>
-                <div className="mt-1 text-2xl font-black text-emerald-600">{correctCount}</div>
+              <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+                <span className="text-[11px] font-bold text-slate-500">إجابات صحيحة</span>
+                <div className="mt-1 text-xl sm:text-2xl font-black text-emerald-600">{correctCount}</div>
               </div>
-              <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
-                <span className="text-xs font-bold text-slate-500">إجابات خاطئة</span>
-                <div className="mt-1 text-2xl font-black text-rose-600">{wrongCount}</div>
+              <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+                <span className="text-[11px] font-bold text-slate-500">إجابات خاطئة</span>
+                <div className="mt-1 text-xl sm:text-2xl font-black text-rose-600">{wrongCount}</div>
               </div>
-              <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
-                <span className="text-xs font-bold text-slate-500">أعلى تتابع</span>
-                <div className="mt-1 text-2xl font-black text-purple-600">{maxStreak} 🔥</div>
+              <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+                <span className="text-[11px] font-bold text-slate-500">أعلى تتابع</span>
+                <div className="mt-1 text-xl sm:text-2xl font-black text-purple-600">{maxStreak} 🔥</div>
               </div>
             </div>
 
             {/* Actions */}
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+            <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
               <button
                 type="button"
                 onClick={handleStart}
-                className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-rose-500 to-amber-500 px-7 py-3.5 text-sm font-black text-white shadow-lg hover:brightness-110 active:scale-95"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-rose-500 to-amber-500 px-7 py-3 text-xs sm:text-sm font-black text-white shadow-md hover:brightness-110 active:scale-95 transition"
               >
-                <span>العب مرة أخرى ⚡</span>
+                <RotateCcw className="h-4 w-4" />
+                <span>العب مرة أخرى</span>
               </button>
               <Link
                 to="/competitions"
-                className="rounded-2xl border border-slate-200 bg-white px-6 py-3.5 text-sm font-bold text-slate-700 hover:bg-slate-50 shadow-xs"
+                className="w-full sm:w-auto inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-6 py-3 text-xs sm:text-sm font-bold text-slate-700 hover:bg-slate-50 shadow-xs transition"
               >
-                العودة لقسم المسابقات
+                العودة للمسابقات
               </Link>
             </div>
           </div>

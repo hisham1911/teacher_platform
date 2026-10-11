@@ -1,19 +1,20 @@
 import { Link } from 'react-router';
+import { Headphones, ArrowLeft, Sparkles, CheckCircle2 } from 'lucide-react';
 import { PublicBackdrop } from '../../components/layout/root-layout';
 import { PortalNav, PortalFooter } from '../../components/portal/portal-nav';
 import { listeningActivities } from '../../data/content/listening';
 import type { ListeningActivity } from '../../data/content/types';
 
 function levelBadge(level: ListeningActivity['level']) {
-  if (level === 'easy') return 'bg-sky-100 text-sky-800 border-sky-200';
-  if (level === 'medium') return 'bg-amber-100 text-amber-800 border-amber-200';
-  return 'bg-rose-100 text-rose-800 border-rose-200';
+  if (level === 'easy') return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+  if (level === 'medium') return 'bg-amber-50 text-amber-700 border-amber-200';
+  return 'bg-rose-50 text-rose-700 border-rose-200';
 }
 
 function levelLabel(level: ListeningActivity['level']) {
-  if (level === 'easy') return 'مبتدئ';
-  if (level === 'medium') return 'متوسط';
-  return 'متقدم';
+  if (level === 'easy') return 'مبتدئ • Easy';
+  if (level === 'medium') return 'متوسط • Medium';
+  return 'متقدم • Advanced';
 }
 
 export default function ListeningIndexPage() {
@@ -22,62 +23,77 @@ export default function ListeningIndexPage() {
       <PublicBackdrop />
       <PortalNav />
 
-      <div className="relative z-10 mx-auto w-full max-w-6xl flex-1 px-4 pb-24 pt-12 sm:px-6">
-        <section className="animate-page-enter text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-violet-700 text-2xl font-black text-white shadow-md">
-            L
+      <div className="relative z-10 mx-auto w-full max-w-6xl flex-1 px-4 pb-20 pt-10 sm:px-6 sm:pt-14">
+        {/* Header Hero */}
+        <section className="animate-page-enter text-center max-w-2xl mx-auto">
+          <div className="mx-auto mb-4 flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-2xl sm:rounded-3xl bg-gradient-to-br from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-600/20">
+            <Headphones className="h-7 w-7 sm:h-8 sm:w-8" />
           </div>
-          <h1 className="text-3xl font-black text-slate-950 sm:text-4xl">
-            الاستماع <span className="text-violet-600">Listening</span>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-purple-100/80 px-3.5 py-1 text-xs font-black text-purple-800 mb-2">
+            <Sparkles className="h-3 w-3 text-purple-600" />
+            أنشطة استماع وفهم سمعي
+          </span>
+          <h1 className="text-2xl sm:text-4xl font-black text-slate-950">
+            الاستماع الصوتي <span className="text-purple-600">Listening</span>
           </h1>
-          <p className="mt-3 text-base font-semibold text-slate-500">
-            استمع وطوّر مهارة الفهم السمعي عبر مقاطع مصورة
+          <p className="mt-2.5 text-xs sm:text-sm font-semibold text-slate-600 leading-relaxed">
+            استمع لمحادثات ونصوص ناطقة بالإنجليزية وطوّر مهارة الفهم السمعي عبر تمارين تفاعلية
           </p>
         </section>
 
+        {/* Cards Grid */}
         <section
-          className="animate-page-enter mx-auto mt-12 grid max-w-6xl grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3"
+          className="animate-page-enter mx-auto mt-8 sm:mt-12 grid max-w-6xl grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3"
           style={{ animationDelay: '100ms' }}
         >
           {listeningActivities.map((activity, index) => (
             <Link
               key={activity.slug}
               to={`/listening/${activity.slug}`}
-              className="group flex flex-col overflow-hidden rounded-3xl border border-white/60 bg-white/70 shadow-sm backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-violet-200 hover:shadow-xl hover:shadow-violet-900/5"
+              className="group flex flex-col justify-between overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white/90 p-5 sm:p-6 shadow-xs backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-purple-300 hover:shadow-xl hover:shadow-purple-900/10 active:translate-y-0"
             >
-              <div className="flex flex-1 flex-col p-6">
-                <div className="mb-4 flex items-center justify-between">
-                  <span className="inline-flex items-center justify-center rounded-lg bg-slate-100 px-2 py-1 text-xs font-black text-slate-600">
-                    #{index + 1}
+              <div>
+                <div className="mb-3 flex items-center justify-between">
+                  <span className="rounded-lg bg-slate-100 px-2 py-0.5 text-xs font-black text-slate-600">
+                    نشاط #{index + 1}
                   </span>
                   <span
-                    className={`rounded-full border px-3 py-1 text-xs font-bold ${levelBadge(activity.level)}`}
+                    className={`rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${levelBadge(
+                      activity.level
+                    )}`}
                   >
                     {levelLabel(activity.level)}
                   </span>
                 </div>
-                
-                <h3 className="text-xl font-black text-slate-900">
+
+                <h2 className="text-base sm:text-lg font-black text-slate-900 group-hover:text-purple-900 transition-colors">
                   {activity.titleAr}
-                </h3>
-                <p className="mt-1 text-xs font-black tracking-widest text-violet-500" dir="ltr">
-                  {activity.titleEn.toUpperCase()}
+                </h2>
+                <p className="mt-0.5 text-xs font-bold tracking-wider text-purple-600" dir="ltr">
+                  {activity.titleEn}
                 </p>
-                
-                <div className="mt-auto flex items-center justify-between pt-8">
-                  {activity.questions.length > 0 && (
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-50 px-3 py-1 text-xs font-bold text-violet-700">
-                      <span className="h-1.5 w-1.5 rounded-full bg-violet-500"></span>
-                      {activity.questions.length} أسئلة استماع
-                    </span>
-                  )}
-                  <span
-                    aria-hidden="true"
-                    className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-400 transition-colors group-hover:bg-violet-100 group-hover:text-violet-600"
-                  >
-                    ←
-                  </span>
+
+                <div className="mt-3.5 flex items-center gap-2 text-xs font-semibold text-slate-500">
+                  <Headphones className="h-4 w-4 text-purple-500" />
+                  <span>مقطع ناطق بالإنجليزية + نص مسموع</span>
                 </div>
+              </div>
+
+              <div className="mt-5 flex items-center justify-between border-t border-slate-100/90 pt-3">
+                {activity.questions.length > 0 ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 px-2.5 py-1 text-xs font-bold text-purple-700">
+                    <CheckCircle2 className="h-3 w-3 text-purple-600" />
+                    {activity.questions.length} أسئلة استماع
+                  </span>
+                ) : (
+                  <span className="text-xs text-slate-400">استماع حر</span>
+                )}
+                <span
+                  aria-hidden="true"
+                  className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-slate-400 transition-all group-hover:bg-purple-600 group-hover:text-white group-hover:translate-x-[-2px]"
+                >
+                  <ArrowLeft className="h-3.5 w-3.5" />
+                </span>
               </div>
             </Link>
           ))}
