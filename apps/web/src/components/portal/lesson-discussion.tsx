@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router';
 import {
   MessageCircleQuestion,
   Send,
@@ -13,13 +14,17 @@ import {
   X,
   Loader2,
   CornerDownLeft,
+  LayoutDashboard,
 } from 'lucide-react';
 import {
   guestbookClient,
   type GuestbookEntry,
   validateCommentContent,
   checkRateLimit,
-  TEACHER_PASSCODE_HASH,
+  getLikedEntries,
+  isTeacherLoggedIn,
+  loginTeacher,
+  TEACHER_OFFICIAL_NAME,
 } from '../../data/api-client/guestbook-client';
 
 interface LessonDiscussionProps {
@@ -64,9 +69,13 @@ export function LessonDiscussion({ topicSlug, topicTitle }: LessonDiscussionProp
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState(false);
 
+  // Liked IDs set to prevent infinite likes
+  const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
+
   // Teacher Moderation & Reply State
   const [isTeacherAdmin, setIsTeacherAdmin] = useState(false);
   const [teacherAdminModalOpen, setTeacherAdminModalOpen] = useState(false);
+  const [teacherUsername, setTeacherUsername] = useState('maryam');
   const [passcode, setPasscode] = useState('');
   const [passcodeError, setPasscodeError] = useState(false);
   const [activeReplyId, setActiveReplyId] = useState<string | null>(null);
@@ -76,6 +85,9 @@ export function LessonDiscussion({ topicSlug, topicTitle }: LessonDiscussionProp
   useEffect(() => {
     let mounted = true;
     setLoading(true);
+    setIsTeacherAdmin(isTeacherLoggedIn());
+    setLikedIds(new Set(getLikedEntries()));
+
     guestbookClient
       .getEntries(topicSlug)
       .then((data) => {
@@ -136,11 +148,25 @@ export function LessonDiscussion({ topicSlug, topicTitle }: LessonDiscussionProp
     }
   }
 
-  async function handleLike(id: string, currentLikes: number) {
+  async function handleToggleLike(id: string, currentLikes: number) {
+    const isCurrentlyLiked = likedIds.has(id);
+    const optimisticLikes = isCurrentlyLiked ? Math.max(0, currentLikes - 1) : currentLikes + 1;
+
+    setLikedIds((prev) => {
+      const next = new Set(prev);
+      if (isCurrentlyLiked) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
     setEntries((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, likes: item.likes + 1 } : item))
+      prev.map((item) => (item.id === id ? { ...item, likes: optimisticLikes } : item))
     );
-    await guestbookClient.likeEntry(id, currentLikes, topicSlug);
+
+    const res = await guestbookClient.toggleLike(id, currentLikes, topicSlug);
+    setEntries((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, likes: res.newLikes } : item))
+    );
   }
 
   async function handleDelete(id: string) {
@@ -176,7 +202,7 @@ export function LessonDiscussion({ topicSlug, topicTitle }: LessonDiscussionProp
         setActiveReplyId(null);
         setTeacherReplyText('');
       } else {
-        alert('حدث خطأ في التحقق من رمز مرور المعلمة.');
+        alert('حدث خطأ في صلاحية المعلمة، يرجى تسجيل الدخول مجدداً.');
       }
     } finally {
       setReplySubmitting(false);
@@ -185,7 +211,8 @@ export function LessonDiscussion({ topicSlug, topicTitle }: LessonDiscussionProp
 
   function handleUnlockAdmin(e: React.FormEvent) {
     e.preventDefault();
-    if (passcode.trim() === TEACHER_PASSCODE_HASH) {
+    const ok = loginTeacher(teacherUsername, passcode);
+    if (ok) {
       setIsTeacherAdmin(true);
       setTeacherAdminModalOpen(false);
       setPasscodeError(false);
@@ -204,7 +231,7 @@ export function LessonDiscussion({ topicSlug, topicTitle }: LessonDiscussionProp
           </div>
           <div>
             <h2 className="text-lg sm:text-xl font-black text-slate-900">
-              اسألي المعلمة مريم حول الدرس
+              اسألي المعلمة {TEACHER_OFFICIAL_NAME} حول الدرس
             </h2>
             <p className="mt-0.5 text-xs sm:text-sm font-semibold text-slate-500">
               هل توجد نقطة غير واضحة في قاعدة ({topicTitle})؟ اطرحي سؤالكِ هنا وستجيبكِ المعلمة
@@ -215,9 +242,18 @@ export function LessonDiscussion({ topicSlug, topicTitle }: LessonDiscussionProp
         {/* Teacher Mode Button */}
         <div>
           {isTeacherAdmin ? (
-            <div className="flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-800 border border-emerald-200">
-              <ShieldCheck className="h-4 w-4 text-emerald-600" />
-              <span>وضع إجابة المعلمة مفعّل</span>
+            <div className="flex items-center gap-2">
+              <Link
+                to="/teacher-admin"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-violet-100 px-3 py-1.5 text-xs font-black text-violet-800 hover:bg-violet-200 transition"
+              >
+                <LayoutDashboard className="h-3.5 w-3.5" />
+                <span>لوحة التحكم</span>
+              </Link>
+              <div className="flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-800 border border-emerald-200">
+                <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                <span>أ. {TEACHER_OFFICIAL_NAME} (نشط)</span>
+              </div>
             </div>
           ) : (
             <button
@@ -316,7 +352,7 @@ export function LessonDiscussion({ topicSlug, topicTitle }: LessonDiscussionProp
         {successMsg && (
           <div className="mt-3 flex items-center gap-2 rounded-xl bg-emerald-50 p-2.5 text-xs font-bold text-emerald-700 border border-emerald-200">
             <CheckCircle2 className="h-4 w-4 shrink-0" />
-            <span>تم إرسال استفساركِ بنجاح! ستجيب المعلمة مريم عليه قريباً.</span>
+            <span>تم إرسال استفساركِ بنجاح! ستجيب المعلمة مريم الصميلي عليه قريباً.</span>
           </div>
         )}
 
@@ -361,157 +397,168 @@ export function LessonDiscussion({ topicSlug, topicTitle }: LessonDiscussionProp
           <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 py-10 text-center">
             <MessageCircleQuestion className="h-10 w-10 text-slate-300 mb-2" />
             <p className="text-sm font-bold text-slate-600">لا توجد استفسارات بعد حول هذه القاعدة</p>
-            <p className="text-xs text-slate-400 mt-1">كوني أول من يطرح سؤالاً على المعلمة مريم!</p>
+            <p className="text-xs text-slate-400 mt-1">كوني أول من يطرح سؤالاً على المعلمة {TEACHER_OFFICIAL_NAME}!</p>
           </div>
         ) : (
           <div className="space-y-3">
-            {entries.map((entry) => (
-              <div
-                key={entry.id}
-                className="group relative rounded-2xl border border-slate-100 bg-slate-50/60 p-4 transition hover:border-violet-200 hover:bg-violet-50/20"
-              >
-                {/* Entry Header */}
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-2.5">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-violet-100 text-violet-700 font-black text-xs">
-                      <User className="h-4 w-4" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs sm:text-sm font-black text-slate-900">
-                          {entry.name}
-                        </span>
-                        <span className="rounded-md bg-slate-200/70 px-2 py-0.5 text-[10px] font-bold text-slate-600">
-                          {entry.role}
-                        </span>
+            {entries.map((entry) => {
+              const isLiked = likedIds.has(entry.id);
+              return (
+                <div
+                  key={entry.id}
+                  className="group relative rounded-2xl border border-slate-100 bg-slate-50/60 p-4 transition hover:border-violet-200 hover:bg-violet-50/20"
+                >
+                  {/* Entry Header */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2.5">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-violet-100 text-violet-700 font-black text-xs">
+                        <User className="h-4 w-4" />
                       </div>
-                      <span className="text-[11px] font-medium text-slate-400">
-                        {formatTimeAgo(entry.createdAt)}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-1">
-                    {/* Like button */}
-                    <button
-                      type="button"
-                      onClick={() => handleLike(entry.id, entry.likes)}
-                      className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-bold text-slate-500 hover:bg-rose-50 hover:text-rose-600 transition"
-                      title="إعجاب بالسؤال"
-                    >
-                      <Heart className="h-3.5 w-3.5" />
-                      <span>{entry.likes}</span>
-                    </button>
-
-                    {/* Teacher Admin Actions */}
-                    {isTeacherAdmin && (
-                      <div className="flex items-center gap-1 mr-1 border-r border-slate-200 pr-2">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setActiveReplyId(activeReplyId === entry.id ? null : entry.id);
-                            setTeacherReplyText(entry.teacherReply || '');
-                          }}
-                          className="rounded-lg bg-violet-100 px-2 py-1 text-[11px] font-black text-violet-800 hover:bg-violet-200"
-                        >
-                          {entry.teacherReply ? 'تعديل الإجابة' : 'إجابة المعلمة'}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(entry.id)}
-                          className="rounded-lg p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition"
-                          title="حذف الاستفسار"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Entry Message */}
-                <p className="mt-3 text-xs sm:text-sm font-medium leading-relaxed text-slate-800">
-                  {entry.message}
-                </p>
-
-                {/* Teacher Reply Card (if answered) */}
-                {entry.teacherReply && (
-                  <div className="mt-3.5 rounded-xl border border-violet-200/80 bg-white p-3.5 shadow-xs">
-                    <div className="flex items-center justify-between border-b border-violet-100/60 pb-2 mb-2">
-                      <div className="flex items-center gap-1.5">
-                        <div className="flex h-5 w-5 items-center justify-center rounded-full bg-violet-600 text-white">
-                          <Sparkles className="h-3 w-3" />
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs sm:text-sm font-black text-slate-900">
+                            {entry.name}
+                          </span>
+                          <span className="rounded-md bg-slate-200/70 px-2 py-0.5 text-[10px] font-bold text-slate-600">
+                            {entry.role}
+                          </span>
                         </div>
-                        <span className="text-xs font-black text-violet-900">
-                          إجابة المعلمة مريم
-                        </span>
-                        <span className="rounded-sm bg-violet-100 px-1.5 py-0.2 text-[10px] font-bold text-violet-700">
-                          معلمة المادة
+                        <span className="text-[11px] font-medium text-slate-400">
+                          {formatTimeAgo(entry.createdAt)}
                         </span>
                       </div>
-                      {entry.repliedAt && (
-                        <span className="text-[10px] text-slate-400">
-                          {formatTimeAgo(entry.repliedAt)}
-                        </span>
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                      {/* Like button with single-like toggle */}
+                      <button
+                        type="button"
+                        onClick={() => handleToggleLike(entry.id, entry.likes)}
+                        className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-bold transition border ${
+                          isLiked
+                            ? 'border-rose-300 bg-rose-100 text-rose-800'
+                            : 'border-slate-200/70 bg-white text-slate-500 hover:bg-rose-50 hover:text-rose-600'
+                        }`}
+                        title={isLiked ? 'إلغاء الإعجاب' : 'إعجاب بالسؤال'}
+                      >
+                        <Heart
+                          className={`h-3.5 w-3.5 transition-colors ${
+                            isLiked ? 'fill-rose-500 text-rose-500' : 'text-slate-400'
+                          }`}
+                        />
+                        <span>{entry.likes}</span>
+                      </button>
+
+                      {/* Teacher Admin Actions */}
+                      {isTeacherAdmin && (
+                        <div className="flex items-center gap-1 mr-1 border-r border-slate-200 pr-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveReplyId(activeReplyId === entry.id ? null : entry.id);
+                              setTeacherReplyText(entry.teacherReply || '');
+                            }}
+                            className="rounded-lg bg-violet-100 px-2 py-1 text-[11px] font-black text-violet-800 hover:bg-violet-200"
+                          >
+                            {entry.teacherReply ? 'تعديل الإجابة' : 'إجابة المعلمة'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(entry.id)}
+                            className="rounded-lg p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition"
+                            title="حذف الاستفسار"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
                       )}
                     </div>
-                    <p className="text-xs sm:text-sm font-medium leading-relaxed text-slate-700">
-                      {entry.teacherReply}
-                    </p>
                   </div>
-                )}
 
-                {/* Teacher Inline Reply Box (when activeReplyId === entry.id) */}
-                {isTeacherAdmin && activeReplyId === entry.id && (
-                  <div className="mt-3 rounded-xl border border-violet-300 bg-violet-50/80 p-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-black text-violet-900 flex items-center gap-1">
-                        <CornerDownLeft className="h-3.5 w-3.5 text-violet-700" />
-                        <span>كتابة إجابة المعلمة مريم على هذا السؤال:</span>
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setActiveReplyId(null)}
-                        className="text-slate-400 hover:text-slate-600"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    </div>
-                    <textarea
-                      value={teacherReplyText}
-                      onChange={(e) => setTeacherReplyText(e.target.value)}
-                      placeholder="اكتبي توضيحكِ وإجابتكِ للطالبة هنا..."
-                      rows={3}
-                      className="w-full resize-none rounded-lg border border-violet-200 bg-white p-2.5 text-xs font-medium text-slate-800 placeholder-slate-400 focus:border-violet-500 focus:outline-hidden focus:ring-1 focus:ring-violet-300"
-                    />
-                    <div className="mt-2 flex justify-end gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setActiveReplyId(null)}
-                        className="rounded-lg px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-200/50"
-                      >
-                        إلغاء
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleTeacherReplySubmit(entry.id)}
-                        disabled={replySubmitting || !teacherReplyText.trim()}
-                        className="inline-flex items-center gap-1 rounded-lg bg-violet-700 px-4 py-1.5 text-xs font-black text-white hover:bg-violet-800 disabled:opacity-50"
-                      >
-                        {replySubmitting ? (
-                          <>
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            <span>جاري الحفظ...</span>
-                          </>
-                        ) : (
-                          <span>حفظ ونشر الإجابة</span>
+                  {/* Entry Message */}
+                  <p className="mt-3 text-xs sm:text-sm font-medium leading-relaxed text-slate-800">
+                    {entry.message}
+                  </p>
+
+                  {/* Teacher Reply Card (if answered) */}
+                  {entry.teacherReply && (
+                    <div className="mt-3.5 rounded-xl border border-violet-200/80 bg-white p-3.5 shadow-xs">
+                      <div className="flex items-center justify-between border-b border-violet-100/60 pb-2 mb-2">
+                        <div className="flex items-center gap-1.5">
+                          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-violet-600 text-white">
+                            <Sparkles className="h-3 w-3" />
+                          </div>
+                          <span className="text-xs font-black text-violet-900">
+                            إجابة المعلمة {TEACHER_OFFICIAL_NAME}
+                          </span>
+                          <span className="rounded-sm bg-violet-100 px-1.5 py-0.2 text-[10px] font-bold text-violet-700">
+                            معلمة المادة
+                          </span>
+                        </div>
+                        {entry.repliedAt && (
+                          <span className="text-[10px] text-slate-400">
+                            {formatTimeAgo(entry.repliedAt)}
+                          </span>
                         )}
-                      </button>
+                      </div>
+                      <p className="text-xs sm:text-sm font-medium leading-relaxed text-slate-700">
+                        {entry.teacherReply}
+                      </p>
                     </div>
-                  </div>
-                )}
-              </div>
-            ))}
+                  )}
+
+                  {/* Teacher Inline Reply Box (when activeReplyId === entry.id) */}
+                  {isTeacherAdmin && activeReplyId === entry.id && (
+                    <div className="mt-3 rounded-xl border border-violet-300 bg-violet-50/80 p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-black text-violet-900 flex items-center gap-1">
+                          <CornerDownLeft className="h-3.5 w-3.5 text-violet-700" />
+                          <span>كتابة إجابة المعلمة {TEACHER_OFFICIAL_NAME} على هذا السؤال:</span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setActiveReplyId(null)}
+                          className="text-slate-400 hover:text-slate-600"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                      <textarea
+                        value={teacherReplyText}
+                        onChange={(e) => setTeacherReplyText(e.target.value)}
+                        placeholder="اكتبي توضيحكِ وإجابتكِ للطالبة هنا..."
+                        rows={3}
+                        className="w-full resize-none rounded-lg border border-violet-200 bg-white p-2.5 text-xs font-medium text-slate-800 placeholder-slate-400 focus:border-violet-500 focus:outline-hidden focus:ring-1 focus:ring-violet-300"
+                      />
+                      <div className="mt-2 flex justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setActiveReplyId(null)}
+                          className="rounded-lg px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-200/50"
+                        >
+                          إلغاء
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleTeacherReplySubmit(entry.id)}
+                          disabled={replySubmitting || !teacherReplyText.trim()}
+                          className="inline-flex items-center gap-1 rounded-lg bg-violet-700 px-4 py-1.5 text-xs font-black text-white hover:bg-violet-800 disabled:opacity-50"
+                        >
+                          {replySubmitting ? (
+                            <>
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              <span>جاري الحفظ...</span>
+                            </>
+                          ) : (
+                            <span>حفظ ونشر الإجابة</span>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -538,26 +585,39 @@ export function LessonDiscussion({ topicSlug, topicTitle }: LessonDiscussionProp
             </div>
 
             <h3 className="text-base font-black text-slate-900">
-              دخول المعلمة للإجابة والإدارة
+              دخول المعلمة {TEACHER_OFFICIAL_NAME}
             </h3>
             <p className="mt-1 text-xs text-slate-500 font-medium">
-              يرجى إدخال رمز المرور الخاص بالمعلمة مريم لتفعيل وضع كتابة الإجابات وإدارة الاستفسارات.
+              أدخلي اسم المستخدم وكلمة المرور الخاصة بكِ لتفعيل وضع الإجابة والإدارة.
             </p>
 
             <form onSubmit={handleUnlockAdmin} className="mt-4 space-y-3">
               <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">اسم المستخدم:</label>
+                <input
+                  type="text"
+                  required
+                  value={teacherUsername}
+                  onChange={(e) => setTeacherUsername(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-800"
+                  placeholder="maryam"
+                />
+              </div>
+
+              <div>
                 <label htmlFor={`teacher-passcode-${topicSlug}`} className="block text-xs font-bold text-slate-700 mb-1">
-                  رمز المرور:
+                  كلمة المرور:
                 </label>
                 <input
                   id={`teacher-passcode-${topicSlug}`}
                   type="password"
+                  required
                   value={passcode}
                   onChange={(e) => {
                     setPasscode(e.target.value);
                     setPasscodeError(false);
                   }}
-                  placeholder="أدخلي رمز المرور..."
+                  placeholder="أدخلي كلمة المرور..."
                   className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs sm:text-sm font-medium text-slate-800 placeholder-slate-400 focus:border-violet-500 focus:outline-hidden focus:ring-2 focus:ring-violet-200"
                   autoFocus
                 />
@@ -566,16 +626,24 @@ export function LessonDiscussion({ topicSlug, topicTitle }: LessonDiscussionProp
               {passcodeError && (
                 <p className="text-xs font-bold text-rose-600 flex items-center gap-1">
                   <AlertCircle className="h-3.5 w-3.5" />
-                  <span>رمز المرور غير صحيح.</span>
+                  <span>اسم المستخدم أو كلمة المرور غير صحيحة.</span>
                 </p>
               )}
 
-              <button
-                type="submit"
-                className="w-full rounded-xl bg-violet-700 py-2.5 text-xs sm:text-sm font-black text-white hover:bg-violet-800 transition"
-              >
-                تأكيد الدخول
-              </button>
+              <div className="flex gap-2 pt-1">
+                <button
+                  type="submit"
+                  className="flex-1 rounded-xl bg-violet-700 py-2.5 text-xs sm:text-sm font-black text-white hover:bg-violet-800 transition"
+                >
+                  تأكيد الدخول
+                </button>
+                <Link
+                  to="/teacher-admin"
+                  className="rounded-xl border border-violet-200 bg-violet-50 px-3 py-2.5 text-xs font-bold text-violet-800 hover:bg-violet-100 transition"
+                >
+                  اللوحة الرئيسية
+                </Link>
+              </div>
             </form>
           </div>
         </div>

@@ -222,7 +222,7 @@ export function PortalNav() {
                 مبادرة إنتاج معرفي • وزارة التعليم
               </span>
               <p className="mt-1.5 text-xs font-bold text-slate-700">
-                مدرسة متوسطة وثانوية الجرادية — المعلمة مريم
+                مدرسة متوسطة وثانوية الجرادية — المعلمة مريم الصميلي
               </p>
             </div>
 
@@ -351,7 +351,7 @@ export function PortalFooter() {
               English Spark — نادي اللغة الإنجليزية
             </p>
             <p className="mt-1 text-xs font-semibold text-slate-500">
-              مبادرة إنتاج معرفي • وزارة التعليم — مدرسة متوسطة وثانوية الجرادية (إشراف المعلمة مريم)
+              مبادرة إنتاج معرفي • وزارة التعليم — مدرسة متوسطة وثانوية الجرادية (إشراف المعلمة مريم الصميلي)
             </p>
           </div>
         </div>
@@ -382,6 +382,9 @@ export function PortalFooter() {
             </Link>
             <Link to="/guestbook" className="hover:text-violet-700 transition-colors">
               سجل الزوار
+            </Link>
+            <Link to="/teacher-admin" className="text-violet-700 hover:text-violet-900 font-black transition-colors">
+              بوابة المعلمة
             </Link>
             <span className="text-slate-300 hidden sm:inline" aria-hidden="true">
               •

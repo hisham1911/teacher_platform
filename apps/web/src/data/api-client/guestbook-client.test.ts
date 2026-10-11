@@ -2,6 +2,10 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import {
   validateCommentContent,
   guestbookClient,
+  isTeacherLoggedIn,
+  loginTeacher,
+  logoutTeacher,
+  getTeacherSession,
 } from './guestbook-client';
 
 describe('Guestbook Client & Validation', () => {
@@ -120,6 +124,53 @@ describe('Guestbook Client & Validation', () => {
       expect(updated?.teacherReply).toBe('نستخدم whose للملكية (Possession)');
       expect(updated?.repliedAt).toBeDefined();
     });
+
+    it('toggles likes properly and prevents infinite liking', async () => {
+      const entries = await guestbookClient.getEntries();
+      const first = entries[0]!;
+      const initialLikes = first.likes;
+
+      // 1. First like
+      const res1 = await guestbookClient.toggleLike(first.id, initialLikes);
+      expect(res1.isLiked).toBe(true);
+      expect(res1.newLikes).toBe(initialLikes + 1);
+
+      // 2. Second click toggles off (un-likes) and does NOT increment infinitely
+      const res2 = await guestbookClient.toggleLike(first.id, res1.newLikes);
+      expect(res2.isLiked).toBe(false);
+      expect(res2.newLikes).toBe(initialLikes);
+    });
+
+    it('authenticates Teacher Maryam Al-Somaili with fixed credentials', () => {
+      expect(guestbookClient).toBeDefined();
+      expect(isTeacherLoggedIn()).toBe(false);
+
+      // Invalid login
+      const fail = loginTeacher('wrong', 'wrong');
+      expect(fail).toBe(false);
+      expect(isTeacherLoggedIn()).toBe(false);
+
+      // Valid login
+      const success = loginTeacher('maryam', 'maryam2026');
+      expect(success).toBe(true);
+      expect(isTeacherLoggedIn()).toBe(true);
+
+      const session = getTeacherSession();
+      expect(session?.name).toBe('مريم الصميلي');
+
+      // Logout
+      logoutTeacher();
+      expect(isTeacherLoggedIn()).toBe(false);
+    });
+
+    it('aggregates all entries across platform for the teacher dashboard', async () => {
+      const all = await guestbookClient.getAllEntriesAcrossPlatform();
+      expect(all.length).toBeGreaterThan(5);
+      // Contains both guestbook (null topicSlug) and lesson topics
+      expect(all.some((e) => !e.topicSlug)).toBe(true);
+      expect(all.some((e) => e.topicSlug === 'present-simple')).toBe(true);
+    });
   });
 });
+
 

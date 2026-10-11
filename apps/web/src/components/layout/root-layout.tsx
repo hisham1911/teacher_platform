@@ -45,9 +45,13 @@ function isStandaloneExperience(pathname: string) {
     || pathname === '/speaking'
     || pathname === '/challenge'
     || pathname === '/guestbook'
+    || pathname === '/teacher-admin'
     || pathname.startsWith('/grammar')
     || pathname.startsWith('/reading')
     || pathname.startsWith('/listening')
+    || pathname.startsWith('/writing')
+    || pathname.startsWith('/competitions')
+    || pathname.startsWith('/teacher')
     || pathname.startsWith('/play/')
     || pathname.startsWith('/student')
     || pathname.startsWith('/q/')

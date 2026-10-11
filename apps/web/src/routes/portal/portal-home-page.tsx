@@ -36,7 +36,7 @@ export default function PortalHomePage() {
               إنتاج معرفي • وزارة التعليم
             </span>
             <p className="text-xs font-bold text-slate-500 sm:text-sm">
-              مدرسة متوسطة وثانوية الجرادية — إشراف المعلمة مريم
+              مدرسة متوسطة وثانوية الجرادية — إشراف المعلمة مريم الصميلي
             </p>
           </div>
 

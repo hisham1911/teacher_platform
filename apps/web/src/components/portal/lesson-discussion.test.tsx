@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router';
 import { LessonDiscussion } from './lesson-discussion';
 
 describe('LessonDiscussion component', () => {
@@ -9,10 +10,14 @@ describe('LessonDiscussion component', () => {
   });
 
   it('renders header with topic title and initial questions', async () => {
-    render(<LessonDiscussion topicSlug="present-simple" topicTitle="المضارع البسيط" />);
+    render(
+      <MemoryRouter>
+        <LessonDiscussion topicSlug="present-simple" topicTitle="المضارع البسيط" />
+      </MemoryRouter>
+    );
 
     expect(
-      screen.getByRole('heading', { name: /اسألي المعلمة مريم حول الدرس/i })
+      screen.getByRole('heading', { name: /اسألي المعلمة مريم الصميلي حول الدرس/i })
     ).toBeInTheDocument();
     expect(screen.getByText(/المضارع البسيط/)).toBeInTheDocument();
 
@@ -22,11 +27,15 @@ describe('LessonDiscussion component', () => {
     });
 
     // Check teacher reply is visible
-    expect(screen.getByText(/إجابة المعلمة مريم/i)).toBeInTheDocument();
+    expect(screen.getByText(/إجابة المعلمة مريم الصميلي/i)).toBeInTheDocument();
   });
 
   it('allows student to submit a valid question', async () => {
-    render(<LessonDiscussion topicSlug="future-perfect" topicTitle="المستقبل التام" />);
+    render(
+      <MemoryRouter>
+        <LessonDiscussion topicSlug="future-perfect" topicTitle="المستقبل التام" />
+      </MemoryRouter>
+    );
 
     await waitFor(() => {
       expect(screen.queryByText(/جاري تحميل الاستفسارات/i)).not.toBeInTheDocument();
@@ -51,26 +60,30 @@ describe('LessonDiscussion component', () => {
     });
   });
 
-  it('unlocks teacher mode with passcode maryam2026', async () => {
-    render(<LessonDiscussion topicSlug="present-simple" topicTitle="المضارع البسيط" />);
+  it('unlocks teacher mode with username and password', async () => {
+    render(
+      <MemoryRouter>
+        <LessonDiscussion topicSlug="present-simple" topicTitle="المضارع البسيط" />
+      </MemoryRouter>
+    );
 
     const teacherBtn = screen.getByRole('button', { name: /دخول المعلمة للإجابة/i });
     fireEvent.click(teacherBtn);
 
-    const passInput = screen.getByLabelText(/رمز المرور/i);
+    const passInput = screen.getByLabelText(/كلمة المرور/i);
     const unlockBtn = screen.getByRole('button', { name: /تأكيد الدخول/i });
 
     // Wrong passcode
     fireEvent.change(passInput, { target: { value: '1234' } });
     fireEvent.click(unlockBtn);
-    expect(screen.getByText(/رمز المرور غير صحيح/i)).toBeInTheDocument();
+    expect(screen.getByText(/غير صحيحة/i)).toBeInTheDocument();
 
     // Correct passcode
     fireEvent.change(passInput, { target: { value: 'maryam2026' } });
     fireEvent.click(unlockBtn);
 
     await waitFor(() => {
-      expect(screen.getByText(/وضع إجابة المعلمة مفعّل/i)).toBeInTheDocument();
+      expect(screen.getByText(/لوحة التحكم/i)).toBeInTheDocument();
     });
   });
 });

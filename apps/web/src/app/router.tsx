@@ -79,6 +79,7 @@ const PlacementTestPage = lazy(() => import('../routes/portal/placement-test-pag
 const SpeedChallengePage = lazy(() => import('../routes/portal/speed-challenge-page'));
 const MillionChallengePage = lazy(() => import('../routes/portal/million-challenge-page'));
 const GuestbookPage = lazy(() => import('../routes/portal/guestbook-page'));
+const TeacherAdminPage = lazy(() => import('../routes/portal/teacher-admin-page'));
 
 export const router = createBrowserRouter([
   {
@@ -109,6 +110,8 @@ export const router = createBrowserRouter([
       { path: '/competitions/speed', element: <SpeedChallengePage /> },
       { path: '/challenge', element: <MillionChallengePage /> },
       { path: '/guestbook', element: <GuestbookPage /> },
+      { path: '/teacher-admin', element: <TeacherAdminPage /> },
+      { path: '/teacher/dashboard', element: <TeacherAdminPage /> },
       { path: '/teachers', element: <TeachersPage /> },
       { path: '/join', element: <StudentJoinPage /> },
       { path: '/student', element: <StudentPortalLoginPage /> },

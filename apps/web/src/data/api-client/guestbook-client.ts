@@ -10,9 +10,21 @@ export interface GuestbookEntry {
   repliedAt?: string;
 }
 
+export interface TeacherSession {
+  authenticated: boolean;
+  username: string;
+  name: string;
+  loggedInAt: string;
+}
+
 const STORAGE_KEY = 'english_spark_guestbook_entries_v1';
 const RATE_LIMIT_KEY = 'english_spark_last_comment_time';
-export const TEACHER_PASSCODE_HASH = 'maryam2026'; // رمز مرور المعلمة لإدارة التعليقات
+const LIKED_ENTRIES_KEY = 'english_spark_liked_entries_v1';
+const TEACHER_AUTH_KEY = 'english_spark_teacher_session_v1';
+
+export const TEACHER_USERNAME = 'maryam';
+export const TEACHER_PASSCODE_HASH = 'maryam2026'; // رمز مرور المعلمة
+export const TEACHER_OFFICIAL_NAME = 'مريم الصميلي';
 
 // تعليقات عامة أولية لسجل الزوار
 const DEFAULT_GUESTBOOK_ENTRIES: GuestbookEntry[] = [
@@ -20,7 +32,7 @@ const DEFAULT_GUESTBOOK_ENTRIES: GuestbookEntry[] = [
     id: 'entry-1',
     name: 'سارة خالد',
     role: 'طالبة — الصف الثاني متوسط',
-    message: 'مبادرة رائعة ومفيدة جداً من المعلمة مريم، بطاقات القواعد والألوان جعلت حفظ الأزمنة وفهمها أسهل بكثير!',
+    message: 'مبادرة رائعة ومفيدة جداً من المعلمة مريم الصميلي، بطاقات القواعد والألوان جعلت حفظ الأزمنة وفهمها أسهل بكثير!',
     createdAt: new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString(),
     likes: 18,
   },
@@ -28,7 +40,7 @@ const DEFAULT_GUESTBOOK_ENTRIES: GuestbookEntry[] = [
     id: 'entry-2',
     name: 'أ. هدى الحربي',
     role: 'معلمة لغة إنجليزية',
-    message: 'بارك الله في هذه الجهود المميزة في إنتاج المعرفة. تصميم المنصة وتنوع المسابقات يرفع دافعية الطالبات للتعلم.',
+    message: 'بارك الله في هذه الجهود المميزة في إنتاج المعرفة. تصميم المنصة وتنوع المسابقات يرفع دافعية الطالبات للتعلم. شكر خاص للمعلمة مريم الصميلي.',
     createdAt: new Date(Date.now() - 3 * 24 * 3600 * 1000).toISOString(),
     likes: 24,
   },
@@ -36,7 +48,7 @@ const DEFAULT_GUESTBOOK_ENTRIES: GuestbookEntry[] = [
     id: 'entry-3',
     name: 'أم محمد (ولي أمر)',
     role: 'ولي أمر',
-    message: 'أشكر مدرسة متوسطة وثانوية الجرادية والمعلمة مريم على هذا العمل التعليمي المتقن. بناتي يستمتعن بحل التمارين يومياً.',
+    message: 'أشكر مدرسة متوسطة وثانوية الجرادية والمعلمة مريم الصميلي على هذا العمل التعليمي المتقن. بناتي يستمتعن بحل التمارين يومياً.',
     createdAt: new Date(Date.now() - 4 * 24 * 3600 * 1000).toISOString(),
     likes: 19,
   },
@@ -50,8 +62,8 @@ const DEFAULT_GUESTBOOK_ENTRIES: GuestbookEntry[] = [
   },
 ];
 
-// استفسارات وأسئلة افتراضية مجابة من المعلمة مريم لكل درس
-const DEFAULT_LESSON_QUESTIONS: Record<string, GuestbookEntry[]> = {
+// استفسارات وأسئلة افتراضية مجابة من المعلمة مريم الصميلي لكل درس
+export const DEFAULT_LESSON_QUESTIONS: Record<string, GuestbookEntry[]> = {
   'present-simple': [
     {
       id: 'q-ps-1',
@@ -68,7 +80,7 @@ const DEFAULT_LESSON_QUESTIONS: Record<string, GuestbookEntry[]> = {
       id: 'q-ps-2',
       name: 'ريم القحطاني',
       role: 'طالبة — الصف الأول متوسط',
-      message: 'شكراً أستاذة على الشرح الكرتوني، بطاقة الدرس واضحة جداً وسهلت علي الواجب!',
+      message: 'شكراً أستاذة مريم الصميلي على الشرح الكرتوني، بطاقة الدرس واضحة جداً وسهلت علي الواجب!',
       createdAt: new Date(Date.now() - 1 * 24 * 3600 * 1000).toISOString(),
       likes: 5,
       topicSlug: 'present-simple',
@@ -226,6 +238,88 @@ export function recordCommentTime() {
   }
 }
 
+// -------------------------------------------------------------
+// إدارة الإعجابات ومكافحة التكرار اللانهائي (Like Toggling)
+// -------------------------------------------------------------
+export function getLikedEntries(): string[] {
+  try {
+    const raw = localStorage.getItem(LIKED_ENTRIES_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+export function isEntryLiked(id: string): boolean {
+  const list = getLikedEntries();
+  return list.includes(id);
+}
+
+export function saveLikedEntries(ids: string[]) {
+  try {
+    localStorage.setItem(LIKED_ENTRIES_KEY, JSON.stringify(ids));
+  } catch {
+    // ignore
+  }
+}
+
+// -------------------------------------------------------------
+// إدارة جلسة المعلمة مريم الصميلي (Teacher Authentication)
+// -------------------------------------------------------------
+export function isTeacherLoggedIn(): boolean {
+  try {
+    const raw = localStorage.getItem(TEACHER_AUTH_KEY);
+    if (!raw) return false;
+    const session = JSON.parse(raw) as TeacherSession;
+    return Boolean(session?.authenticated);
+  } catch {
+    return false;
+  }
+}
+
+export function getTeacherSession(): TeacherSession | null {
+  try {
+    const raw = localStorage.getItem(TEACHER_AUTH_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as TeacherSession;
+  } catch {
+    return null;
+  }
+}
+
+export function loginTeacher(username: string, passcode: string): boolean {
+  const normUser = username.trim().toLowerCase();
+  const validUsernames = ['maryam', 'maryam_alsomaili', 'مريم', 'معلمة مريم'];
+  const isUserValid = validUsernames.includes(normUser);
+  const isPassValid = passcode.trim() === TEACHER_PASSCODE_HASH;
+
+  if (isUserValid && isPassValid) {
+    const session: TeacherSession = {
+      authenticated: true,
+      username: normUser,
+      name: TEACHER_OFFICIAL_NAME,
+      loggedInAt: new Date().toISOString(),
+    };
+    try {
+      localStorage.setItem(TEACHER_AUTH_KEY, JSON.stringify(session));
+    } catch {
+      // ignore
+    }
+    return true;
+  }
+  return false;
+}
+
+export function logoutTeacher() {
+  try {
+    localStorage.removeItem(TEACHER_AUTH_KEY);
+  } catch {
+    // ignore
+  }
+}
+
 export const guestbookClient = {
   async getEntries(topicSlug?: string): Promise<GuestbookEntry[]> {
     const config = getSupabaseConfig();
@@ -273,6 +367,81 @@ export const guestbookClient = {
       }
     }
     return getLocalEntries(topicSlug);
+  },
+
+  /**
+   * جلب كافة استفسارات وتعليقات المنصة للمركز الرئيسي لإدارة المعلمة
+   */
+  async getAllEntriesAcrossPlatform(): Promise<GuestbookEntry[]> {
+    const config = getSupabaseConfig();
+    if (config) {
+      try {
+        const res = await fetch(
+          `${config.url}/rest/v1/guestbook_entries?select=*&order=created_at.desc&limit=200`,
+          {
+            headers: {
+              apikey: config.anonKey,
+              Authorization: `Bearer ${config.anonKey}`,
+            },
+          }
+        );
+        if (res.ok) {
+          const rows = (await res.json()) as Array<{
+            id: string | number;
+            name: string;
+            role: string;
+            message: string;
+            created_at: string;
+            likes: number;
+            topic_slug?: string;
+            teacher_reply?: string;
+            replied_at?: string;
+          }>;
+          return rows.map((r) => ({
+            id: String(r.id),
+            name: r.name,
+            role: r.role,
+            message: r.message,
+            createdAt: r.created_at,
+            likes: Number(r.likes || 0),
+            topicSlug: r.topic_slug,
+            teacherReply: r.teacher_reply,
+            repliedAt: r.replied_at,
+          }));
+        }
+      } catch {
+        // Fallback to local aggregation
+      }
+    }
+
+    // Local Storage Aggregation
+    const knownTopics = [
+      'present-simple',
+      'present-progressive',
+      'relative-clauses',
+      'simple-future',
+      'future-perfect',
+      'past-simple',
+      'past-progressive',
+      'present-perfect',
+      'future-progressive',
+    ];
+
+    const allMap = new Map<string, GuestbookEntry>();
+
+    // 1. General guestbook
+    const general = getLocalEntries();
+    for (const e of general) allMap.set(e.id, e);
+
+    // 2. All lesson topics
+    for (const slug of knownTopics) {
+      const topicList = getLocalEntries(slug);
+      for (const e of topicList) allMap.set(e.id, e);
+    }
+
+    return Array.from(allMap.values()).sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
   },
 
   async addEntry(entry: {
@@ -351,8 +520,32 @@ export const guestbookClient = {
     return newLocal;
   },
 
-  async likeEntry(id: string, currentLikes: number, topicSlug?: string): Promise<number> {
-    const newLikes = currentLikes + 1;
+  /**
+   * الإعجاب التفاعلي المنضبط (Toggle like: إعجاب واحد فقط لكل مستخدم)
+   */
+  async toggleLike(
+    id: string,
+    currentLikes: number,
+    topicSlug?: string
+  ): Promise<{ newLikes: number; isLiked: boolean }> {
+    const liked = getLikedEntries();
+    const alreadyLiked = liked.includes(id);
+
+    let updatedLiked: string[];
+    let newLikes: number;
+
+    if (alreadyLiked) {
+      // إلغاء الإعجاب
+      updatedLiked = liked.filter((item) => item !== id);
+      newLikes = Math.max(0, currentLikes - 1);
+    } else {
+      // إضافة إعجاب
+      updatedLiked = [...liked, id];
+      newLikes = currentLikes + 1;
+    }
+
+    saveLikedEntries(updatedLiked);
+
     const config = getSupabaseConfig();
     if (config) {
       try {
@@ -370,22 +563,31 @@ export const guestbookClient = {
       }
     }
 
-    // Also update local storage
+    // Update local storage
     const current = getLocalEntries(topicSlug);
     const updated = current.map((item) =>
       item.id === id ? { ...item, likes: newLikes } : item
     );
     saveLocalEntries(updated, topicSlug);
-    return newLikes;
+
+    return { newLikes, isLiked: !alreadyLiked };
+  },
+
+  async likeEntry(id: string, currentLikes: number, topicSlug?: string): Promise<number> {
+    const res = await this.toggleLike(id, currentLikes, topicSlug);
+    return res.newLikes;
   },
 
   async addTeacherReply(
     id: string,
     reply: string,
-    passcode: string,
+    passcodeOrSession?: string,
     topicSlug?: string
   ): Promise<boolean> {
-    if (passcode.trim() !== TEACHER_PASSCODE_HASH) {
+    const isAuthed =
+      isTeacherLoggedIn() || (passcodeOrSession?.trim() === TEACHER_PASSCODE_HASH);
+
+    if (!isAuthed) {
       return false;
     }
 
@@ -418,8 +620,15 @@ export const guestbookClient = {
     return true;
   },
 
-  async deleteEntry(id: string, passcode: string, topicSlug?: string): Promise<boolean> {
-    if (passcode.trim() !== TEACHER_PASSCODE_HASH) {
+  async deleteEntry(
+    id: string,
+    passcodeOrSession?: string,
+    topicSlug?: string
+  ): Promise<boolean> {
+    const isAuthed =
+      isTeacherLoggedIn() || (passcodeOrSession?.trim() === TEACHER_PASSCODE_HASH);
+
+    if (!isAuthed) {
       return false;
     }
 
