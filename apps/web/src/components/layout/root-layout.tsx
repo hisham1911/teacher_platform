@@ -214,47 +214,99 @@ function PublicFooter() {
 export function PublicBackdrop() {
   return (
     <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-0 overflow-hidden">
+      {/* Fluid CSS Ambient Mesh Glow — Fully responsive on mobile, tablet & desktop */}
+      <div className="pointer-events-none absolute -top-28 left-1/2 -translate-x-1/2 h-[28rem] w-[92vw] max-w-4xl rounded-full bg-gradient-to-b from-violet-300/30 via-fuchsia-200/20 to-transparent blur-3xl" />
+      <div className="pointer-events-none absolute top-16 -right-16 h-72 w-72 sm:h-96 sm:w-96 rounded-full bg-gradient-to-bl from-amber-200/35 via-orange-100/20 to-transparent blur-3xl" />
+      <div className="pointer-events-none absolute top-[36%] -left-16 h-72 w-72 sm:h-96 sm:w-96 rounded-full bg-gradient-to-tr from-sky-200/30 via-indigo-100/20 to-transparent blur-3xl" />
+      <div className="pointer-events-none absolute bottom-12 left-1/2 -translate-x-1/2 h-64 w-64 sm:h-80 sm:w-80 rounded-full bg-gradient-to-t from-emerald-200/25 via-teal-100/15 to-transparent blur-3xl" />
+
       <svg className="absolute inset-0 h-full w-full" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" fill="none">
-        {/* Soft Glowing Orbs */}
+        {/* Soft Glowing Orbs (Flanks for desktop + Center for mobile) */}
+        {/* Desktop Flanks */}
         <circle cx="122" cy="150" r="92" fill="var(--teacher-violet-soft)" opacity="0.6" className="animate-float-slow" />
         <circle cx="1320" cy="190" r="132" fill="#FEF3C7" opacity="0.6" className="animate-float-medium" />
         <circle cx="1265" cy="760" r="170" fill="#D1FAE5" opacity="0.6" className="animate-float-slow" style={{ animationDelay: '-2s' }} />
         <circle cx="120" cy="775" r="138" fill="#E0F2FE" opacity="0.5" className="animate-float-medium" style={{ animationDelay: '-4s' }} />
 
-        {/* Abstract Lines */}
+        {/* Mobile Center Slice Orbs */}
+        <circle cx="580" cy="190" r="88" fill="var(--teacher-violet-soft)" opacity="0.65" className="animate-float-slow" />
+        <circle cx="860" cy="240" r="95" fill="#FEF3C7" opacity="0.65" className="animate-float-medium" />
+        <circle cx="530" cy="520" r="80" fill="#E0F2FE" opacity="0.55" className="animate-float-slow" style={{ animationDelay: '-3s' }} />
+        <circle cx="880" cy="640" r="92" fill="#D1FAE5" opacity="0.6" className="animate-float-medium" style={{ animationDelay: '-2s' }} />
+        <circle cx="690" cy="800" r="82" fill="#FCE7F3" opacity="0.55" className="animate-float-slow" style={{ animationDelay: '-4s' }} />
+
+        {/* Abstract Lines & Doodles */}
         <g opacity="0.08" stroke="var(--teacher-violet)" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" className="animate-float-slow" style={{ animationDelay: '-1s' }}>
+          {/* Flanks */}
           <path d="M64 278h82v66H64z" />
           <path d="M64 278l41 29 41-29" />
           <path d="M1288 350c22-23 59-22 80 1 19 21 17 54-4 73l-34 31-34-31c-22-20-25-53-8-74Z" />
           <path d="M179 622h84M221 580v84" />
           <path d="m1140 646 15 31 34 5-25 24 6 34-30-16-30 16 6-34-25-24 34-5 15-31Z" />
+
+          {/* Center Mobile Doodles */}
+          <path d="M555 295h56v42h-56z" />
+          <path d="M555 295l28 19 28-19" />
+          <path d="M840 370c14-15 38-14 52 1 12 14 11 35-3 47l-22 20-22-20c-14-13-16-34-5-48Z" />
+          <path d="M680 710h54M707 683v54" />
         </g>
 
-        {/* Typography & Math */}
-        <g fill="var(--student-primary)" opacity="0.06" fontFamily="ui-rounded, system-ui, sans-serif" fontWeight="900" className="animate-float-medium" style={{ animationDelay: '-3s' }}>
+        {/* Typography & Math Elements */}
+        <g fill="var(--student-primary)" opacity="0.065" fontFamily="ui-rounded, system-ui, sans-serif" fontWeight="900" className="animate-float-medium" style={{ animationDelay: '-3s' }}>
+          {/* Flanks */}
           <text x="76" y="122" fontSize="72">Aa</text>
           <text x="1215" y="145" fontSize="62">Bb</text>
           <text x="80" y="820" fontSize="64">123</text>
           <text x="1260" y="700" fontSize="88">?</text>
           <text x="350" y="200" fontSize="54">+</text>
           <text x="1050" y="800" fontSize="54">=</text>
+
+          {/* Center Mobile Slice */}
+          <text x="520" y="140" fontSize="56">Aa</text>
+          <text x="860" y="160" fontSize="52">Bb</text>
+          <text x="510" y="440" fontSize="44">123</text>
+          <text x="890" y="520" fontSize="60">?</text>
+          <text x="730" y="320" fontSize="42">✦</text>
+          <text x="540" y="750" fontSize="40">ABC</text>
+          <text x="670" y="490" fontSize="38">+</text>
+          <text x="830" y="790" fontSize="38">=</text>
         </g>
 
         {/* Floating Stars & Sparkles */}
-        <g opacity="0.1" fill="var(--student-orange)" className="animate-float-slow" style={{ animationDelay: '-5s' }}>
+        <g opacity="0.12" fill="var(--student-orange)" className="animate-float-slow" style={{ animationDelay: '-5s' }}>
+          {/* Flanks */}
           <path d="m292 130 6 13 14 6-14 6-6 13-6-13-14-6 14-6 6-13Z" />
           <path d="m1048 194 7 15 15 7-15 7-7 15-7-15-15-7 15-7 7-15Z" />
           <path d="m404 760 5 11 11 5-11 5-5 11-5-11-11-5 11-5 5-11Z" />
           <path d="m1120 400 4 9 9 4-9 4-4 9-4-9-9-4 9-4 4-9Z" />
           <path d="m220 500 4 9 9 4-9 4-4 9-4-9-9-4 9-4 4-9Z" />
+
+          {/* Center Mobile Sparkles */}
+          <path d="m640 120 5 11 11 5-11 5-5 11-5-11-11-5 11-5 5-11Z" />
+          <path d="m810 260 6 13 13 6-13 6-6 13-6-13-13-6 13-6 6-13Z" />
+          <path d="m590 370 4 9 9 4-9 4-4 9-4-9-9-4 9-4 4-9Z" />
+          <path d="m860 410 5 11 11 5-11 5-5 11-5-11-11-5 11-5 5-11Z" />
+          <path d="m640 670 4 9 9 4-9 4-4 9-4-9-9-4 9-4 4-9Z" />
+          <path d="m780 760 5 11 11 5-11 5-5 11-5-11-11-5 11-5 5-11Z" />
         </g>
 
-        {/* Magical Elements */}
+        {/* Magical Pencil Elements */}
+        {/* Flanks */}
         <g transform="translate(1090 92) rotate(18)" opacity="0.1" className="animate-float-medium" style={{ animationDelay: '-2s' }}>
           <rect width="94" height="24" rx="12" fill="var(--student-orange)" />
           <path d="M0 0-23 12 0 24V0Z" fill="var(--student-ink)" />
         </g>
         <g transform="translate(250 820) rotate(-15)" opacity="0.08" className="animate-float-slow" style={{ animationDelay: '-4s' }}>
+          <rect width="70" height="18" rx="9" fill="var(--student-violet)" />
+          <path d="M70 0l18 9-18 9V0Z" fill="var(--student-primary)" />
+        </g>
+
+        {/* Center Mobile Pencils */}
+        <g transform="translate(680 180) rotate(-16) scale(0.75)" opacity="0.1" className="animate-float-medium" style={{ animationDelay: '-1.5s' }}>
+          <rect width="94" height="24" rx="12" fill="var(--student-orange)" />
+          <path d="M0 0-23 12 0 24V0Z" fill="var(--student-ink)" />
+        </g>
+        <g transform="translate(740 660) rotate(18) scale(0.7)" opacity="0.09" className="animate-float-slow" style={{ animationDelay: '-3.5s' }}>
           <rect width="70" height="18" rx="9" fill="var(--student-violet)" />
           <path d="M70 0l18 9-18 9V0Z" fill="var(--student-primary)" />
         </g>

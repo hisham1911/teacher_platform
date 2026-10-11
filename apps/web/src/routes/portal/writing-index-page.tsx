@@ -92,32 +92,52 @@ export default function WritingIndexPage() {
             <Link
               key={item.slug}
               to={`/writing/${item.slug}`}
-              className="group flex flex-col justify-between overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white/90 p-5 sm:p-6 shadow-xs backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-emerald-300 hover:shadow-xl hover:shadow-emerald-900/10 active:translate-y-0"
+              className="group relative flex flex-col justify-between overflow-hidden rounded-2xl sm:rounded-3xl border border-emerald-100/90 bg-gradient-to-br from-white via-white/95 to-emerald-50/40 p-5 sm:p-6 shadow-xs backdrop-blur-xl ring-1 ring-slate-900/5 transition-all duration-300 hover:-translate-y-1.5 hover:border-emerald-300 hover:ring-2 hover:ring-emerald-400/20 hover:shadow-xl hover:shadow-emerald-900/10 active:translate-y-0"
             >
-              <div>
+              {/* Luminous Specular Top Highlight */}
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/90 to-transparent"
+              />
+
+              {/* Ambient Interior Corner Glow */}
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute -top-10 -left-10 h-32 w-32 rounded-full bg-gradient-to-br from-emerald-500/15 via-teal-500/5 to-transparent blur-2xl opacity-60 group-hover:opacity-100 transition-opacity"
+              />
+
+              {/* Subtle Decorative Background Watermark Icon */}
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute -bottom-3 -left-3 text-slate-900/[0.035] group-hover:text-emerald-900/5 transition-all duration-500 scale-100 group-hover:scale-110"
+              >
+                <PenLine className="h-24 w-24" />
+              </div>
+
+              <div className="relative z-10">
                 <div className="mb-3 flex items-center justify-between">
-                  <span className="rounded-lg bg-slate-100 px-2 py-0.5 text-xs font-black text-slate-600">
+                  <span className="rounded-lg bg-emerald-100/80 px-2 py-0.5 text-xs font-black text-emerald-800">
                     تدريب #{index + 1}
                   </span>
                   <div className="flex items-center gap-1.5">
                     <span
                       className={`rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${categoryBadge(
                         item.category
-                      )}`}
+                      )} shadow-2xs`}
                     >
                       {categoryLabel(item.category)}
                     </span>
                     <span
                       className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${levelBadge(
                         item.level
-                      )}`}
+                      )} shadow-2xs`}
                     >
                       {levelLabel(item.level)}
                     </span>
                   </div>
                 </div>
 
-                <h2 className="text-base sm:text-lg font-black text-slate-900 group-hover:text-emerald-900 transition-colors">
+                <h2 className="text-base sm:text-lg font-black text-slate-950 group-hover:text-emerald-950 transition-colors">
                   {item.titleAr}
                 </h2>
                 <p className="mt-0.5 text-xs font-bold tracking-wider text-emerald-700" dir="ltr">
@@ -129,14 +149,14 @@ export default function WritingIndexPage() {
                 </p>
               </div>
 
-              <div className="mt-5 flex items-center justify-between border-t border-slate-100/90 pt-3">
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">
+              <div className="relative z-10 mt-5 flex items-center justify-between border-t border-slate-200/60 pt-3">
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 shadow-2xs">
                   <CheckCircle2 className="h-3 w-3 text-emerald-600" />
                   نموذج إجابة وتصحيح
                 </span>
                 <span
                   aria-hidden="true"
-                  className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-slate-400 transition-all group-hover:bg-emerald-700 group-hover:text-white group-hover:translate-x-[-2px]"
+                  className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-slate-400 border border-slate-200/60 shadow-2xs transition-all group-hover:bg-emerald-700 group-hover:text-white group-hover:border-transparent group-hover:translate-x-[-2px]"
                 >
                   <ArrowLeft className="h-3.5 w-3.5" />
                 </span>

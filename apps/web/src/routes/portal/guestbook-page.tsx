@@ -204,7 +204,7 @@ export default function GuestbookPage() {
         </section>
 
         {/* Comment Submission Form */}
-        <section className="animate-page-enter mt-8 rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white/95 p-5 sm:p-7 shadow-xs backdrop-blur-xl">
+        <section className="animate-page-enter mt-8 rounded-2xl sm:rounded-3xl border border-rose-100/90 bg-gradient-to-br from-white via-white/95 to-rose-50/30 p-5 sm:p-7 shadow-xs backdrop-blur-xl ring-1 ring-slate-900/5">
           <h2 className="text-base font-black text-slate-950 mb-4 flex items-center gap-2">
             <User className="h-4 w-4 text-rose-600" />
             <span>شاركينا كلمتكِ التشجيعية أو انطباعكِ</span>
@@ -363,7 +363,7 @@ export default function GuestbookPage() {
               return (
                 <div
                   key={entry.id}
-                  className="rounded-2xl border border-slate-200/80 bg-white/95 p-4 sm:p-5 shadow-xs backdrop-blur-xl transition hover:border-rose-200"
+                  className="group relative rounded-2xl border border-rose-100/90 bg-gradient-to-br from-white via-white/95 to-rose-50/25 p-4 sm:p-5 shadow-xs backdrop-blur-xl ring-1 ring-slate-900/5 transition hover:border-rose-300 hover:shadow-md hover:shadow-rose-900/5"
                 >
                   <div className="flex items-start justify-between gap-3 mb-2">
                     <div>

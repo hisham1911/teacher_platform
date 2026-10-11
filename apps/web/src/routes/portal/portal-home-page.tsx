@@ -96,21 +96,41 @@ export default function PortalHomePage() {
               <Link
                 key={section.id}
                 to={section.path}
-                className="group relative flex flex-col justify-between overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white/90 p-5 sm:p-6 shadow-xs backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-violet-300 hover:shadow-xl hover:shadow-violet-900/10 active:translate-y-0"
+                className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl sm:rounded-3xl border ${theme.border} ${theme.surface} p-5 sm:p-6 shadow-xs backdrop-blur-xl ring-1 ring-slate-900/5 transition-all duration-300 hover:-translate-y-1.5 ${theme.shadow} ${theme.ring} active:translate-y-0`}
               >
-                <div>
+                {/* Luminous Specular Top Highlight */}
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/90 to-transparent"
+                />
+
+                {/* Ambient Interior Corner Glow */}
+                <div
+                  aria-hidden="true"
+                  className={`pointer-events-none absolute -top-10 -left-10 h-32 w-32 rounded-full bg-gradient-to-br ${theme.glow} blur-2xl opacity-70 transition-opacity duration-300 group-hover:opacity-100`}
+                />
+
+                {/* Subtle Decorative Background Watermark Icon */}
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute -bottom-3 -left-3 text-slate-900/[0.035] transition-all duration-500 scale-100 group-hover:scale-110 group-hover:opacity-100"
+                >
+                  <SectionIcon id={section.id} className="h-24 w-24 sm:h-28 sm:w-28" />
+                </div>
+
+                <div className="relative z-10">
                   <div className="mb-4 flex items-center justify-between">
                     <div
-                      className={`flex h-12 w-12 sm:h-13 sm:w-13 items-center justify-center rounded-2xl bg-gradient-to-br ${theme.gradient} text-white shadow-md transition-transform duration-300 group-hover:scale-105`}
+                      className={`flex h-12 w-12 sm:h-13 sm:w-13 items-center justify-center rounded-2xl bg-gradient-to-br ${theme.gradient} text-white shadow-md shadow-slate-900/10 transition-transform duration-300 group-hover:scale-105`}
                     >
                       <SectionIcon id={section.id} className="h-6 w-6" />
                     </div>
-                    <span className="rounded-full border border-slate-200/60 bg-slate-100/80 px-2.5 py-1 text-[11px] font-bold text-slate-600">
+                    <span className="rounded-full border border-slate-200/70 bg-white/80 backdrop-blur-xs px-2.5 py-1 text-[11px] font-bold text-slate-600 shadow-2xs">
                       {section.titleEn}
                     </span>
                   </div>
 
-                  <h2 className="text-lg sm:text-xl font-black text-slate-900 transition-colors group-hover:text-violet-900">
+                  <h2 className="text-lg sm:text-xl font-black text-slate-950 transition-colors group-hover:text-violet-950">
                     {section.titleAr}
                   </h2>
                   <p className="mt-2 text-xs sm:text-sm font-semibold leading-6 sm:leading-7 text-slate-600">
@@ -118,16 +138,16 @@ export default function PortalHomePage() {
                   </p>
                 </div>
 
-                <div className="mt-5 flex items-center justify-between border-t border-slate-100/90 pt-3.5">
+                <div className="relative z-10 mt-5 flex items-center justify-between border-t border-slate-200/60 pt-3.5">
                   <span
-                    className={`inline-flex items-center gap-1.5 rounded-full ${theme.bgSoft} px-3 py-1 text-xs font-bold ${theme.text}`}
+                    className={`inline-flex items-center gap-1.5 rounded-full ${theme.bgSoft} px-3 py-1 text-xs font-bold ${theme.text} shadow-2xs`}
                   >
                     <span className={`h-1.5 w-1.5 rounded-full ${theme.dot}`} />
                     {badgeLabel}
                   </span>
                   <span
                     aria-hidden="true"
-                    className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-400 transition-all group-hover:bg-violet-700 group-hover:text-white group-hover:translate-x-[-2px]"
+                    className={`flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-slate-400 border border-slate-200/60 shadow-2xs transition-all duration-300 group-hover:bg-gradient-to-r group-hover:${theme.gradient} group-hover:text-white group-hover:border-transparent group-hover:translate-x-[-2px]`}
                   >
                     <ArrowLeft className="h-4 w-4" />
                   </span>

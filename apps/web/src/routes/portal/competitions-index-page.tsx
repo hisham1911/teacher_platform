@@ -20,6 +20,55 @@ function CompetitionIcon({ id, className = 'h-7 w-7' }: { id: string; className?
   return <Trophy className={className} />;
 }
 
+interface CompCardTheme {
+  surface: string;
+  border: string;
+  glow: string;
+  ring: string;
+  shadow: string;
+  watermarkColor: string;
+}
+
+const DEFAULT_COMP_THEME: CompCardTheme = {
+  surface: 'bg-gradient-to-br from-white via-amber-50/25 to-yellow-50/50',
+  border: 'border-amber-200/90',
+  glow: 'from-amber-400/20 via-yellow-400/8 to-transparent',
+  ring: 'hover:ring-amber-400/25',
+  shadow: 'hover:shadow-xl hover:shadow-amber-900/12 hover:border-amber-400',
+  watermarkColor: 'text-amber-500/[0.07]',
+};
+
+const compCardThemes: Record<string, CompCardTheme> = {
+  million: {
+    surface: 'bg-gradient-to-br from-white via-amber-50/25 to-yellow-50/50',
+    border: 'border-amber-200/90',
+    glow: 'from-amber-400/20 via-yellow-400/8 to-transparent',
+    ring: 'hover:ring-amber-400/25',
+    shadow: 'hover:shadow-xl hover:shadow-amber-900/12 hover:border-amber-400',
+    watermarkColor: 'text-amber-500/[0.07]',
+  },
+  speed: {
+    surface: 'bg-gradient-to-br from-white via-sky-50/25 to-indigo-50/45',
+    border: 'border-sky-200/90',
+    glow: 'from-sky-400/20 via-indigo-400/8 to-transparent',
+    ring: 'hover:ring-sky-400/25',
+    shadow: 'hover:shadow-xl hover:shadow-sky-900/12 hover:border-sky-400',
+    watermarkColor: 'text-sky-500/[0.07]',
+  },
+  placement: {
+    surface: 'bg-gradient-to-br from-white via-emerald-50/25 to-teal-50/45',
+    border: 'border-emerald-200/90',
+    glow: 'from-emerald-400/20 via-teal-400/8 to-transparent',
+    ring: 'hover:ring-emerald-400/25',
+    shadow: 'hover:shadow-xl hover:shadow-emerald-900/12 hover:border-emerald-400',
+    watermarkColor: 'text-emerald-500/[0.07]',
+  },
+};
+
+function getCompCardTheme(id: string): CompCardTheme {
+  return compCardThemes[id] ?? DEFAULT_COMP_THEME;
+}
+
 export default function CompetitionsIndexPage() {
   return (
     <div className="relative flex min-h-dvh flex-col overflow-x-hidden bg-slate-50/50" dir="rtl">
@@ -50,76 +99,99 @@ export default function CompetitionsIndexPage() {
         {/* Competitions Cards */}
         <section className="mx-auto max-w-6xl px-4 pb-20">
           <div className="grid grid-cols-1 gap-5 sm:gap-6 md:grid-cols-3">
-            {portalCompetitions.map((comp) => (
-              <div
-                key={comp.id}
-                className="group relative flex flex-col justify-between overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white/95 p-6 sm:p-7 shadow-xs backdrop-blur-xl transition-all duration-300 hover:-translate-y-1.5 hover:border-violet-300 hover:shadow-xl hover:shadow-violet-900/10"
-              >
-                <div>
-                  {/* Top Bar: Icon & Badge */}
-                  <div className="mb-5 flex items-start justify-between">
-                    <div
-                      className={`flex h-13 w-13 items-center justify-center rounded-2xl bg-gradient-to-br ${comp.gradient} text-white shadow-md transition-transform duration-300 group-hover:scale-105`}
-                    >
-                      <CompetitionIcon id={comp.id} className="h-6 w-6" />
-                    </div>
-                    <span
-                      className={`rounded-full border px-3 py-1 text-[11px] font-black ${comp.badgeColor}`}
-                    >
-                      {comp.badge}
-                    </span>
-                  </div>
+            {portalCompetitions.map((comp) => {
+              const theme = getCompCardTheme(comp.id);
+              return (
+                <div
+                  key={comp.id}
+                  className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl sm:rounded-3xl border ${theme.border} ${theme.surface} p-6 sm:p-7 shadow-xs backdrop-blur-xl ring-1 ring-slate-900/5 transition-all duration-300 hover:-translate-y-1.5 ${theme.shadow} ${theme.ring}`}
+                >
+                  {/* Luminous Specular Top Highlight */}
+                  <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/90 to-transparent"
+                  />
 
-                  {/* Title & Subtitle */}
-                  <span className="text-[11px] font-black tracking-wider text-slate-400">
-                    {comp.titleEn}
-                  </span>
-                  <h2 className="mt-1 text-xl sm:text-2xl font-black text-slate-950 transition-colors group-hover:text-violet-900">
-                    {comp.titleAr}
-                  </h2>
-                  <p className="mt-0.5 text-xs font-bold text-violet-700">{comp.subtitle}</p>
+                  {/* Ambient Interior Corner Glow */}
+                  <div
+                    aria-hidden="true"
+                    className={`pointer-events-none absolute -top-12 -left-12 h-36 w-36 rounded-full bg-gradient-to-br ${theme.glow} blur-2xl opacity-70 group-hover:opacity-100 transition-opacity`}
+                  />
 
-                  {/* Description */}
-                  <p className="mt-3 text-xs sm:text-sm font-semibold leading-relaxed text-slate-600">
-                    {comp.description}
-                  </p>
-
-                  {/* Feature checklist */}
-                  <div className="mt-5 space-y-2 border-t border-slate-100 pt-3.5">
-                    {comp.features.map((feature) => (
-                      <div
-                        key={feature}
-                        className="flex items-center gap-2 text-xs font-bold text-slate-700"
-                      >
-                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                        <span>{feature}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Footer CTA */}
-                <div className="mt-6 border-t border-slate-100 pt-4">
-                  <div className="mb-3.5 flex items-center justify-between text-xs font-bold text-slate-500">
-                    <span className="inline-flex items-center gap-1">
-                      <Clock className="h-3.5 w-3.5" />
-                      <span>{comp.duration}</span>
-                    </span>
-                    <span className="inline-flex items-center gap-1">
-                      <HelpCircle className="h-3.5 w-3.5" />
-                      <span>{comp.questionCount} سؤالاً</span>
-                    </span>
-                  </div>
-                  <Link
-                    to={comp.path}
-                    className={`flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r ${comp.gradient} py-3.5 text-xs sm:text-sm font-black text-white shadow-md transition-all duration-200 hover:brightness-110 active:scale-[0.98]`}
+                  {/* Subtle Decorative Background Watermark Icon */}
+                  <div
+                    aria-hidden="true"
+                    className={`pointer-events-none absolute -bottom-3 -left-3 ${theme.watermarkColor} transition-all duration-500 scale-100 group-hover:scale-110`}
                   >
-                    <span>ابدأ المسابقة الآن</span>
-                    <ArrowLeft className="h-4 w-4" />
-                  </Link>
+                    <CompetitionIcon id={comp.id} className="h-28 w-28" />
+                  </div>
+
+                  <div className="relative z-10">
+                    {/* Top Bar: Icon & Badge */}
+                    <div className="mb-5 flex items-start justify-between">
+                      <div
+                        className={`flex h-13 w-13 items-center justify-center rounded-2xl bg-gradient-to-br ${comp.gradient} text-white shadow-md shadow-slate-900/10 transition-transform duration-300 group-hover:scale-105`}
+                      >
+                        <CompetitionIcon id={comp.id} className="h-6 w-6" />
+                      </div>
+                      <span
+                        className={`rounded-full border px-3 py-1 text-[11px] font-black ${comp.badgeColor} shadow-2xs`}
+                      >
+                        {comp.badge}
+                      </span>
+                    </div>
+
+                    {/* Title & Subtitle */}
+                    <span className="text-[11px] font-black tracking-wider text-slate-400">
+                      {comp.titleEn}
+                    </span>
+                    <h2 className="mt-1 text-xl sm:text-2xl font-black text-slate-950 transition-colors group-hover:text-violet-950">
+                      {comp.titleAr}
+                    </h2>
+                    <p className="mt-0.5 text-xs font-bold text-violet-700">{comp.subtitle}</p>
+
+                    {/* Description */}
+                    <p className="mt-3 text-xs sm:text-sm font-semibold leading-relaxed text-slate-600">
+                      {comp.description}
+                    </p>
+
+                    {/* Feature checklist */}
+                    <div className="mt-5 space-y-2 border-t border-slate-200/60 pt-3.5">
+                      {comp.features.map((feature) => (
+                        <div
+                          key={feature}
+                          className="flex items-center gap-2 text-xs font-bold text-slate-700"
+                        >
+                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                          <span>{feature}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Footer CTA */}
+                  <div className="relative z-10 mt-6 border-t border-slate-200/60 pt-4">
+                    <div className="mb-3.5 flex items-center justify-between text-xs font-bold text-slate-500">
+                      <span className="inline-flex items-center gap-1">
+                        <Clock className="h-3.5 w-3.5 text-slate-400" />
+                        <span>{comp.duration}</span>
+                      </span>
+                      <span className="inline-flex items-center gap-1">
+                        <HelpCircle className="h-3.5 w-3.5 text-slate-400" />
+                        <span>{comp.questionCount} سؤالاً</span>
+                      </span>
+                    </div>
+                    <Link
+                      to={comp.path}
+                      className={`flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r ${comp.gradient} py-3.5 text-xs sm:text-sm font-black text-white shadow-md shadow-slate-900/10 transition-all duration-200 hover:brightness-110 active:scale-[0.98]`}
+                    >
+                      <span>ابدأ المسابقة الآن</span>
+                      <ArrowLeft className="h-4 w-4" />
+                    </Link>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
       </main>

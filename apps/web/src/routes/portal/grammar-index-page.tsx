@@ -37,35 +37,55 @@ export default function GrammarIndexPage() {
             <Link
               key={topic.slug}
               to={`/grammar/${topic.slug}`}
-              className="group flex flex-col overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white/90 shadow-xs backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-violet-300 hover:shadow-xl hover:shadow-violet-900/10 active:translate-y-0"
+              className="group relative flex flex-col overflow-hidden rounded-2xl sm:rounded-3xl border border-violet-100/90 bg-gradient-to-br from-white via-white/95 to-violet-50/40 shadow-xs backdrop-blur-xl ring-1 ring-slate-900/5 transition-all duration-300 hover:-translate-y-1.5 hover:border-violet-300 hover:ring-2 hover:ring-violet-400/20 hover:shadow-xl hover:shadow-violet-900/10 active:translate-y-0"
             >
+              {/* Luminous Specular Top Highlight */}
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/90 to-transparent"
+              />
+
+              {/* Ambient Interior Corner Glow */}
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute -top-10 -left-10 h-32 w-32 rounded-full bg-gradient-to-br from-violet-500/15 via-indigo-500/5 to-transparent blur-2xl opacity-60 group-hover:opacity-100 transition-opacity"
+              />
+
               {/* Infographic Thumbnail */}
-              <div className="relative w-full border-b border-slate-100 bg-slate-50/70 p-3 sm:p-4 flex items-center justify-center">
+              <div className="relative w-full border-b border-violet-100/70 bg-gradient-to-b from-violet-50/40 via-white/60 to-slate-50/60 p-3 sm:p-4 flex items-center justify-center">
                 <img
                   src={topic.imageUrl}
                   alt={topic.titleEn}
-                  className="mx-auto h-40 sm:h-48 w-full rounded-xl object-contain shadow-xs transition-transform duration-300 group-hover:scale-[1.02]"
+                  className="mx-auto h-40 sm:h-48 w-full rounded-xl object-contain shadow-xs transition-transform duration-300 group-hover:scale-[1.03]"
                   loading="lazy"
                 />
-                <span className="absolute top-3 right-3 rounded-lg bg-violet-900/80 backdrop-blur-md px-2 py-0.5 text-[10px] font-black text-white shadow-xs">
+                <span className="absolute top-3 right-3 rounded-lg bg-violet-950/80 backdrop-blur-md px-2.5 py-0.5 text-[10px] font-black text-white shadow-xs border border-white/20">
                   بطاقة #{index + 1}
                 </span>
               </div>
 
               {/* Card Body */}
-              <div className="flex flex-1 flex-col p-4 sm:p-5">
+              <div className="relative z-10 flex flex-1 flex-col p-4 sm:p-5">
+                {/* Subtle Decorative Book Watermark */}
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute -bottom-3 -left-3 text-slate-900/[0.035] transition-all duration-500 scale-100 group-hover:scale-110 group-hover:text-violet-900/5"
+                >
+                  <BookOpen className="h-20 w-20 sm:h-24 sm:w-24" />
+                </div>
+
                 <div className="mb-2 flex items-center justify-between gap-2">
                   <span className="text-[11px] font-black tracking-widest text-violet-700">
                     {topic.titleEn.toUpperCase()}
                   </span>
                   {topic.videoUrl && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-black text-rose-700 border border-rose-200/60 shadow-2xs">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2.5 py-0.5 text-[10px] font-black text-rose-700 border border-rose-200/60 shadow-2xs">
                       <Video className="h-3 w-3 text-rose-600" />
                       <span>فيديو كرتوني</span>
                     </span>
                   )}
                 </div>
-                <h2 className="text-base sm:text-lg font-black text-slate-900 group-hover:text-violet-900 transition-colors">
+                <h2 className="text-base sm:text-lg font-black text-slate-950 group-hover:text-violet-950 transition-colors">
                   {topic.titleAr}
                 </h2>
                 <p className="mt-1.5 flex-1 text-xs sm:text-sm font-semibold leading-6 text-slate-600 line-clamp-2">
@@ -73,20 +93,20 @@ export default function GrammarIndexPage() {
                 </p>
 
                 {/* Footer / Badge */}
-                <div className="mt-4 flex items-center justify-between border-t border-slate-100/80 pt-3">
+                <div className="mt-4 flex items-center justify-between border-t border-slate-200/60 pt-3">
                   {topic.questions.length > 0 ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700 shadow-2xs">
                       <CheckCircle2 className="h-3 w-3 text-emerald-600" />
                       {topic.questions.length} أسئلة تفاعلية
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-500">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-500 shadow-2xs">
                       بطاقة الشرح
                     </span>
                   )}
                   <span
                     aria-hidden="true"
-                    className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-slate-400 transition-all group-hover:bg-violet-700 group-hover:text-white group-hover:translate-x-[-2px]"
+                    className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-slate-400 border border-slate-200/60 shadow-2xs transition-all group-hover:bg-violet-700 group-hover:text-white group-hover:border-transparent group-hover:translate-x-[-2px]"
                   >
                     <ArrowLeft className="h-3.5 w-3.5" />
                   </span>

@@ -222,7 +222,7 @@ export function LessonDiscussion({ topicSlug, topicTitle }: LessonDiscussionProp
   }
 
   return (
-    <section className="mt-10 rounded-2xl sm:rounded-3xl border border-violet-100 bg-white/95 p-5 shadow-sm backdrop-blur-xl sm:p-8" aria-label="استفسارات الدرس">
+    <section className="mt-10 rounded-2xl sm:rounded-3xl border border-violet-100/90 bg-gradient-to-br from-white via-white/95 to-violet-50/30 p-5 shadow-sm backdrop-blur-xl ring-1 ring-slate-900/5 sm:p-8" aria-label="استفسارات الدرس">
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-5">
         <div className="flex items-start gap-3">
@@ -406,7 +406,7 @@ export function LessonDiscussion({ topicSlug, topicTitle }: LessonDiscussionProp
               return (
                 <div
                   key={entry.id}
-                  className="group relative rounded-2xl border border-slate-100 bg-slate-50/60 p-4 transition hover:border-violet-200 hover:bg-violet-50/20"
+                  className="group relative rounded-2xl border border-violet-100/80 bg-gradient-to-br from-white via-white/95 to-violet-50/25 p-4 shadow-2xs transition hover:border-violet-300 hover:shadow-xs"
                 >
                   {/* Entry Header */}
                   <div className="flex items-start justify-between gap-2">

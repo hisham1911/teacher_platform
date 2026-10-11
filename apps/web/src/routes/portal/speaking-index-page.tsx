@@ -65,22 +65,42 @@ export default function SpeakingIndexPage() {
               href={item.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="group flex flex-col justify-between overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white/90 p-5 sm:p-6 shadow-xs backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-amber-300 hover:shadow-xl hover:shadow-amber-900/10 active:translate-y-0"
+              className="group relative flex flex-col justify-between overflow-hidden rounded-2xl sm:rounded-3xl border border-amber-200/90 bg-gradient-to-br from-white via-white/95 to-amber-50/40 p-5 sm:p-6 shadow-xs backdrop-blur-xl ring-1 ring-slate-900/5 transition-all duration-300 hover:-translate-y-1.5 hover:border-amber-300 hover:ring-2 hover:ring-amber-400/20 hover:shadow-xl hover:shadow-amber-900/10 active:translate-y-0"
             >
-              <div>
+              {/* Luminous Specular Top Highlight */}
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/90 to-transparent"
+              />
+
+              {/* Ambient Interior Corner Glow */}
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute -top-10 -left-10 h-32 w-32 rounded-full bg-gradient-to-br from-amber-500/15 via-orange-500/5 to-transparent blur-2xl opacity-60 group-hover:opacity-100 transition-opacity"
+              />
+
+              {/* Subtle Decorative Background Watermark Icon */}
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute -bottom-3 -left-3 text-slate-900/[0.035] group-hover:text-amber-900/5 transition-all duration-500 scale-100 group-hover:scale-110"
+              >
+                <Mic className="h-24 w-24" />
+              </div>
+
+              <div className="relative z-10">
                 <div className="mb-4 flex items-center justify-between">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-50 text-amber-700 border border-amber-200/60 shadow-xs">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-md shadow-slate-900/10 transition-transform duration-300 group-hover:scale-105">
                     <Mic className="h-5 w-5" />
                   </div>
-                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-400 transition-colors group-hover:bg-amber-100 group-hover:text-amber-700">
+                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white text-slate-400 border border-slate-200/60 shadow-2xs transition-colors group-hover:bg-amber-100 group-hover:text-amber-700">
                     <ExternalLink className="h-4 w-4" />
                   </span>
                 </div>
 
-                <h2 className="text-base sm:text-lg font-black text-slate-900 group-hover:text-amber-900 transition-colors">
+                <h2 className="text-base sm:text-lg font-black text-slate-950 group-hover:text-amber-950 transition-colors">
                   {item.titleAr}
                 </h2>
-                <p className="mt-0.5 text-xs font-bold tracking-wider text-amber-600" dir="ltr">
+                <p className="mt-0.5 text-xs font-bold tracking-wider text-amber-700" dir="ltr">
                   {item.titleEn}
                 </p>
 
@@ -89,7 +109,7 @@ export default function SpeakingIndexPage() {
                 </p>
               </div>
 
-              <div className="mt-6 pt-4 border-t border-slate-100/90">
+              <div className="relative z-10 mt-6 border-t border-slate-200/60 pt-4">
                 <span className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 px-4 py-3 text-xs sm:text-sm font-black text-white shadow-md shadow-amber-500/20 transition-all group-hover:from-amber-600 group-hover:to-orange-600">
                   <span>ابدأ التدريب في نافذة جديدة</span>
                   <ExternalLink className="h-3.5 w-3.5" />
