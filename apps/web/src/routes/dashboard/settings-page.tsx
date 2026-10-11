@@ -302,10 +302,44 @@ export default function SettingsPage() {
               {(props) => <TextInput {...props} disabled={!brandingEnabled} value={draft.publicTeacherName} onChange={(e) => setDraft((d) => ({ ...d, publicTeacherName: e.target.value }))} />}
             </FormField>
             <FormField id="primaryColor" label="اللون الأساسي" error={errors.primaryColor}>
-              {(props) => <TextInput {...props} dir="ltr" disabled={!brandingEnabled} value={draft.primaryColor} placeholder="#0ea5e9" onChange={(e) => setDraft((d) => ({ ...d, primaryColor: e.target.value }))} />}
+              {(props) => (
+                <div className="flex items-center gap-2.5">
+                  <span
+                    className="h-11 w-11 shrink-0 rounded-xl border border-slate-200 shadow-inner"
+                    style={{ backgroundColor: draft.primaryColor || '#0ea5e9' }}
+                    title={draft.primaryColor || '#0ea5e9'}
+                    aria-hidden="true"
+                  />
+                  <TextInput
+                    {...props}
+                    dir="ltr"
+                    disabled={!brandingEnabled}
+                    value={draft.primaryColor}
+                    placeholder="#0ea5e9"
+                    onChange={(e) => setDraft((d) => ({ ...d, primaryColor: e.target.value }))}
+                  />
+                </div>
+              )}
             </FormField>
             <FormField id="secondaryColor" label="اللون الثانوي" error={errors.secondaryColor}>
-              {(props) => <TextInput {...props} dir="ltr" disabled={!brandingEnabled} value={draft.secondaryColor} placeholder="#f59e0b" onChange={(e) => setDraft((d) => ({ ...d, secondaryColor: e.target.value }))} />}
+              {(props) => (
+                <div className="flex items-center gap-2.5">
+                  <span
+                    className="h-11 w-11 shrink-0 rounded-xl border border-slate-200 shadow-inner"
+                    style={{ backgroundColor: draft.secondaryColor || '#f59e0b' }}
+                    title={draft.secondaryColor || '#f59e0b'}
+                    aria-hidden="true"
+                  />
+                  <TextInput
+                    {...props}
+                    dir="ltr"
+                    disabled={!brandingEnabled}
+                    value={draft.secondaryColor}
+                    placeholder="#f59e0b"
+                    onChange={(e) => setDraft((d) => ({ ...d, secondaryColor: e.target.value }))}
+                  />
+                </div>
+              )}
             </FormField>
             <FormField id="supportContact" label="بيانات تواصل الدعم" error={errors.supportContact} optional>
               {(props) => <TextInput {...props} disabled={!brandingEnabled} value={draft.supportContact} placeholder="بريد أو رقم تواصل" onChange={(e) => setDraft((d) => ({ ...d, supportContact: e.target.value }))} />}
@@ -331,8 +365,19 @@ export default function SettingsPage() {
           {!commercialQuery.isLoading && !dataExportEnabled ? <span className="text-xs font-bold text-amber-800">التصدير يحتاج ميزة Data Export في الخطة.</span> : null}
         </div>
         <div className="mt-6 border-t border-slate-100 pt-5">
-          <label htmlFor="tenant-import" className="block text-sm font-medium text-slate-700">نسخة محتوى مساحة العمل بصيغة ZIP</label>
-          <input id="tenant-import" type="file" accept=".zip,application/zip" className="mt-2 block w-full rounded-lg border border-slate-300 bg-white p-2 text-sm file:ml-3 file:rounded-md file:border-0 file:bg-slate-100 file:px-3 file:py-2" onChange={(event) => { const file = event.target.files?.[0] ?? null; setTransferFile(file); setValidatedFileKey(null); setTransferMessage(null); }} />
+          <label htmlFor="tenant-import" className="block text-sm font-bold text-slate-700">نسخة محتوى مساحة العمل بصيغة ZIP</label>
+          <input
+            id="tenant-import"
+            type="file"
+            accept=".zip,application/zip"
+            className="mt-2 block w-full cursor-pointer rounded-xl border border-slate-300 bg-slate-50/50 p-2 text-sm file:ml-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-violet-100 file:px-4 file:py-2 file:text-xs file:font-black file:text-violet-800 hover:file:bg-violet-200"
+            onChange={(event) => {
+              const file = event.target.files?.[0] ?? null;
+              setTransferFile(file);
+              setValidatedFileKey(null);
+              setTransferMessage(null);
+            }}
+          />
           <p className="mt-2 text-xs text-slate-500">الحد الأقصى 250 م.ب. افحص الملف أولًا؛ الاستيراد يضيف نسخًا جديدة ولا يستبدل المحتوى الحالي.</p>
           <div className="mt-4 flex flex-wrap gap-3">
             <Button variant="secondary" disabled={!transferFile || isTransferring} onClick={() => void importContent(true)}>فحص الملف</Button>

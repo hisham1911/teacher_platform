@@ -2,7 +2,7 @@ export default function TermsPage() {
   return (
     <article className="mx-auto max-w-3xl space-y-7 leading-8 text-slate-700">
       <header>
-        <p className="text-sm font-semibold text-sky-700">آخر تحديث: 9 أغسطس 2026</p>
+        <p className="text-sm font-bold text-violet-700">آخر تحديث: 9 أغسطس 2026</p>
         <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-950">شروط الاستخدام</h1>
         <p className="mt-3">
           باستخدام منصة المعلم، يوافق صاحب الحساب على استخدام الخدمة لإدارة محتوى تعليمي مشروع

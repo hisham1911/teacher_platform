@@ -56,7 +56,7 @@ export default function ActivityNewPage() {
   const selectedAlternative = alternativeModes.find((definition) => definition.mode === mode);
 
   return (
-    <div className="mx-auto max-w-5xl pb-8">
+    <div className="mx-auto max-w-5xl pb-36 lg:pb-20">
       <div className="flex items-center justify-between gap-3">
         <Link to="/dashboard" className="inline-flex min-h-11 items-center rounded-xl px-2 text-sm font-semibold text-slate-500 hover:bg-white hover:text-violet-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-700">→ الرئيسية</Link>
         <p className="text-xs font-semibold text-slate-400">إنشاء نشاط</p>

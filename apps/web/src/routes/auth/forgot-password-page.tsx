@@ -32,14 +32,20 @@ export default function ForgotPasswordPage() {
 
   return (
     <section className="mx-auto max-w-md rounded-2xl bg-white p-8 shadow-sm">
-      <h1 className="mb-2 text-xl font-bold text-slate-900">استعادة كلمة المرور</h1>
+      <h1 className="mb-2 text-2xl font-black text-slate-900">استعادة كلمة المرور</h1>
+      <p className="mb-6 text-sm leading-6 text-slate-500">
+        أدخل بريدك الإلكتروني المسجل وسنرسل لك رابطاً لإعادة تعيين كلمة المرور بأمان.
+      </p>
 
       {submitted ? (
-        <div role="status" className="rounded-lg bg-sky-50 p-4 text-sm leading-6 text-sky-900">
-          إذا كان البريد مسجلًا لدينا، ستصلك رسالة تحتوي رابط إعادة التعيين خلال دقائق.
-          <div className="mt-4">
-            <Link to="/auth/login" className="font-medium text-sky-700 underline underline-offset-4">
-              العودة إلى تسجيل الدخول
+        <div role="status" className="rounded-xl bg-emerald-50 p-5 text-sm leading-7 text-emerald-900 border border-emerald-100">
+          <p className="font-bold">تم إرسال الطلب بنجاح ✓</p>
+          <p className="mt-1">
+            إذا كان البريد مسجلًا لدينا، ستصلك رسالة تحتوي رابط إعادة التعيين خلال دقائق.
+          </p>
+          <div className="mt-5">
+            <Link to="/auth/login" className="inline-flex items-center gap-1 font-bold text-violet-700 hover:text-violet-800">
+              ← العودة إلى تسجيل الدخول
             </Link>
           </div>
         </div>
@@ -52,6 +58,7 @@ export default function ForgotPasswordPage() {
                 type="email"
                 autoComplete="email"
                 dir="ltr"
+                placeholder="teacher@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
@@ -61,6 +68,12 @@ export default function ForgotPasswordPage() {
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting ? <ButtonSpinner /> : 'إرسال رابط الاستعادة'}
           </Button>
+
+          <div className="mt-3 text-center">
+            <Link to="/auth/login" className="text-sm font-bold text-violet-700 hover:text-violet-800">
+              ← تذكرت كلمة المرور؟ تسجيل الدخول
+            </Link>
+          </div>
         </form>
       )}
     </section>

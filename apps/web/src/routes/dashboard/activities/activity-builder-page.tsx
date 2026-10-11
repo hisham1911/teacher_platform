@@ -166,7 +166,7 @@ export default function ActivityBuilderPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-5 pb-44 lg:space-y-6 lg:pb-28">
+    <div className="mx-auto max-w-6xl space-y-5 pb-56 lg:space-y-6 lg:pb-36">
       <div className="flex items-center justify-between gap-3">
         <Link to={editOnly ? `/dashboard/activities/${activityQuizId}/manage` : '/dashboard'} className="inline-flex min-h-11 items-center rounded-xl px-2 text-sm font-bold text-slate-500 hover:bg-white hover:text-violet-800">→ {editOnly ? 'النشاط' : 'الرئيسية'}</Link>
         <Link to={`/dashboard/quizzes/${activityQuizId}/edit`} className="inline-flex min-h-11 items-center rounded-xl px-3 text-xs font-black text-slate-500 hover:bg-slate-100 hover:text-slate-800">إعدادات متقدمة</Link>

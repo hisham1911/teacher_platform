@@ -89,6 +89,7 @@ export default function SignupPage() {
               {...props}
               type="text"
               autoComplete="name"
+              placeholder="مثال: أ. أحمد علي"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
             />
@@ -102,6 +103,7 @@ export default function SignupPage() {
               type="email"
               autoComplete="email"
               dir="ltr"
+              placeholder="teacher@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
@@ -114,6 +116,7 @@ export default function SignupPage() {
               {...props}
               type="password"
               autoComplete="new-password"
+              placeholder="8 أحرف على الأقل"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
@@ -126,6 +129,7 @@ export default function SignupPage() {
               {...props}
               type="password"
               autoComplete="new-password"
+              placeholder="أعد إدخال كلمة المرور"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
             />

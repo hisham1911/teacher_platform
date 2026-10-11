@@ -34,7 +34,33 @@ export default function ActivityReadyPage() {
   });
 
   if (!tenantId) return null;
-  if (!sessionId) return <p role="alert" className="teacher-surface p-5 text-sm font-bold text-rose-800">رابط النشاط غير مكتمل.</p>;
+  if (!sessionId) {
+    return (
+      <div className="teacher-surface mx-auto max-w-xl p-8 text-center" dir="rtl">
+        <span aria-hidden="true" className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-100 text-3xl">
+          ⚠️
+        </span>
+        <h2 className="mt-4 text-xl font-black text-slate-950">رابط النشاط غير مكتمل</h2>
+        <p className="mt-2 text-sm leading-6 text-slate-600">
+          لم يتم تحديد معرّف الجلسة. يمكنك العودة لصفحة إدارة النشاط لتشغيله أو إنشاء جلسة جديدة.
+        </p>
+        <div className="mt-6 flex flex-wrap justify-center gap-3">
+          <Link
+            to={`/dashboard/activities/${quizId}/manage`}
+            className="inline-flex min-h-11 items-center justify-center rounded-xl bg-violet-700 px-5 text-sm font-black text-white hover:bg-violet-800"
+          >
+            إدارة هذا النشاط
+          </Link>
+          <Link
+            to="/dashboard"
+            className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-5 text-sm font-bold text-slate-700 hover:bg-slate-50"
+          >
+            الرئيسية
+          </Link>
+        </div>
+      </div>
+    );
+  }
   if (sessionQuery.isLoading) return <div role="status" className="teacher-surface mx-auto max-w-3xl animate-pulse p-8 text-sm text-slate-600">جارٍ تجهيز النشاط…</div>;
   if (sessionQuery.isError || !sessionQuery.data) return <div className="teacher-surface mx-auto max-w-3xl p-6"><p role="alert" className="font-bold text-rose-800">تعذر تحميل النشاط.</p><button type="button" onClick={() => void sessionQuery.refetch()} className="mt-4 min-h-11 rounded-xl border border-slate-300 px-4 text-sm font-bold">إعادة المحاولة</button></div>;
 
