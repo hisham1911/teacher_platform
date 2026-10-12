@@ -86,7 +86,7 @@ export default function ReadingPassagePage() {
                 <button
                   type="button"
                   onClick={toggleSpeech}
-                  className={`inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-xs font-black shadow-xs transition-all active:scale-95 ${
+                  className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl px-5 py-2.5 text-xs font-black shadow-xs transition-all active:scale-95 ${
                     isPlayingAudio
                       ? 'bg-amber-100 text-amber-900 ring-2 ring-amber-400 animate-pulse'
                       : 'bg-sky-50 text-sky-800 border border-sky-200 hover:bg-sky-100'

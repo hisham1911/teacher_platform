@@ -134,7 +134,7 @@ export default function MillionChallengePage() {
 
   return (
     <div className="challenge-shell flex min-h-dvh flex-col" dir="rtl">
-      <PortalNav />
+      <PortalNav variant="dark" />
 
       <main className="relative z-10 flex flex-1 flex-col items-center justify-center px-4 py-8 sm:py-12">
         {/* Breadcrumb on Mobile/Desktop */}
@@ -361,7 +361,7 @@ export default function MillionChallengePage() {
         )}
       </main>
 
-      <PortalFooter />
+      <PortalFooter variant="dark" />
     </div>
   );
 }

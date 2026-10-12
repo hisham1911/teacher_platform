@@ -49,7 +49,7 @@ export default function GrammarTopicPage() {
         {/* Main Content Card */}
         <section className="animate-page-enter">
           <div className="rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white/95 p-5 shadow-sm backdrop-blur-xl sm:p-8">
-            <span className="text-xs font-black tracking-widest text-violet-700">
+            <span className="text-xs font-black tracking-widest text-violet-700" dir="ltr">
               {topic.titleEn.toUpperCase()}
             </span>
             <h1 className="mt-1 text-2xl sm:text-3xl font-black text-slate-950">

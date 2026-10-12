@@ -105,7 +105,7 @@ export function InlineQuiz({ questions }: InlineQuizProps) {
             <RotateCcw className="h-8 w-8 sm:h-10 sm:w-10 text-amber-600" />
           )}
         </span>
-        <h3 className="mt-4 text-2xl sm:text-3xl font-black">
+        <h3 className="mt-4 text-2xl sm:text-3xl font-black tabular-nums" dir="ltr">
           {score} / {questions.length}
         </h3>
         <p className="mt-1 text-base sm:text-lg font-bold text-slate-700">

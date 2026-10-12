@@ -33,17 +33,9 @@ import {
 } from '../../data/api-client/guestbook-client';
 import { grammarTopics } from '../../data/content/grammar';
 
-const TOPIC_LABELS: Record<string, string> = {
-  'present-simple': 'المضارع البسيط',
-  'present-progressive': 'المضارع المستمر',
-  'relative-clauses': 'ضمائر الوصل',
-  'simple-future': 'المستقبل البسيط',
-  'future-perfect': 'المستقبل التام',
-  'past-simple': 'الماضي البسيط',
-  'past-progressive': 'الماضي المستمر',
-  'present-perfect': 'المضارع التام',
-  'future-progressive': 'المستقبل المستمر',
-};
+const TOPIC_LABELS: Record<string, string> = Object.fromEntries(
+  grammarTopics.map((t) => [t.slug, t.titleAr]),
+);
 
 function formatTimeAgo(dateString: string): string {
   try {
@@ -287,7 +279,7 @@ export default function TeacherAdminPage() {
                   className="inline-flex items-center gap-1 text-xs font-bold text-slate-500 hover:text-violet-700"
                 >
                   <ChevronRight className="h-3.5 w-3.5" />
-                  <span>العودة إلى بوابة English Spark</span>
+                  <span>العودة إلى بوابة <span dir="ltr">English Spark</span></span>
                 </Link>
               </div>
             </form>

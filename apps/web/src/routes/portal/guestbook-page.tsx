@@ -200,7 +200,7 @@ export default function GuestbookPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               <div>
                 <label htmlFor="guestbook-name" className="block text-xs font-bold text-slate-700 mb-1">
-                  اسم الكريم <span className="text-rose-500">*</span>
+                  الاسم الكريم <span className="text-rose-500">*</span>
                 </label>
                 <input
                   id="guestbook-name"
@@ -249,7 +249,7 @@ export default function GuestbookPage() {
               />
               <div className="mt-1 flex items-center justify-between text-[11px] text-slate-400 font-medium">
                 <span>يُمنع نشر أرقام الهواتف أو الروابط لحماية الخصوصية</span>
-                <span>{message.length} / 350</span>
+                <span dir="ltr" className="tabular-nums">{message.length} / 350</span>
               </div>
             </div>
 

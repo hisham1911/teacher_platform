@@ -249,7 +249,7 @@ export function LessonDiscussion({ topicSlug, topicTitle }: LessonDiscussionProp
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
           <div>
             <label htmlFor={`name-input-${topicSlug}`} className="block text-xs font-bold text-slate-700 mb-1">
-              اسم الكريم:
+              الاسم الكريم:
             </label>
             <input
               id={`name-input-${topicSlug}`}
@@ -298,7 +298,7 @@ export function LessonDiscussion({ topicSlug, topicTitle }: LessonDiscussionProp
           />
           <div className="mt-1 flex items-center justify-between text-[11px] text-slate-400">
             <span>الرجاء عدم إدراج أرقام هواتف أو روابط خارجية</span>
-            <span>{message.length} / 350</span>
+            <span dir="ltr" className="tabular-nums">{message.length} / 350</span>
           </div>
         </div>
 

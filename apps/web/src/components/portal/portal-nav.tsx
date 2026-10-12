@@ -83,13 +83,18 @@ const navLinks: NavItem[] = [
   },
 ];
 
-export function PortalNav() {
+export function PortalNav({ variant = 'light' }: { variant?: 'light' | 'dark' } = {}) {
   const { pathname } = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const isDark = variant === 'dark';
 
   return (
     <nav
-      className="portal-nav sticky top-0 z-40 border-b border-violet-100/70 bg-white/90 backdrop-blur-xl shadow-xs"
+      className={`portal-nav sticky top-0 z-40 border-b backdrop-blur-xl transition-colors duration-200 ${
+        isDark
+          ? 'border-white/10 bg-slate-950/90 text-white shadow-md'
+          : 'border-violet-100/70 bg-white/90 text-slate-900 shadow-xs'
+      }`}
       dir="rtl"
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-2.5 sm:px-6">
@@ -105,10 +110,18 @@ export function PortalNav() {
             <Sparkles className="h-5 w-5" />
           </span>
           <div className="flex flex-col">
-            <span className="text-sm font-black tracking-wide text-slate-950 sm:text-base">
+            <span
+              className={`text-sm font-black tracking-wide sm:text-base ${
+                isDark ? 'text-white' : 'text-slate-950'
+              }`}
+            >
               English Spark
             </span>
-            <span className="hidden text-[10px] font-bold text-violet-600 sm:block">
+            <span
+              className={`hidden text-[10px] font-bold sm:block ${
+                isDark ? 'text-amber-400' : 'text-violet-600'
+              }`}
+            >
               نادي اللغة الإنجليزية
             </span>
           </div>
@@ -128,18 +141,32 @@ export function PortalNav() {
                 to={link.path}
                 className={`relative flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-bold transition-all ${
                   isActive
-                    ? 'bg-violet-50 text-violet-900 shadow-xs'
+                    ? isDark
+                      ? 'bg-white/10 text-amber-300 shadow-xs border border-amber-400/30'
+                      : 'bg-violet-50 text-violet-900 shadow-xs'
+                    : isDark
+                    ? 'text-slate-300 hover:bg-white/10 hover:text-white'
                     : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                 }`}
               >
                 <Icon
                   className={`h-4 w-4 transition-colors ${
-                    isActive ? 'text-violet-700' : 'text-slate-400'
+                    isActive
+                      ? isDark
+                        ? 'text-amber-400'
+                        : 'text-violet-700'
+                      : isDark
+                      ? 'text-slate-400'
+                      : 'text-slate-400'
                   }`}
                 />
                 <span>{link.label}</span>
                 {isActive && (
-                  <span className="absolute inset-x-2 -bottom-2.5 h-0.5 rounded-full bg-violet-600" />
+                  <span
+                    className={`absolute inset-x-2 -bottom-2.5 h-0.5 rounded-full ${
+                      isDark ? 'bg-amber-400' : 'bg-violet-600'
+                    }`}
+                  />
                 )}
               </Link>
             );
@@ -149,9 +176,21 @@ export function PortalNav() {
         {/* Right Actions & Badge */}
         <div className="flex items-center gap-2.5">
           {/* Official badge (Desktop) */}
-          <span className="hidden shrink-0 rounded-xl border border-violet-100 bg-violet-50/80 px-3.5 py-1.5 text-xs font-black text-violet-800 md:inline-block">
+          <span
+            className={`hidden shrink-0 rounded-xl border px-3.5 py-1.5 text-xs font-black md:inline-block ${
+              isDark
+                ? 'border-amber-400/30 bg-amber-400/10 text-amber-300'
+                : 'border-violet-100 bg-violet-50/80 text-violet-800'
+            }`}
+          >
             إنتاج معرفي
-            <span className="mr-1.5 font-bold text-violet-500">| وزارة التعليم</span>
+            <span
+              className={`mr-1.5 font-bold ${
+                isDark ? 'text-amber-400/80' : 'text-violet-500'
+              }`}
+            >
+              | وزارة التعليم
+            </span>
           </span>
 
           {/* Mobile Menu Toggle Button */}
@@ -160,24 +199,36 @@ export function PortalNav() {
             onClick={() => setMobileMenuOpen((open) => !open)}
             aria-expanded={mobileMenuOpen}
             aria-label={mobileMenuOpen ? 'إغلاق القائمة' : 'فتح القائمة'}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-xs transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-200 lg:hidden"
+            className={`inline-flex h-10 w-10 items-center justify-center rounded-xl border shadow-xs transition focus-visible:outline-none focus-visible:ring-4 lg:hidden ${
+              isDark
+                ? 'border-white/15 bg-white/10 text-white hover:bg-white/20 focus-visible:ring-amber-300'
+                : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 focus-visible:ring-violet-200'
+            }`}
           >
             {mobileMenuOpen ? (
-              <X className="h-5 w-5 text-slate-800" />
+              <X className={`h-5 w-5 ${isDark ? 'text-white' : 'text-slate-800'}`} />
             ) : (
-              <Menu className="h-5 w-5 text-slate-700" />
+              <Menu className={`h-5 w-5 ${isDark ? 'text-white' : 'text-slate-700'}`} />
             )}
           </button>
         </div>
       </div>
 
       {/* Mobile Horizontal Pill Scroll (Fast, elegant single-tap access) */}
-      <div className="lg:hidden border-t border-slate-100/80 bg-slate-50/80 px-2 py-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden flex items-center gap-1.5">
+      <div
+        className={`lg:hidden border-t px-2 py-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden flex items-center gap-1.5 transition-colors ${
+          isDark ? 'border-white/10 bg-slate-900/95' : 'border-slate-100/80 bg-slate-50/80'
+        }`}
+      >
         <Link
           to="/"
           className={`shrink-0 flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
             pathname === '/'
-              ? 'bg-violet-700 text-white shadow-xs'
+              ? isDark
+                ? 'bg-amber-400 text-slate-950 shadow-xs'
+                : 'bg-violet-700 text-white shadow-xs'
+              : isDark
+              ? 'bg-white/10 text-slate-200 border border-white/10 hover:bg-white/15'
               : 'bg-white text-slate-700 border border-slate-200/70 hover:bg-slate-100'
           }`}
         >
@@ -196,13 +247,17 @@ export function PortalNav() {
               to={link.path}
               className={`shrink-0 flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
                 isActive
-                  ? 'bg-violet-700 text-white shadow-xs'
+                  ? isDark
+                    ? 'bg-amber-400 text-slate-950 shadow-xs'
+                    : 'bg-violet-700 text-white shadow-xs'
+                  : isDark
+                  ? 'bg-white/10 text-slate-200 border border-white/10 hover:bg-white/15'
                   : 'bg-white text-slate-700 border border-slate-200/70 hover:bg-slate-100'
               }`}
             >
               <Icon
                 className={`h-3.5 w-3.5 ${
-                  isActive ? 'text-white' : 'text-slate-400'
+                  isActive ? (isDark ? 'text-slate-950' : 'text-white') : isDark ? 'text-slate-400' : 'text-slate-400'
                 }`}
               />
               <span>{link.label}</span>
@@ -213,15 +268,29 @@ export function PortalNav() {
 
       {/* Mobile Drawer (Polished bottom sheet style) */}
       {mobileMenuOpen && (
-        <div className="lg:hidden border-t border-violet-100 bg-white/98 p-4 shadow-2xl backdrop-blur-2xl animate-page-enter">
+        <div
+          className={`lg:hidden border-t p-4 shadow-2xl backdrop-blur-2xl animate-page-enter transition-colors ${
+            isDark ? 'border-white/10 bg-slate-950/98 text-white' : 'border-violet-100 bg-white/98 text-slate-900'
+          }`}
+        >
           <div className="space-y-3.5">
             {/* Initiative Header Card */}
-            <div className="rounded-2xl border border-violet-100 bg-gradient-to-br from-violet-50/90 to-indigo-50/60 p-3.5 text-center">
-              <span className="inline-flex items-center gap-1 rounded-full bg-violet-100/90 px-3 py-1 text-[11px] font-black text-violet-800">
-                <Sparkles className="h-3 w-3 text-violet-600" />
+            <div
+              className={`rounded-2xl border p-3.5 text-center ${
+                isDark
+                  ? 'border-white/10 bg-white/5'
+                  : 'border-violet-100 bg-gradient-to-br from-violet-50/90 to-indigo-50/60'
+              }`}
+            >
+              <span
+                className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-black ${
+                  isDark ? 'bg-amber-400/20 text-amber-300' : 'bg-violet-100/90 text-violet-800'
+                }`}
+              >
+                <Sparkles className="h-3 w-3" />
                 مبادرة إنتاج معرفي • وزارة التعليم
               </span>
-              <p className="mt-1.5 text-xs font-bold text-slate-700">
+              <p className={`mt-1.5 text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                 مدرسة متوسطة وثانوية الجرادية — المعلمة مريم الصميلي
               </p>
             </div>
@@ -233,15 +302,23 @@ export function PortalNav() {
                 onClick={() => setMobileMenuOpen(false)}
                 className={`flex items-center gap-2.5 rounded-2xl p-2.5 text-xs font-bold transition-all border ${
                   pathname === '/'
-                    ? 'border-violet-600 bg-violet-50/80 text-violet-900 shadow-xs'
+                    ? isDark
+                      ? 'border-amber-400/50 bg-amber-400/10 text-amber-300 shadow-xs'
+                      : 'border-violet-600 bg-violet-50/80 text-violet-900 shadow-xs'
+                    : isDark
+                    ? 'border-white/10 bg-white/5 text-slate-300 hover:bg-white/10'
                     : 'border-slate-100 bg-slate-50/60 text-slate-700 hover:bg-violet-50/50 hover:border-violet-200'
                 }`}
               >
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-violet-600 text-white shadow-xs">
+                <div
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-white shadow-xs ${
+                    isDark ? 'bg-amber-500' : 'bg-violet-600'
+                  }`}
+                >
                   <Home className="h-4 w-4" />
                 </div>
                 <div className="flex flex-col text-right">
-                  <span className="font-black text-slate-900">الرئيسية</span>
+                  <span className={`font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>الرئيسية</span>
                   <span className="text-[10px] text-slate-400 font-semibold">Home</span>
                 </div>
               </Link>
@@ -259,7 +336,11 @@ export function PortalNav() {
                     onClick={() => setMobileMenuOpen(false)}
                     className={`flex items-center gap-2.5 rounded-2xl p-2.5 text-xs font-bold transition-all border ${
                       isActive
-                        ? 'border-violet-600 bg-violet-50/80 text-violet-900 shadow-xs'
+                        ? isDark
+                          ? 'border-amber-400/50 bg-amber-400/10 text-amber-300 shadow-xs'
+                          : 'border-violet-600 bg-violet-50/80 text-violet-900 shadow-xs'
+                        : isDark
+                        ? 'border-white/10 bg-white/5 text-slate-300 hover:bg-white/10'
                         : 'border-slate-100 bg-slate-50/60 text-slate-700 hover:bg-violet-50/50 hover:border-violet-200'
                     }`}
                   >
@@ -269,7 +350,7 @@ export function PortalNav() {
                       <Icon className="h-4 w-4" />
                     </div>
                     <div className="flex flex-col text-right">
-                      <span className="font-black text-slate-900">{link.label}</span>
+                      <span className={`font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{link.label}</span>
                       <span className="text-[10px] text-slate-400 font-semibold">{link.labelEn}</span>
                     </div>
                   </Link>
@@ -278,20 +359,24 @@ export function PortalNav() {
             </div>
 
             {/* Quick footer info */}
-            <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+            <div
+              className={`pt-2 border-t flex items-center justify-between text-[11px] ${
+                isDark ? 'border-white/10 text-slate-400' : 'border-slate-100 text-slate-500'
+              }`}
+            >
               <span className="font-semibold">English Spark • مساحة التعلم</span>
               <div className="flex gap-4 font-bold">
                 <Link
                   to="/privacy"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="hover:text-violet-700 transition-colors"
+                  className={`transition-colors ${isDark ? 'hover:text-amber-400' : 'hover:text-violet-700'}`}
                 >
                   الخصوصية
                 </Link>
                 <Link
                   to="/terms"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="hover:text-violet-700 transition-colors"
+                  className={`transition-colors ${isDark ? 'hover:text-amber-400' : 'hover:text-violet-700'}`}
                 >
                   الشروط
                 </Link>
@@ -331,10 +416,16 @@ export function PortalShell({
   );
 }
 
-export function PortalFooter() {
+export function PortalFooter({ variant = 'light' }: { variant?: 'light' | 'dark' } = {}) {
+  const isDark = variant === 'dark';
+
   return (
     <footer
-      className="relative z-10 border-t border-violet-100/70 bg-white/95 py-10 backdrop-blur-md"
+      className={`relative z-10 border-t py-10 backdrop-blur-md transition-colors ${
+        isDark
+          ? 'border-white/10 bg-slate-950/95 text-white'
+          : 'border-violet-100/70 bg-white/95 text-slate-900'
+      }`}
       dir="rtl"
     >
       <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-8 px-4 sm:px-6">
@@ -347,54 +438,58 @@ export function PortalFooter() {
             <Sparkles className="h-6 w-6" />
           </Link>
           <div>
-            <p className="text-base font-black text-slate-900">
+            <p className={`text-base font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
               English Spark — نادي اللغة الإنجليزية
             </p>
-            <p className="mt-1 text-xs font-semibold text-slate-500">
+            <p className={`mt-1 text-xs font-semibold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
               مبادرة إنتاج معرفي • وزارة التعليم — مدرسة متوسطة وثانوية الجرادية (إشراف المعلمة مريم الصميلي)
             </p>
           </div>
         </div>
 
         {/* Structured Links on Mobile & Desktop */}
-        <div className="w-full border-y border-slate-100 py-6">
-          <div className="mx-auto max-w-3xl flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-xs font-bold text-slate-600">
-            <Link to="/" className="hover:text-violet-700 transition-colors">
+        <div className={`w-full border-y py-6 ${isDark ? 'border-white/10' : 'border-slate-100'}`}>
+          <div
+            className={`mx-auto max-w-3xl flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-xs font-bold ${
+              isDark ? 'text-slate-300' : 'text-slate-600'
+            }`}
+          >
+            <Link to="/" className={isDark ? 'hover:text-amber-400 transition-colors' : 'hover:text-violet-700 transition-colors'}>
               الرئيسية
             </Link>
-            <Link to="/grammar" className="hover:text-violet-700 transition-colors">
+            <Link to="/grammar" className={isDark ? 'hover:text-amber-400 transition-colors' : 'hover:text-violet-700 transition-colors'}>
               القواعد
             </Link>
-            <Link to="/reading" className="hover:text-violet-700 transition-colors">
+            <Link to="/reading" className={isDark ? 'hover:text-amber-400 transition-colors' : 'hover:text-violet-700 transition-colors'}>
               القراءة
             </Link>
-            <Link to="/listening" className="hover:text-violet-700 transition-colors">
+            <Link to="/listening" className={isDark ? 'hover:text-amber-400 transition-colors' : 'hover:text-violet-700 transition-colors'}>
               الاستماع
             </Link>
-            <Link to="/writing" className="hover:text-violet-700 transition-colors">
+            <Link to="/writing" className={isDark ? 'hover:text-amber-400 transition-colors' : 'hover:text-violet-700 transition-colors'}>
               الكتابة
             </Link>
-            <Link to="/speaking" className="hover:text-violet-700 transition-colors">
+            <Link to="/speaking" className={isDark ? 'hover:text-amber-400 transition-colors' : 'hover:text-violet-700 transition-colors'}>
               المحادثة
             </Link>
-            <Link to="/competitions" className="hover:text-violet-700 transition-colors">
+            <Link to="/competitions" className={isDark ? 'hover:text-amber-400 transition-colors' : 'hover:text-violet-700 transition-colors'}>
               المسابقات
             </Link>
-            <Link to="/guestbook" className="hover:text-violet-700 transition-colors">
+            <Link to="/guestbook" className={isDark ? 'hover:text-amber-400 transition-colors' : 'hover:text-violet-700 transition-colors'}>
               سجل الزوار
             </Link>
-            <span className="text-slate-300 hidden sm:inline" aria-hidden="true">
+            <span className={isDark ? 'text-white/20 hidden sm:inline' : 'text-slate-300 hidden sm:inline'} aria-hidden="true">
               •
             </span>
             <Link
               to="/privacy"
-              className="text-slate-500 hover:text-violet-700 transition-colors"
+              className={isDark ? 'text-slate-400 hover:text-amber-400 transition-colors' : 'text-slate-500 hover:text-violet-700 transition-colors'}
             >
               الخصوصية
             </Link>
             <Link
               to="/terms"
-              className="text-slate-500 hover:text-violet-700 transition-colors"
+              className={isDark ? 'text-slate-400 hover:text-amber-400 transition-colors' : 'text-slate-500 hover:text-violet-700 transition-colors'}
             >
               الشروط
             </Link>
@@ -402,7 +497,7 @@ export function PortalFooter() {
         </div>
 
         {/* Copyright notice */}
-        <p className="text-center text-[11px] font-semibold text-slate-400">
+        <p className={`text-center text-[11px] font-semibold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
           English Spark © 2026 — منصة التعلم التفاعلية • جميع الحقوق محفوظة
         </p>
       </div>

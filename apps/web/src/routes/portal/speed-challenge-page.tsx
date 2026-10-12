@@ -201,9 +201,9 @@ export default function SpeedChallengePage() {
             <span className="mx-auto flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-2xl sm:rounded-3xl bg-gradient-to-br from-rose-500 via-pink-600 to-amber-500 text-white shadow-lg shadow-rose-500/20">
               <Timer className="h-8 w-8 sm:h-10 sm:w-10" />
             </span>
-            <span className="mt-4 inline-flex items-center gap-1 text-xs font-black tracking-widest text-rose-600">
-              <Sparkles className="h-3 w-3" />
-              60-SECOND SPEED CHALLENGE
+            <span className="mt-4 inline-flex items-center gap-1.5 text-xs font-black tracking-widest text-rose-600" dir="ltr">
+              <Sparkles className="h-3.5 w-3.5" />
+              <span>60-SECOND SPEED CHALLENGE</span>
             </span>
             <h1 className="mt-1 text-2xl sm:text-4xl font-black text-slate-950">
               تحدي السرعة 60 ثانية
@@ -232,7 +232,7 @@ export default function SpeedChallengePage() {
 
             <div className="mx-auto mt-6 max-w-sm">
               <label htmlFor="speed-player-name" className="mb-1.5 block text-right text-xs font-bold text-slate-700">
-                اسم المتسابق:
+                اسم المشاركـ/ـة:
               </label>
               <input
                 id="speed-player-name"
@@ -246,7 +246,7 @@ export default function SpeedChallengePage() {
                 type="button"
                 onClick={handleStart}
                 disabled={playerName.trim().length < 2}
-                className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-rose-500 to-amber-500 py-3.5 text-xs sm:text-sm font-black text-white shadow-md shadow-rose-500/25 transition hover:brightness-110 active:scale-95 disabled:opacity-40"
+                className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-rose-500 to-amber-500 py-3.5 text-xs sm:text-sm font-black text-white shadow-md shadow-rose-500/25 transition hover:brightness-110 active:scale-95 disabled:from-slate-200 disabled:to-slate-300 disabled:text-slate-400 disabled:shadow-none disabled:cursor-not-allowed"
               >
                 <span>انطلق في التحدي!</span>
                 <ArrowLeft className="h-4 w-4" />
@@ -341,13 +341,13 @@ export default function SpeedChallengePage() {
             <span className="mx-auto flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-2xl sm:rounded-3xl bg-gradient-to-br from-amber-400 via-rose-500 to-purple-600 text-white shadow-lg shadow-amber-500/20">
               <Trophy className="h-8 w-8 sm:h-10 sm:w-10" />
             </span>
-            <span className="mt-4 inline-block text-xs font-black tracking-wider text-rose-600">
+            <span className="mt-4 inline-block text-xs font-black tracking-wider text-rose-600" dir="ltr">
               TIME IS UP!
             </span>
             <h1 className="mt-1 text-2xl sm:text-4xl font-black text-slate-950">انتهت الـ 60 ثانية!</h1>
 
             <div className="my-5 rounded-2xl border border-amber-300 bg-amber-50/90 p-4">
-              <span className="text-xs font-bold text-amber-800">الرتبة المحققة لـ {playerName}:</span>
+              <span className="text-xs font-bold text-amber-800">الرتبة المحققة للمشاركـ/ـة {playerName}:</span>
               <h2 className="mt-1 text-xl sm:text-2xl font-black text-amber-900">{rankTitle}</h2>
               <p className="mt-1 text-xs text-amber-700">{rankDesc}</p>
             </div>

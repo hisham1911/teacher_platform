@@ -44,13 +44,17 @@ function isStandaloneExperience(pathname: string) {
     || pathname === '/join'
     || pathname === '/speaking'
     || pathname === '/challenge'
+    || pathname === '/placement'
     || pathname === '/guestbook'
     || pathname === '/teacher-admin'
+    || pathname === '/privacy'
+    || pathname === '/terms'
     || pathname.startsWith('/grammar')
     || pathname.startsWith('/reading')
     || pathname.startsWith('/listening')
     || pathname.startsWith('/writing')
     || pathname.startsWith('/competitions')
+    || pathname.startsWith('/placement')
     || pathname.startsWith('/teacher')
     || pathname.startsWith('/play/')
     || pathname.startsWith('/student')

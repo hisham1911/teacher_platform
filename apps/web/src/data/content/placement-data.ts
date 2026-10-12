@@ -60,7 +60,7 @@ export const PLACEMENT_LEVELS_META: PlacementLevelInfo[] = [
   {
     id: 'level-1',
     levelNumber: 1,
-    titleAr: 'المستوى الأول — الأساسي (Level 1)',
+    titleAr: 'المستوى الأول — الأساسي',
     titleEn: 'Basic English & Daily Practice',
     stageAr: 'المرحلة التأسيسية / أول متوسط',
     targetAudience: 'المبتدئات وطالبات الصف الأول متوسط لتثبيت الأساسيات',
@@ -82,7 +82,7 @@ export const PLACEMENT_LEVELS_META: PlacementLevelInfo[] = [
   {
     id: 'level-2',
     levelNumber: 2,
-    titleAr: 'المستوى الثاني — المتوسط (Level 2)',
+    titleAr: 'المستوى الثاني — المتوسط',
     titleEn: 'Intermediate & Saudi Knowledge',
     stageAr: 'المرحلة المتوسطة (ثاني وثالث متوسط)',
     targetAudience: 'طالبات المرحلة المتوسطة لتعزيز القواعد والمعرفة العامة',
@@ -104,7 +104,7 @@ export const PLACEMENT_LEVELS_META: PlacementLevelInfo[] = [
   {
     id: 'level-3',
     levelNumber: 3,
-    titleAr: 'المستوى الثالث — الثانوي ومهارات الحياة (Level 3)',
+    titleAr: 'المستوى الثالث — الثانوي ومهارات الحياة',
     titleEn: 'Secondary & Real Life Skills',
     stageAr: 'المرحلة الثانوية وما فوق',
     targetAudience: 'طالبات المرحلة الثانوية والمقبلات على الاختبارات المعيارية',

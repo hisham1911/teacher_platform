@@ -111,7 +111,7 @@ export default function SpeakingIndexPage() {
 
               <div className="relative z-10 mt-6 border-t border-slate-200/60 pt-4">
                 <span className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 px-4 py-3 text-xs sm:text-sm font-black text-white shadow-md shadow-amber-500/20 transition-all group-hover:from-amber-600 group-hover:to-orange-600">
-                  <span>ابدأ التدريب في نافذة جديدة</span>
+                  <span>بدء التدريب في نافذة جديدة</span>
                   <ExternalLink className="h-3.5 w-3.5" />
                 </span>
               </div>

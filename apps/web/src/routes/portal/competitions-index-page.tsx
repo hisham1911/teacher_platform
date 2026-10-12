@@ -6,7 +6,7 @@ import {
   Timer,
   CheckCircle2,
   Clock,
-  HelpCircle,
+  BookOpen,
   ArrowLeft,
 } from 'lucide-react';
 import { PortalNav, PortalFooter } from '../../components/portal/portal-nav';
@@ -80,7 +80,7 @@ export default function CompetitionsIndexPage() {
         <section className="animate-page-enter mx-auto max-w-4xl px-4 pt-10 pb-12 text-center sm:pt-16 sm:pb-14">
           <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-amber-200/90 bg-amber-50/90 px-4 py-1.5 text-xs font-black text-amber-900 shadow-xs">
             <Trophy className="h-3.5 w-3.5 text-amber-600" />
-            <span>بوابة المسابقات التفاعلية • English Competitions</span>
+            <span>بوابة المسابقات التفاعلية • <span dir="ltr">English Competitions</span></span>
           </div>
 
           <h1 className="text-balance text-3xl font-black text-slate-950 sm:text-4xl md:text-5xl">
@@ -92,7 +92,7 @@ export default function CompetitionsIndexPage() {
           </h1>
 
           <p className="mx-auto mt-4 max-w-2xl text-pretty text-xs sm:text-base font-semibold leading-relaxed text-slate-600">
-            اختر نوع التحدي الذي تفضله: تسلّق سلم مسابقة المليون، أو قيّم مستواك بدقة عبر اختبار تحديد المستوى، أو جرّب سرعتك في تحدي الـ 60 ثانية!
+            اختر نوع التحدي الذي تفضله: تسلّق سلم مسابقة المليون، أو قيّم مستواك بدقة عبر اختبار تحديد المستوى، أو جرّب سرعتك في <span className="inline-block whitespace-nowrap">تحدي الـ 60 ثانية!</span>
           </p>
         </section>
 
@@ -135,14 +135,14 @@ export default function CompetitionsIndexPage() {
                         <CompetitionIcon id={comp.id} className="h-6 w-6" />
                       </div>
                       <span
-                        className={`rounded-full border px-3 py-1 text-[11px] font-black ${comp.badgeColor} shadow-2xs`}
+                        className={`rounded-full border px-3 py-1 text-[11px] font-black ${comp.badgeColor} shadow-2xs whitespace-nowrap`}
                       >
                         {comp.badge}
                       </span>
                     </div>
 
                     {/* Title & Subtitle */}
-                    <span className="text-[11px] font-black tracking-wider text-slate-400">
+                    <span className="text-[11px] font-black tracking-wider text-slate-400" dir="ltr">
                       {comp.titleEn}
                     </span>
                     <h2 className="mt-1 text-xl sm:text-2xl font-black text-slate-950 transition-colors group-hover:text-violet-950">
@@ -163,7 +163,7 @@ export default function CompetitionsIndexPage() {
                           className="flex items-center gap-2 text-xs font-bold text-slate-700"
                         >
                           <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                          <span>{feature}</span>
+                          <span dir="auto">{feature}</span>
                         </div>
                       ))}
                     </div>
@@ -177,7 +177,7 @@ export default function CompetitionsIndexPage() {
                         <span>{comp.duration}</span>
                       </span>
                       <span className="inline-flex items-center gap-1">
-                        <HelpCircle className="h-3.5 w-3.5 text-slate-400" />
+                        <BookOpen className="h-3.5 w-3.5 text-slate-400" />
                         <span>{comp.questionCount} سؤالاً</span>
                       </span>
                     </div>
@@ -185,7 +185,9 @@ export default function CompetitionsIndexPage() {
                       to={comp.path}
                       className={`flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r ${comp.gradient} py-3.5 text-xs sm:text-sm font-black text-white shadow-md shadow-slate-900/10 transition-all duration-200 hover:brightness-110 active:scale-[0.98]`}
                     >
-                      <span>ابدأ المسابقة الآن</span>
+                      <span>
+                        {comp.id === 'placement' ? 'ابدئي التقييم والتشخيص' : 'ابدأ التحدي الآن'}
+                      </span>
                       <ArrowLeft className="h-4 w-4" />
                     </Link>
                   </div>

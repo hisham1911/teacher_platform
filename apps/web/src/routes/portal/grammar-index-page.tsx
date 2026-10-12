@@ -18,7 +18,7 @@ export default function GrammarIndexPage() {
           </div>
           <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-100/80 px-3.5 py-1 text-xs font-black text-violet-800 mb-2">
             <Sparkles className="h-3 w-3 text-violet-600" />
-            9 بطاقات تعليمية معتمدة
+            {grammarTopics.length} بطاقات تعليمية معتمدة
           </span>
           <h1 className="text-2xl sm:text-4xl font-black text-slate-950">
             القواعد النحوية <span className="text-violet-700">Grammar</span>
@@ -33,39 +33,51 @@ export default function GrammarIndexPage() {
           className="animate-page-enter mx-auto mt-8 sm:mt-12 grid max-w-6xl grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3"
           style={{ animationDelay: '100ms' }}
         >
-          {grammarTopics.map((topic, index) => (
-            <Link
-              key={topic.slug}
-              to={`/grammar/${topic.slug}`}
-              className="group relative flex flex-col overflow-hidden rounded-2xl sm:rounded-3xl border border-violet-100/90 bg-gradient-to-br from-white via-white/95 to-violet-50/40 shadow-xs backdrop-blur-xl ring-1 ring-slate-900/5 transition-all duration-300 hover:-translate-y-1.5 hover:border-violet-300 hover:ring-2 hover:ring-violet-400/20 hover:shadow-xl hover:shadow-violet-900/10 active:translate-y-0"
-            >
-              {/* Luminous Specular Top Highlight */}
-              <div
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/90 to-transparent"
-              />
-
-              {/* Ambient Interior Corner Glow */}
-              <div
-                aria-hidden="true"
-                className="pointer-events-none absolute -top-10 -left-10 h-32 w-32 rounded-full bg-gradient-to-br from-violet-500/15 via-indigo-500/5 to-transparent blur-2xl opacity-60 group-hover:opacity-100 transition-opacity"
-              />
-
-              {/* Infographic Thumbnail */}
-              <div className="relative w-full border-b border-violet-100/70 bg-gradient-to-b from-violet-50/40 via-white/60 to-slate-50/60 p-3 sm:p-4 flex items-center justify-center">
-                <img
-                  src={topic.imageUrl}
-                  alt={topic.titleEn}
-                  className="mx-auto h-40 sm:h-48 w-full rounded-xl object-contain shadow-xs transition-transform duration-300 group-hover:scale-[1.03]"
-                  loading="lazy"
+          {grammarTopics.map((topic, index) => {
+            const isLast = index === grammarTopics.length - 1;
+            return (
+              <Link
+                key={topic.slug}
+                to={`/grammar/${topic.slug}`}
+                className={`group relative flex ${
+                  isLast ? 'flex-col lg:col-span-3 lg:flex-row lg:items-stretch' : 'flex-col'
+                } overflow-hidden rounded-2xl sm:rounded-3xl border border-violet-100/90 bg-gradient-to-br from-white via-white/95 to-violet-50/40 shadow-xs backdrop-blur-xl ring-1 ring-slate-900/5 transition-all duration-300 hover:-translate-y-1.5 hover:border-violet-300 hover:ring-2 hover:ring-violet-400/20 hover:shadow-xl hover:shadow-violet-900/10 active:translate-y-0`}
+              >
+                {/* Luminous Specular Top Highlight */}
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/90 to-transparent"
                 />
-                <span className="absolute top-3 right-3 rounded-lg bg-violet-950/80 backdrop-blur-md px-2.5 py-0.5 text-[10px] font-black text-white shadow-xs border border-white/20">
-                  بطاقة #{index + 1}
-                </span>
-              </div>
 
-              {/* Card Body */}
-              <div className="relative z-10 flex flex-1 flex-col p-4 sm:p-5">
+                {/* Ambient Interior Corner Glow */}
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute -top-10 -left-10 h-32 w-32 rounded-full bg-gradient-to-br from-violet-500/15 via-indigo-500/5 to-transparent blur-2xl opacity-60 group-hover:opacity-100 transition-opacity"
+                />
+
+                {/* Infographic Thumbnail */}
+                <div
+                  className={`relative ${
+                    isLast
+                      ? 'w-full lg:w-72 lg:shrink-0 lg:border-b-0 lg:border-l lg:border-violet-100/70 border-b border-violet-100/70'
+                      : 'w-full border-b border-violet-100/70'
+                  } bg-gradient-to-b from-violet-50/40 via-white/60 to-slate-50/60 p-3 sm:p-4 flex items-center justify-center`}
+                >
+                  <img
+                    src={topic.imageUrl}
+                    alt={topic.titleEn}
+                    className={`mx-auto ${
+                      isLast ? 'h-44 sm:h-48 lg:h-52' : 'h-40 sm:h-48'
+                    } w-full rounded-xl object-contain shadow-xs transition-transform duration-300 group-hover:scale-[1.03]`}
+                    loading="lazy"
+                  />
+                  <span className="absolute top-3 right-3 rounded-lg bg-violet-950/80 backdrop-blur-md px-2.5 py-0.5 text-[10px] font-black text-white shadow-xs border border-white/20">
+                    بطاقة #{index + 1}
+                  </span>
+                </div>
+
+                {/* Card Body */}
+                <div className="relative z-10 flex flex-1 flex-col justify-between p-4 sm:p-5">
                 {/* Subtle Decorative Book Watermark */}
                 <div
                   aria-hidden="true"
@@ -75,7 +87,7 @@ export default function GrammarIndexPage() {
                 </div>
 
                 <div className="mb-2 flex items-center justify-between gap-2">
-                  <span className="text-[11px] font-black tracking-widest text-violet-700">
+                  <span className="text-[11px] font-black tracking-widest text-violet-700" dir="ltr">
                     {topic.titleEn.toUpperCase()}
                   </span>
                   {topic.videoUrl && (
@@ -113,7 +125,8 @@ export default function GrammarIndexPage() {
                 </div>
               </div>
             </Link>
-          ))}
+            );
+          })}
         </section>
       </div>
 

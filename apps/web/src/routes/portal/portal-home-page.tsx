@@ -10,14 +10,19 @@ import { PublicBackdrop } from '../../components/layout/root-layout';
 import { PortalNav, PortalFooter } from '../../components/portal/portal-nav';
 import { portalSections } from '../../data/content/portal-sections';
 import { SectionIcon, getSectionTheme } from '../../components/portal/portal-icons';
+import { grammarTopics } from '../../data/content/grammar';
+import { readingPassages } from '../../data/content/reading';
+import { listeningActivities } from '../../data/content/listening';
+import { writingPrompts } from '../../data/content/writing';
+import { portalCompetitions } from '../../data/content/competitions';
 
 const sectionBadges: Record<string, string> = {
-  grammar: '9 قواعد تفاعلية',
-  reading: 'نصوص وتمارين فهم',
-  listening: 'مقاطع استماع صوتية',
-  writing: 'صياغة ونموذج إجابة',
+  grammar: `${grammarTopics.length} قواعد تفاعلية`,
+  reading: `${readingPassages.length} نصوص وتمارين`,
+  listening: `${listeningActivities.length} مقاطع صوتية`,
+  writing: `${writingPrompts.length} تمارين صياغة`,
   speaking: 'أنشطة نطق ومحادثة',
-  competitions: '3 مسابقات تفاعلية',
+  competitions: `${portalCompetitions.length} مسابقات تفاعلية`,
   guestbook: 'آراء ورسائل الزوار',
 };
 
@@ -91,12 +96,15 @@ export default function PortalHomePage() {
             const badgeLabel =
               sectionBadges[section.id] ||
               (section.count ? `${section.count} درس` : 'ابدأ الآن');
+            const isGuestbook = section.id === 'guestbook';
 
             return (
               <Link
                 key={section.id}
                 to={section.path}
-                className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl sm:rounded-3xl border ${theme.border} ${theme.surface} p-5 sm:p-6 shadow-xs backdrop-blur-xl ring-1 ring-slate-900/5 transition-all duration-300 hover:-translate-y-1.5 ${theme.shadow} ${theme.ring} active:translate-y-0`}
+                className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl sm:rounded-3xl border ${theme.border} ${theme.surface} p-5 sm:p-6 shadow-xs backdrop-blur-xl ring-1 ring-slate-900/5 transition-all duration-300 hover:-translate-y-1.5 ${theme.shadow} ${theme.ring} active:translate-y-0 ${
+                  isGuestbook ? 'sm:col-span-2 lg:col-span-3 sm:flex-row sm:items-center sm:gap-8' : ''
+                }`}
               >
                 {/* Luminous Specular Top Highlight */}
                 <div
@@ -118,14 +126,17 @@ export default function PortalHomePage() {
                   <SectionIcon id={section.id} className="h-24 w-24 sm:h-28 sm:w-28" />
                 </div>
 
-                <div className="relative z-10">
+                <div className={`relative z-10 ${isGuestbook ? 'sm:flex-1' : ''}`}>
                   <div className="mb-4 flex items-center justify-between">
                     <div
                       className={`flex h-12 w-12 sm:h-13 sm:w-13 items-center justify-center rounded-2xl bg-gradient-to-br ${theme.gradient} text-white shadow-md shadow-slate-900/10 transition-transform duration-300 group-hover:scale-105`}
                     >
                       <SectionIcon id={section.id} className="h-6 w-6" />
                     </div>
-                    <span className="rounded-full border border-slate-200/70 bg-white/80 backdrop-blur-xs px-2.5 py-1 text-[11px] font-bold text-slate-600 shadow-2xs">
+                    <span
+                      className="rounded-full border border-slate-200/70 bg-white/80 backdrop-blur-xs px-2.5 py-1 text-[11px] font-bold text-slate-600 shadow-2xs"
+                      dir="ltr"
+                    >
                       {section.titleEn}
                     </span>
                   </div>
@@ -138,9 +149,15 @@ export default function PortalHomePage() {
                   </p>
                 </div>
 
-                <div className="relative z-10 mt-5 flex items-center justify-between border-t border-slate-200/60 pt-3.5">
+                <div
+                  className={`relative z-10 mt-5 flex items-center justify-between border-t border-slate-200/60 pt-3.5 ${
+                    isGuestbook
+                      ? 'sm:mt-0 sm:border-t-0 sm:pt-0 sm:flex-col sm:items-end sm:justify-center sm:gap-3.5 sm:shrink-0'
+                      : ''
+                  }`}
+                >
                   <span
-                    className={`inline-flex items-center gap-1.5 rounded-full ${theme.bgSoft} px-3 py-1 text-xs font-bold ${theme.text} shadow-2xs`}
+                    className={`inline-flex items-center gap-1.5 rounded-full ${theme.bgSoft} px-3 py-1 text-xs font-bold ${theme.text} shadow-2xs whitespace-nowrap`}
                   >
                     <span className={`h-1.5 w-1.5 rounded-full ${theme.dot}`} />
                     {badgeLabel}

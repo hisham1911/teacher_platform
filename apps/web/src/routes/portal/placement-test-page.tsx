@@ -308,7 +308,7 @@ export default function PlacementTestPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   <div>
                     <label htmlFor="student-name-input" className="block text-xs font-bold text-slate-700 mb-1">
-                      اسم الكريم <span className="text-rose-500">*</span>
+                      الاسم الكريم <span className="text-rose-500">*</span>
                     </label>
                     <input
                       id="student-name-input"
@@ -361,7 +361,7 @@ export default function PlacementTestPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 {PLACEMENT_LEVELS_META.map((lvl) => {
                   const isSelected = selectedLevelId === lvl.id;
                   const isReady = studentName.trim().length >= 2;
@@ -369,65 +369,72 @@ export default function PlacementTestPage() {
                   return (
                     <div
                       key={lvl.id}
-                      className={`group relative flex flex-col justify-between rounded-3xl border-2 p-5 sm:p-6 transition shadow-xs backdrop-blur-xl ${
+                      className={`group relative flex flex-col justify-between rounded-3xl border-2 p-5 sm:p-6 transition-all duration-200 shadow-xs backdrop-blur-xl ${
                         isSelected
                           ? 'border-indigo-600 bg-white ring-4 ring-indigo-100 shadow-md'
                           : 'border-slate-200/80 bg-white/95 hover:border-indigo-300 hover:shadow-md'
                       }`}
                     >
                       <div>
-                        {/* Card Header */}
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex items-center gap-3">
-                            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-2xl group-hover:scale-105 transition">
-                              {lvl.icon}
-                            </span>
-                            <div>
-                              <span
-                                className={`inline-block rounded-md border px-2 py-0.5 text-[10px] font-black ${lvl.badgeColor}`}
-                              >
-                                {lvl.badge}
-                              </span>
-                              <h3 className="mt-1 text-base sm:text-lg font-black text-slate-950">
-                                {lvl.titleAr}
-                              </h3>
-                              <p className="text-[11px] font-semibold text-slate-400 font-sans" dir="ltr">
-                                {lvl.titleEn}
-                              </p>
-                            </div>
-                          </div>
+                        {/* Card Top Row: Badge & Metadata Pills */}
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <span
+                            className={`inline-flex items-center rounded-lg border px-2.5 py-1 text-xs font-black ${lvl.badgeColor}`}
+                          >
+                            {lvl.badge}
+                          </span>
 
-                          <div className="flex flex-col items-end gap-1 text-[11px] font-bold text-slate-500">
-                            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5">
-                              <BookOpen className="h-3 w-3 text-slate-600" />
+                          <div className="flex items-center gap-1.5 text-xs font-bold text-slate-600">
+                            <span className="whitespace-nowrap inline-flex items-center gap-1.5 rounded-full bg-slate-100/90 px-3 py-1 text-xs font-bold text-slate-700">
+                              <BookOpen className="h-3.5 w-3.5 text-indigo-600 shrink-0" />
                               <span>{lvl.questionCount} سؤالاً</span>
                             </span>
-                            <span className="inline-flex items-center gap-1 text-slate-400">
-                              <Clock className="h-3 w-3" />
+                            <span className="whitespace-nowrap inline-flex items-center gap-1.5 rounded-full bg-slate-100/90 px-3 py-1 text-xs font-bold text-slate-600">
+                              <Clock className="h-3.5 w-3.5 text-indigo-500 shrink-0" />
                               <span>{lvl.durationMinutes} دقيقة</span>
                             </span>
                           </div>
                         </div>
 
+                        {/* Title & Icon */}
+                        <div className="mt-4 flex items-start gap-3.5">
+                          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-indigo-50/80 text-2xl border border-indigo-100/80 group-hover:scale-105 transition-transform duration-200">
+                            {lvl.icon}
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <h3 className="text-base sm:text-lg font-black text-slate-950 leading-tight">
+                              {lvl.titleAr}
+                            </h3>
+                            <p className="mt-1 text-xs font-semibold text-slate-400 font-sans tracking-wide" dir="ltr">
+                              {lvl.titleEn}
+                            </p>
+                          </div>
+                        </div>
+
                         {/* Description */}
-                        <p className="mt-3.5 text-xs sm:text-sm font-medium leading-relaxed text-slate-600">
+                        <p className="mt-3 text-xs sm:text-sm font-medium leading-relaxed text-slate-600">
                           {lvl.description}
                         </p>
 
                         {/* Audience Pill */}
-                        <div className="mt-3 rounded-xl bg-slate-50 p-2.5 text-xs font-semibold text-slate-700 border border-slate-100">
-                          <span className="font-black text-slate-900">الفئة المستهدفة: </span>
-                          <span>{lvl.targetAudience}</span>
+                        <div className="mt-3.5 rounded-xl bg-slate-50 p-2.5 sm:p-3 text-xs font-semibold text-slate-700 border border-slate-200/60 flex items-start gap-2">
+                          <span className="inline-flex items-center gap-1 font-black text-slate-900 shrink-0">
+                            <GraduationCap className="h-4 w-4 text-indigo-600 shrink-0" />
+                            الفئة المستهدفة:
+                          </span>
+                          <span className="text-slate-600 leading-normal">{lvl.targetAudience}</span>
                         </div>
 
                         {/* Topics Covered */}
-                        <div className="mt-3.5">
-                          <span className="text-[11px] font-bold text-slate-500">المحاور المغطاة:</span>
-                          <ul className="mt-1.5 grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[11px] font-bold text-slate-700">
+                        <div className="mt-4 rounded-2xl bg-indigo-50/30 p-3 sm:p-3.5 border border-indigo-100/50">
+                          <span className="text-[11px] font-extrabold text-indigo-950 block mb-2">
+                            المحاور التعليمية المغطاة:
+                          </span>
+                          <ul className="space-y-1.5 text-xs font-bold text-slate-700">
                             {lvl.topicsCovered.map((topic, tIdx) => (
-                              <li key={tIdx} className="flex items-center gap-1.5">
-                                <span className="h-1.5 w-1.5 rounded-full bg-indigo-500 shrink-0" />
-                                <span className="truncate">{topic}</span>
+                              <li key={tIdx} className="flex items-start gap-2">
+                                <span className="h-1.5 w-1.5 rounded-full bg-indigo-500 shrink-0 mt-1.5" />
+                                <span className="leading-snug break-words" dir="auto">{topic}</span>
                               </li>
                             ))}
                           </ul>
@@ -445,14 +452,14 @@ export default function PlacementTestPage() {
                             }
                           }}
                           disabled={!isReady}
-                          className={`w-full flex items-center justify-center gap-2 rounded-2xl py-3 text-xs sm:text-sm font-black transition active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed ${
+                          className={`group/btn w-full flex items-center justify-center gap-2 rounded-2xl py-3 px-4 text-xs sm:text-sm font-black transition active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed ${
                             isSelected
                               ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20 hover:bg-indigo-700'
                               : 'bg-slate-100 text-slate-800 hover:bg-indigo-50 hover:text-indigo-800'
                           }`}
                         >
                           <span>ابدئي تقييم {lvl.titleAr}</span>
-                          <ArrowLeft className="h-4 w-4" />
+                          <ArrowLeft className="h-4 w-4 shrink-0 transition-transform group-hover/btn:-translate-x-1" />
                         </button>
                       </div>
                     </div>
@@ -739,7 +746,7 @@ export default function PlacementTestPage() {
                 <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
                   <div className="flex items-center justify-between text-xs font-bold text-slate-600">
                     <span>القواعد النحوية (Grammar)</span>
-                    <span className="font-black text-slate-900">
+                    <span className="font-black text-slate-900" dir="ltr">
                       {resultData.skillStats.grammar.correct} / {resultData.skillStats.grammar.total}
                     </span>
                   </div>
@@ -763,7 +770,7 @@ export default function PlacementTestPage() {
                 <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
                   <div className="flex items-center justify-between text-xs font-bold text-slate-600">
                     <span>المفردات (Vocabulary)</span>
-                    <span className="font-black text-slate-900">
+                    <span className="font-black text-slate-900" dir="ltr">
                       {resultData.skillStats.vocabulary.correct} /{' '}
                       {resultData.skillStats.vocabulary.total}
                     </span>
@@ -788,7 +795,7 @@ export default function PlacementTestPage() {
                 <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
                   <div className="flex items-center justify-between text-xs font-bold text-slate-600">
                     <span>المعرفة العامة والمملكة</span>
-                    <span className="font-black text-slate-900">
+                    <span className="font-black text-slate-900" dir="ltr">
                       {resultData.skillStats.knowledge.correct} /{' '}
                       {resultData.skillStats.knowledge.total}
                     </span>
@@ -813,7 +820,7 @@ export default function PlacementTestPage() {
                 <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
                   <div className="flex items-center justify-between text-xs font-bold text-slate-600">
                     <span>مهارات الحياة والمواطنة</span>
-                    <span className="font-black text-slate-900">
+                    <span className="font-black text-slate-900" dir="ltr">
                       {resultData.skillStats['life-skills'].correct} /{' '}
                       {resultData.skillStats['life-skills'].total}
                     </span>
