@@ -97,7 +97,7 @@ describe('PlacementTestPage & Question Bank', () => {
       </MemoryRouter>
     );
 
-    const nameInput = screen.getByLabelText(/الاسم الكريم/i);
+    const nameInput = screen.getByLabelText(/اسم الكريم/i);
     const startButtons = screen.getAllByRole('button', { name: /ابدئي تقييم/i });
 
     expect(startButtons[0]).toBeDisabled();
@@ -114,7 +114,7 @@ describe('PlacementTestPage & Question Bank', () => {
       </MemoryRouter>
     );
 
-    const nameInput = screen.getByLabelText(/الاسم الكريم/i);
+    const nameInput = screen.getByLabelText(/اسم الكريم/i);
     fireEvent.change(nameInput, { target: { value: 'رغد محمد' } });
 
     // Choose Level 2 test

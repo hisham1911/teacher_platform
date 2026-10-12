@@ -308,7 +308,7 @@ export default function PlacementTestPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   <div>
                     <label htmlFor="student-name-input" className="block text-xs font-bold text-slate-700 mb-1">
-                      الاسم الكريم <span className="text-rose-500">*</span>
+                      اسم الكريم <span className="text-rose-500">*</span>
                     </label>
                     <input
                       id="student-name-input"

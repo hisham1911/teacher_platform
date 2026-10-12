@@ -41,7 +41,7 @@ describe('LessonDiscussion component', () => {
       expect(screen.queryByText(/جاري تحميل الاستفسارات/i)).not.toBeInTheDocument();
     });
 
-    const nameInput = screen.getByLabelText(/الاسم الكريم/i);
+    const nameInput = screen.getByLabelText(/اسم الكريم/i);
     const questionInput = screen.getByLabelText(/سؤالكِ أو استفساركِ/i);
     const submitBtn = screen.getByRole('button', { name: /إرسال الاستفسار/i });
 
