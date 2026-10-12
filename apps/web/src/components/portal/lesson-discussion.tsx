@@ -370,16 +370,16 @@ export function LessonDiscussion({ topicSlug, topicTitle }: LessonDiscussionProp
                 >
                   {/* Entry Header */}
                   <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-2.5">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-violet-100 text-violet-700 font-black text-xs">
+                    <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+                      <div className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-full bg-violet-100 text-violet-700 font-black text-xs">
                         <User className="h-4 w-4" />
                       </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs sm:text-sm font-black text-slate-900">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="text-xs sm:text-sm font-black text-slate-900 truncate">
                             {entry.name}
                           </span>
-                          <span className="rounded-md bg-slate-200/70 px-2 py-0.5 text-[10px] font-bold text-slate-600">
+                          <span className="inline-flex shrink-0 rounded-md bg-slate-200/70 px-2 py-0.5 text-[10px] font-bold text-slate-600 whitespace-nowrap">
                             {entry.role}
                           </span>
                         </div>
@@ -443,20 +443,20 @@ export function LessonDiscussion({ topicSlug, topicTitle }: LessonDiscussionProp
                   {/* Teacher Reply Card (if answered) */}
                   {entry.teacherReply && (
                     <div className="mt-3.5 rounded-xl border border-violet-200/80 bg-white p-3.5 shadow-xs">
-                      <div className="flex items-center justify-between border-b border-violet-100/60 pb-2 mb-2">
-                        <div className="flex items-center gap-1.5">
-                          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-violet-600 text-white">
+                      <div className="flex flex-wrap items-center justify-between gap-y-1.5 gap-x-2 border-b border-violet-100/60 pb-2 mb-2">
+                        <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+                          <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-violet-600 text-white">
                             <Sparkles className="h-3 w-3" />
                           </div>
-                          <span className="text-xs font-black text-violet-900">
+                          <span className="text-xs font-black text-violet-900 whitespace-nowrap">
                             إجابة المعلمة {TEACHER_OFFICIAL_NAME}
                           </span>
-                          <span className="rounded-sm bg-violet-100 px-1.5 py-0.2 text-[10px] font-bold text-violet-700">
+                          <span className="inline-flex items-center shrink-0 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold text-violet-700 whitespace-nowrap">
                             معلمة المادة
                           </span>
                         </div>
                         {entry.repliedAt && (
-                          <span className="text-[10px] text-slate-400">
+                          <span className="text-[10px] font-medium text-slate-400 shrink-0 mr-auto">
                             {formatTimeAgo(entry.repliedAt)}
                           </span>
                         )}

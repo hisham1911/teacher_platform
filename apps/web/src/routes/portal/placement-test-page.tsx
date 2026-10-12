@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Link } from 'react-router';
 import {
   GraduationCap,
@@ -9,366 +9,808 @@ import {
   CheckCircle2,
   XCircle,
   Sparkles,
+  Clock,
+  Printer,
+  BookOpen,
+  Trophy,
+  ShieldCheck,
+  ChevronLeft,
 } from 'lucide-react';
 import { PublicBackdrop } from '../../components/layout/root-layout';
 import { PortalNav, PortalFooter } from '../../components/portal/portal-nav';
-import { placementQuestions } from '../../data/content/competitions';
+import {
+  PLACEMENT_LEVELS_META,
+  getQuestionsForLevel,
+  type PlacementQuestionItem,
+  type SkillCategory,
+} from '../../data/content/placement-data';
+import { TEACHER_OFFICIAL_NAME } from '../../data/api-client/guestbook-client';
 
-type Stage = 'intro' | 'testing' | 'result';
+type Stage = 'select-level' | 'testing' | 'result';
+type LevelChoiceId = 'comprehensive' | 'level-1' | 'level-2' | 'level-3';
+
+const GRADE_OPTIONS = [
+  'الصف الأول متوسط',
+  'الصف الثاني متوسط',
+  'الصف الثالث متوسط',
+  'المرحلة الثانوية — الصف الأول',
+  'المرحلة الثانوية — الصف الثاني',
+  'المرحلة الثانوية — الصف الثالث',
+  'أخرى / زائر مهتم',
+];
 
 export default function PlacementTestPage() {
-  const [stage, setStage] = useState<Stage>('intro');
+  const [stage, setStage] = useState<Stage>('select-level');
+  const [selectedLevelId, setSelectedLevelId] = useState<LevelChoiceId>('comprehensive');
   const [studentName, setStudentName] = useState('');
+  const [studentGrade, setStudentGrade] = useState(GRADE_OPTIONS[0]);
+
+  // Testing stage state
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [userAnswers, setUserAnswers] = useState<Record<number, number>>({});
-  const [selectedOption, setSelectedOption] = useState<number | null>(null);
+  const [userAnswers, setUserAnswers] = useState<Record<number, string>>({}); // index -> optionId
+  const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
+  const [startTime, setStartTime] = useState<number | null>(null);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
-  const currentQ = placementQuestions[currentIndex];
-  const total = placementQuestions.length;
+  // Active question set
+  const questions: PlacementQuestionItem[] = useMemo(() => {
+    return getQuestionsForLevel(selectedLevelId);
+  }, [selectedLevelId]);
 
-  function handleStart() {
+  const activeLevelMeta = useMemo(() => {
+    return (
+      PLACEMENT_LEVELS_META.find((m) => m.id === selectedLevelId) ?? PLACEMENT_LEVELS_META[0]!
+    );
+  }, [selectedLevelId]);
+
+  const totalQuestions = questions.length;
+  const currentQ = questions[currentIndex];
+
+  function handleStartTest(levelId?: LevelChoiceId) {
     if (studentName.trim().length < 2) return;
+    if (levelId) {
+      setSelectedLevelId(levelId);
+    }
     setStage('testing');
     setCurrentIndex(0);
     setUserAnswers({});
-    setSelectedOption(null);
+    setSelectedOptionId(null);
+    setStartTime(Date.now());
   }
 
-  function handleNext() {
-    if (selectedOption === null) return;
-    const updated = { ...userAnswers, [currentIndex]: selectedOption };
+  function handleNextQuestion() {
+    if (!selectedOptionId) return;
+    const updated = { ...userAnswers, [currentIndex]: selectedOptionId };
     setUserAnswers(updated);
-    setSelectedOption(null);
+    setSelectedOptionId(null);
 
-    if (currentIndex + 1 < total) {
+    if (currentIndex + 1 < totalQuestions) {
       setCurrentIndex((prev) => prev + 1);
     } else {
+      if (startTime) {
+        setElapsedSeconds(Math.round((Date.now() - startTime) / 1000));
+      }
       setStage('result');
     }
   }
 
-  function handleRestart() {
-    setStage('intro');
-    setCurrentIndex(0);
-    setUserAnswers({});
-    setSelectedOption(null);
+  function handlePreviousQuestion() {
+    if (currentIndex > 0) {
+      const prevIdx = currentIndex - 1;
+      setCurrentIndex(prevIdx);
+      setSelectedOptionId(userAnswers[prevIdx] ?? null);
+    }
   }
 
-  // Calculate scores
-  let totalCorrect = 0;
-  type SkillKey = 'grammar' | 'vocabulary' | 'comprehension';
-  const skillScores: Record<SkillKey, { correct: number; total: number }> = {
-    grammar: { correct: 0, total: 0 },
-    vocabulary: { correct: 0, total: 0 },
-    comprehension: { correct: 0, total: 0 },
-  };
+  function handleRestart() {
+    setStage('select-level');
+    setCurrentIndex(0);
+    setUserAnswers({});
+    setSelectedOptionId(null);
+    setStartTime(null);
+  }
 
-  placementQuestions.forEach((q, idx) => {
-    const userOptIdx = userAnswers[idx];
-    skillScores[q.skill].total += 1;
-    if (userOptIdx !== undefined && q.options[userOptIdx]?.isCorrect) {
-      totalCorrect += 1;
-      skillScores[q.skill].correct += 1;
+  // Calculate scores and breakdowns
+  const resultData = useMemo(() => {
+    let correctCount = 0;
+    const skillStats: Record<SkillCategory, { correct: number; total: number }> = {
+      grammar: { correct: 0, total: 0 },
+      vocabulary: { correct: 0, total: 0 },
+      knowledge: { correct: 0, total: 0 },
+      'life-skills': { correct: 0, total: 0 },
+    };
+
+    questions.forEach((q, idx) => {
+      const pickedId = userAnswers[idx];
+      const correctOption = q.options.find((o) => o.isCorrect);
+      skillStats[q.skill].total += 1;
+
+      if (pickedId && pickedId === correctOption?.id) {
+        correctCount += 1;
+        skillStats[q.skill].correct += 1;
+      }
+    });
+
+    const percent = Math.round((correctCount / totalQuestions) * 100);
+
+    // CEFR & Level Determination
+    let cefrCode = 'A1';
+    let cefrTitle = 'A1 — تأسيسي ومبتدئ (Beginner)';
+    let levelBadgeColor = 'bg-emerald-50 text-emerald-800 border-emerald-300';
+    let summaryAr =
+      'لديكِ معرفة بمفردات وقواعد اللغة الأساسية. ننصحكِ بمتابعة بطاقات القواعد المصورة لتثبيت الأزمنة البسيطة وحل تمارين المحادثة اليومية.';
+
+    if (selectedLevelId === 'comprehensive') {
+      if (correctCount >= 21) {
+        cefrCode = 'B2';
+        cefrTitle = 'B2 — متقدم ومتمكن (Upper Intermediate)';
+        levelBadgeColor = 'bg-purple-50 text-purple-800 border-purple-300';
+        summaryAr =
+          'مستواكِ ممتاز واستثنائي! تمتلكين حصيلة لغوية واستيعاباً للتراكيب المعقدة ومهارات التفكير الناقد. أنتِ مستعدة تماماً للمرحلة الثانوية والاختبارات المعيارية.';
+      } else if (correctCount >= 16) {
+        cefrCode = 'B1';
+        cefrTitle = 'B1 — متوسط متمكن (Intermediate)';
+        levelBadgeColor = 'bg-blue-50 text-blue-800 border-blue-300';
+        summaryAr =
+          'مستواكِ متوسط وجيد جداً! تستطيعين فهم الجمل والأزمنة المركبة ومفردات الحياة اليومية. استمري في قراءة النصوص وتحديات السرعة.';
+      } else if (correctCount >= 10) {
+        cefrCode = 'A2';
+        cefrTitle = 'A2 — فوق المبتدئ (Elementary)';
+        levelBadgeColor = 'bg-amber-50 text-amber-800 border-amber-300';
+        summaryAr =
+          'لديكِ أساسيات جيدة، وبحاجة إلى تثبيت تراكيب الجمل وصيغ الأزمنة. قسم القواعد وتمارين الكتابة الموجهة سيعزز مستواكِ سريعاً.';
+      }
+    } else if (selectedLevelId === 'level-1') {
+      if (percent >= 85) {
+        cefrCode = 'A1+';
+        cefrTitle = 'إتقان تام للأساسيات (Mastery of Basics)';
+        levelBadgeColor = 'bg-emerald-50 text-emerald-800 border-emerald-300';
+        summaryAr =
+          'أحسنتِ! لقد أتقنتِ أسئلة المحادثة، الألوان، الأرقام، والضمائر وأفعال Be بشكل كامل. أنتِ مؤهلة للانتقال إلى المستوى الثاني (المتوسط).';
+      } else if (percent >= 60) {
+        cefrCode = 'A1';
+        cefrTitle = 'مستوى تأسيسي جيد (Good Foundation)';
+        levelBadgeColor = 'bg-teal-50 text-teal-800 border-teal-300';
+        summaryAr =
+          'لديكِ استيعاب طيب للأساسيات، مع الحاجة لمراجعة بعض أفعال (am / is / are) وتصنيفات الكلمات.';
+      } else {
+        cefrCode = 'Beginner';
+        cefrTitle = 'بحاجة لتعزيز الأساسيات (Needs Support)';
+        levelBadgeColor = 'bg-amber-50 text-amber-800 border-amber-300';
+        summaryAr =
+          'ننصحكِ بمراجعة درس المضارع البسيط والبطاقات المصورة لتثبيت نطق وكتابة الكلمات اليومية.';
+      }
+    } else if (selectedLevelId === 'level-2') {
+      if (percent >= 85) {
+        cefrCode = 'B1';
+        cefrTitle = 'مستوى متوسط متفوق (Advanced Intermediate)';
+        levelBadgeColor = 'bg-blue-50 text-blue-800 border-blue-300';
+        summaryAr =
+          'نتيجة باهرة! أظهرتِ تمكناً عالياً في الأزمنة وصيغ المقارنة ومعلومات المملكة العامة. يمكنكِ الآن خوض تحدي المستوى الثالث.';
+      } else if (percent >= 60) {
+        cefrCode = 'A2+';
+        cefrTitle = 'مستوى متوسط واعد (Promising Intermediate)';
+        levelBadgeColor = 'bg-indigo-50 text-indigo-800 border-indigo-300';
+        summaryAr =
+          'أداء جيد جداً! لديكِ فهم جيد لقواعد الأزمنة، وننصحكِ بالتدرب أكثر على الماضي المستمر والمضارع التام.';
+      } else {
+        cefrCode = 'A2';
+        cefrTitle = 'بحاجة لمراجعة القواعد (Grammar Reinforcement)';
+        levelBadgeColor = 'bg-amber-50 text-amber-800 border-amber-300';
+        summaryAr =
+          'راجعي بطاقات الأزمنة (الماضي البسيط والمستمر) وقواعد المقارنة لتعزيز حصيلتكِ اللغوية.';
+      }
+    } else {
+      // Level 3
+      if (percent >= 85) {
+        cefrCode = 'B2';
+        cefrTitle = 'مستوى ثانوي متقدم (High Proficiency B2)';
+        levelBadgeColor = 'bg-purple-50 text-purple-800 border-purple-300';
+        summaryAr =
+          'إتقان متميز للقواعد المتقدمة (Passive, Conditionals) ووعي رائع بالمواطنة الرقمية والذكاء الاصطناعي ومهارات العمل!';
+      } else if (percent >= 60) {
+        cefrCode = 'B1+';
+        cefrTitle = 'مستوى ثانوي جيد جداً (Solid Secondary B1+)';
+        levelBadgeColor = 'bg-fuchsia-50 text-fuchsia-800 border-fuchsia-300';
+        summaryAr =
+          'أداء ممتاز! مهاراتكِ في التفكير الناقد واللغة قوية، مع الحاجة لتدريبات إضافية في الجمل الشرطية والمبني للمجهول.';
+      } else {
+        cefrCode = 'B1';
+        cefrTitle = 'بحاجة لتعزيز التراكيب المتقدمة';
+        levelBadgeColor = 'bg-amber-50 text-amber-800 border-amber-300';
+        summaryAr =
+          'ننصحكِ بالتركيز على قواعد المرحلة الثانوية وقراءة المقالات المتقدمة في قسم القراءة.';
+      }
     }
-  });
 
-  // CEFR Determination
-  let levelTitle = 'A1 — مبتدئ (Beginner)';
-  let levelDesc =
-    'لديك معرفة أساسية بمفردات وقواعد اللغة البسيطة. ننصحك بالبدء بقسم القواعد لدراسة الأزمنة الأساسية مع البطاقات المصورة.';
-  let levelColor = 'bg-emerald-50 text-emerald-800 border-emerald-300';
-  let recommendedLink = '/grammar';
-  let recommendedText = 'ابدأ بدراسة بطاقات القواعد';
+    return {
+      correctCount,
+      percent,
+      cefrCode,
+      cefrTitle,
+      levelBadgeColor,
+      summaryAr,
+      skillStats,
+    };
+  }, [questions, userAnswers, totalQuestions, selectedLevelId]);
 
-  if (totalCorrect >= 13) {
-    levelTitle = 'B2 — متقدم (Upper Intermediate)';
-    levelDesc =
-      'مستواك ممتاز ومتقدم! لديك استيعاب قوي للتراكيب المعقدة والمفردات. ننصحك بالانتقال لقسم الكتابة والتنافس في مسابقة المليون.';
-    levelColor = 'bg-purple-50 text-purple-800 border-purple-300';
-    recommendedLink = '/challenge';
-    recommendedText = 'تحدّ نفسك في مسابقة المليون';
-  } else if (totalCorrect >= 9) {
-    levelTitle = 'B1 — متوسط (Intermediate)';
-    levelDesc =
-      'مستواك متوسط وجيد جداً! تستطيع فهم النصوص والمفردات في السياقات اليومية. ننصحك بتمارين القراءة والاستماع لتعزيز حصيلتك.';
-    levelColor = 'bg-sky-50 text-sky-800 border-sky-300';
-    recommendedLink = '/reading';
-    recommendedText = 'استكشف نصوص القراءة';
-  } else if (totalCorrect >= 5) {
-    levelTitle = 'A2 — فوق المبتدئ (Elementary)';
-    levelDesc =
-      'لديك أساسيات جيدة، لكنك بحاجة إلى تثبيت تراكيب الجمل وصيغ الأفعال. قسم القواعد وتمارين الكتابة الموجهة ستفيدك بشكل كبير.';
-    levelColor = 'bg-amber-50 text-amber-800 border-amber-300';
-    recommendedLink = '/grammar';
-    recommendedText = 'راجع قواعد اللغة مع التمارين';
+  function handlePrintCertificate() {
+    window.print();
   }
 
   return (
-    <div className="relative flex min-h-dvh flex-col overflow-x-hidden bg-slate-50/50" dir="rtl">
-      <PublicBackdrop />
-      <PortalNav />
+    <div className="relative flex min-h-dvh flex-col overflow-x-hidden bg-slate-50/50 print:bg-white" dir="rtl">
+      <div className="print:hidden">
+        <PublicBackdrop />
+        <PortalNav />
+      </div>
 
-      <main className="relative z-10 mx-auto flex w-full max-w-4xl flex-1 flex-col px-4 pb-20 pt-6 sm:pt-10">
+      <main className="relative z-10 mx-auto flex w-full max-w-5xl flex-1 flex-col px-4 pb-20 pt-6 sm:pt-10 print:p-0 print:max-w-none">
         {/* Breadcrumb Navigation */}
-        <div className="mb-5 flex items-center gap-1.5 text-xs font-bold text-slate-500">
+        <div className="mb-5 flex items-center gap-1.5 text-xs font-bold text-slate-500 print:hidden">
           <Link to="/competitions" className="hover:text-violet-700 transition">
-            المسابقات
+            المسابقات والتقييم
           </Link>
           <ChevronRight className="h-3.5 w-3.5" />
-          <span className="text-violet-700 font-black">اختبار تحديد المستوى</span>
+          <span className="text-violet-700 font-black">اختبار تحديد المستوى والتشخيص اللغوي</span>
         </div>
 
-        {/* STAGE 1: INTRO */}
-        {stage === 'intro' && (
-          <div className="rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white/95 p-6 shadow-xs sm:p-10 text-center">
-            <span className="mx-auto flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-700 text-white shadow-lg shadow-indigo-600/20">
-              <GraduationCap className="h-7 w-7 sm:h-8 sm:w-8" />
-            </span>
-            <span className="mt-4 inline-flex items-center gap-1 text-xs font-black tracking-wider text-indigo-700">
-              <Sparkles className="h-3 w-3" />
-              LEVEL PLACEMENT TEST
-            </span>
-            <h1 className="mt-1 text-2xl sm:text-4xl font-black text-slate-900">
-              اختبار تحديد المستوى التشخيصي
-            </h1>
-            <p className="mx-auto mt-2.5 max-w-xl text-xs sm:text-sm font-semibold leading-relaxed text-slate-600">
-              اختبار تشخيصي دقيق مكون من 15 سؤالاً يغطي المهارات الأساسية: القواعد، المفردات، والاستيعاب، لمساعدتك على معرفة مستواك وتحديد مسار تعلمك.
-            </p>
+        {/* ================================================================= */}
+        {/* STAGE 1: LEVEL SELECTION HUB */}
+        {/* ================================================================= */}
+        {stage === 'select-level' && (
+          <div className="space-y-8 animate-page-enter">
+            {/* Hero Header */}
+            <div className="rounded-3xl border border-slate-200/90 bg-gradient-to-br from-white via-white/95 to-indigo-50/30 p-6 sm:p-10 shadow-xs backdrop-blur-xl ring-1 ring-slate-900/5 text-center">
+              <span className="mx-auto flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-indigo-600 via-violet-600 to-purple-700 text-white shadow-xl shadow-indigo-600/25">
+                <GraduationCap className="h-8 w-8 sm:h-10 sm:w-10" />
+              </span>
 
-            {/* Test Structure Cards */}
-            <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3 text-right">
-              <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3.5">
-                <span className="text-xs font-black text-slate-600">المرحلة الأولى</span>
-                <h2 className="mt-0.5 text-sm font-bold text-slate-900">5 أسئلة تمهيدية</h2>
-                <p className="mt-0.5 text-[11px] text-slate-500">مستوى A1-A2 (مبتدئ)</p>
+              <div className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-indigo-100/80 px-3.5 py-1 text-xs font-black text-indigo-900">
+                <Sparkles className="h-3.5 w-3.5 text-indigo-600" />
+                <span>ENGLISH LEVEL PLACEMENT & DIAGNOSTIC SYSTEM</span>
               </div>
-              <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3.5">
-                <span className="text-xs font-black text-indigo-600">المرحلة الثانية</span>
-                <h2 className="mt-0.5 text-sm font-bold text-slate-900">5 أسئلة متوسطة</h2>
-                <p className="mt-0.5 text-[11px] text-slate-500">مستوى B1 (متوسط)</p>
-              </div>
-              <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3.5">
-                <span className="text-xs font-black text-violet-600">المرحلة الثالثة</span>
-                <h2 className="mt-0.5 text-sm font-bold text-slate-900">5 أسئلة متقدمة</h2>
-                <p className="mt-0.5 text-[11px] text-slate-500">مستوى B2 (متقدم)</p>
+
+              <h1 className="mt-3 text-2xl sm:text-4xl font-black text-slate-950">
+                اختبار تحديد المستوى والتشخيص اللغوي
+              </h1>
+              <p className="mx-auto mt-2.5 max-w-2xl text-xs sm:text-sm font-semibold leading-relaxed text-slate-600">
+                منصة معتمدة وموجهة لطالبات مدرسة متوسطة وثانوية الجرادية بإشراف المعلمة{' '}
+                <span className="font-black text-indigo-900">{TEACHER_OFFICIAL_NAME}</span>.
+                اختاري مستواكِ المناسب أو خوضي التقييم الشامل للحصول على تقرير أداء وشهادة تشخيصية رقمية.
+              </p>
+
+              {/* Student Identity Inputs */}
+              <div className="mx-auto mt-7 max-w-xl rounded-2xl border border-indigo-100 bg-indigo-50/40 p-4 sm:p-6 text-right">
+                <h2 className="text-xs sm:text-sm font-black text-indigo-950 mb-3 flex items-center gap-1.5">
+                  <ShieldCheck className="h-4 w-4 text-indigo-600" />
+                  <span>بيانات الطالبة للشهادة والتقرير:</span>
+                </h2>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <div>
+                    <label htmlFor="student-name-input" className="block text-xs font-bold text-slate-700 mb-1">
+                      اسم الطالبة الكريم <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      id="student-name-input"
+                      type="text"
+                      required
+                      value={studentName}
+                      onChange={(e) => setStudentName(e.target.value)}
+                      placeholder="مثال: رغد إبراهيم هزازي"
+                      className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs sm:text-sm font-bold text-slate-900 placeholder-slate-400 focus:border-indigo-600 focus:outline-hidden focus:ring-2 focus:ring-indigo-200 transition"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="student-grade-select" className="block text-xs font-bold text-slate-700 mb-1">
+                      المرحلة الدراسية
+                    </label>
+                    <select
+                      id="student-grade-select"
+                      value={studentGrade}
+                      onChange={(e) => setStudentGrade(e.target.value)}
+                      className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs sm:text-sm font-bold text-slate-900 focus:border-indigo-600 focus:outline-hidden focus:ring-2 focus:ring-indigo-200 transition"
+                    >
+                      {GRADE_OPTIONS.map((g) => (
+                        <option key={g} value={g}>
+                          {g}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {studentName.trim().length < 2 && (
+                  <p className="mt-2 text-[11px] font-semibold text-indigo-700">
+                    * يرجى إدخال اسمكِ لتفعيل أزرار بدء الاختبار وإصدار الشهادة.
+                  </p>
+                )}
               </div>
             </div>
 
-            {/* Name Input */}
-            <div className="mx-auto mt-6 max-w-md">
-              <label htmlFor="student-name" className="mb-1.5 block text-right text-xs font-black text-slate-700">
-                اسم الطالب / الطالبة:
-              </label>
-              <input
-                id="student-name"
-                type="text"
-                value={studentName}
-                onChange={(e) => setStudentName(e.target.value)}
-                placeholder="اكتب اسمك للبدء..."
-                className="w-full rounded-2xl border border-slate-300 bg-white px-5 py-3 text-center text-sm sm:text-base font-bold text-slate-900 placeholder-slate-400 focus:border-indigo-600 focus:outline-none focus:ring-4 focus:ring-indigo-100"
-              />
-              <button
-                type="button"
-                onClick={handleStart}
-                disabled={studentName.trim().length < 2}
-                className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-indigo-600 py-3.5 text-xs sm:text-sm font-black text-white shadow-md transition hover:bg-indigo-700 active:scale-95 disabled:opacity-40"
-              >
-                <span>ابدأ الاختبار التشخيصي</span>
-                <ArrowLeft className="h-4 w-4" />
-              </button>
+            {/* Level Choices Grid */}
+            <div>
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg sm:text-xl font-black text-slate-900">
+                    اختاري مسار التقييم المناسب لكِ
+                  </h2>
+                  <p className="text-xs font-semibold text-slate-500">
+                    يمكنكِ خوض التشخيص المتدرج أو اختيار المستوى الذي تدرسينه مباشرة
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {PLACEMENT_LEVELS_META.map((lvl) => {
+                  const isSelected = selectedLevelId === lvl.id;
+                  const isReady = studentName.trim().length >= 2;
+
+                  return (
+                    <div
+                      key={lvl.id}
+                      className={`group relative flex flex-col justify-between rounded-3xl border-2 p-5 sm:p-6 transition shadow-xs backdrop-blur-xl ${
+                        isSelected
+                          ? 'border-indigo-600 bg-white ring-4 ring-indigo-100 shadow-md'
+                          : 'border-slate-200/80 bg-white/95 hover:border-indigo-300 hover:shadow-md'
+                      }`}
+                    >
+                      <div>
+                        {/* Card Header */}
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-2xl group-hover:scale-105 transition">
+                              {lvl.icon}
+                            </span>
+                            <div>
+                              <span
+                                className={`inline-block rounded-md border px-2 py-0.5 text-[10px] font-black ${lvl.badgeColor}`}
+                              >
+                                {lvl.badge}
+                              </span>
+                              <h3 className="mt-1 text-base sm:text-lg font-black text-slate-950">
+                                {lvl.titleAr}
+                              </h3>
+                              <p className="text-[11px] font-semibold text-slate-400 font-sans" dir="ltr">
+                                {lvl.titleEn}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col items-end gap-1 text-[11px] font-bold text-slate-500">
+                            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5">
+                              <BookOpen className="h-3 w-3 text-slate-600" />
+                              <span>{lvl.questionCount} سؤالاً</span>
+                            </span>
+                            <span className="inline-flex items-center gap-1 text-slate-400">
+                              <Clock className="h-3 w-3" />
+                              <span>{lvl.durationMinutes} دقيقة</span>
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Description */}
+                        <p className="mt-3.5 text-xs sm:text-sm font-medium leading-relaxed text-slate-600">
+                          {lvl.description}
+                        </p>
+
+                        {/* Audience Pill */}
+                        <div className="mt-3 rounded-xl bg-slate-50 p-2.5 text-xs font-semibold text-slate-700 border border-slate-100">
+                          <span className="font-black text-slate-900">الفئة المستهدفة: </span>
+                          <span>{lvl.targetAudience}</span>
+                        </div>
+
+                        {/* Topics Covered */}
+                        <div className="mt-3.5">
+                          <span className="text-[11px] font-bold text-slate-500">المحاور المغطاة:</span>
+                          <ul className="mt-1.5 grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[11px] font-bold text-slate-700">
+                            {lvl.topicsCovered.map((topic, tIdx) => (
+                              <li key={tIdx} className="flex items-center gap-1.5">
+                                <span className="h-1.5 w-1.5 rounded-full bg-indigo-500 shrink-0" />
+                                <span className="truncate">{topic}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+
+                      {/* Action Button */}
+                      <div className="mt-6 border-t border-slate-100 pt-4">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedLevelId(lvl.id);
+                            if (isReady) {
+                              handleStartTest(lvl.id);
+                            }
+                          }}
+                          disabled={!isReady}
+                          className={`w-full flex items-center justify-center gap-2 rounded-2xl py-3 text-xs sm:text-sm font-black transition active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed ${
+                            isSelected
+                              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20 hover:bg-indigo-700'
+                              : 'bg-slate-100 text-slate-800 hover:bg-indigo-50 hover:text-indigo-800'
+                          }`}
+                        >
+                          <span>ابدئي تقييم {lvl.titleAr}</span>
+                          <ArrowLeft className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}
 
-        {/* STAGE 2: TESTING */}
+        {/* ================================================================= */}
+        {/* STAGE 2: INTERACTIVE TESTING SCREEN */}
+        {/* ================================================================= */}
         {stage === 'testing' && currentQ && (
-          <div className="rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white/95 p-5 shadow-xs sm:p-8">
-            {/* Top Bar: Progress */}
-            <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
-              <div className="flex items-center gap-2">
-                <span className="rounded-full bg-indigo-50 px-3 py-0.5 text-xs font-black text-indigo-700">
-                  السؤال {currentIndex + 1} من {total}
+          <div className="rounded-3xl border border-slate-200/90 bg-white/95 p-5 sm:p-9 shadow-sm backdrop-blur-xl animate-page-enter">
+            {/* Top Navigation & Status Bar */}
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-black text-indigo-800 border border-indigo-200/60">
+                  السؤال {currentIndex + 1} من {totalQuestions}
                 </span>
-                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-bold text-slate-600">
-                  {currentQ.stage === 'elementary' && 'مبتدئ (Elementary)'}
-                  {currentQ.stage === 'intermediate' && 'متوسط (Intermediate)'}
-                  {currentQ.stage === 'advanced' && 'متقدم (Advanced)'}
+                <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-700">
+                  {activeLevelMeta.titleAr}
                 </span>
               </div>
-              <span className="text-xs font-bold text-slate-500">الطالب: {studentName}</span>
+
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-bold text-slate-500">
+                  الطالبة: <span className="font-black text-slate-900">{studentName}</span> ({studentGrade})
+                </span>
+              </div>
             </div>
 
-            {/* Progress Bar */}
-            <div className="mb-6 h-2 w-full overflow-hidden rounded-full bg-slate-100">
-              <div
-                className="h-full bg-indigo-600 transition-all duration-300"
-                style={{ width: `${((currentIndex + 1) / total) * 100}%` }}
-              />
+            {/* Glowing Progress Bar */}
+            <div className="mt-4 mb-6">
+              <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 mb-1.5">
+                <span>التقدم في التقييم</span>
+                <span>{Math.round(((currentIndex + 1) / totalQuestions) * 100)}%</span>
+              </div>
+              <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-100 p-0.5">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-indigo-500 via-violet-600 to-purple-600 transition-all duration-300"
+                  style={{ width: `${((currentIndex + 1) / totalQuestions) * 100}%` }}
+                />
+              </div>
             </div>
 
-            {/* Prompt */}
-            <p className="text-base sm:text-xl font-bold leading-relaxed text-slate-900 select-text" dir="ltr">
-              {currentQ.prompt}
-            </p>
+            {/* Question Section Badge */}
+            <div className="mb-3">
+              <span className="inline-block rounded-lg bg-indigo-50 px-3 py-1 text-xs font-black text-indigo-900 border border-indigo-100">
+                {currentQ.sectionTitle}
+              </span>
+            </div>
 
-            {/* Options */}
-            <div className="mt-6 flex flex-col gap-2.5">
+            {/* Question Prompt */}
+            <div className="rounded-2xl bg-slate-50/70 p-5 border border-slate-100">
+              <p
+                className="text-base sm:text-xl font-bold leading-relaxed text-slate-950 select-text"
+                dir="ltr"
+              >
+                {currentQ.prompt}
+              </p>
+            </div>
+
+            {/* Options List */}
+            <div className="mt-6 flex flex-col gap-3">
               {currentQ.options.map((opt, oIdx) => {
-                const isSelected = selectedOption === oIdx;
+                const isSelected = selectedOptionId === opt.id;
+                const letter = String.fromCharCode(65 + oIdx);
+
                 return (
                   <button
-                    key={oIdx}
+                    key={opt.id}
                     type="button"
-                    onClick={() => setSelectedOption(oIdx)}
-                    className={`flex items-center justify-between rounded-xl sm:rounded-2xl border-2 px-4 py-3 sm:px-5 sm:py-3.5 text-right transition active:scale-[0.99] min-h-[50px] ${
+                    onClick={() => setSelectedOptionId(opt.id)}
+                    className={`flex items-center justify-between rounded-2xl border-2 px-4 py-3.5 sm:px-5 sm:py-4 text-right transition active:scale-[0.99] min-h-[56px] ${
                       isSelected
-                        ? 'border-indigo-600 bg-indigo-50/70 font-black text-indigo-950 shadow-xs'
-                        : 'border-slate-200 bg-white hover:border-indigo-300 hover:bg-slate-50 font-bold text-slate-800'
+                        ? 'border-indigo-600 bg-indigo-50/80 font-black text-indigo-950 shadow-xs ring-2 ring-indigo-200'
+                        : 'border-slate-200/80 bg-white hover:border-indigo-300 hover:bg-slate-50 font-bold text-slate-800'
                     }`}
                     dir="ltr"
                   >
-                    <span className="text-left text-sm sm:text-base flex-1">{opt.text}</span>
+                    <span className="text-left text-sm sm:text-base font-semibold leading-relaxed flex-1 mr-3">
+                      {opt.text}
+                    </span>
                     <span
-                      className={`flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-lg sm:rounded-xl text-xs font-black ${
-                        isSelected ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500'
+                      className={`flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-xl text-xs font-black transition ${
+                        isSelected
+                          ? 'bg-indigo-600 text-white shadow-xs'
+                          : 'bg-slate-100 text-slate-600 group-hover:bg-indigo-100 group-hover:text-indigo-800'
                       }`}
                     >
-                      {String.fromCharCode(65 + oIdx)}
+                      {letter}
                     </span>
                   </button>
                 );
               })}
             </div>
 
-            {/* Bottom Actions */}
+            {/* Bottom Actions Bar */}
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-100 pt-5">
-              <span className="text-xs font-bold text-slate-500">
-                اختر إجابة واحدة ثم اضغط على زر المتابعة
-              </span>
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                {currentIndex > 0 && (
+                  <button
+                    type="button"
+                    onClick={handlePreviousQuestion}
+                    className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                    <span>السؤال السابق</span>
+                  </button>
+                )}
+                <span className="text-xs font-bold text-slate-400">
+                  سؤال {currentIndex + 1} من {totalQuestions}
+                </span>
+              </div>
+
               <button
                 type="button"
-                onClick={handleNext}
-                disabled={selectedOption === null}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-7 py-3 text-xs sm:text-sm font-black text-white shadow-md transition hover:bg-indigo-700 active:scale-95 disabled:opacity-40"
+                onClick={handleNextQuestion}
+                disabled={!selectedOptionId}
+                className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-8 py-3 text-xs sm:text-sm font-black text-white shadow-md shadow-indigo-600/20 transition hover:bg-indigo-700 active:scale-95 disabled:opacity-40"
               >
-                <span>{currentIndex + 1 === total ? 'إنهاء وحساب النتيجة' : 'السؤال التالي'}</span>
-                <ArrowLeft className="h-4 w-4" />
+                <span>
+                  {currentIndex + 1 === totalQuestions
+                    ? 'إنهاء التقييم وعرض النتيجة'
+                    : 'تأكيد والانتقال للسؤال التالي'}
+                </span>
+                <ChevronLeft className="h-4 w-4" />
               </button>
             </div>
           </div>
         )}
 
-        {/* STAGE 3: RESULT */}
+        {/* ================================================================= */}
+        {/* STAGE 3: COMPREHENSIVE RESULT & DIGITAL CERTIFICATE */}
+        {/* ================================================================= */}
         {stage === 'result' && (
-          <div className="space-y-6">
+          <div className="space-y-8 animate-page-enter">
             {/* Header Result Card */}
-            <div className="rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white/95 p-6 shadow-xs sm:p-10 text-center">
-              <span className="mx-auto flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-2xl sm:rounded-3xl bg-gradient-to-br from-indigo-500 via-violet-600 to-purple-700 text-white shadow-lg shadow-indigo-600/20">
-                <Award className="h-8 w-8 sm:h-10 sm:w-10" />
+            <div className="rounded-3xl border border-slate-200/90 bg-white/95 p-6 sm:p-10 shadow-xs text-center backdrop-blur-xl">
+              <span className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-indigo-500 via-violet-600 to-purple-700 text-white shadow-xl shadow-indigo-600/25">
+                <Trophy className="h-10 w-10" />
               </span>
-              <h1 className="mt-4 text-xl sm:text-3xl font-black text-slate-900">
-                نتيجة اختبار تحديد المستوى لـ {studentName}
+
+              <span className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3.5 py-1 text-xs font-black text-emerald-800">
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                <span>اكتمل التقييم بنجاح</span>
+              </span>
+
+              <h1 className="mt-3 text-2xl sm:text-4xl font-black text-slate-950">
+                تقرير تشخيص المستوى للطالبة: {studentName}
               </h1>
-
-              {/* Level Badge */}
-              <div
-                className={`mx-auto mt-4 inline-flex items-center gap-2 rounded-2xl border px-5 py-2 text-sm sm:text-base font-black ${levelColor}`}
-              >
-                <span>المستوى المُقدَّر:</span>
-                <span>{levelTitle}</span>
-              </div>
-
-              {/* Score pill */}
-              <div className="mt-4 text-2xl sm:text-3xl font-black text-slate-900">
-                {totalCorrect}{' '}
-                <span className="text-sm sm:text-base text-slate-500 font-bold">
-                  من أصل {total} أسئلة
-                </span>
-                <span className="mr-2 text-xs sm:text-sm font-bold text-indigo-600">
-                  ({Math.round((totalCorrect / total) * 100)}%)
-                </span>
-              </div>
-
-              <p className="mx-auto mt-3 max-w-xl text-xs sm:text-sm font-semibold leading-relaxed text-slate-600">
-                {levelDesc}
+              <p className="mt-1 text-xs sm:text-sm font-semibold text-slate-500">
+                {studentGrade} • مدرسة متوسطة وثانوية الجرادية • إشراف أ. {TEACHER_OFFICIAL_NAME}
               </p>
 
-              {/* Recommended Action */}
-              <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
-                <Link
-                  to={recommendedLink}
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-6 py-3 text-xs sm:text-sm font-black text-white shadow-md hover:bg-indigo-700 transition"
+              {/* CEFR Level Badge */}
+              <div
+                className={`mx-auto mt-5 inline-flex items-center gap-2.5 rounded-2xl border px-6 py-2.5 text-sm sm:text-lg font-black ${resultData.levelBadgeColor}`}
+              >
+                <Award className="h-5 w-5" />
+                <span>المستوى المُقدَّر: {resultData.cefrTitle}</span>
+              </div>
+
+              {/* Numerical Score */}
+              <div className="mt-5 text-3xl sm:text-5xl font-black text-slate-950">
+                {resultData.correctCount}{' '}
+                <span className="text-base sm:text-xl text-slate-400 font-bold">
+                  من {totalQuestions} أسئلة
+                </span>
+                <span className="mr-3 text-lg sm:text-2xl font-black text-indigo-600">
+                  ({resultData.percent}%)
+                </span>
+              </div>
+
+              {/* Summary Description */}
+              <p className="mx-auto mt-4 max-w-2xl text-xs sm:text-sm font-semibold leading-relaxed text-slate-600">
+                {resultData.summaryAr}
+              </p>
+
+              {/* Actions Bar */}
+              <div className="mt-7 flex flex-wrap items-center justify-center gap-3 print:hidden">
+                <button
+                  type="button"
+                  onClick={handlePrintCertificate}
+                  className="inline-flex items-center gap-2 rounded-2xl bg-indigo-600 px-6 py-3 text-xs sm:text-sm font-black text-white shadow-md shadow-indigo-600/20 hover:bg-indigo-700 transition"
                 >
-                  <span>{recommendedText}</span>
-                  <ArrowLeft className="h-4 w-4" />
-                </Link>
+                  <Printer className="h-4 w-4" />
+                  <span>طباعة / حفظ الشهادة الرقمية</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={handleRestart}
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-300 bg-white px-5 py-3 text-xs sm:text-sm font-bold text-slate-700 shadow-xs hover:bg-slate-50 transition"
+                  className="inline-flex items-center gap-2 rounded-2xl border border-slate-300 bg-white px-5 py-3 text-xs sm:text-sm font-bold text-slate-700 shadow-xs hover:bg-slate-50 transition"
                 >
                   <RotateCcw className="h-4 w-4" />
-                  <span>إعادة الاختبار</span>
+                  <span>خوض مستوى آخر</span>
                 </button>
+
                 <Link
-                  to="/competitions"
-                  className="w-full sm:w-auto inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-slate-100 px-5 py-3 text-xs sm:text-sm font-bold text-slate-700 hover:bg-slate-200 transition"
+                  to="/grammar"
+                  className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-100 px-5 py-3 text-xs sm:text-sm font-bold text-slate-700 hover:bg-slate-200 transition"
                 >
-                  العودة للمسابقات
+                  <span>استكشاف بطاقات القواعد</span>
+                  <ArrowLeft className="h-4 w-4" />
                 </Link>
+              </div>
+            </div>
+
+            {/* ============================================================= */}
+            {/* OFFICIAL DIGITAL CERTIFICATE CARD */}
+            {/* ============================================================= */}
+            <div className="overflow-hidden rounded-3xl border-4 border-indigo-200 bg-gradient-to-br from-indigo-50/40 via-white to-purple-50/30 p-6 sm:p-10 shadow-lg text-center relative ring-1 ring-slate-900/5 print:border-2 print:shadow-none">
+              <div className="absolute top-4 right-4 text-xs font-black text-indigo-700 border border-indigo-200 bg-white/80 px-3 py-1 rounded-full">
+                English Spark Official Assessment
+              </div>
+              <div className="absolute top-4 left-4 text-[10px] font-bold text-slate-400">
+                كود التحقق: SPARK-PL-{Date.now().toString(36).toUpperCase().slice(-6)}
+              </div>
+
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-md mb-3">
+                <GraduationCap className="h-9 w-9" />
+              </div>
+
+              <span className="text-xs font-black tracking-widest text-indigo-900 uppercase">
+                المملكة العربية السعودية • وزارة التعليم
+              </span>
+              <h2 className="text-xl sm:text-3xl font-black text-slate-950 mt-1">
+                شهادة إتمام اختبار تحديد المستوى في اللغة الإنجليزية
+              </h2>
+              <p className="text-xs text-slate-500 font-semibold mt-0.5">
+                مدرسة متوسطة وثانوية الجرادية — منصة المعلمة {TEACHER_OFFICIAL_NAME}
+              </p>
+
+              <div className="my-6 border-y border-dashed border-indigo-200 py-6 max-w-2xl mx-auto">
+                <p className="text-xs sm:text-sm font-medium text-slate-600">
+                  تشهد المنصة بأن الطالبة الكريمة:
+                </p>
+                <h3 className="text-xl sm:text-3xl font-black text-indigo-950 mt-1 mb-2">
+                  {studentName}
+                </h3>
+                <p className="text-xs sm:text-sm font-semibold text-slate-700">
+                  المقيدة في <span className="font-bold text-slate-900">({studentGrade})</span> قد أتمت بنجاح تقييم{' '}
+                  <span className="font-black text-indigo-900">({activeLevelMeta.titleAr})</span> وحصلت على تقدير:
+                </p>
+                <div className="mt-3 inline-block rounded-xl bg-indigo-100/90 px-4 py-1.5 text-sm sm:text-base font-black text-indigo-950">
+                  {resultData.cefrTitle} بنسبة إتقان {resultData.percent}%
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 max-w-2xl mx-auto text-xs font-bold text-slate-600">
+                <div className="rounded-xl bg-white/80 p-2.5 border border-slate-100">
+                  <span className="block text-[10px] text-slate-400">تاريخ التقييم</span>
+                  <span>{new Date().toLocaleDateString('ar-SA')}</span>
+                </div>
+                <div className="rounded-xl bg-white/80 p-2.5 border border-slate-100">
+                  <span className="block text-[10px] text-slate-400">الدرجة المكتسبة</span>
+                  <span>
+                    {resultData.correctCount} من {totalQuestions}
+                  </span>
+                </div>
+                <div className="rounded-xl bg-white/80 p-2.5 border border-slate-100">
+                  <span className="block text-[10px] text-slate-400">المدة المستغرقة</span>
+                  <span>
+                    {Math.max(1, Math.round(elapsedSeconds / 60))} دقيقة
+                  </span>
+                </div>
+                <div className="rounded-xl bg-white/80 p-2.5 border border-slate-100">
+                  <span className="block text-[10px] text-slate-400">معلمة المادة المشرفة</span>
+                  <span className="text-indigo-900 font-black">أ. {TEACHER_OFFICIAL_NAME}</span>
+                </div>
               </div>
             </div>
 
             {/* Skills Breakdown */}
-            <div className="rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white/95 p-5 sm:p-7 shadow-xs">
-              <h2 className="text-base sm:text-lg font-black text-slate-900">تحليل المهارات التفصيلي</h2>
-              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <div className="rounded-xl border border-slate-100 bg-slate-50 p-3.5">
-                  <div className="flex items-center justify-between text-xs font-bold text-slate-500">
-                    <span>القواعد (Grammar)</span>
+            <div className="rounded-3xl border border-slate-200/90 bg-white/95 p-6 sm:p-8 shadow-xs">
+              <h2 className="text-base sm:text-lg font-black text-slate-950">
+                تحليل المهارات والمحاور التشخيصية
+              </h2>
+              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                {/* Grammar */}
+                <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
+                  <div className="flex items-center justify-between text-xs font-bold text-slate-600">
+                    <span>القواعد النحوية (Grammar)</span>
                     <span className="font-black text-slate-900">
-                      {skillScores.grammar.correct} / {skillScores.grammar.total}
+                      {resultData.skillStats.grammar.correct} / {resultData.skillStats.grammar.total}
                     </span>
                   </div>
-                  <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-200">
+                  <div className="mt-2.5 h-2 w-full overflow-hidden rounded-full bg-slate-200">
                     <div
-                      className="h-full bg-indigo-600"
+                      className="h-full bg-indigo-600 transition-all"
                       style={{
-                        width: `${(skillScores.grammar.correct / skillScores.grammar.total) * 100}%`,
+                        width: `${
+                          resultData.skillStats.grammar.total > 0
+                            ? (resultData.skillStats.grammar.correct /
+                                resultData.skillStats.grammar.total) *
+                              100
+                            : 0
+                        }%`,
                       }}
                     />
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-slate-100 bg-slate-50 p-3.5">
-                  <div className="flex items-center justify-between text-xs font-bold text-slate-500">
+                {/* Vocabulary */}
+                <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
+                  <div className="flex items-center justify-between text-xs font-bold text-slate-600">
                     <span>المفردات (Vocabulary)</span>
                     <span className="font-black text-slate-900">
-                      {skillScores.vocabulary.correct} / {skillScores.vocabulary.total}
+                      {resultData.skillStats.vocabulary.correct} /{' '}
+                      {resultData.skillStats.vocabulary.total}
                     </span>
                   </div>
-                  <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-200">
+                  <div className="mt-2.5 h-2 w-full overflow-hidden rounded-full bg-slate-200">
                     <div
-                      className="h-full bg-violet-600"
+                      className="h-full bg-violet-600 transition-all"
                       style={{
-                        width: `${(skillScores.vocabulary.correct / skillScores.vocabulary.total) * 100}%`,
+                        width: `${
+                          resultData.skillStats.vocabulary.total > 0
+                            ? (resultData.skillStats.vocabulary.correct /
+                                resultData.skillStats.vocabulary.total) *
+                              100
+                            : 0
+                        }%`,
                       }}
                     />
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-slate-100 bg-slate-50 p-3.5">
-                  <div className="flex items-center justify-between text-xs font-bold text-slate-500">
-                    <span>الاستيعاب (Comprehension)</span>
+                {/* Knowledge */}
+                <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
+                  <div className="flex items-center justify-between text-xs font-bold text-slate-600">
+                    <span>المعرفة العامة والمملكة</span>
                     <span className="font-black text-slate-900">
-                      {skillScores.comprehension.correct} / {skillScores.comprehension.total}
+                      {resultData.skillStats.knowledge.correct} /{' '}
+                      {resultData.skillStats.knowledge.total}
                     </span>
                   </div>
-                  <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-200">
+                  <div className="mt-2.5 h-2 w-full overflow-hidden rounded-full bg-slate-200">
                     <div
-                      className="h-full bg-emerald-600"
+                      className="h-full bg-emerald-600 transition-all"
                       style={{
-                        width: `${(skillScores.comprehension.correct / skillScores.comprehension.total) * 100}%`,
+                        width: `${
+                          resultData.skillStats.knowledge.total > 0
+                            ? (resultData.skillStats.knowledge.correct /
+                                resultData.skillStats.knowledge.total) *
+                              100
+                            : 0
+                        }%`,
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Life Skills */}
+                <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
+                  <div className="flex items-center justify-between text-xs font-bold text-slate-600">
+                    <span>مهارات الحياة والمواطنة</span>
+                    <span className="font-black text-slate-900">
+                      {resultData.skillStats['life-skills'].correct} /{' '}
+                      {resultData.skillStats['life-skills'].total}
+                    </span>
+                  </div>
+                  <div className="mt-2.5 h-2 w-full overflow-hidden rounded-full bg-slate-200">
+                    <div
+                      className="h-full bg-purple-600 transition-all"
+                      style={{
+                        width: `${
+                          resultData.skillStats['life-skills'].total > 0
+                            ? (resultData.skillStats['life-skills'].correct /
+                                resultData.skillStats['life-skills'].total) *
+                              100
+                            : 0
+                        }%`,
                       }}
                     />
                   </div>
@@ -376,34 +818,36 @@ export default function PlacementTestPage() {
               </div>
             </div>
 
-            {/* Questions Review & Explanations */}
-            <div className="rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white/95 p-5 sm:p-7 shadow-xs">
-              <h2 className="text-base sm:text-lg font-black text-slate-900">
-                مراجعة إجاباتك وشروحات الأسئلة
-              </h2>
-              <p className="mt-1 text-xs font-semibold text-slate-500">
-                راجع أخطاءك واستفد من التوضيح التعليمي لكل سؤال:
-              </p>
+            {/* Questions Review & Bilingual Explanations */}
+            <div className="rounded-3xl border border-slate-200/90 bg-white/95 p-6 sm:p-8 shadow-xs">
+              <div className="border-b border-slate-100 pb-4 mb-5">
+                <h2 className="text-base sm:text-lg font-black text-slate-950">
+                  مراجعة تفصيلية للإجابات والشروحات التعليمية
+                </h2>
+                <p className="mt-1 text-xs font-semibold text-slate-500">
+                  استفيدي من توضيحات المعلمة {TEACHER_OFFICIAL_NAME} للأسئلة لتعزيز فهمكِ وتجنب الأخطاء مستقبلاً:
+                </p>
+              </div>
 
-              <div className="mt-5 space-y-3">
-                {placementQuestions.map((q, idx) => {
-                  const pickedIdx = userAnswers[idx];
-                  const pickedOpt = pickedIdx !== undefined ? q.options[pickedIdx] : null;
+              <div className="space-y-4">
+                {questions.map((q, idx) => {
+                  const pickedId = userAnswers[idx];
+                  const pickedOpt = q.options.find((o) => o.id === pickedId);
                   const isCorrect = pickedOpt?.isCorrect === true;
                   const correctOpt = q.options.find((o) => o.isCorrect);
 
                   return (
                     <div
                       key={q.id}
-                      className={`rounded-2xl border p-4 ${
+                      className={`rounded-2xl border p-4 sm:p-5 transition ${
                         isCorrect
-                          ? 'border-emerald-200 bg-emerald-50/30'
-                          : 'border-rose-200 bg-rose-50/30'
+                          ? 'border-emerald-200/90 bg-emerald-50/20'
+                          : 'border-rose-200/90 bg-rose-50/20'
                       }`}
                     >
-                      <div className="flex items-start justify-between gap-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                         <span className="text-xs font-black text-slate-600">
-                          سؤال {idx + 1} • {q.stage}
+                          سؤال {idx + 1} • <span className="text-indigo-700">{q.sectionTitle}</span>
                         </span>
                         <span
                           className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-black ${
@@ -414,45 +858,53 @@ export default function PlacementTestPage() {
                         >
                           {isCorrect ? (
                             <>
-                              <CheckCircle2 className="h-3 w-3" />
-                              <span>صحيحة</span>
+                              <CheckCircle2 className="h-3.5 w-3.5" />
+                              <span>إجابة صحيحة</span>
                             </>
                           ) : (
                             <>
-                              <XCircle className="h-3 w-3" />
-                              <span>خاطئة</span>
+                              <XCircle className="h-3.5 w-3.5" />
+                              <span>بحاجة لمراجعة</span>
                             </>
                           )}
                         </span>
                       </div>
 
-                      <p className="mt-2 text-sm sm:text-base font-bold text-slate-900" dir="ltr">
+                      <p className="text-sm sm:text-base font-bold text-slate-950" dir="ltr">
                         {q.prompt}
                       </p>
 
-                      <div className="mt-3 grid grid-cols-1 gap-2 text-xs font-bold sm:grid-cols-2">
-                        <div className="rounded-xl bg-white p-2.5 border border-slate-100">
-                          <span className="text-slate-500">إجابتك: </span>
+                      <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-bold">
+                        <div className="rounded-xl bg-white p-2.5 border border-slate-200/80">
+                          <span className="text-slate-500">إجابتكِ: </span>
                           <span
-                            className={isCorrect ? 'text-emerald-700 font-black' : 'text-rose-700 font-black'}
+                            className={
+                              isCorrect ? 'text-emerald-700 font-black' : 'text-rose-700 font-black'
+                            }
                             dir="ltr"
                           >
-                            {pickedOpt ? pickedOpt.text : 'لم تُجب'}
+                            {pickedOpt ? pickedOpt.text : 'لم يتم الاختيار'}
                           </span>
                         </div>
+
                         {!isCorrect && (
-                          <div className="rounded-xl bg-emerald-50 p-2.5 border border-emerald-100">
-                            <span className="text-emerald-800">الإجابة الصحيحة: </span>
-                            <span className="text-emerald-900 font-black" dir="ltr">
+                          <div className="rounded-xl bg-emerald-50 p-2.5 border border-emerald-200">
+                            <span className="text-emerald-800">الإجابة النموذجية: </span>
+                            <span className="text-emerald-950 font-black" dir="ltr">
                               {correctOpt?.text}
                             </span>
                           </div>
                         )}
                       </div>
 
-                      <div className="mt-2.5 rounded-xl bg-slate-50 p-2.5 text-xs font-semibold text-slate-700">
-                        <span className="font-black text-indigo-700">الشرح التعليمي: </span>
-                        {q.explanation}
+                      <div className="mt-3 rounded-xl bg-slate-50/90 p-3 text-xs leading-relaxed text-slate-700 border border-slate-100">
+                        <div className="font-black text-indigo-900 mb-0.5">
+                          توضيح المعلمة {TEACHER_OFFICIAL_NAME}:
+                        </div>
+                        <p className="text-slate-800 font-medium">{q.explanationAr}</p>
+                        <p className="text-[11px] text-slate-500 font-sans mt-1" dir="ltr">
+                          {q.explanationEn}
+                        </p>
                       </div>
                     </div>
                   );
@@ -463,7 +915,9 @@ export default function PlacementTestPage() {
         )}
       </main>
 
-      <PortalFooter />
+      <div className="print:hidden">
+        <PortalFooter />
+      </div>
     </div>
   );
 }

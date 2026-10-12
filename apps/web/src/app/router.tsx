@@ -109,6 +109,7 @@ export const router = createBrowserRouter([
       { path: '/competitions/placement', element: <PlacementTestPage /> },
       { path: '/competitions/speed', element: <SpeedChallengePage /> },
       { path: '/challenge', element: <MillionChallengePage /> },
+      { path: '/placement', element: <PlacementTestPage /> },
       { path: '/guestbook', element: <GuestbookPage /> },
       { path: '/teacher-admin', element: <TeacherAdminPage /> },
       { path: '/teacher/dashboard', element: <TeacherAdminPage /> },
