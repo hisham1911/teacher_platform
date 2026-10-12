@@ -23,8 +23,8 @@ import {
 } from '../../data/api-client/guestbook-client';
 
 const ROLE_OPTIONS = [
-  { label: 'طالبة — متوسطة الجرادية', value: 'طالبة — متوسطة الجرادية' },
-  { label: 'طالبة — ثانوية الجرادية', value: 'طالبة — ثانوية الجرادية' },
+  { label: 'طالب / طالبة — متوسطة الجرادية', value: 'طالب/ـة — متوسطة الجرادية' },
+  { label: 'طالب / طالبة — ثانوية الجرادية', value: 'طالب/ـة — ثانوية الجرادية' },
   { label: 'ولي أمر طالبـ/ـة', value: 'ولي أمر' },
   { label: 'معلمـ/ـة أو كادر تعليمي', value: 'كادر تعليمي' },
   { label: 'زائر / مهتم باللغة', value: 'زائر مهتم' },
@@ -52,7 +52,7 @@ export default function GuestbookPage() {
   const [entries, setEntries] = useState<GuestbookEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState('');
-  const [role, setRole] = useState('طالبة — متوسطة الجرادية');
+  const [role, setRole] = useState('طالب/ـة — متوسطة الجرادية');
   const [message, setMessage] = useState('');
   const [honeypot, setHoneypot] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -175,7 +175,7 @@ export default function GuestbookPage() {
             سجل الزوار والتعليقات <span className="text-rose-600" dir="ltr">Guestbook</span>
           </h1>
           <p className="mt-2.5 text-xs sm:text-sm font-semibold text-slate-600 leading-relaxed">
-            مساحة تواصل لطالبات وأولياء أمور ومعلمات مدرسة متوسطة وثانوية الجرادية لمشاركة كلمات الدعم والتقدير لمبادرة المعلمة {TEACHER_OFFICIAL_NAME}
+            مساحة تواصل لطلاب وطالبات وأولياء أمور ومعلمي مدرسة متوسطة وثانوية الجرادية وكافة الزوار لمشاركة كلمات الدعم والتقدير لمبادرة المعلمة {TEACHER_OFFICIAL_NAME}
           </p>
         </section>
 
@@ -183,7 +183,7 @@ export default function GuestbookPage() {
         <section className="animate-page-enter mt-8 rounded-2xl sm:rounded-3xl border border-rose-100/90 bg-gradient-to-br from-white via-white/95 to-rose-50/30 p-5 sm:p-7 shadow-xs backdrop-blur-xl ring-1 ring-slate-900/5">
           <h2 className="text-base font-black text-slate-950 mb-4 flex items-center gap-2">
             <User className="h-4 w-4 text-rose-600" />
-            <span>شاركينا كلمتكِ التشجيعية أو انطباعكِ</span>
+            <span>شاركنا كلمتك التشجيعية أو انطباعك</span>
           </h2>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -216,7 +216,7 @@ export default function GuestbookPage() {
 
               <div>
                 <label htmlFor="guestbook-role" className="block text-xs font-bold text-slate-700 mb-1">
-                  صفتكِ الكريمة
+                  صفتك الكريمة
                 </label>
                 <select
                   id="guestbook-role"
@@ -235,14 +235,14 @@ export default function GuestbookPage() {
 
             <div>
               <label htmlFor="guestbook-message" className="block text-xs font-bold text-slate-700 mb-1">
-                رسالتكِ أو تعليقكِ <span className="text-rose-500">*</span>
+                رسالتك أو تعليقك <span className="text-rose-500">*</span>
               </label>
               <textarea
                 id="guestbook-message"
                 required
                 rows={3}
                 maxLength={350}
-                placeholder="اكتبي كلمة طيبة أو رأيكِ في بطاقات القواعد والمسابقات..."
+                placeholder="اكتب كلمة طيبة أو رأيك في بطاقات القواعد والمسابقات..."
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 className="w-full rounded-xl border border-slate-200 bg-slate-50/50 p-3 text-xs sm:text-sm font-semibold text-slate-800 placeholder-slate-400 focus:bg-white focus:border-rose-500 focus:outline-hidden focus:ring-2 focus:ring-rose-200 transition resize-none"
@@ -263,7 +263,7 @@ export default function GuestbookPage() {
             {successMsg && (
               <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50/90 p-3 text-xs font-bold text-emerald-800">
                 <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
-                <span>شكراً لمشاركتكِ! تم نشر كلمتكِ بنجاح في سجل الزوار. 🌸</span>
+                <span>شكراً لمشاركتك! تم نشر كلمتك بنجاح في سجل الزوار. 🌸</span>
               </div>
             )}
 

@@ -30,29 +30,27 @@ type Stage = 'select-level' | 'testing' | 'result';
 type LevelChoiceId = 'comprehensive' | 'level-1' | 'level-2' | 'level-3';
 
 const GRADE_OPTIONS = [
-  'طالبة — الصف الأول متوسط',
-  'طالبة — الصف الثاني متوسط',
-  'طالبة — الصف الثالث متوسط',
-  'طالبة — المرحلة الثانوية (الصف الأول)',
-  'طالبة — المرحلة الثانوية (الصف الثاني)',
-  'طالبة — المرحلة الثانوية (الصف الثالث)',
-  'طالب — زائر',
+  'طالب/ـة — الصف الأول متوسط',
+  'طالب/ـة — الصف الثاني متوسط',
+  'طالب/ـة — الصف الثالث متوسط',
+  'طالب/ـة — المرحلة الثانوية (الصف الأول)',
+  'طالب/ـة — المرحلة الثانوية (الصف الثاني)',
+  'طالب/ـة — المرحلة الثانوية (الصف الثالث)',
+  'طالب/ـة — زائر كريم',
   'ولي أمر',
   'معلمـ/ـة أو مهتمـ/ـة باللغة',
   'أخرى / زائر كريم',
 ];
 
 function getParticipantPrefix(role: string = ''): string {
-  if (role.startsWith('طالبة')) return 'الطالبة الكريمة:';
-  if (role.startsWith('طالب')) return 'الطالب الكريم:';
   if (role.includes('ولي أمر')) return 'ولي الأمر الكريم:';
   if (role.includes('معلم')) return 'المعلمـ/ـة:';
+  if (role.includes('طالب')) return 'المشاركـ/ـة:';
   return 'المشاركـ/ـة الكريمـ/ـة:';
 }
 
 function getParticipantEnrollment(role: string = ''): string {
-  if (role.startsWith('طالبة')) return `المقيدة في (${role})`;
-  if (role.startsWith('طالب')) return `المقيد في (${role})`;
+  if (role.includes('طالب')) return `المقيد/ة بصفة (${role})`;
   if (role.includes('ولي أمر')) return `المشارك بصفة (${role})`;
   return `المسجلـ/ـة بصفة (${role})`;
 }
@@ -61,7 +59,7 @@ export default function PlacementTestPage() {
   const [stage, setStage] = useState<Stage>('select-level');
   const [selectedLevelId, setSelectedLevelId] = useState<LevelChoiceId>('comprehensive');
   const [studentName, setStudentName] = useState('');
-  const [studentGrade, setStudentGrade] = useState<string>(GRADE_OPTIONS[0] ?? 'طالبة — الصف الأول متوسط');
+  const [studentGrade, setStudentGrade] = useState<string>(GRADE_OPTIONS[0] ?? 'طالب/ـة — الصف الأول متوسط');
 
   // Testing stage state
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -293,9 +291,9 @@ export default function PlacementTestPage() {
                 اختبار تحديد المستوى والتشخيص اللغوي
               </h1>
               <p className="mx-auto mt-2.5 max-w-2xl text-xs sm:text-sm font-semibold leading-relaxed text-slate-600">
-                منصة معتمدة وموجهة لطالبات مدرسة متوسطة وثانوية الجرادية بإشراف المعلمة{' '}
+                منصة معتمدة وموجهة لطلاب وطالبات مدرسة متوسطة وثانوية الجرادية وكافة الزوار بإشراف المعلمة{' '}
                 <span className="font-black text-indigo-900">{TEACHER_OFFICIAL_NAME}</span>.
-                اختاري مستواكِ المناسب أو خوضي التقييم الشامل للحصول على تقرير أداء وشهادة تشخيصية رقمية.
+                اختر مستواك المناسب أو خُض التقييم الشامل للحصول على تقرير أداء وشهادة تشخيصية رقمية.
               </p>
 
               {/* Participant Identity Inputs */}
@@ -353,10 +351,10 @@ export default function PlacementTestPage() {
               <div className="mb-4 flex items-center justify-between">
                 <div>
                   <h2 className="text-lg sm:text-xl font-black text-slate-900">
-                    اختاري مسار التقييم المناسب لكِ
+                    اختر مسار التقييم المناسب لك
                   </h2>
                   <p className="text-xs font-semibold text-slate-500">
-                    يمكنكِ خوض التشخيص المتدرج أو اختيار المستوى الذي تدرسينه مباشرة
+                    يمكنك خوض التشخيص المتدرج أو اختيار المستوى المطلوب مباشرة
                   </p>
                 </div>
               </div>
@@ -850,7 +848,7 @@ export default function PlacementTestPage() {
                   مراجعة تفصيلية للإجابات والشروحات التعليمية
                 </h2>
                 <p className="mt-1 text-xs font-semibold text-slate-500">
-                  استفيدي من توضيحات المعلمة {TEACHER_OFFICIAL_NAME} للأسئلة لتعزيز فهمكِ وتجنب الأخطاء مستقبلاً:
+                  استفد من توضيحات المعلمة {TEACHER_OFFICIAL_NAME} للأسئلة لتعزيز فهمك وتجنب الأخطاء مستقبلاً:
                 </p>
               </div>
 

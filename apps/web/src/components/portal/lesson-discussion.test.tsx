@@ -17,7 +17,7 @@ describe('LessonDiscussion component', () => {
     );
 
     expect(
-      screen.getByRole('heading', { name: /اسألي المعلمة مريم الصميلي حول الدرس/i })
+      screen.getByRole('heading', { name: /اسأل المعلمة مريم الصميلي حول الدرس/i })
     ).toBeInTheDocument();
     expect(screen.getByText(/المضارع البسيط/)).toBeInTheDocument();
 
@@ -42,7 +42,7 @@ describe('LessonDiscussion component', () => {
     });
 
     const nameInput = screen.getByLabelText(/اسم الكريم/i);
-    const questionInput = screen.getByLabelText(/سؤالكِ أو استفساركِ/i);
+    const questionInput = screen.getByLabelText(/سؤالك أو استفسارك/i);
     const submitBtn = screen.getByRole('button', { name: /إرسال الاستفسار/i });
 
     fireEvent.change(nameInput, { target: { value: 'فاطمة محمد' } });

@@ -518,7 +518,7 @@ export const guestbookClient = {
     const newLocal: GuestbookEntry = {
       id: `local-${Date.now()}`,
       name: entry.name.trim(),
-      role: entry.role.trim() || 'طالبة زائرة',
+      role: entry.role.trim() || 'زائر كريم',
       message: entry.message.trim(),
       createdAt: new Date().toISOString(),
       likes: 1,

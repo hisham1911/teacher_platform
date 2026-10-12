@@ -29,8 +29,8 @@ interface LessonDiscussionProps {
 }
 
 const ROLE_OPTIONS = [
-  { label: 'طالبة — متوسطة الجرادية', value: 'طالبة — متوسطة الجرادية' },
-  { label: 'طالبة — ثانوية الجرادية', value: 'طالبة — ثانوية الجرادية' },
+  { label: 'طالب / طالبة — متوسطة الجرادية', value: 'طالب/ـة — متوسطة الجرادية' },
+  { label: 'طالب / طالبة — ثانوية الجرادية', value: 'طالب/ـة — ثانوية الجرادية' },
   { label: 'ولي أمر طالبـ/ـة', value: 'ولي أمر' },
   { label: 'معلمـ/ـة أو كادر تعليمي', value: 'كادر تعليمي' },
   { label: 'زائر / مهتم باللغة', value: 'زائر مهتم' },
@@ -58,7 +58,7 @@ export function LessonDiscussion({ topicSlug, topicTitle }: LessonDiscussionProp
   const [entries, setEntries] = useState<GuestbookEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState('');
-  const [role, setRole] = useState('طالبة — متوسطة الجرادية');
+  const [role, setRole] = useState('طالب/ـة — متوسطة الجرادية');
   const [message, setMessage] = useState('');
   const [honeypot, setHoneypot] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -211,10 +211,10 @@ export function LessonDiscussion({ topicSlug, topicTitle }: LessonDiscussionProp
           </div>
           <div>
             <h2 className="text-lg sm:text-xl font-black text-slate-900">
-              اسألي المعلمة {TEACHER_OFFICIAL_NAME} حول الدرس
+              اسأل المعلمة {TEACHER_OFFICIAL_NAME} حول الدرس
             </h2>
             <p className="mt-0.5 text-xs sm:text-sm font-semibold text-slate-500">
-              هل توجد نقطة غير واضحة في قاعدة ({topicTitle})؟ اطرحي سؤالكِ هنا وستجيبكِ المعلمة
+              هل توجد نقطة غير واضحة في قاعدة ({topicTitle})؟ اطرح سؤالك هنا وستجيبك المعلمة
             </p>
           </div>
         </div>
@@ -284,7 +284,7 @@ export function LessonDiscussion({ topicSlug, topicTitle }: LessonDiscussionProp
 
         <div>
           <label htmlFor={`question-text-${topicSlug}`} className="block text-xs font-bold text-slate-700 mb-1">
-            سؤالكِ أو استفساركِ حول القاعدة:
+            سؤالك أو استفسارك حول القاعدة:
           </label>
           <textarea
             id={`question-text-${topicSlug}`}
@@ -312,7 +312,7 @@ export function LessonDiscussion({ topicSlug, topicTitle }: LessonDiscussionProp
         {successMsg && (
           <div className="mt-3 flex items-center gap-2 rounded-xl bg-emerald-50 p-2.5 text-xs font-bold text-emerald-700 border border-emerald-200">
             <CheckCircle2 className="h-4 w-4 shrink-0" />
-            <span>تم إرسال استفساركِ بنجاح! ستجيب المعلمة مريم الصميلي عليه قريباً.</span>
+            <span>تم إرسال استفسارك بنجاح! ستجيب المعلمة مريم الصميلي عليه قريباً.</span>
           </div>
         )}
 
@@ -341,7 +341,7 @@ export function LessonDiscussion({ topicSlug, topicTitle }: LessonDiscussionProp
       <div className="mt-8 space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-black text-slate-800">
-            استفسارات الطالبات ({entries.length})
+            استفسارات وأسئلة الدرس ({entries.length})
           </h3>
           <span className="text-xs text-slate-400">
             محدث مباشرة
@@ -357,7 +357,7 @@ export function LessonDiscussion({ topicSlug, topicTitle }: LessonDiscussionProp
           <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 py-10 text-center">
             <MessageCircleQuestion className="h-10 w-10 text-slate-300 mb-2" />
             <p className="text-sm font-bold text-slate-600">لا توجد استفسارات بعد حول هذه القاعدة</p>
-            <p className="text-xs text-slate-400 mt-1">كوني أول من يطرح سؤالاً على المعلمة {TEACHER_OFFICIAL_NAME}!</p>
+            <p className="text-xs text-slate-400 mt-1">كن أول من يطرح سؤالاً على المعلمة {TEACHER_OFFICIAL_NAME}!</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -486,7 +486,7 @@ export function LessonDiscussion({ topicSlug, topicTitle }: LessonDiscussionProp
                       <textarea
                         value={teacherReplyText}
                         onChange={(e) => setTeacherReplyText(e.target.value)}
-                        placeholder="اكتبي توضيحكِ وإجابتكِ للطالبة هنا..."
+                        placeholder="اكتبي توضيحكِ وإجابتكِ على هذا الاستفسار هنا..."
                         rows={3}
                         className="w-full resize-none rounded-lg border border-violet-200 bg-white p-2.5 text-xs font-medium text-slate-800 placeholder-slate-400 focus:border-violet-500 focus:outline-hidden focus:ring-1 focus:ring-violet-300"
                       />

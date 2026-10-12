@@ -576,7 +576,7 @@ export default function TeacherAdminPage() {
                       <textarea
                         value={replyText}
                         onChange={(e) => setReplyText(e.target.value)}
-                        placeholder="اكتبي توضيحكِ للطالبة أو الرد على استفسارها هنا..."
+                        placeholder="اكتبي توضيحكِ أو الرد على هذا الاستفسار هنا..."
                         rows={3}
                         className="w-full resize-none rounded-xl border border-violet-200 bg-white p-3 text-xs sm:text-sm font-medium text-slate-800 placeholder-slate-400 focus:border-violet-500 focus:outline-hidden focus:ring-2 focus:ring-violet-200"
                       />
