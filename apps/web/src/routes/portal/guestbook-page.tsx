@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router';
 import {
   MessageSquareHeart,
   Send,
@@ -9,11 +8,7 @@ import {
   CheckCircle2,
   AlertCircle,
   Trash2,
-  ShieldCheck,
-  Lock,
-  X,
   Loader2,
-  LayoutDashboard,
 } from 'lucide-react';
 import { PublicBackdrop } from '../../components/layout/root-layout';
 import { PortalNav, PortalFooter } from '../../components/portal/portal-nav';
@@ -24,7 +19,6 @@ import {
   checkRateLimit,
   getLikedEntries,
   isTeacherLoggedIn,
-  loginTeacher,
   TEACHER_OFFICIAL_NAME,
 } from '../../data/api-client/guestbook-client';
 
@@ -68,16 +62,10 @@ export default function GuestbookPage() {
   // Liked IDs set to prevent infinite likes
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
 
-  // وضع إدارة المعلمة مريم الصميلي
-  const [teacherAdminOpen, setTeacherAdminOpen] = useState(false);
-  const [username, setUsername] = useState('maryam');
-  const [passcode, setPasscode] = useState('');
-  const [isTeacherAdmin, setIsTeacherAdmin] = useState(false);
-  const [passcodeError, setPasscodeError] = useState(false);
+  const isTeacherAdmin = isTeacherLoggedIn();
 
   useEffect(() => {
     let mounted = true;
-    setIsTeacherAdmin(isTeacherLoggedIn());
     setLikedIds(new Set(getLikedEntries()));
 
     guestbookClient
@@ -165,18 +153,6 @@ export default function GuestbookPage() {
     const ok = await guestbookClient.deleteEntry(id);
     if (ok) {
       setEntries((prev) => prev.filter((item) => item.id !== id));
-    }
-  }
-
-  function handleUnlockTeacherAdmin(e: React.FormEvent) {
-    e.preventDefault();
-    const ok = loginTeacher(username, passcode);
-    if (ok) {
-      setIsTeacherAdmin(true);
-      setTeacherAdminOpen(false);
-      setPasscodeError(false);
-    } else {
-      setPasscodeError(true);
     }
   }
 
@@ -319,31 +295,6 @@ export default function GuestbookPage() {
             <h2 className="text-base font-black text-slate-900">
               كلمات الزوار السابقة ({entries.length})
             </h2>
-
-            {isTeacherAdmin ? (
-              <div className="flex items-center gap-2">
-                <Link
-                  to="/teacher-admin"
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-violet-100 px-2.5 py-1 text-xs font-black text-violet-800 hover:bg-violet-200 transition"
-                >
-                  <LayoutDashboard className="h-3.5 w-3.5" />
-                  <span>لوحة المعلمة مريم</span>
-                </Link>
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-bold text-emerald-800">
-                  <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-                  <span>إدارة المعلمة مفعّلة</span>
-                </span>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setTeacherAdminOpen(true)}
-                className="inline-flex items-center gap-1 text-xs font-bold text-slate-400 hover:text-slate-700 transition"
-              >
-                <Lock className="h-3 w-3" />
-                <span>دخول المعلمة</span>
-              </button>
-            )}
           </div>
 
           {loading ? (
@@ -424,82 +375,6 @@ export default function GuestbookPage() {
           )}
         </section>
       </div>
-
-      {/* Teacher Moderation Login Modal */}
-      {teacherAdminOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 backdrop-blur-xs p-4">
-          <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl border border-slate-200 animate-page-enter">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-black text-slate-900 flex items-center gap-1.5">
-                <Lock className="h-4 w-4 text-rose-600" />
-                <span>دخول المعلمة {TEACHER_OFFICIAL_NAME}</span>
-              </h3>
-              <button
-                type="button"
-                onClick={() => setTeacherAdminOpen(false)}
-                className="text-slate-400 hover:text-slate-600"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            <p className="text-xs font-medium text-slate-600 mb-4">
-              أدخلي اسم المستخدم ورمز المرور الخاص بكِ لإدارة التعليقات أو الانتقال إلى لوحة التحكم.
-            </p>
-
-            <form onSubmit={handleUnlockTeacherAdmin} className="space-y-3">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">اسم المستخدم:</label>
-                <input
-                  type="text"
-                  required
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-800"
-                  placeholder="maryam"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">كلمة المرور:</label>
-                <input
-                  type="password"
-                  required
-                  value={passcode}
-                  onChange={(e) => {
-                    setPasscode(e.target.value);
-                    setPasscodeError(false);
-                  }}
-                  placeholder="كلمة المرور..."
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-800 focus:border-rose-500 focus:outline-hidden"
-                />
-              </div>
-
-              {passcodeError && (
-                <p className="text-[11px] font-bold text-rose-600 flex items-center gap-1">
-                  <AlertCircle className="h-3.5 w-3.5" />
-                  <span>اسم المستخدم أو كلمة المرور غير صحيحة.</span>
-                </p>
-              )}
-
-              <div className="flex gap-2 pt-2">
-                <button
-                  type="submit"
-                  className="flex-1 rounded-xl bg-gradient-to-r from-rose-600 to-fuchsia-600 py-2.5 text-xs font-black text-white hover:from-rose-700 hover:to-fuchsia-700 transition"
-                >
-                  تسجيل الدخول
-                </button>
-                <Link
-                  to="/teacher-admin"
-                  className="rounded-xl border border-violet-200 bg-violet-50 px-3 py-2.5 text-xs font-bold text-violet-800 hover:bg-violet-100 transition"
-                >
-                  اللوحة المخصصة
-                </Link>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       <PortalFooter />
     </div>

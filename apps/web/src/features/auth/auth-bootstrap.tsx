@@ -1,5 +1,6 @@
 import { useEffect, type ReactNode } from 'react';
 import { bootstrapSession } from '../../data/api-client/endpoints';
+import { clearSession, getActiveTenantId } from '../../lib/auth/session';
 
 let bootstrapped = false;
 let bootstrapPromise: Promise<unknown> | null = null;
@@ -11,6 +12,19 @@ async function ensureBootstrap(): Promise<void> {
     await bootstrapPromise;
     return;
   }
+
+  // تجنب إرسال طلب refresh لمسارات المنصة العامة لتفادي خطأ 401 في الكونسول
+  const isProtectedOrAuthRoute =
+    typeof window !== 'undefined' &&
+    /^\/(dashboard|platform|auth|onboarding)/.test(window.location.pathname);
+  const hasSavedTenant = Boolean(getActiveTenantId());
+
+  if (!isProtectedOrAuthRoute && !hasSavedTenant) {
+    clearSession();
+    bootstrapped = true;
+    return;
+  }
+
   bootstrapPromise = bootstrapSession()
     .catch(() => null)
     .then(() => {

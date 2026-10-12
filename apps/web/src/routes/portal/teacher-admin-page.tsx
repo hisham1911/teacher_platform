@@ -413,7 +413,7 @@ export default function TeacherAdminPage() {
                   : 'text-slate-600 hover:bg-slate-100'
               }`}
             >
-              بانتظار الإجابة ({stats.pendingQuestions})
+              أسئلة بانتظار الإجابة ({stats.pendingQuestions})
             </button>
             <button
               type="button"
@@ -424,7 +424,7 @@ export default function TeacherAdminPage() {
                   : 'text-slate-600 hover:bg-slate-100'
               }`}
             >
-              تمت الإجابة ({stats.answeredQuestions})
+              أسئلة تمت الإجابة عليها ({stats.answeredQuestions})
             </button>
             <button
               type="button"
@@ -435,7 +435,7 @@ export default function TeacherAdminPage() {
                   : 'text-slate-600 hover:bg-slate-100'
               }`}
             >
-              سجل الزوار ({stats.guestbookCount})
+              سجل الزوار العام ({stats.guestbookCount})
             </button>
           </div>
 
@@ -616,17 +616,23 @@ export default function TeacherAdminPage() {
                     </span>
 
                     <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setActiveReplyId(isReplying ? null : entry.id);
-                          setReplyText(entry.teacherReply || '');
-                        }}
-                        className="inline-flex items-center gap-1 rounded-lg bg-violet-100 px-3 py-1.5 text-xs font-black text-violet-800 hover:bg-violet-200 transition"
-                      >
-                        <CornerDownLeft className="h-3.5 w-3.5" />
-                        <span>{entry.teacherReply ? 'تعديل الإجابة' : 'إجابة المعلمة'}</span>
-                      </button>
+                      {entry.topicSlug ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveReplyId(isReplying ? null : entry.id);
+                            setReplyText(entry.teacherReply || '');
+                          }}
+                          className="inline-flex items-center gap-1 rounded-lg bg-violet-100 px-3 py-1.5 text-xs font-black text-violet-800 hover:bg-violet-200 transition"
+                        >
+                          <CornerDownLeft className="h-3.5 w-3.5" />
+                          <span>{entry.teacherReply ? 'تعديل الإجابة' : 'إجابة المعلمة'}</span>
+                        </button>
+                      ) : (
+                        <span className="text-[11px] font-semibold text-slate-400 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200">
+                          سجل الزوار (شكر وتقدير)
+                        </span>
+                      )}
 
                       <button
                         type="button"

@@ -60,30 +60,40 @@ describe('LessonDiscussion component', () => {
     });
   });
 
-  it('unlocks teacher mode with username and password', async () => {
+  it('does not display any admin login buttons to public visitors', () => {
     render(
       <MemoryRouter>
         <LessonDiscussion topicSlug="present-simple" topicTitle="المضارع البسيط" />
       </MemoryRouter>
     );
 
-    const teacherBtn = screen.getByRole('button', { name: /دخول المعلمة للإجابة/i });
-    fireEvent.click(teacherBtn);
+    expect(
+      screen.queryByRole('button', { name: /دخول المعلمة/i })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /لوحة التحكم/i })
+    ).not.toBeInTheDocument();
+  });
 
-    const passInput = screen.getByLabelText(/كلمة المرور/i);
-    const unlockBtn = screen.getByRole('button', { name: /تأكيد الدخول/i });
+  it('activates teacher reply mode when teacher session exists in storage', async () => {
+    localStorage.setItem(
+      'english_spark_teacher_session_v1',
+      JSON.stringify({
+        authenticated: true,
+        username: 'maryam',
+        name: 'مريم الصميلي',
+        loggedInAt: new Date().toISOString(),
+      })
+    );
 
-    // Wrong passcode
-    fireEvent.change(passInput, { target: { value: '1234' } });
-    fireEvent.click(unlockBtn);
-    expect(screen.getByText(/غير صحيحة/i)).toBeInTheDocument();
-
-    // Correct passcode
-    fireEvent.change(passInput, { target: { value: 'maryam2026' } });
-    fireEvent.click(unlockBtn);
+    render(
+      <MemoryRouter>
+        <LessonDiscussion topicSlug="present-simple" topicTitle="المضارع البسيط" />
+      </MemoryRouter>
+    );
 
     await waitFor(() => {
-      expect(screen.getByText(/لوحة التحكم/i)).toBeInTheDocument();
+      expect(screen.getByText(/وضع الرد مفعّل/i)).toBeInTheDocument();
     });
   });
 });

@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router';
 import {
   MessageCircleQuestion,
   Send,
@@ -10,11 +9,9 @@ import {
   AlertCircle,
   Trash2,
   ShieldCheck,
-  Lock,
   X,
   Loader2,
   CornerDownLeft,
-  LayoutDashboard,
 } from 'lucide-react';
 import {
   guestbookClient,
@@ -23,7 +20,6 @@ import {
   checkRateLimit,
   getLikedEntries,
   isTeacherLoggedIn,
-  loginTeacher,
   TEACHER_OFFICIAL_NAME,
 } from '../../data/api-client/guestbook-client';
 
@@ -74,10 +70,6 @@ export function LessonDiscussion({ topicSlug, topicTitle }: LessonDiscussionProp
 
   // Teacher Moderation & Reply State
   const [isTeacherAdmin, setIsTeacherAdmin] = useState(false);
-  const [teacherAdminModalOpen, setTeacherAdminModalOpen] = useState(false);
-  const [teacherUsername, setTeacherUsername] = useState('maryam');
-  const [passcode, setPasscode] = useState('');
-  const [passcodeError, setPasscodeError] = useState(false);
   const [activeReplyId, setActiveReplyId] = useState<string | null>(null);
   const [teacherReplyText, setTeacherReplyText] = useState('');
   const [replySubmitting, setReplySubmitting] = useState(false);
@@ -171,7 +163,7 @@ export function LessonDiscussion({ topicSlug, topicTitle }: LessonDiscussionProp
 
   async function handleDelete(id: string) {
     if (!confirm('هل أنتِ متأكدة من حذف هذا الاستفسار نهائياً؟')) return;
-    const ok = await guestbookClient.deleteEntry(id, passcode, topicSlug);
+    const ok = await guestbookClient.deleteEntry(id, undefined, topicSlug);
     if (ok) {
       setEntries((prev) => prev.filter((item) => item.id !== id));
     }
@@ -184,7 +176,7 @@ export function LessonDiscussion({ topicSlug, topicTitle }: LessonDiscussionProp
       const ok = await guestbookClient.addTeacherReply(
         id,
         teacherReplyText.trim(),
-        passcode,
+        undefined,
         topicSlug
       );
       if (ok) {
@@ -202,22 +194,10 @@ export function LessonDiscussion({ topicSlug, topicTitle }: LessonDiscussionProp
         setActiveReplyId(null);
         setTeacherReplyText('');
       } else {
-        alert('حدث خطأ في صلاحية المعلمة، يرجى تسجيل الدخول مجدداً.');
+        alert('حدث خطأ في صلاحية المعلمة، يرجى تسجيل الدخول من الرابط المخصص أولاً.');
       }
     } finally {
       setReplySubmitting(false);
-    }
-  }
-
-  function handleUnlockAdmin(e: React.FormEvent) {
-    e.preventDefault();
-    const ok = loginTeacher(teacherUsername, passcode);
-    if (ok) {
-      setIsTeacherAdmin(true);
-      setTeacherAdminModalOpen(false);
-      setPasscodeError(false);
-    } else {
-      setPasscodeError(true);
     }
   }
 
@@ -239,33 +219,13 @@ export function LessonDiscussion({ topicSlug, topicTitle }: LessonDiscussionProp
           </div>
         </div>
 
-        {/* Teacher Mode Button */}
-        <div>
-          {isTeacherAdmin ? (
-            <div className="flex items-center gap-2">
-              <Link
-                to="/teacher-admin"
-                className="inline-flex items-center gap-1.5 rounded-xl bg-violet-100 px-3 py-1.5 text-xs font-black text-violet-800 hover:bg-violet-200 transition"
-              >
-                <LayoutDashboard className="h-3.5 w-3.5" />
-                <span>لوحة التحكم</span>
-              </Link>
-              <div className="flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-800 border border-emerald-200">
-                <ShieldCheck className="h-4 w-4 text-emerald-600" />
-                <span>أ. {TEACHER_OFFICIAL_NAME} (نشط)</span>
-              </div>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setTeacherAdminModalOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/90 bg-slate-50/80 px-3 py-2 text-xs font-bold text-slate-600 transition hover:bg-violet-50 hover:text-violet-700 hover:border-violet-200"
-            >
-              <Lock className="h-3.5 w-3.5" />
-              <span>دخول المعلمة للإجابة</span>
-            </button>
-          )}
-        </div>
+        {/* Teacher Mode Indicator (Only shown if already logged in) */}
+        {isTeacherAdmin && (
+          <div className="flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-800 border border-emerald-200">
+            <ShieldCheck className="h-4 w-4 text-emerald-600" />
+            <span>أ. {TEACHER_OFFICIAL_NAME} (وضع الرد مفعّل)</span>
+          </div>
+        )}
       </div>
 
       {/* Question Form */}
@@ -563,91 +523,6 @@ export function LessonDiscussion({ topicSlug, topicTitle }: LessonDiscussionProp
         )}
       </div>
 
-      {/* Teacher Admin Modal */}
-      {teacherAdminModalOpen && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs"
-        >
-          <div className="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl border border-slate-100">
-            <button
-              type="button"
-              onClick={() => setTeacherAdminModalOpen(false)}
-              className="absolute left-4 top-4 rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-              aria-label="إغلاق"
-            >
-              <X className="h-5 w-5" />
-            </button>
-
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-100 text-violet-700 mb-3">
-              <Lock className="h-6 w-6" />
-            </div>
-
-            <h3 className="text-base font-black text-slate-900">
-              دخول المعلمة {TEACHER_OFFICIAL_NAME}
-            </h3>
-            <p className="mt-1 text-xs text-slate-500 font-medium">
-              أدخلي اسم المستخدم وكلمة المرور الخاصة بكِ لتفعيل وضع الإجابة والإدارة.
-            </p>
-
-            <form onSubmit={handleUnlockAdmin} className="mt-4 space-y-3">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">اسم المستخدم:</label>
-                <input
-                  type="text"
-                  required
-                  value={teacherUsername}
-                  onChange={(e) => setTeacherUsername(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-800"
-                  placeholder="maryam"
-                />
-              </div>
-
-              <div>
-                <label htmlFor={`teacher-passcode-${topicSlug}`} className="block text-xs font-bold text-slate-700 mb-1">
-                  كلمة المرور:
-                </label>
-                <input
-                  id={`teacher-passcode-${topicSlug}`}
-                  type="password"
-                  required
-                  value={passcode}
-                  onChange={(e) => {
-                    setPasscode(e.target.value);
-                    setPasscodeError(false);
-                  }}
-                  placeholder="أدخلي كلمة المرور..."
-                  className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs sm:text-sm font-medium text-slate-800 placeholder-slate-400 focus:border-violet-500 focus:outline-hidden focus:ring-2 focus:ring-violet-200"
-                  autoFocus
-                />
-              </div>
-
-              {passcodeError && (
-                <p className="text-xs font-bold text-rose-600 flex items-center gap-1">
-                  <AlertCircle className="h-3.5 w-3.5" />
-                  <span>اسم المستخدم أو كلمة المرور غير صحيحة.</span>
-                </p>
-              )}
-
-              <div className="flex gap-2 pt-1">
-                <button
-                  type="submit"
-                  className="flex-1 rounded-xl bg-violet-700 py-2.5 text-xs sm:text-sm font-black text-white hover:bg-violet-800 transition"
-                >
-                  تأكيد الدخول
-                </button>
-                <Link
-                  to="/teacher-admin"
-                  className="rounded-xl border border-violet-200 bg-violet-50 px-3 py-2.5 text-xs font-bold text-violet-800 hover:bg-violet-100 transition"
-                >
-                  اللوحة الرئيسية
-                </Link>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </section>
   );
 }

@@ -383,9 +383,6 @@ export function PortalFooter() {
             <Link to="/guestbook" className="hover:text-violet-700 transition-colors">
               سجل الزوار
             </Link>
-            <Link to="/teacher-admin" className="text-violet-700 hover:text-violet-900 font-black transition-colors">
-              بوابة المعلمة
-            </Link>
             <span className="text-slate-300 hidden sm:inline" aria-hidden="true">
               •
             </span>
