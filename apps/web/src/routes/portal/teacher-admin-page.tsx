@@ -367,7 +367,7 @@ export default function TeacherAdminPage() {
                 <CheckCircle2 className="h-4 w-4 text-emerald-600" />
               </div>
               <p className="mt-2 text-2xl font-black text-emerald-950">{stats.answeredQuestions}</p>
-              <span className="text-[10px] text-emerald-700">إجابات منشورة للطالبات</span>
+              <span className="text-[10px] text-emerald-700">إجابات منشورة للطلاب والمشاركين</span>
             </div>
 
             <div className="rounded-2xl border border-rose-100 bg-rose-50/50 p-4">

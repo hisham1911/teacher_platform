@@ -29,11 +29,11 @@ interface LessonDiscussionProps {
 }
 
 const ROLE_OPTIONS = [
-  { label: 'طالب / طالبة — متوسطة الجرادية', value: 'طالب/ـة — متوسطة الجرادية' },
-  { label: 'طالب / طالبة — ثانوية الجرادية', value: 'طالب/ـة — ثانوية الجرادية' },
-  { label: 'ولي أمر طالبـ/ـة', value: 'ولي أمر' },
-  { label: 'معلمـ/ـة أو كادر تعليمي', value: 'كادر تعليمي' },
-  { label: 'زائر / مهتم باللغة', value: 'زائر مهتم' },
+  { label: 'طالب / طالبة — متوسطة الجرادية', value: 'طالب / طالبة — متوسطة الجرادية' },
+  { label: 'طالب / طالبة — ثانوية الجرادية', value: 'طالب / طالبة — ثانوية الجرادية' },
+  { label: 'ولي أمر', value: 'ولي أمر' },
+  { label: 'معلم أو كادر تعليمي', value: 'كادر تعليمي' },
+  { label: 'زائر كريم أو مهتم باللغة', value: 'زائر كريم' },
 ];
 
 function formatTimeAgo(dateString: string): string {
@@ -58,7 +58,7 @@ export function LessonDiscussion({ topicSlug, topicTitle }: LessonDiscussionProp
   const [entries, setEntries] = useState<GuestbookEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState('');
-  const [role, setRole] = useState('طالب/ـة — متوسطة الجرادية');
+  const [role, setRole] = useState('طالب / طالبة — متوسطة الجرادية');
   const [message, setMessage] = useState('');
   const [honeypot, setHoneypot] = useState('');
   const [submitting, setSubmitting] = useState(false);

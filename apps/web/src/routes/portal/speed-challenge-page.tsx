@@ -232,7 +232,7 @@ export default function SpeedChallengePage() {
 
             <div className="mx-auto mt-6 max-w-sm">
               <label htmlFor="speed-player-name" className="mb-1.5 block text-right text-xs font-bold text-slate-700">
-                اسم المشاركـ/ـة:
+                اسم الكريم:
               </label>
               <input
                 id="speed-player-name"
@@ -347,7 +347,7 @@ export default function SpeedChallengePage() {
             <h1 className="mt-1 text-2xl sm:text-4xl font-black text-slate-950">انتهت الـ 60 ثانية!</h1>
 
             <div className="my-5 rounded-2xl border border-amber-300 bg-amber-50/90 p-4">
-              <span className="text-xs font-bold text-amber-800">الرتبة المحققة للمشاركـ/ـة {playerName}:</span>
+              <span className="text-xs font-bold text-amber-800">الرتبة المحققة لـ {playerName}:</span>
               <h2 className="mt-1 text-xl sm:text-2xl font-black text-amber-900">{rankTitle}</h2>
               <p className="mt-1 text-xs text-amber-700">{rankDesc}</p>
             </div>

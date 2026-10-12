@@ -30,36 +30,22 @@ type Stage = 'select-level' | 'testing' | 'result';
 type LevelChoiceId = 'comprehensive' | 'level-1' | 'level-2' | 'level-3';
 
 const GRADE_OPTIONS = [
-  'طالب/ـة — الصف الأول متوسط',
-  'طالب/ـة — الصف الثاني متوسط',
-  'طالب/ـة — الصف الثالث متوسط',
-  'طالب/ـة — المرحلة الثانوية (الصف الأول)',
-  'طالب/ـة — المرحلة الثانوية (الصف الثاني)',
-  'طالب/ـة — المرحلة الثانوية (الصف الثالث)',
-  'طالب/ـة — زائر كريم',
+  'الصف الأول متوسط',
+  'الصف الثاني متوسط',
+  'الصف الثالث متوسط',
+  'المرحلة الثانوية — أول ثانوي',
+  'المرحلة الثانوية — ثاني ثانوي',
+  'المرحلة الثانوية — ثالث ثانوي',
   'ولي أمر',
-  'معلمـ/ـة أو مهتمـ/ـة باللغة',
-  'أخرى / زائر كريم',
+  'معلم / مهتم باللغة',
+  'زائر كريم',
 ];
-
-function getParticipantPrefix(role: string = ''): string {
-  if (role.includes('ولي أمر')) return 'ولي الأمر الكريم:';
-  if (role.includes('معلم')) return 'المعلمـ/ـة:';
-  if (role.includes('طالب')) return 'المشاركـ/ـة:';
-  return 'المشاركـ/ـة الكريمـ/ـة:';
-}
-
-function getParticipantEnrollment(role: string = ''): string {
-  if (role.includes('طالب')) return `المقيد/ة بصفة (${role})`;
-  if (role.includes('ولي أمر')) return `المشارك بصفة (${role})`;
-  return `المسجلـ/ـة بصفة (${role})`;
-}
 
 export default function PlacementTestPage() {
   const [stage, setStage] = useState<Stage>('select-level');
   const [selectedLevelId, setSelectedLevelId] = useState<LevelChoiceId>('comprehensive');
   const [studentName, setStudentName] = useState('');
-  const [studentGrade, setStudentGrade] = useState<string>(GRADE_OPTIONS[0] ?? 'طالب/ـة — الصف الأول متوسط');
+  const [studentGrade, setStudentGrade] = useState<string>(GRADE_OPTIONS[0] ?? 'الصف الأول متوسط');
 
   // Testing stage state
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -300,7 +286,7 @@ export default function PlacementTestPage() {
               <div className="mx-auto mt-7 max-w-xl rounded-2xl border border-indigo-100 bg-indigo-50/40 p-4 sm:p-6 text-right">
                 <h2 className="text-xs sm:text-sm font-black text-indigo-950 mb-3 flex items-center gap-1.5">
                   <ShieldCheck className="h-4 w-4 text-indigo-600" />
-                  <span>بيانات المشاركـ/ـة للشهادة والتقرير:</span>
+                  <span>بيانات المشارك للشهادة والتقرير:</span>
                 </h2>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
@@ -486,7 +472,7 @@ export default function PlacementTestPage() {
 
               <div className="flex items-center gap-3">
                 <span className="text-xs font-bold text-slate-500">
-                  الطالبة: <span className="font-black text-slate-900">{studentName}</span> ({studentGrade})
+                  المشارك: <span className="font-black text-slate-900">{studentName}</span> {studentGrade && `• (${studentGrade})`}
                 </span>
               </div>
             </div>
@@ -695,17 +681,24 @@ export default function PlacementTestPage() {
               </p>
 
               <div className="my-6 border-y border-dashed border-indigo-200 py-6 max-w-2xl mx-auto">
-                <p className="text-xs sm:text-sm font-medium text-slate-600">
-                  تشهد المنصة بأن {getParticipantPrefix(studentGrade)}
+                <p className="text-xs sm:text-sm font-semibold text-slate-500">
+                  تَفخَر المنصة بمنح هذه الشهادة الرسمية إلى:
                 </p>
-                <h3 className="text-xl sm:text-3xl font-black text-indigo-950 mt-1 mb-2">
+                <h3 className="text-2xl sm:text-4xl font-black text-indigo-950 mt-2 mb-1">
                   {studentName}
                 </h3>
-                <p className="text-xs sm:text-sm font-semibold text-slate-700">
-                  {getParticipantEnrollment(studentGrade)} قد أتمـ/ـت بنجاح تقييم{' '}
-                  <span className="font-black text-indigo-900">({activeLevelMeta.titleAr})</span> وحصلـ/ـت على تقدير:
+                {studentGrade && (
+                  <div className="my-1.5">
+                    <span className="inline-block text-xs sm:text-sm font-bold text-indigo-800 bg-indigo-50 border border-indigo-200/70 px-3.5 py-0.5 rounded-full">
+                      {studentGrade}
+                    </span>
+                  </div>
+                )}
+                <p className="text-xs sm:text-sm font-semibold text-slate-700 mt-2.5 leading-relaxed">
+                  تقديرًا لاجتياز تقييم{' '}
+                  <span className="font-black text-indigo-950">({activeLevelMeta.titleAr})</span> بنجاح، والحصول على نتيجة:
                 </p>
-                <div className="mt-3 inline-block rounded-xl bg-indigo-100/90 px-4 py-1.5 text-sm sm:text-base font-black text-indigo-950">
+                <div className="mt-3.5 inline-block rounded-xl bg-indigo-100/90 px-4 py-1.5 text-sm sm:text-base font-black text-indigo-950">
                   {resultData.cefrTitle} بنسبة إتقان {resultData.percent}%
                 </div>
               </div>
