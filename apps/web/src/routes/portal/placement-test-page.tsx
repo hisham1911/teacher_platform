@@ -15,6 +15,7 @@ import {
   Trophy,
   ShieldCheck,
   ChevronLeft,
+  Star,
 } from 'lucide-react';
 import { PublicBackdrop } from '../../components/layout/root-layout';
 import { PortalNav, PortalFooter } from '../../components/portal/portal-nav';
@@ -46,6 +47,9 @@ export default function PlacementTestPage() {
   const [selectedLevelId, setSelectedLevelId] = useState<LevelChoiceId>('comprehensive');
   const [studentName, setStudentName] = useState('');
   const [studentGrade, setStudentGrade] = useState<string>(GRADE_OPTIONS[0] ?? 'الصف الأول متوسط');
+  const [verificationCode] = useState(
+    () => 'SPARK-PL-' + Math.random().toString(36).substring(2, 8).toUpperCase()
+  );
 
   // Testing stage state
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -137,7 +141,15 @@ export default function PlacementTestPage() {
 
     // CEFR & Level Determination
     let cefrCode = 'A1';
-    let cefrTitle = 'A1 — تأسيسي ومبتدئ (Beginner)';
+    let cefrTitleAr = 'المستوى التأسيسي (A1 Breakthrough)';
+    let cefrTitleEn = 'A1 Breakthrough • Foundation Level';
+    let standingAr = 'مستوى تأسيسي في مسار التمكين';
+    let standingEn = 'Foundation Pathway (Active Learner)';
+    let standingBadgeClass = 'bg-teal-50 text-teal-800 border-teal-300';
+    let evaluationStatementAr =
+      'أتم المشارك متطلبات التقييم التشخيصي الاستكشافي لتحديد المنطلق التعليمي، واستحق التوجيه لمسار التأسيس والمفردات اليومية.';
+    let evaluationStatementEn =
+      'Completed the exploratory diagnostic evaluation, establishing the essential baseline for targeted foundational practice.';
     let levelBadgeColor = 'bg-emerald-50 text-emerald-800 border-emerald-300';
     let summaryAr =
       'أداء تأسيسي في استيعاب المفردات والقواعد الأساسية. يُنصح بمتابعة بطاقات القواعد المصورة لتثبيت الأزمنة البسيطة وحل تمارين المحادثة اليومية.';
@@ -145,60 +157,132 @@ export default function PlacementTestPage() {
     if (selectedLevelId === 'comprehensive') {
       if (correctCount >= 21) {
         cefrCode = 'B2';
-        cefrTitle = 'B2 — متقدم ومتمكن (Upper Intermediate)';
+        cefrTitleAr = 'المستوى فوق المتوسط المتقدم (B2 Vantage)';
+        cefrTitleEn = 'B2 Vantage • High Upper-Intermediate';
+        standingAr = 'امتياز مع مرتبة الشرف العليا';
+        standingEn = 'High Distinction & Honors';
+        standingBadgeClass = 'bg-gradient-to-r from-amber-500 to-yellow-600 text-white border-amber-300';
         levelBadgeColor = 'bg-purple-50 text-purple-800 border-purple-300';
+        evaluationStatementAr =
+          'أظهر المشارك تميزاً استثنائياً وجدارة لغوية متقدمة في القواعد المركبة والمفردات الأكاديمية ومهارات التفكير التحليلي، مما يؤهله بثقة للاختبارات الدولية والمستويات الجامعية.';
+        evaluationStatementEn =
+          'Demonstrated outstanding linguistic excellence and advanced command across complex grammar, lexical context, and critical reasoning benchmarks.';
         summaryAr =
           'مستوى ممتاز واستثنائي! حصيلة لغوية رفيعة واستيعاب عالٍ للتراكيب المعقدة ومهارات التفكير الناقد والجاهزية للاختبارات الدولية والمتقدمة.';
       } else if (correctCount >= 16) {
         cefrCode = 'B1';
-        cefrTitle = 'B1 — متوسط متمكن (Intermediate)';
+        cefrTitleAr = 'المستوى المتوسط المستقل (B1 Threshold)';
+        cefrTitleEn = 'B1 Threshold • Independent Intermediate';
+        standingAr = 'جيد جداً بجدارة واستحقاق';
+        standingEn = 'Merit & Solid Proficiency';
+        standingBadgeClass = 'bg-gradient-to-r from-indigo-600 to-blue-700 text-white border-indigo-300';
         levelBadgeColor = 'bg-blue-50 text-blue-800 border-blue-300';
+        evaluationStatementAr =
+          'أظهر المشارك استيعاباً متقناً للجمل والأزمنة المركبة ومفردات التواصل الواقعي، مع كفاءة مستقلة تؤهله للانتقال الواثق نحو المستويات المتقدمة.';
+        evaluationStatementEn =
+          'Demonstrated sound linguistic competence and solid control of core tenses and functional vocabulary, demonstrating independent communicative fluency.';
         summaryAr =
           'مستوى متوسط وجيد جداً! فهم متقن للجمل والأزمنة المركبة ومفردات الحياة اليومية. يُنصح بالاستمرار في قراءة النصوص وتحديات السرعة.';
       } else if (correctCount >= 10) {
         cefrCode = 'A2';
-        cefrTitle = 'A2 — فوق المبتدئ (Elementary)';
+        cefrTitleAr = 'المستوى الابتدائي المتقدم (A2 Waystage)';
+        cefrTitleEn = 'A2 Waystage • Strong Elementary';
+        standingAr = 'كفاءة لغوية أساسية معتمدة';
+        standingEn = 'Certified Elementary Competence';
+        standingBadgeClass = 'bg-gradient-to-r from-teal-600 to-emerald-700 text-white border-teal-300';
         levelBadgeColor = 'bg-amber-50 text-amber-800 border-amber-300';
+        evaluationStatementAr =
+          'أظهر المشارك معرفة سليمة بالمبادئ النحوية التأسيسية ومفردات المحادثة اليومية، مع قابلية عالية للتقدم السريع نحو المستوى المتوسط.';
+        evaluationStatementEn =
+          'Demonstrated solid foundational grounding and daily communicative lexical control with high potential for progression.';
         summaryAr =
           'أساسيات جيدة، مع الحاجة لتثبيت تراكيب الجمل وصيغ الأزمنة. قسم القواعد النحوية وتمارين الكتابة الموجهة سيعززان المستوى سريعاً.';
       }
     } else if (selectedLevelId === 'level-1') {
       if (percent >= 85) {
         cefrCode = 'A1+';
-        cefrTitle = 'إتقان تام للأساسيات (Mastery of Basics)';
+        cefrTitleAr = 'المستوى التأسيسي المتقدم (A1+ Advanced Basics)';
+        cefrTitleEn = 'A1+ Advanced Foundation Mastery';
+        standingAr = 'امتياز مع مرتبة الشرف';
+        standingEn = 'High Distinction';
+        standingBadgeClass = 'bg-gradient-to-r from-emerald-600 to-teal-700 text-white border-emerald-300';
         levelBadgeColor = 'bg-emerald-50 text-emerald-800 border-emerald-300';
+        evaluationStatementAr =
+          'إتقان متميز للتحيات والأرقام والألوان وأفعال الكينونة والضمائر وتصنيف الكلمات، مع جاهزية تامة للمستوى الثاني المتوسط.';
+        evaluationStatementEn =
+          'Outstanding mastery of English basic expressions, verbs of being, pronouns, and vocabulary categorization.';
         summaryAr =
           'إتقان تام لأسئلة المحادثة، الألوان، الأرقام، والضمائر وأفعال Be بشكل كامل. الجاهزية ممتازة للانتقال إلى المستوى الثاني (المتوسط).';
       } else if (percent >= 60) {
         cefrCode = 'A1';
-        cefrTitle = 'مستوى تأسيسي جيد (Good Foundation)';
+        cefrTitleAr = 'المستوى التأسيسي المعتمد (A1 Foundation)';
+        cefrTitleEn = 'A1 Certified Foundation Level';
+        standingAr = 'جيد جداً بجدارة';
+        standingEn = 'Merit & Proficiency';
+        standingBadgeClass = 'bg-gradient-to-r from-teal-600 to-cyan-700 text-white border-teal-300';
         levelBadgeColor = 'bg-teal-50 text-teal-800 border-teal-300';
+        evaluationStatementAr =
+          'استيعاب سليم لقواعد البدايات ومفردات التواصل اليومي، مع التوصية بتثبيت بعض أدوات التعريف والتصنيفات.';
+        evaluationStatementEn =
+          'Solid comprehension of introductory English communicative patterns and everyday vocabulary.';
         summaryAr =
           'استيعاب طيب للأساسيات، مع الحاجة لمراجعة بعض أفعال (am / is / are) وتصنيفات الكلمات.';
       } else {
-        cefrCode = 'Beginner';
-        cefrTitle = 'بحاجة لتعزيز الأساسيات (Needs Support)';
+        cefrCode = 'A1 (Prep)';
+        cefrTitleAr = 'المستوى التأسيسي في مسار البناء (A1 Developing)';
+        cefrTitleEn = 'A1 Emerging Foundation';
+        standingAr = 'مشارك في مسار التعزيز التأسيسي';
+        standingEn = 'Foundation Pathway';
+        standingBadgeClass = 'bg-gradient-to-r from-indigo-600 to-blue-700 text-white border-indigo-300';
         levelBadgeColor = 'bg-amber-50 text-amber-800 border-amber-300';
+        evaluationStatementAr =
+          'أتم المشارك التقييم التشخيصي التأسيسي، وجرى تحديد الأولويات لتعزيز المفردات اليومية وأفعال الكينونة.';
+        evaluationStatementEn =
+          'Completed the foundational diagnostic check, establishing target priorities for daily vocabulary and basic structures.';
         summaryAr =
           'يُنصح بمراجعة درس المضارع البسيط والبطاقات المصورة لتثبيت نطق وكتابة الكلمات اليومية.';
       }
     } else if (selectedLevelId === 'level-2') {
       if (percent >= 85) {
         cefrCode = 'B1';
-        cefrTitle = 'مستوى متوسط متفوق (Advanced Intermediate)';
+        cefrTitleAr = 'المستوى المتوسط المتقدم (B1 Independent Mastery)';
+        cefrTitleEn = 'B1 Independent User • High Mastery';
+        standingAr = 'امتياز مع مرتبة الشرف';
+        standingEn = 'High Distinction';
+        standingBadgeClass = 'bg-gradient-to-r from-blue-600 to-indigo-700 text-white border-blue-300';
         levelBadgeColor = 'bg-blue-50 text-blue-800 border-blue-300';
+        evaluationStatementAr =
+          'تمكن رفيع من أزمنة الأفعال وصيغ المقارنة ومعلومات المملكة والعلوم، مع مهارات تواصلية واستيعابية متقدمة تؤهل للمستوى الثالث.';
+        evaluationStatementEn =
+          'Superior command of English verb tenses, comparative models, and Saudi & global knowledge, fully prepared for Level 3.';
         summaryAr =
           'نتيجة باهرة وتمكن عالٍ في الأزمنة وصيغ المقارنة ومعلومات المملكة العامة. الجاهزية ممتازة لخوض تحدي المستوى الثالث.';
       } else if (percent >= 60) {
         cefrCode = 'A2+';
-        cefrTitle = 'مستوى متوسط واعد (Promising Intermediate)';
+        cefrTitleAr = 'المستوى المتوسط الواعد (A2+ Strong Intermediate)';
+        cefrTitleEn = 'A2+ Promising Intermediate';
+        standingAr = 'جيد جداً بجدارة';
+        standingEn = 'Merit & Proficiency';
+        standingBadgeClass = 'bg-gradient-to-r from-indigo-600 to-violet-700 text-white border-indigo-300';
         levelBadgeColor = 'bg-indigo-50 text-indigo-800 border-indigo-300';
+        evaluationStatementAr =
+          'أداء متقن وفهم سليم لقواعد الأزمنة وتراكيب الأسئلة، مع التوصية بتدريبات إضافية على الماضي المستمر والمضارع التام.';
+        evaluationStatementEn =
+          'Proficient grasp of grammatical tenses and comparative models, demonstrating high readiness for advanced intermediate tasks.';
         summaryAr =
           'أداء جيد جداً وفهم سليم لقواعد الأزمنة، مع التوصية بالتدرب أكثر على الماضي المستمر والمضارع التام.';
       } else {
         cefrCode = 'A2';
-        cefrTitle = 'بحاجة لمراجعة القواعد (Grammar Reinforcement)';
+        cefrTitleAr = 'كفاءة لغوية ابتدائية معتمدة (A2 Elementary Competency)';
+        cefrTitleEn = 'A2 Elementary Proficiency Level';
+        standingAr = 'مستوى تأسيسي في مسار التمكين';
+        standingEn = 'Competent Foundation';
+        standingBadgeClass = 'bg-gradient-to-r from-teal-600 to-indigo-700 text-white border-teal-300';
         levelBadgeColor = 'bg-amber-50 text-amber-800 border-amber-300';
+        evaluationStatementAr =
+          'أتم المشارك التقييم التشخيصي للمرحلة المتوسطة محققاً الكفاءة الأساسية، مع التوجيه لمسار مراجعة الأزمنة والتراكيب النحوية.';
+        evaluationStatementEn =
+          'Successfully completed intermediate diagnostic assessment, establishing baseline competence and identifying core grammar growth areas.';
         summaryAr =
           'يُنصح بمراجعة بطاقات الأزمنة (الماضي البسيط والمستمر) وقواعد المقارنة لتعزيز الحصيلة اللغوية.';
       }
@@ -206,20 +290,44 @@ export default function PlacementTestPage() {
       // Level 3
       if (percent >= 85) {
         cefrCode = 'B2';
-        cefrTitle = 'مستوى ثانوي متقدم (High Proficiency B2)';
+        cefrTitleAr = 'المستوى الثانوي المتقدم (B2 Vantage Proficiency)';
+        cefrTitleEn = 'B2 Vantage • High Secondary Proficiency';
+        standingAr = 'امتياز مع مرتبة الشرف العليا';
+        standingEn = 'High Distinction & Honors';
+        standingBadgeClass = 'bg-gradient-to-r from-purple-600 to-pink-700 text-white border-purple-300';
         levelBadgeColor = 'bg-purple-50 text-purple-800 border-purple-300';
+        evaluationStatementAr =
+          'إتقان استثنائي للقواعد المتقدمة (Conditionals, Passive) ووعي نقدي عميق بالمواطنة الرقمية والذكاء الاصطناعي ومهارات العمل والقرارات.';
+        evaluationStatementEn =
+          'Exceptional mastery of advanced grammar and critical reasoning in digital citizenship, artificial intelligence, and career competencies.';
         summaryAr =
-          'إتقان متميز للقواعد المتقدمة (Passive, Conditionals) ووعي رائع بالمواطنة الرقمية والذكاء الاصطناعي ومهارات العمل والقرارات!';
+          'إتقان متميز للقواعد المتقدمة ووعي رائع بالمواطنة الرقمية والذكاء الاصطناعي ومهارات العمل والقرارات!';
       } else if (percent >= 60) {
         cefrCode = 'B1+';
-        cefrTitle = 'مستوى ثانوي جيد جداً (Solid Secondary B1+)';
+        cefrTitleAr = 'المستوى الثانوي الكفء (B1+ Strong Secondary)';
+        cefrTitleEn = 'B1+ Solid Secondary Proficiency';
+        standingAr = 'جيد جداً بجدارة';
+        standingEn = 'Merit & Proficiency';
+        standingBadgeClass = 'bg-gradient-to-r from-fuchsia-600 to-purple-700 text-white border-fuchsia-300';
         levelBadgeColor = 'bg-fuchsia-50 text-fuchsia-800 border-fuchsia-300';
+        evaluationStatementAr =
+          'أداء متقدم في التراكيب الثانوية ومهارات التفكير الناقد وحل المشكلات، مع التوصية بتدريبات إضافية في الجمل الشرطية والمبني للمجهول.';
+        evaluationStatementEn =
+          'Strong competence in secondary grammar patterns and critical thinking, well prepared for standardized English testing.';
         summaryAr =
           'أداء ممتاز! مهارات التفكير الناقد واللغة قوية، مع التوصية بتدريبات إضافية في الجمل الشرطية والمبني للمجهول.';
       } else {
         cefrCode = 'B1';
-        cefrTitle = 'بحاجة لتعزيز التراكيب المتقدمة';
+        cefrTitleAr = 'المستوى الثانوي في مسار التمكين (B1 Secondary Foundation)';
+        cefrTitleEn = 'B1 Secondary Intermediate Level';
+        standingAr = 'كفاءة متوسطة مؤهلة';
+        standingEn = 'Progressing Intermediate';
+        standingBadgeClass = 'bg-gradient-to-r from-indigo-600 to-purple-700 text-white border-indigo-300';
         levelBadgeColor = 'bg-amber-50 text-amber-800 border-amber-300';
+        evaluationStatementAr =
+          'أتم المشارك التقييم التشخيصي للمرحلة الثانوية محققاً الكفاءة المتوسطة، مع التوجيه للتركيز على القواعد المتقدمة وقراءة المقالات التحليلية.';
+        evaluationStatementEn =
+          'Completed secondary diagnostic assessment, establishing the foundation for advanced syntax, critical reading, and vocabulary enrichment.';
         summaryAr =
           'يُنصح بالتركيز على قواعد المرحلة الثانوية وقراءة المقالات المتقدمة في قسم القراءة.';
       }
@@ -229,7 +337,14 @@ export default function PlacementTestPage() {
       correctCount,
       percent,
       cefrCode,
-      cefrTitle,
+      cefrTitle: cefrTitleAr,
+      cefrTitleAr,
+      cefrTitleEn,
+      standingAr,
+      standingEn,
+      standingBadgeClass,
+      evaluationStatementAr,
+      evaluationStatementEn,
       levelBadgeColor,
       summaryAr,
       skillStats,
@@ -584,7 +699,7 @@ export default function PlacementTestPage() {
         {stage === 'result' && (
           <div className="space-y-8 animate-page-enter">
             {/* Header Result Card */}
-            <div className="rounded-3xl border border-slate-200/90 bg-white/95 p-6 sm:p-10 shadow-xs text-center backdrop-blur-xl">
+            <div className="rounded-3xl border border-slate-200/90 bg-white/95 p-6 sm:p-10 shadow-xs text-center backdrop-blur-xl print:hidden">
               <span className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-indigo-500 via-violet-600 to-purple-700 text-white shadow-xl shadow-indigo-600/25">
                 <Trophy className="h-10 w-10" />
               </span>
@@ -656,79 +771,258 @@ export default function PlacementTestPage() {
             </div>
 
             {/* ============================================================= */}
-            {/* OFFICIAL DIGITAL CERTIFICATE CARD */}
+            {/* OFFICIAL DIGITAL CERTIFICATE DIPLOMA (MASTERPIECE) */}
             {/* ============================================================= */}
-            <div className="overflow-hidden rounded-3xl border-4 border-indigo-200 bg-gradient-to-br from-indigo-50/40 via-white to-purple-50/30 p-6 sm:p-10 shadow-lg text-center relative ring-1 ring-slate-900/5 print:border-2 print:shadow-none">
-              <div className="absolute top-4 right-4 text-xs font-black text-indigo-700 border border-indigo-200 bg-white/80 px-3 py-1 rounded-full">
-                English Spark Official Assessment
-              </div>
-              <div className="absolute top-4 left-4 text-[10px] font-bold text-slate-400">
-                كود التحقق: SPARK-PL-{Date.now().toString(36).toUpperCase().slice(-6)}
+            <div className="relative overflow-hidden rounded-3xl border-8 border-double border-indigo-950 bg-gradient-to-b from-[#fdfbf7] via-white to-[#f7f9fd] p-6 sm:p-12 shadow-2xl text-center ring-1 ring-amber-400/50 print:border-4 print:p-6 print:shadow-none print:m-0">
+              {/* Classical Corner Accent Flourishes */}
+              <div className="absolute top-3 right-3 h-8 w-8 rounded-tr-md border-t-2 border-r-2 border-amber-500/80 pointer-events-none" />
+              <div className="absolute top-3 left-3 h-8 w-8 rounded-tl-md border-t-2 border-l-2 border-amber-500/80 pointer-events-none" />
+              <div className="absolute bottom-3 right-3 h-8 w-8 rounded-br-md border-b-2 border-r-2 border-amber-500/80 pointer-events-none" />
+              <div className="absolute bottom-3 left-3 h-8 w-8 rounded-bl-md border-b-2 border-l-2 border-amber-500/80 pointer-events-none" />
+
+              {/* Inner Double Inset Border */}
+              <div className="absolute inset-2 sm:inset-3 rounded-2xl border border-amber-400/60 pointer-events-none" />
+              <div className="absolute inset-3.5 sm:inset-5 rounded-xl border border-dashed border-indigo-200/50 pointer-events-none" />
+
+              {/* Top Bilingual Institutional Strip */}
+              <div className="relative z-10 flex flex-wrap items-start justify-between border-b border-indigo-100/80 pb-4 mb-6 gap-3 text-right">
+                <div>
+                  <span className="block text-[11px] font-black tracking-wider text-indigo-950 uppercase">
+                    المملكة العربية السعودية • وزارة التعليم
+                  </span>
+                  <span className="block text-[10px] font-bold text-slate-500">
+                    إدارة التعليم بمنطقة جازان • مدرسة متوسطة وثانوية الجرادية
+                  </span>
+                  <span className="block text-[10px] font-black text-indigo-700">
+                    منصة ومبادرة English Spark للتميز والابتكار اللغوي
+                  </span>
+                </div>
+
+                {/* Center Medallion Emblem */}
+                <div className="mx-auto hidden md:flex flex-col items-center justify-center">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-950 via-indigo-900 to-violet-950 text-amber-300 shadow-md ring-2 ring-amber-400/50">
+                    <GraduationCap className="h-8 w-8" />
+                  </div>
+                </div>
+
+                <div className="text-left" dir="ltr">
+                  <span className="inline-block rounded-full bg-indigo-50 border border-indigo-200/80 px-2.5 py-0.5 text-[10px] font-black text-indigo-900">
+                    Official Diagnostic Credential
+                  </span>
+                  <span className="block text-[10px] font-mono font-bold text-slate-500 mt-1">
+                    ID: {verificationCode}
+                  </span>
+                  <span className="block text-[9px] font-bold text-emerald-700">
+                    Digitally Verified ✓
+                  </span>
+                </div>
               </div>
 
-              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-md mb-3">
-                <GraduationCap className="h-9 w-9" />
-              </div>
-
-              <span className="text-xs font-black tracking-widest text-indigo-900 uppercase">
-                المملكة العربية السعودية • وزارة التعليم
-              </span>
-              <h2 className="text-xl sm:text-3xl font-black text-slate-950 mt-1">
-                شهادة إتمام اختبار تحديد المستوى في اللغة الإنجليزية
-              </h2>
-              <p className="text-xs text-slate-500 font-semibold mt-0.5">
-                مدرسة متوسطة وثانوية الجرادية — منصة المعلمة {TEACHER_OFFICIAL_NAME}
-              </p>
-
-              <div className="my-6 border-y border-dashed border-indigo-200 py-6 max-w-2xl mx-auto">
-                <p className="text-xs sm:text-sm font-semibold text-slate-500">
-                  تَفخَر المنصة بمنح هذه الشهادة الرسمية إلى:
+              {/* Certificate Title (Bilingual & Prestigious) */}
+              <div className="relative z-10 mb-6">
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-200/80 px-3.5 py-1 text-xs font-black text-amber-950 mb-2">
+                  <Sparkles className="h-3.5 w-3.5 text-amber-600" />
+                  <span>ACCREDITED ENGLISH PROFICIENCY ASSESSMENT</span>
+                </div>
+                <h2 className="text-2xl sm:text-4xl font-black text-slate-950 tracking-tight">
+                  شهادة تحديد المستوى والتشخيص اللغوي
+                </h2>
+                <p className="text-xs sm:text-sm font-black tracking-widest text-indigo-900 uppercase mt-1">
+                  Certificate of English Language Proficiency & Placement
                 </p>
-                <h3 className="text-2xl sm:text-4xl font-black text-indigo-950 mt-2 mb-1">
+                <div className="mt-3 flex items-center justify-center gap-2">
+                  <div className="h-0.5 w-16 bg-gradient-to-r from-transparent to-amber-400" />
+                  <Star className="h-4 w-4 text-amber-500 fill-amber-400" />
+                  <div className="h-0.5 w-16 bg-gradient-to-l from-transparent to-amber-400" />
+                </div>
+              </div>
+
+              {/* Awardee Presentation */}
+              <div className="relative z-10 my-4 max-w-2xl mx-auto">
+                <p className="text-xs sm:text-sm font-semibold text-slate-500">
+                  تَفخَر المنصة ومبادرة English Spark بمنح هذه الشهادة الرسمية إلى / This is to Proudly Certify that:
+                </p>
+                <h3 className="text-3xl sm:text-5xl font-black text-indigo-950 my-2.5 tracking-tight font-serif">
                   {studentName}
                 </h3>
                 {studentGrade && (
                   <div className="my-1.5">
-                    <span className="inline-block text-xs sm:text-sm font-bold text-indigo-800 bg-indigo-50 border border-indigo-200/70 px-3.5 py-0.5 rounded-full">
+                    <span className="inline-block text-xs sm:text-sm font-bold text-indigo-900 bg-indigo-50 border border-indigo-200/90 px-4 py-1 rounded-full shadow-2xs">
                       {studentGrade}
                     </span>
                   </div>
                 )}
-                <p className="text-xs sm:text-sm font-semibold text-slate-700 mt-2.5 leading-relaxed">
-                  تقديرًا لاجتياز تقييم{' '}
-                  <span className="font-black text-indigo-950">({activeLevelMeta.titleAr})</span> بنجاح، والحصول على نتيجة:
+                <p className="text-xs sm:text-sm font-medium text-slate-700 mt-3 leading-relaxed">
+                  تقديرًا لإتمام تقييم تحديد المستوى اللغوي والتشخيص التحريري لمسار{' '}
+                  <span className="font-black text-indigo-950">({activeLevelMeta.titleAr})</span>، وأظهر أداءً معتمدًا يعكس مستوى الكفاءة والمعايير الآتية وفق الإطار الأوروبي المشترك (CEFR):
                 </p>
-                <div className="mt-3.5 inline-block rounded-xl bg-indigo-100/90 px-4 py-1.5 text-sm sm:text-base font-black text-indigo-950">
-                  {resultData.cefrTitle} بنسبة إتقان {resultData.percent}%
+              </div>
+
+              {/* The Grand Proficiency & Honors Banner */}
+              <div className="relative z-10 my-6 max-w-3xl mx-auto rounded-2xl border-2 border-indigo-200/90 bg-gradient-to-br from-indigo-50/70 via-white to-purple-50/50 p-5 sm:p-7 shadow-md">
+                {/* Level + Standing Row */}
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-indigo-100 pb-4 mb-4">
+                  <div className="text-right">
+                    <span className="text-[11px] font-bold text-slate-500 block">المستوى المعياري الدولي (CEFR Framework)</span>
+                    <span className="text-base sm:text-xl font-black text-indigo-950 flex items-center gap-2 mt-0.5">
+                      <Award className="h-5 w-5 text-indigo-600" />
+                      <span>{resultData.cefrTitleAr}</span>
+                    </span>
+                    <span className="text-xs font-bold text-indigo-700 block mt-0.5" dir="ltr">
+                      {resultData.cefrTitleEn}
+                    </span>
+                  </div>
+
+                  <div className="text-center sm:text-left">
+                    <span className="text-[11px] font-bold text-slate-500 block">التقدير الأكاديمي العام</span>
+                    <div className={`mt-1 inline-block rounded-xl px-4 py-1.5 text-xs sm:text-sm font-black border shadow-2xs ${resultData.standingBadgeClass}`}>
+                      {resultData.standingAr}
+                    </div>
+                    <span className="block text-[10px] font-bold text-slate-400 mt-0.5" dir="ltr">
+                      {resultData.standingEn} • {resultData.percent}%
+                    </span>
+                  </div>
+                </div>
+
+                {/* Academic Evaluation Statement */}
+                <div className="rounded-xl bg-white/95 border border-slate-100 p-3.5 text-right shadow-2xs">
+                  <p className="text-xs sm:text-sm font-semibold leading-relaxed text-slate-800">
+                    {resultData.evaluationStatementAr}
+                  </p>
+                  <p className="mt-1 text-[11px] font-medium text-slate-500 italic text-left" dir="ltr">
+                    {resultData.evaluationStatementEn}
+                  </p>
+                </div>
+
+                {/* In-Certificate Skills Mini-Matrix */}
+                <div className="mt-4 pt-3 border-t border-indigo-100/70">
+                  <span className="block text-[11px] font-bold text-slate-500 text-right mb-2">
+                    مصفوفة كفاءة المهارات اللغوية (Language Domains Matrix):
+                  </span>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-right">
+                    {resultData.skillStats.grammar.total > 0 && (
+                      <div className="rounded-lg bg-slate-50 p-2 border border-slate-200/60">
+                        <span className="block text-[10px] font-bold text-slate-500">القواعد والتراكيب (Grammar)</span>
+                        <div className="flex items-baseline justify-between mt-0.5">
+                          <span className="text-xs font-black text-indigo-950">
+                            {Math.round((resultData.skillStats.grammar.correct / resultData.skillStats.grammar.total) * 100)}%
+                          </span>
+                          <span className="text-[10px] text-slate-400" dir="ltr">
+                            {resultData.skillStats.grammar.correct}/{resultData.skillStats.grammar.total}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                    {resultData.skillStats.vocabulary.total > 0 && (
+                      <div className="rounded-lg bg-slate-50 p-2 border border-slate-200/60">
+                        <span className="block text-[10px] font-bold text-slate-500">المفردات والسياق (Vocabulary)</span>
+                        <div className="flex items-baseline justify-between mt-0.5">
+                          <span className="text-xs font-black text-indigo-950">
+                            {Math.round((resultData.skillStats.vocabulary.correct / resultData.skillStats.vocabulary.total) * 100)}%
+                          </span>
+                          <span className="text-[10px] text-slate-400" dir="ltr">
+                            {resultData.skillStats.vocabulary.correct}/{resultData.skillStats.vocabulary.total}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                    {resultData.skillStats.knowledge.total > 0 && (
+                      <div className="rounded-lg bg-slate-50 p-2 border border-slate-200/60">
+                        <span className="block text-[10px] font-bold text-slate-500">المعرفة العامة والوطنية</span>
+                        <div className="flex items-baseline justify-between mt-0.5">
+                          <span className="text-xs font-black text-indigo-950">
+                            {Math.round((resultData.skillStats.knowledge.correct / resultData.skillStats.knowledge.total) * 100)}%
+                          </span>
+                          <span className="text-[10px] text-slate-400" dir="ltr">
+                            {resultData.skillStats.knowledge.correct}/{resultData.skillStats.knowledge.total}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                    {resultData.skillStats['life-skills'].total > 0 && (
+                      <div className="rounded-lg bg-slate-50 p-2 border border-slate-200/60">
+                        <span className="block text-[10px] font-bold text-slate-500">مهارات الحياة والتفكير</span>
+                        <div className="flex items-baseline justify-between mt-0.5">
+                          <span className="text-xs font-black text-indigo-950">
+                            {Math.round((resultData.skillStats['life-skills'].correct / resultData.skillStats['life-skills'].total) * 100)}%
+                          </span>
+                          <span className="text-[10px] text-slate-400" dir="ltr">
+                            {resultData.skillStats['life-skills'].correct}/{resultData.skillStats['life-skills'].total}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 max-w-2xl mx-auto text-xs font-bold text-slate-600">
-                <div className="rounded-xl bg-white/80 p-2.5 border border-slate-100">
-                  <span className="block text-[10px] text-slate-400">تاريخ التقييم</span>
-                  <span>{new Date().toLocaleDateString('ar-SA')}</span>
+              {/* Dual Signatures, Gold Seal & Accreditation Footer */}
+              <div className="relative z-10 mt-6 pt-5 border-t border-indigo-200/80 grid grid-cols-1 sm:grid-cols-3 items-center gap-4">
+                {/* Supervising Teacher */}
+                <div className="text-center sm:text-right">
+                  <span className="block text-[10px] font-bold text-slate-400 uppercase">Supervising Teacher</span>
+                  <span className="block text-xs sm:text-sm font-black text-indigo-950 mt-0.5">
+                    أ. {TEACHER_OFFICIAL_NAME}
+                  </span>
+                  <span className="block text-[10px] font-bold text-slate-500">
+                    معلمة اللغة الإنجليزية المشرفة
+                  </span>
+                  <div className="mt-1.5 inline-flex items-center gap-1 rounded-md bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
+                    <ShieldCheck className="h-3 w-3 text-emerald-600" />
+                    <span>اعتماد أكاديمي معتمد ✓</span>
+                  </div>
                 </div>
-                <div className="rounded-xl bg-white/80 p-2.5 border border-slate-100">
-                  <span className="block text-[10px] text-slate-400">الدرجة المكتسبة</span>
-                  <span>
-                    {resultData.correctCount} من {totalQuestions}
+
+                {/* Official Gold Embossed Medallion */}
+                <div className="flex flex-col items-center justify-center">
+                  <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-tr from-amber-500 via-yellow-300 to-amber-600 p-1 shadow-lg ring-4 ring-amber-400/40">
+                    <div className="flex h-full w-full flex-col items-center justify-center rounded-full bg-gradient-to-b from-amber-700 via-amber-800 to-amber-900 p-1 text-white border-2 border-dashed border-amber-200/80 text-center">
+                      <Sparkles className="h-3.5 w-3.5 text-amber-300" />
+                      <span className="text-[8px] font-black tracking-widest text-amber-200 uppercase">OFFICIAL</span>
+                      <span className="text-[9px] font-black text-white">ختم الاعتماد</span>
+                      <span className="text-[7px] font-bold text-amber-300">2026 ACADEMY</span>
+                    </div>
+                  </div>
+                  <span className="mt-1 text-[9px] font-black tracking-widest text-indigo-950 uppercase">
+                    Verified Diagnostic Credential
                   </span>
                 </div>
-                <div className="rounded-xl bg-white/80 p-2.5 border border-slate-100">
-                  <span className="block text-[10px] text-slate-400">المدة المستغرقة</span>
-                  <span>
-                    {Math.max(1, Math.round(elapsedSeconds / 60))} دقيقة
+
+                {/* Assessment Board */}
+                <div className="text-center sm:text-left" dir="ltr">
+                  <span className="block text-[10px] font-bold text-slate-400 uppercase">Assessment Board</span>
+                  <span className="block text-xs sm:text-sm font-black text-indigo-950 mt-0.5">
+                    English Spark Academy
                   </span>
+                  <span className="block text-[10px] font-bold text-slate-500" dir="rtl">
+                    مدرسة متوسطة وثانوية الجرادية
+                  </span>
+                  <div className="mt-1.5 text-[10px] font-bold text-slate-500">
+                    <span>Issued: </span>
+                    <span className="font-mono text-indigo-900 font-black">{new Date().toLocaleDateString('ar-SA')}</span>
+                  </div>
                 </div>
-                <div className="rounded-xl bg-white/80 p-2.5 border border-slate-100">
-                  <span className="block text-[10px] text-slate-400">معلمة المادة المشرفة</span>
-                  <span className="text-indigo-900 font-black">أ. {TEACHER_OFFICIAL_NAME}</span>
+              </div>
+
+              {/* Verification Footnote Bar */}
+              <div className="relative z-10 mt-5 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between text-[10px] font-bold text-slate-400 gap-2">
+                <div className="flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                  <span>كود التحقق الرقمي المعتمد:</span>
+                  <span className="font-mono font-black text-indigo-950">{verificationCode}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span>الدرجة: {resultData.correctCount} من {totalQuestions} ({resultData.percent}%)</span>
+                  <span>•</span>
+                  <span>المدة: {Math.max(1, Math.round(elapsedSeconds / 60))} دقيقة</span>
+                  <span>•</span>
+                  <span>المملكة العربية السعودية</span>
                 </div>
               </div>
             </div>
 
             {/* Skills Breakdown */}
-            <div className="rounded-3xl border border-slate-200/90 bg-white/95 p-6 sm:p-8 shadow-xs">
+            <div className="rounded-3xl border border-slate-200/90 bg-white/95 p-6 sm:p-8 shadow-xs print:hidden">
               <h2 className="text-base sm:text-lg font-black text-slate-950">
                 تحليل المهارات والمحاور التشخيصية
               </h2>
@@ -835,7 +1129,7 @@ export default function PlacementTestPage() {
             </div>
 
             {/* Questions Review & Bilingual Explanations */}
-            <div className="rounded-3xl border border-slate-200/90 bg-white/95 p-6 sm:p-8 shadow-xs">
+            <div className="rounded-3xl border border-slate-200/90 bg-white/95 p-6 sm:p-8 shadow-xs print:hidden">
               <div className="border-b border-slate-100 pb-4 mb-5">
                 <h2 className="text-base sm:text-lg font-black text-slate-950">
                   مراجعة تفصيلية للإجابات والشروحات التعليمية
