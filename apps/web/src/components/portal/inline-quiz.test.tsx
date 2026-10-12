@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { InlineQuiz } from './inline-quiz';
 import type { QuizQuestion } from '../../data/content/types';
 
@@ -61,10 +61,9 @@ describe('InlineQuiz component state isolation', () => {
     const optionBtn = screen.getByRole('button', { name: /Correct A1/i });
     fireEvent.click(optionBtn);
 
-    // Advance timer to trigger question change
-    act(() => {
-      vi.advanceTimersByTime(1400);
-    });
+    // Click Next button to advance question
+    const nextBtn = screen.getByRole('button', { name: /السؤال التالي/i });
+    fireEvent.click(nextBtn);
 
     // Now we are on Question 2 of Topic A
     expect(screen.getByText('Topic A Question 2')).toBeInTheDocument();

@@ -30,20 +30,38 @@ type Stage = 'select-level' | 'testing' | 'result';
 type LevelChoiceId = 'comprehensive' | 'level-1' | 'level-2' | 'level-3';
 
 const GRADE_OPTIONS = [
-  'الصف الأول متوسط',
-  'الصف الثاني متوسط',
-  'الصف الثالث متوسط',
-  'المرحلة الثانوية — الصف الأول',
-  'المرحلة الثانوية — الصف الثاني',
-  'المرحلة الثانوية — الصف الثالث',
-  'أخرى / زائر مهتم',
+  'طالبة — الصف الأول متوسط',
+  'طالبة — الصف الثاني متوسط',
+  'طالبة — الصف الثالث متوسط',
+  'طالبة — المرحلة الثانوية (الصف الأول)',
+  'طالبة — المرحلة الثانوية (الصف الثاني)',
+  'طالبة — المرحلة الثانوية (الصف الثالث)',
+  'طالب — زائر',
+  'ولي أمر',
+  'معلمـ/ـة أو مهتمـ/ـة باللغة',
+  'أخرى / زائر كريم',
 ];
+
+function getParticipantPrefix(role: string = ''): string {
+  if (role.startsWith('طالبة')) return 'الطالبة الكريمة:';
+  if (role.startsWith('طالب')) return 'الطالب الكريم:';
+  if (role.includes('ولي أمر')) return 'ولي الأمر الكريم:';
+  if (role.includes('معلم')) return 'المعلمـ/ـة:';
+  return 'المشاركـ/ـة الكريمـ/ـة:';
+}
+
+function getParticipantEnrollment(role: string = ''): string {
+  if (role.startsWith('طالبة')) return `المقيدة في (${role})`;
+  if (role.startsWith('طالب')) return `المقيد في (${role})`;
+  if (role.includes('ولي أمر')) return `المشارك بصفة (${role})`;
+  return `المسجلـ/ـة بصفة (${role})`;
+}
 
 export default function PlacementTestPage() {
   const [stage, setStage] = useState<Stage>('select-level');
   const [selectedLevelId, setSelectedLevelId] = useState<LevelChoiceId>('comprehensive');
   const [studentName, setStudentName] = useState('');
-  const [studentGrade, setStudentGrade] = useState(GRADE_OPTIONS[0]);
+  const [studentGrade, setStudentGrade] = useState<string>(GRADE_OPTIONS[0] ?? 'طالبة — الصف الأول متوسط');
 
   // Testing stage state
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -138,7 +156,7 @@ export default function PlacementTestPage() {
     let cefrTitle = 'A1 — تأسيسي ومبتدئ (Beginner)';
     let levelBadgeColor = 'bg-emerald-50 text-emerald-800 border-emerald-300';
     let summaryAr =
-      'لديكِ معرفة بمفردات وقواعد اللغة الأساسية. ننصحكِ بمتابعة بطاقات القواعد المصورة لتثبيت الأزمنة البسيطة وحل تمارين المحادثة اليومية.';
+      'أداء تأسيسي في استيعاب المفردات والقواعد الأساسية. يُنصح بمتابعة بطاقات القواعد المصورة لتثبيت الأزمنة البسيطة وحل تمارين المحادثة اليومية.';
 
     if (selectedLevelId === 'comprehensive') {
       if (correctCount >= 21) {
@@ -146,19 +164,19 @@ export default function PlacementTestPage() {
         cefrTitle = 'B2 — متقدم ومتمكن (Upper Intermediate)';
         levelBadgeColor = 'bg-purple-50 text-purple-800 border-purple-300';
         summaryAr =
-          'مستواكِ ممتاز واستثنائي! تمتلكين حصيلة لغوية واستيعاباً للتراكيب المعقدة ومهارات التفكير الناقد. أنتِ مستعدة تماماً للمرحلة الثانوية والاختبارات المعيارية.';
+          'مستوى ممتاز واستثنائي! حصيلة لغوية رفيعة واستيعاب عالٍ للتراكيب المعقدة ومهارات التفكير الناقد والجاهزية للاختبارات الدولية والمتقدمة.';
       } else if (correctCount >= 16) {
         cefrCode = 'B1';
         cefrTitle = 'B1 — متوسط متمكن (Intermediate)';
         levelBadgeColor = 'bg-blue-50 text-blue-800 border-blue-300';
         summaryAr =
-          'مستواكِ متوسط وجيد جداً! تستطيعين فهم الجمل والأزمنة المركبة ومفردات الحياة اليومية. استمري في قراءة النصوص وتحديات السرعة.';
+          'مستوى متوسط وجيد جداً! فهم متقن للجمل والأزمنة المركبة ومفردات الحياة اليومية. يُنصح بالاستمرار في قراءة النصوص وتحديات السرعة.';
       } else if (correctCount >= 10) {
         cefrCode = 'A2';
         cefrTitle = 'A2 — فوق المبتدئ (Elementary)';
         levelBadgeColor = 'bg-amber-50 text-amber-800 border-amber-300';
         summaryAr =
-          'لديكِ أساسيات جيدة، وبحاجة إلى تثبيت تراكيب الجمل وصيغ الأزمنة. قسم القواعد وتمارين الكتابة الموجهة سيعزز مستواكِ سريعاً.';
+          'أساسيات جيدة، مع الحاجة لتثبيت تراكيب الجمل وصيغ الأزمنة. قسم القواعد النحوية وتمارين الكتابة الموجهة سيعززان المستوى سريعاً.';
       }
     } else if (selectedLevelId === 'level-1') {
       if (percent >= 85) {
@@ -166,19 +184,19 @@ export default function PlacementTestPage() {
         cefrTitle = 'إتقان تام للأساسيات (Mastery of Basics)';
         levelBadgeColor = 'bg-emerald-50 text-emerald-800 border-emerald-300';
         summaryAr =
-          'أحسنتِ! لقد أتقنتِ أسئلة المحادثة، الألوان، الأرقام، والضمائر وأفعال Be بشكل كامل. أنتِ مؤهلة للانتقال إلى المستوى الثاني (المتوسط).';
+          'إتقان تام لأسئلة المحادثة، الألوان، الأرقام، والضمائر وأفعال Be بشكل كامل. الجاهزية ممتازة للانتقال إلى المستوى الثاني (المتوسط).';
       } else if (percent >= 60) {
         cefrCode = 'A1';
         cefrTitle = 'مستوى تأسيسي جيد (Good Foundation)';
         levelBadgeColor = 'bg-teal-50 text-teal-800 border-teal-300';
         summaryAr =
-          'لديكِ استيعاب طيب للأساسيات، مع الحاجة لمراجعة بعض أفعال (am / is / are) وتصنيفات الكلمات.';
+          'استيعاب طيب للأساسيات، مع الحاجة لمراجعة بعض أفعال (am / is / are) وتصنيفات الكلمات.';
       } else {
         cefrCode = 'Beginner';
         cefrTitle = 'بحاجة لتعزيز الأساسيات (Needs Support)';
         levelBadgeColor = 'bg-amber-50 text-amber-800 border-amber-300';
         summaryAr =
-          'ننصحكِ بمراجعة درس المضارع البسيط والبطاقات المصورة لتثبيت نطق وكتابة الكلمات اليومية.';
+          'يُنصح بمراجعة درس المضارع البسيط والبطاقات المصورة لتثبيت نطق وكتابة الكلمات اليومية.';
       }
     } else if (selectedLevelId === 'level-2') {
       if (percent >= 85) {
@@ -186,19 +204,19 @@ export default function PlacementTestPage() {
         cefrTitle = 'مستوى متوسط متفوق (Advanced Intermediate)';
         levelBadgeColor = 'bg-blue-50 text-blue-800 border-blue-300';
         summaryAr =
-          'نتيجة باهرة! أظهرتِ تمكناً عالياً في الأزمنة وصيغ المقارنة ومعلومات المملكة العامة. يمكنكِ الآن خوض تحدي المستوى الثالث.';
+          'نتيجة باهرة وتمكن عالٍ في الأزمنة وصيغ المقارنة ومعلومات المملكة العامة. الجاهزية ممتازة لخوض تحدي المستوى الثالث.';
       } else if (percent >= 60) {
         cefrCode = 'A2+';
         cefrTitle = 'مستوى متوسط واعد (Promising Intermediate)';
         levelBadgeColor = 'bg-indigo-50 text-indigo-800 border-indigo-300';
         summaryAr =
-          'أداء جيد جداً! لديكِ فهم جيد لقواعد الأزمنة، وننصحكِ بالتدرب أكثر على الماضي المستمر والمضارع التام.';
+          'أداء جيد جداً وفهم سليم لقواعد الأزمنة، مع التوصية بالتدرب أكثر على الماضي المستمر والمضارع التام.';
       } else {
         cefrCode = 'A2';
         cefrTitle = 'بحاجة لمراجعة القواعد (Grammar Reinforcement)';
         levelBadgeColor = 'bg-amber-50 text-amber-800 border-amber-300';
         summaryAr =
-          'راجعي بطاقات الأزمنة (الماضي البسيط والمستمر) وقواعد المقارنة لتعزيز حصيلتكِ اللغوية.';
+          'يُنصح بمراجعة بطاقات الأزمنة (الماضي البسيط والمستمر) وقواعد المقارنة لتعزيز الحصيلة اللغوية.';
       }
     } else {
       // Level 3
@@ -207,19 +225,19 @@ export default function PlacementTestPage() {
         cefrTitle = 'مستوى ثانوي متقدم (High Proficiency B2)';
         levelBadgeColor = 'bg-purple-50 text-purple-800 border-purple-300';
         summaryAr =
-          'إتقان متميز للقواعد المتقدمة (Passive, Conditionals) ووعي رائع بالمواطنة الرقمية والذكاء الاصطناعي ومهارات العمل!';
+          'إتقان متميز للقواعد المتقدمة (Passive, Conditionals) ووعي رائع بالمواطنة الرقمية والذكاء الاصطناعي ومهارات العمل والقرارات!';
       } else if (percent >= 60) {
         cefrCode = 'B1+';
         cefrTitle = 'مستوى ثانوي جيد جداً (Solid Secondary B1+)';
         levelBadgeColor = 'bg-fuchsia-50 text-fuchsia-800 border-fuchsia-300';
         summaryAr =
-          'أداء ممتاز! مهاراتكِ في التفكير الناقد واللغة قوية، مع الحاجة لتدريبات إضافية في الجمل الشرطية والمبني للمجهول.';
+          'أداء ممتاز! مهارات التفكير الناقد واللغة قوية، مع التوصية بتدريبات إضافية في الجمل الشرطية والمبني للمجهول.';
       } else {
         cefrCode = 'B1';
         cefrTitle = 'بحاجة لتعزيز التراكيب المتقدمة';
         levelBadgeColor = 'bg-amber-50 text-amber-800 border-amber-300';
         summaryAr =
-          'ننصحكِ بالتركيز على قواعد المرحلة الثانوية وقراءة المقالات المتقدمة في قسم القراءة.';
+          'يُنصح بالتركيز على قواعد المرحلة الثانوية وقراءة المقالات المتقدمة في قسم القراءة.';
       }
     }
 
@@ -280,17 +298,17 @@ export default function PlacementTestPage() {
                 اختاري مستواكِ المناسب أو خوضي التقييم الشامل للحصول على تقرير أداء وشهادة تشخيصية رقمية.
               </p>
 
-              {/* Student Identity Inputs */}
+              {/* Participant Identity Inputs */}
               <div className="mx-auto mt-7 max-w-xl rounded-2xl border border-indigo-100 bg-indigo-50/40 p-4 sm:p-6 text-right">
                 <h2 className="text-xs sm:text-sm font-black text-indigo-950 mb-3 flex items-center gap-1.5">
                   <ShieldCheck className="h-4 w-4 text-indigo-600" />
-                  <span>بيانات الطالبة للشهادة والتقرير:</span>
+                  <span>بيانات المشاركـ/ـة للشهادة والتقرير:</span>
                 </h2>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   <div>
                     <label htmlFor="student-name-input" className="block text-xs font-bold text-slate-700 mb-1">
-                      اسم الطالبة الكريم <span className="text-rose-500">*</span>
+                      الاسم الكريم <span className="text-rose-500">*</span>
                     </label>
                     <input
                       id="student-name-input"
@@ -298,14 +316,14 @@ export default function PlacementTestPage() {
                       required
                       value={studentName}
                       onChange={(e) => setStudentName(e.target.value)}
-                      placeholder="مثال: رغد إبراهيم هزازي"
+                      placeholder="مثال: رغد إبراهيم / هشام محمد"
                       className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs sm:text-sm font-bold text-slate-900 placeholder-slate-400 focus:border-indigo-600 focus:outline-hidden focus:ring-2 focus:ring-indigo-200 transition"
                     />
                   </div>
 
                   <div>
                     <label htmlFor="student-grade-select" className="block text-xs font-bold text-slate-700 mb-1">
-                      المرحلة الدراسية
+                      الصف / الصفة
                     </label>
                     <select
                       id="student-grade-select"
@@ -324,7 +342,7 @@ export default function PlacementTestPage() {
 
                 {studentName.trim().length < 2 && (
                   <p className="mt-2 text-[11px] font-semibold text-indigo-700">
-                    * يرجى إدخال اسمكِ لتفعيل أزرار بدء الاختبار وإصدار الشهادة.
+                    * يرجى إدخال الاسم لتفعيل أزرار بدء الاختبار وإصدار الشهادة.
                   </p>
                 )}
               </div>
@@ -586,7 +604,7 @@ export default function PlacementTestPage() {
               </span>
 
               <h1 className="mt-3 text-2xl sm:text-4xl font-black text-slate-950">
-                تقرير تشخيص المستوى للطالبة: {studentName}
+                تقرير تشخيص المستوى: {studentName}
               </h1>
               <p className="mt-1 text-xs sm:text-sm font-semibold text-slate-500">
                 {studentGrade} • مدرسة متوسطة وثانوية الجرادية • إشراف أ. {TEACHER_OFFICIAL_NAME}
@@ -673,14 +691,14 @@ export default function PlacementTestPage() {
 
               <div className="my-6 border-y border-dashed border-indigo-200 py-6 max-w-2xl mx-auto">
                 <p className="text-xs sm:text-sm font-medium text-slate-600">
-                  تشهد المنصة بأن الطالبة الكريمة:
+                  تشهد المنصة بأن {getParticipantPrefix(studentGrade)}
                 </p>
                 <h3 className="text-xl sm:text-3xl font-black text-indigo-950 mt-1 mb-2">
                   {studentName}
                 </h3>
                 <p className="text-xs sm:text-sm font-semibold text-slate-700">
-                  المقيدة في <span className="font-bold text-slate-900">({studentGrade})</span> قد أتمت بنجاح تقييم{' '}
-                  <span className="font-black text-indigo-900">({activeLevelMeta.titleAr})</span> وحصلت على تقدير:
+                  {getParticipantEnrollment(studentGrade)} قد أتمـ/ـت بنجاح تقييم{' '}
+                  <span className="font-black text-indigo-900">({activeLevelMeta.titleAr})</span> وحصلـ/ـت على تقدير:
                 </p>
                 <div className="mt-3 inline-block rounded-xl bg-indigo-100/90 px-4 py-1.5 text-sm sm:text-base font-black text-indigo-950">
                   {resultData.cefrTitle} بنسبة إتقان {resultData.percent}%

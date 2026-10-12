@@ -16,36 +16,59 @@ describe('PlacementTestPage & Question Bank', () => {
     vi.clearAllMocks();
   });
 
-  it('validates all 3 question banks have required fields and exactly one correct option', () => {
+  it('validates all 3 question banks have required fields, exactly one correct option, and balanced option distribution', () => {
     // Level 1: 40 questions
     expect(LEVEL_1_QUESTIONS.length).toBe(40);
+    const l1CorrectDistribution: Record<string, number> = { a: 0, b: 0, c: 0 };
     for (const q of LEVEL_1_QUESTIONS) {
       expect(q.prompt).toBeTruthy();
       expect(q.explanationAr).toBeTruthy();
       expect(q.options.length).toBeGreaterThanOrEqual(3);
       const correctOpts = q.options.filter((o) => o.isCorrect);
       expect(correctOpts.length).toBe(1);
+      const optId = correctOpts[0]!.id;
+      l1CorrectDistribution[optId] = (l1CorrectDistribution[optId] ?? 0) + 1;
     }
+    // Verify no single option dominates (each between 10 and 18 out of 40)
+    expect(l1CorrectDistribution['a'] ?? 0).toBeGreaterThanOrEqual(10);
+    expect(l1CorrectDistribution['b'] ?? 0).toBeGreaterThanOrEqual(10);
+    expect(l1CorrectDistribution['c'] ?? 0).toBeGreaterThanOrEqual(10);
 
     // Level 2: 20 questions
     expect(LEVEL_2_QUESTIONS.length).toBe(20);
+    const l2CorrectDistribution: Record<string, number> = { a: 0, b: 0, c: 0, d: 0 };
     for (const q of LEVEL_2_QUESTIONS) {
       expect(q.prompt).toBeTruthy();
       expect(q.explanationAr).toBeTruthy();
       expect(q.options.length).toBe(4);
       const correctOpts = q.options.filter((o) => o.isCorrect);
       expect(correctOpts.length).toBe(1);
+      const optId = correctOpts[0]!.id;
+      l2CorrectDistribution[optId] = (l2CorrectDistribution[optId] ?? 0) + 1;
     }
+    // Verify balanced 25% distribution (exactly 5 each)
+    expect(l2CorrectDistribution['a']).toBe(5);
+    expect(l2CorrectDistribution['b']).toBe(5);
+    expect(l2CorrectDistribution['c']).toBe(5);
+    expect(l2CorrectDistribution['d']).toBe(5);
 
     // Level 3: 20 questions
     expect(LEVEL_3_QUESTIONS.length).toBe(20);
+    const l3CorrectDistribution: Record<string, number> = { a: 0, b: 0, c: 0, d: 0 };
     for (const q of LEVEL_3_QUESTIONS) {
       expect(q.prompt).toBeTruthy();
       expect(q.explanationAr).toBeTruthy();
       expect(q.options.length).toBe(4);
       const correctOpts = q.options.filter((o) => o.isCorrect);
       expect(correctOpts.length).toBe(1);
+      const optId = correctOpts[0]!.id;
+      l3CorrectDistribution[optId] = (l3CorrectDistribution[optId] ?? 0) + 1;
     }
+    // Verify balanced 25% distribution (exactly 5 each)
+    expect(l3CorrectDistribution['a']).toBe(5);
+    expect(l3CorrectDistribution['b']).toBe(5);
+    expect(l3CorrectDistribution['c']).toBe(5);
+    expect(l3CorrectDistribution['d']).toBe(5);
 
     // Comprehensive: 24 questions
     expect(COMPREHENSIVE_DIAGNOSTIC_QUESTIONS.length).toBe(24);
@@ -74,7 +97,7 @@ describe('PlacementTestPage & Question Bank', () => {
       </MemoryRouter>
     );
 
-    const nameInput = screen.getByLabelText(/اسم الطالبة الكريم/i);
+    const nameInput = screen.getByLabelText(/الاسم الكريم/i);
     const startButtons = screen.getAllByRole('button', { name: /ابدئي تقييم/i });
 
     expect(startButtons[0]).toBeDisabled();
@@ -91,7 +114,7 @@ describe('PlacementTestPage & Question Bank', () => {
       </MemoryRouter>
     );
 
-    const nameInput = screen.getByLabelText(/اسم الطالبة الكريم/i);
+    const nameInput = screen.getByLabelText(/الاسم الكريم/i);
     fireEvent.change(nameInput, { target: { value: 'رغد محمد' } });
 
     // Choose Level 2 test

@@ -92,9 +92,9 @@ export const placementQuestions: PlacementQuestion[] = [
     skill: 'grammar',
     prompt: 'She ___ reading books in the library right now.',
     options: [
-      { text: 'is', isCorrect: true },
       { text: 'are', isCorrect: false },
       { text: 'am', isCorrect: false },
+      { text: 'is', isCorrect: true },
       { text: 'be', isCorrect: false },
     ],
     explanation: 'نستخدم "is" مع الفاعل المفرد الغائب (She) في زمن المضارع المستمر (Present Continuous).',
@@ -105,10 +105,10 @@ export const placementQuestions: PlacementQuestion[] = [
     skill: 'vocabulary',
     prompt: 'The opposite of "cheap" is ___.',
     options: [
-      { text: 'expensive', isCorrect: true },
       { text: 'fast', isCorrect: false },
       { text: 'heavy', isCorrect: false },
       { text: 'poor', isCorrect: false },
+      { text: 'expensive', isCorrect: true },
     ],
     explanation: 'عكس كلمة "cheap" (رخيص) هو "expensive" (غالٍ / باهظ الثمن).',
   },
@@ -132,9 +132,9 @@ export const placementQuestions: PlacementQuestion[] = [
     prompt: 'A person who helps sick animals is called a ___.',
     options: [
       { text: 'pilot', isCorrect: false },
-      { text: 'vet', isCorrect: true },
       { text: 'chef', isCorrect: false },
       { text: 'mechanic', isCorrect: false },
+      { text: 'vet', isCorrect: true },
     ],
     explanation: '"vet" (طبيب بيطري) هو الشخص المتخصص في علاج الحيوانات.',
   },
@@ -160,8 +160,8 @@ export const placementQuestions: PlacementQuestion[] = [
     prompt: 'If it rains tomorrow, we ___ our trip to the beach.',
     options: [
       { text: 'cancel', isCorrect: false },
-      { text: 'will cancel', isCorrect: true },
       { text: 'cancelled', isCorrect: false },
+      { text: 'will cancel', isCorrect: true },
       { text: 'would cancel', isCorrect: false },
     ],
     explanation: 'هذه الحالة الشرطية الأولى (First Conditional): If + present simple, will + base verb.',
@@ -198,9 +198,9 @@ export const placementQuestions: PlacementQuestion[] = [
     skill: 'vocabulary',
     prompt: 'The teacher asked the students to ___ in their assignments before 3:00 PM.',
     options: [
-      { text: 'hand', isCorrect: true },
       { text: 'hold', isCorrect: false },
       { text: 'take', isCorrect: false },
+      { text: 'hand', isCorrect: true },
       { text: 'put', isCorrect: false },
     ],
     explanation: 'الفعل المركب "hand in" يعني تسليم أو تقديم الواجب (to submit).',
@@ -211,8 +211,8 @@ export const placementQuestions: PlacementQuestion[] = [
     skill: 'comprehension',
     prompt: '"Although the exam was challenging, Sarah managed to achieve an A grade." What does this tell us about Sarah?',
     options: [
-      { text: 'She failed the difficult exam.', isCorrect: false },
       { text: 'She was well-prepared and performed excellently.', isCorrect: true },
+      { text: 'She failed the difficult exam.', isCorrect: false },
       { text: 'The exam was easy for everyone.', isCorrect: false },
       { text: 'She did not finish the exam in time.', isCorrect: false },
     ],
@@ -226,9 +226,9 @@ export const placementQuestions: PlacementQuestion[] = [
     skill: 'grammar',
     prompt: 'Had I known about the workshop earlier, I ___ definitely registered.',
     options: [
-      { text: 'would have', isCorrect: true },
       { text: 'will have', isCorrect: false },
       { text: 'had', isCorrect: false },
+      { text: 'would have', isCorrect: true },
       { text: 'would', isCorrect: false },
     ],
     explanation: 'هذا أسلوب قلب الصيغة (Inversion) في الحالة الشرطية الثالثة (Had I known... I would have...).',
@@ -239,10 +239,10 @@ export const placementQuestions: PlacementQuestion[] = [
     skill: 'vocabulary',
     prompt: 'Solar energy is an efficient and ___ alternative to fossil fuels.',
     options: [
-      { text: 'sustainable', isCorrect: true },
       { text: 'temporary', isCorrect: false },
       { text: 'hazardous', isCorrect: false },
       { text: 'tedious', isCorrect: false },
+      { text: 'sustainable', isCorrect: true },
     ],
     explanation: '"sustainable" تعني مستدامة وصديقة للبيئة (sustainable alternative).',
   },
@@ -265,8 +265,8 @@ export const placementQuestions: PlacementQuestion[] = [
     skill: 'vocabulary',
     prompt: 'The manager gave a very ___ presentation that convinced all investors.',
     options: [
-      { text: 'compelling', isCorrect: true },
       { text: 'reluctant', isCorrect: false },
+      { text: 'compelling', isCorrect: true },
       { text: 'hostile', isCorrect: false },
       { text: 'vague', isCorrect: false },
     ],
@@ -279,9 +279,9 @@ export const placementQuestions: PlacementQuestion[] = [
     prompt: '"Despite initial skepticism from critics, the new renewable initiative exceeded its annual energy targets by thirty percent." What was the overall outcome?',
     options: [
       { text: 'The initiative failed as predicted by critics.', isCorrect: false },
-      { text: 'The initiative was a notable success that outperformed expectations.', isCorrect: true },
       { text: 'The initiative met exactly half of its targets.', isCorrect: false },
       { text: 'The critics were proven right in the end.', isCorrect: false },
+      { text: 'The initiative was a notable success that outperformed expectations.', isCorrect: true },
     ],
     explanation: 'تجاوزت المبادرة أهدافها السنوية بنسبة 30% رغم التشكيك المبدئي، ما يعني أنها حققت نجاحاً باهراً فاق التوقعات.',
   },
@@ -293,8 +293,8 @@ export const speedQuestions: SpeedQuestion[] = [
     prompt: 'What is the past tense of "Go"?',
     category: 'قواعد وأفعال',
     options: [
-      { text: 'Went', isCorrect: true },
       { text: 'Gone', isCorrect: false },
+      { text: 'Went', isCorrect: true },
       { text: 'Goed', isCorrect: false },
       { text: 'Going', isCorrect: false },
     ],
@@ -304,9 +304,9 @@ export const speedQuestions: SpeedQuestion[] = [
     prompt: 'Which word means "سعيد"?',
     category: 'مفردات',
     options: [
-      { text: 'Happy', isCorrect: true },
       { text: 'Sad', isCorrect: false },
       { text: 'Angry', isCorrect: false },
+      { text: 'Happy', isCorrect: true },
       { text: 'Tired', isCorrect: false },
     ],
   },
@@ -315,10 +315,10 @@ export const speedQuestions: SpeedQuestion[] = [
     prompt: 'Opposite of "Big":',
     category: 'أضداد',
     options: [
-      { text: 'Small', isCorrect: true },
       { text: 'Huge', isCorrect: false },
       { text: 'Tall', isCorrect: false },
       { text: 'Heavy', isCorrect: false },
+      { text: 'Small', isCorrect: true },
     ],
   },
   {
@@ -337,8 +337,8 @@ export const speedQuestions: SpeedQuestion[] = [
     prompt: 'Which one is a fruit?',
     category: 'تصنيفات',
     options: [
-      { text: 'Apple', isCorrect: true },
       { text: 'Potato', isCorrect: false },
+      { text: 'Apple', isCorrect: true },
       { text: 'Carrot', isCorrect: false },
       { text: 'Onion', isCorrect: false },
     ],
@@ -348,9 +348,9 @@ export const speedQuestions: SpeedQuestion[] = [
     prompt: 'Opposite of "Cold":',
     category: 'أضداد',
     options: [
-      { text: 'Hot', isCorrect: true },
       { text: 'Cool', isCorrect: false },
       { text: 'Wet', isCorrect: false },
+      { text: 'Hot', isCorrect: true },
       { text: 'Dry', isCorrect: false },
     ],
   },
@@ -359,10 +359,10 @@ export const speedQuestions: SpeedQuestion[] = [
     prompt: 'What is the plural of "Child"?',
     category: 'جموع شاذة',
     options: [
-      { text: 'Children', isCorrect: true },
       { text: 'Childs', isCorrect: false },
       { text: 'Childrens', isCorrect: false },
       { text: 'Childes', isCorrect: false },
+      { text: 'Children', isCorrect: true },
     ],
   },
   {
@@ -381,8 +381,8 @@ export const speedQuestions: SpeedQuestion[] = [
     prompt: 'Past tense of "Buy":',
     category: 'أفعال ماضية',
     options: [
-      { text: 'Bought', isCorrect: true },
       { text: 'Buyed', isCorrect: false },
+      { text: 'Bought', isCorrect: true },
       { text: 'Brought', isCorrect: false },
       { text: 'Buys', isCorrect: false },
     ],
@@ -392,9 +392,9 @@ export const speedQuestions: SpeedQuestion[] = [
     prompt: 'Which word means "سريع"?',
     category: 'مفردات',
     options: [
-      { text: 'Fast', isCorrect: true },
       { text: 'Slow', isCorrect: false },
       { text: 'Quiet', isCorrect: false },
+      { text: 'Fast', isCorrect: true },
       { text: 'Soft', isCorrect: false },
     ],
   },
@@ -403,10 +403,10 @@ export const speedQuestions: SpeedQuestion[] = [
     prompt: 'They ___ not ready yet.',
     category: 'قواعد',
     options: [
-      { text: 'are', isCorrect: true },
       { text: 'is', isCorrect: false },
       { text: 'was', isCorrect: false },
       { text: 'am', isCorrect: false },
+      { text: 'are', isCorrect: true },
     ],
   },
   {
@@ -425,8 +425,8 @@ export const speedQuestions: SpeedQuestion[] = [
     prompt: 'Plural of "City":',
     category: 'جموع',
     options: [
-      { text: 'Cities', isCorrect: true },
       { text: 'Citys', isCorrect: false },
+      { text: 'Cities', isCorrect: true },
       { text: 'Citieses', isCorrect: false },
       { text: 'Cites', isCorrect: false },
     ],
@@ -436,9 +436,9 @@ export const speedQuestions: SpeedQuestion[] = [
     prompt: 'She is taller ___ her sister.',
     category: 'مقارنات',
     options: [
-      { text: 'than', isCorrect: true },
       { text: 'then', isCorrect: false },
       { text: 'that', isCorrect: false },
+      { text: 'than', isCorrect: true },
       { text: 'from', isCorrect: false },
     ],
   },
@@ -447,10 +447,10 @@ export const speedQuestions: SpeedQuestion[] = [
     prompt: 'Which season is the coldest?',
     category: 'مفردات عامة',
     options: [
-      { text: 'Winter', isCorrect: true },
       { text: 'Summer', isCorrect: false },
       { text: 'Spring', isCorrect: false },
       { text: 'Autumn', isCorrect: false },
+      { text: 'Winter', isCorrect: true },
     ],
   },
   {
@@ -469,8 +469,8 @@ export const speedQuestions: SpeedQuestion[] = [
     prompt: 'Synonym of "Begin":',
     category: 'مرادفات',
     options: [
-      { text: 'Start', isCorrect: true },
       { text: 'End', isCorrect: false },
+      { text: 'Start', isCorrect: true },
       { text: 'Stop', isCorrect: false },
       { text: 'Finish', isCorrect: false },
     ],
@@ -480,9 +480,9 @@ export const speedQuestions: SpeedQuestion[] = [
     prompt: 'Look ___ that beautiful bird!',
     category: 'حروف جر',
     options: [
-      { text: 'at', isCorrect: true },
       { text: 'in', isCorrect: false },
       { text: 'on', isCorrect: false },
+      { text: 'at', isCorrect: true },
       { text: 'to', isCorrect: false },
     ],
   },
@@ -491,10 +491,10 @@ export const speedQuestions: SpeedQuestion[] = [
     prompt: 'Which animal barks?',
     category: 'حيوانات',
     options: [
-      { text: 'Dog', isCorrect: true },
       { text: 'Cat', isCorrect: false },
       { text: 'Bird', isCorrect: false },
       { text: 'Horse', isCorrect: false },
+      { text: 'Dog', isCorrect: true },
     ],
   },
   {
@@ -513,8 +513,8 @@ export const speedQuestions: SpeedQuestion[] = [
     prompt: 'Past tense of "Write":',
     category: 'أفعال ماضية',
     options: [
-      { text: 'Wrote', isCorrect: true },
       { text: 'Written', isCorrect: false },
+      { text: 'Wrote', isCorrect: true },
       { text: 'Writed', isCorrect: false },
       { text: 'Writing', isCorrect: false },
     ],
@@ -524,9 +524,9 @@ export const speedQuestions: SpeedQuestion[] = [
     prompt: 'How many days in a week?',
     category: 'معلومات عامة',
     options: [
-      { text: 'Seven', isCorrect: true },
       { text: 'Six', isCorrect: false },
       { text: 'Five', isCorrect: false },
+      { text: 'Seven', isCorrect: true },
       { text: 'Eight', isCorrect: false },
     ],
   },
@@ -535,10 +535,10 @@ export const speedQuestions: SpeedQuestion[] = [
     prompt: 'We meet ___ 5:00 PM.',
     category: 'حروف جر',
     options: [
-      { text: 'at', isCorrect: true },
       { text: 'in', isCorrect: false },
       { text: 'on', isCorrect: false },
       { text: 'by', isCorrect: false },
+      { text: 'at', isCorrect: true },
     ],
   },
   {
@@ -557,10 +557,10 @@ export const speedQuestions: SpeedQuestion[] = [
     prompt: 'Past tense of "See":',
     category: 'أفعال ماضية',
     options: [
-      { text: 'Saw', isCorrect: true },
       { text: 'Seen', isCorrect: false },
       { text: 'Seed', isCorrect: false },
       { text: 'Seeing', isCorrect: false },
+      { text: 'Saw', isCorrect: true },
     ],
   },
 ];

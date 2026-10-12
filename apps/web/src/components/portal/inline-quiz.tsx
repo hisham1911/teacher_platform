@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Trophy, RotateCcw, Lightbulb, CheckCircle2, XCircle } from 'lucide-react';
+import { Trophy, RotateCcw, Lightbulb, CheckCircle2, XCircle, ArrowLeft } from 'lucide-react';
 import type { QuizQuestion } from '../../data/content/types';
 
 interface InlineQuizProps {
@@ -67,15 +67,15 @@ export function InlineQuiz({ questions }: InlineQuizProps) {
       setScore((prev) => prev + 1);
     }
     playQuizTone(isCorrect);
+  }
 
-    setTimeout(() => {
-      if (currentIndex + 1 < questions.length) {
-        setCurrentIndex((prev) => prev + 1);
-        setSelected(null);
-      } else {
-        setFinished(true);
-      }
-    }, 1300);
+  function handleNext() {
+    if (currentIndex + 1 < questions.length) {
+      setCurrentIndex((prev) => prev + 1);
+      setSelected(null);
+    } else {
+      setFinished(true);
+    }
   }
 
   function reset() {
@@ -211,6 +211,27 @@ export function InlineQuiz({ questions }: InlineQuizProps) {
           );
         })}
       </div>
+
+      {/* Action / Next Question button once answered */}
+      {selected !== null && (
+        <div className="mt-5 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-100 pt-4 animate-page-enter">
+          <span className="text-xs font-bold text-slate-600">
+            {question.options[selected]?.isCorrect
+              ? '✅ إجابة صحيحة وممتازة!'
+              : '💡 راجعي الملاحظة التعليمية بالأعلى لمعرفة القاعدة.'}
+          </span>
+          <button
+            type="button"
+            onClick={handleNext}
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-violet-700 px-6 py-2.5 text-xs sm:text-sm font-black text-white shadow-sm shadow-violet-700/20 hover:bg-violet-800 transition active:scale-95"
+          >
+            <span>
+              {currentIndex + 1 === questions.length ? 'عرض النتيجة النهائية' : 'السؤال التالي'}
+            </span>
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }
