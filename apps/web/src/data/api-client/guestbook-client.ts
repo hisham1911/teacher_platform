@@ -144,12 +144,17 @@ function getStorageKey(topicSlug?: string) {
   return topicSlug ? `${STORAGE_KEY}_topic_${topicSlug}` : STORAGE_KEY;
 }
 
-function getSupabaseConfig() {
-  const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-  const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+function cleanEnvString(val: unknown): string {
+  if (typeof val !== 'string') return '';
+  return val.trim().replace(/^["']|["']$/g, '');
+}
+
+export function getSupabaseConfig() {
+  const url = cleanEnvString(import.meta.env.VITE_SUPABASE_URL).replace(/\/+$/, '');
+  const anonKey = cleanEnvString(import.meta.env.VITE_SUPABASE_ANON_KEY);
   if (url && anonKey) {
     return {
-      url: url.replace(/\/+$/, ''),
+      url,
       anonKey,
     };
   }
@@ -361,9 +366,12 @@ export const guestbookClient = {
             teacherReply: r.teacher_reply,
             repliedAt: r.replied_at,
           }));
+        } else {
+          const errText = await res.text().catch(() => '');
+          console.warn(`[Guestbook] Supabase getEntries error (${res.status}):`, errText);
         }
-      } catch {
-        // Fallback to local storage if network or table issue
+      } catch (err) {
+        console.warn('[Guestbook] Supabase getEntries fetch failed:', err);
       }
     }
     return getLocalEntries(topicSlug);
@@ -497,9 +505,12 @@ export const guestbookClient = {
               repliedAt: row.replied_at,
             };
           }
+        } else {
+          const errText = await res.text().catch(() => '');
+          console.error(`[Guestbook] Supabase addEntry error (${res.status}):`, errText);
         }
-      } catch {
-        // fallback
+      } catch (err) {
+        console.error('[Guestbook] Supabase addEntry fetch failed:', err);
       }
     }
 
