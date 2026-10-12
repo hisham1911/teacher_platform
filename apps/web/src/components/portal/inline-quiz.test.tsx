@@ -78,5 +78,36 @@ describe('InlineQuiz component state isolation', () => {
     expect(screen.queryByText('Topic A Question 2')).not.toBeInTheDocument();
     expect(screen.queryByText('السؤال 2 من 2')).not.toBeInTheDocument();
   });
+
+  it('displays accurate contextual feedback when answer is wrong and avoids misleading notes', () => {
+    // Reading context
+    const { rerender } = render(
+      <InlineQuiz questions={topicAQuestions} contextType="reading" />
+    );
+    const wrongBtn = screen.getByRole('button', { name: /Wrong A1/i });
+    fireEvent.click(wrongBtn);
+
+    expect(
+      screen.getByText(/يمكنك مراجعة نص القراءة أعلاه للعثور على الإجابة/i)
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(/الملاحظة التعليمية بالأعلى/i)
+    ).not.toBeInTheDocument();
+
+    // Listening context
+    rerender(
+      <InlineQuiz questions={topicBQuestions} contextType="listening" />
+    );
+    const wrongB1Btn = screen.getByRole('button', { name: /Wrong B1/i });
+    fireEvent.click(wrongB1Btn);
+
+    expect(
+      screen.getByText(/يمكنك إعادة الاستماع للمقطع الصوتي أعلاه للتحقق/i)
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(/الملاحظة التعليمية بالأعلى/i)
+    ).not.toBeInTheDocument();
+  });
 });
+
 

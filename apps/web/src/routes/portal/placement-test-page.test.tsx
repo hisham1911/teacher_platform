@@ -98,7 +98,7 @@ describe('PlacementTestPage & Question Bank', () => {
     );
 
     const nameInput = screen.getByLabelText(/اسم الكريم/i);
-    const startButtons = screen.getAllByRole('button', { name: /ابدئي تقييم/i });
+    const startButtons = screen.getAllByRole('button', { name: /ابدأ تقييم/i });
 
     expect(startButtons[0]).toBeDisabled();
 
@@ -119,7 +119,7 @@ describe('PlacementTestPage & Question Bank', () => {
 
     // Choose Level 2 test
     const startL2Btn = screen.getByRole('button', {
-      name: /ابدئي تقييم المستوى الثاني — المتوسط/i,
+      name: /ابدأ تقييم المستوى الثاني — المتوسط/i,
     });
     fireEvent.click(startL2Btn);
 

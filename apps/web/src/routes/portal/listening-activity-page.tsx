@@ -150,7 +150,7 @@ export default function ListeningActivityPage() {
                 أجب على الأسئلة بناءً على ما استمعت إليه في المقطع
               </p>
             </div>
-            <InlineQuiz key={activity.slug} questions={activity.questions} />
+            <InlineQuiz key={activity.slug} questions={activity.questions} contextType="listening" />
           </div>
         )}
 

@@ -458,7 +458,7 @@ export default function PlacementTestPage() {
                               : 'bg-slate-100 text-slate-800 hover:bg-indigo-50 hover:text-indigo-800'
                           }`}
                         >
-                          <span>ابدئي تقييم {lvl.titleAr}</span>
+                          <span>ابدأ تقييم {lvl.titleAr}</span>
                           <ArrowLeft className="h-4 w-4 shrink-0 transition-transform group-hover/btn:-translate-x-1" />
                         </button>
                       </div>
@@ -901,7 +901,7 @@ export default function PlacementTestPage() {
 
                       <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-bold">
                         <div className="rounded-xl bg-white p-2.5 border border-slate-200/80">
-                          <span className="text-slate-500">إجابتكِ: </span>
+                          <span className="text-slate-500">إجابتك: </span>
                           <span
                             className={
                               isCorrect ? 'text-emerald-700 font-black' : 'text-rose-700 font-black'

@@ -186,7 +186,7 @@ export default function CompetitionsIndexPage() {
                       className={`flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r ${comp.gradient} py-3.5 text-xs sm:text-sm font-black text-white shadow-md shadow-slate-900/10 transition-all duration-200 hover:brightness-110 active:scale-[0.98]`}
                     >
                       <span>
-                        {comp.id === 'placement' ? 'ابدئي التقييم والتشخيص' : 'ابدأ التحدي الآن'}
+                        {comp.id === 'placement' ? 'ابدأ التقييم والتشخيص' : 'ابدأ التحدي الآن'}
                       </span>
                       <ArrowLeft className="h-4 w-4" />
                     </Link>

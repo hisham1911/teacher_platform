@@ -112,7 +112,7 @@ export default function GrammarTopicPage() {
                 أجب على الأسئلة التفاعلية لتثبيت معلوماتك فوراً
               </p>
             </div>
-            <InlineQuiz key={topic.slug} questions={topic.questions} />
+            <InlineQuiz key={topic.slug} questions={topic.questions} contextType="grammar" />
           </div>
         )}
 

@@ -108,7 +108,7 @@ export default function ReadingPassagePage() {
                 أجب على الأسئلة للتأكد من فهمك لمفردات وأفكار النص
               </p>
             </div>
-            <InlineQuiz key={passage.slug} questions={passage.questions} />
+            <InlineQuiz key={passage.slug} questions={passage.questions} contextType="reading" />
           </div>
         )}
 

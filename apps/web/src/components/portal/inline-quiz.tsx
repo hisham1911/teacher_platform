@@ -2,8 +2,32 @@ import { useState, useEffect } from 'react';
 import { Trophy, RotateCcw, Lightbulb, CheckCircle2, XCircle, ArrowLeft } from 'lucide-react';
 import type { QuizQuestion } from '../../data/content/types';
 
-interface InlineQuizProps {
+export interface InlineQuizProps {
   questions: QuizQuestion[];
+  contextType?: 'grammar' | 'reading' | 'listening';
+}
+
+function getFeedbackMessage(
+  question: QuizQuestion,
+  contextType?: 'grammar' | 'reading' | 'listening',
+): string {
+  if (question.hint && question.hint.trim()) {
+    return '💡 إجابة غير صحيحة — راجع التلميح الموضح أعلاه لمعرفة الإجابة الصحيحة.';
+  }
+
+  if (contextType === 'reading') {
+    return '💡 إجابة غير صحيحة — يمكنك مراجعة نص القراءة أعلاه للعثور على الإجابة.';
+  }
+
+  if (contextType === 'listening') {
+    return '💡 إجابة غير صحيحة — يمكنك إعادة الاستماع للمقطع الصوتي أعلاه للتحقق.';
+  }
+
+  if (contextType === 'grammar') {
+    return '💡 إجابة غير صحيحة — يمكنك مراجعة بطاقة الشرح أعلاه لتثبيت القاعدة.';
+  }
+
+  return '💡 إجابة غير صحيحة — ركّز في السؤال التالي وحاول مجدداً!';
 }
 
 function playQuizTone(isCorrect: boolean) {
@@ -42,7 +66,7 @@ function playQuizTone(isCorrect: boolean) {
  * اختبار تفاعلي فوري — يعرض سؤالاً واحداً في كل مرة،
  * يلوّن الإجابة فور الاختيار مع صوت تفاعلي ثم ينتقل تلقائياً للسؤال التالي.
  */
-export function InlineQuiz({ questions }: InlineQuizProps) {
+export function InlineQuiz({ questions, contextType }: InlineQuizProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
   const [score, setScore] = useState(0);
@@ -224,7 +248,7 @@ export function InlineQuiz({ questions }: InlineQuizProps) {
           <span className="text-xs font-bold text-slate-600">
             {question.options[selected]?.isCorrect
               ? '✅ إجابة صحيحة وممتازة!'
-              : '💡 راجعي الملاحظة التعليمية بالأعلى لمعرفة القاعدة.'}
+              : getFeedbackMessage(question, contextType)}
           </span>
           <button
             type="button"
