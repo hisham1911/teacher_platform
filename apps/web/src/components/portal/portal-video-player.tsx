@@ -15,7 +15,7 @@ export function PortalVideoPlayer({
   poster,
   title = 'فيديو تعليمي',
   aspectRatio = 'auto',
-  preload = 'none',
+  preload = 'metadata',
   className = '',
 }: PortalVideoPlayerProps) {
   const [hasStarted, setHasStarted] = useState(false);

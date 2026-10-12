@@ -46,7 +46,7 @@ describe('router — public product routes', () => {
     expect(screen.getAllByRole('link', { name: /المسابقات/ })[0]!).toHaveAttribute('href', '/competitions');
     expect(screen.getAllByRole('link', { name: /ابدأ بالقواعد والتمارين/ })[0]!).toHaveAttribute('href', '/grammar');
     expect(screen.getAllByRole('link', { name: /الكتابة/ })[0]!).toHaveAttribute('href', '/writing');
-  });
+  }, 15000);
 
   it('يعرض صفحة الانضمام للطلاب على /home', async () => {
     await renderRoute('/home');

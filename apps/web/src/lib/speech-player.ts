@@ -3,11 +3,21 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 // Persistent reference to prevent V8/WebKit garbage-collecting the utterance
 let globalActiveUtterance: SpeechSynthesisUtterance | null = null;
 
+let cachedVoices: SpeechSynthesisVoice[] = [];
+
+if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+  cachedVoices = window.speechSynthesis.getVoices();
+  window.speechSynthesis.onvoiceschanged = () => {
+    cachedVoices = window.speechSynthesis.getVoices();
+  };
+}
+
 function getEnglishVoice(): SpeechSynthesisVoice | null {
   if (typeof window === 'undefined' || !('speechSynthesis' in window)) return null;
-  const voices = window.speechSynthesis.getVoices();
+  const voices = cachedVoices.length > 0 ? cachedVoices : window.speechSynthesis.getVoices();
+  if (!voices || voices.length === 0) return null;
   return (
-    voices.find((v) => v.lang === 'en-US' && !v.name.includes('Google') && !v.name.includes('Natural')) ||
+    voices.find((v) => v.lang === 'en-US') ||
     voices.find((v) => v.lang.startsWith('en-US')) ||
     voices.find((v) => v.lang.startsWith('en-GB')) ||
     voices.find((v) => v.lang.startsWith('en')) ||
@@ -24,24 +34,67 @@ export interface SpeechPlayerOptions {
   onError?: (err: unknown) => void;
 }
 
+let activeFallbackAudio: HTMLAudioElement | null = null;
+
+function playFallbackAudio(text: string, options: SpeechPlayerOptions): () => void {
+  try {
+    const cleanChunk = encodeURIComponent(text.slice(0, 200).trim());
+    const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=en&client=tw-ob&q=${cleanChunk}`;
+    const audio = new Audio(url);
+    activeFallbackAudio = audio;
+
+    audio.onplay = () => {
+      options.onStart?.();
+    };
+    audio.onended = () => {
+      activeFallbackAudio = null;
+      options.onEnd?.();
+    };
+    audio.onerror = (e) => {
+      activeFallbackAudio = null;
+      options.onError?.(e);
+      options.onEnd?.();
+    };
+
+    audio.play().catch((err) => {
+      activeFallbackAudio = null;
+      options.onError?.(err);
+      options.onEnd?.();
+    });
+
+    return () => {
+      stopEnglishSpeech();
+    };
+  } catch (err) {
+    options.onError?.(err);
+    options.onEnd?.();
+    return () => {};
+  }
+}
+
 /**
- * Robust cross-browser speech playback that handles:
- * 1. Garbage collection bug in Chromium/Safari by keeping module-level utterance reference.
- * 2. Unfreezing speechSynthesis when paused in Chromium.
- * 3. Explicitly selecting English voice so Arabic locale OSs don't fail.
+ * Robust cross-browser and mobile speech playback that handles:
+ * 1. Synchronous invocation in user gesture context (no setTimeout, fixing iOS/Android block).
+ * 2. Inclusive Android Google TTS and iOS voice discovery.
+ * 3. Graceful streaming audio fallback if mobile browser blocks Web Speech API.
  * 4. Resolving cancel/speak race conditions.
  */
 export function playEnglishSpeech(
   text: string,
   options: SpeechPlayerOptions = {},
 ): () => void {
-  if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
-    options.onError?.(new Error('SpeechSynthesis not supported'));
+  if (typeof window === 'undefined') {
     return () => {};
   }
 
-  // Cancel any existing speech
   stopEnglishSpeech();
+
+  const cleanText = text.trim();
+  if (!cleanText) return () => {};
+
+  if (!('speechSynthesis' in window)) {
+    return playFallbackAudio(cleanText, options);
+  }
 
   // Resume synthesis in case browser paused it
   if (window.speechSynthesis.paused) {
@@ -51,9 +104,6 @@ export function playEnglishSpeech(
       // Ignore
     }
   }
-
-  const cleanText = text.trim();
-  if (!cleanText) return () => {};
 
   const utterance = new SpeechSynthesisUtterance(cleanText);
   utterance.lang = options.lang || 'en-US';
@@ -65,7 +115,10 @@ export function playEnglishSpeech(
     utterance.voice = englishVoice;
   }
 
+  let hasStartedSpeaking = false;
+
   utterance.onstart = () => {
+    hasStartedSpeaking = true;
     options.onStart?.();
   };
 
@@ -75,10 +128,13 @@ export function playEnglishSpeech(
   };
 
   utterance.onerror = (e) => {
-    // If canceled manually, do not treat as fatal error
     globalActiveUtterance = null;
     if (e.error !== 'canceled' && e.error !== 'interrupted') {
-      console.warn('SpeechSynthesis error:', e.error);
+      if (!hasStartedSpeaking) {
+        // Fallback to audio stream if speech synthesis fails to start on mobile
+        playFallbackAudio(cleanText, options);
+        return;
+      }
       options.onError?.(e);
     }
     options.onEnd?.();
@@ -86,19 +142,15 @@ export function playEnglishSpeech(
 
   globalActiveUtterance = utterance;
 
-  // Small timeout to allow any pending cancel() to clear in Chrome
-  window.setTimeout(() => {
-    try {
-      if (globalActiveUtterance === utterance) {
-        window.speechSynthesis.speak(utterance);
-      }
-    } catch (err) {
-      console.warn('speechSynthesis.speak error:', err);
-      globalActiveUtterance = null;
-      options.onError?.(err);
-      options.onEnd?.();
+  // Execute synchronously within the user touch/click gesture context!
+  try {
+    if (globalActiveUtterance === utterance) {
+      window.speechSynthesis.speak(utterance);
     }
-  }, 20);
+  } catch {
+    globalActiveUtterance = null;
+    return playFallbackAudio(cleanText, options);
+  }
 
   return () => {
     stopEnglishSpeech();
@@ -106,13 +158,24 @@ export function playEnglishSpeech(
 }
 
 export function stopEnglishSpeech(): void {
+  if (activeFallbackAudio) {
+    try {
+      activeFallbackAudio.pause();
+      activeFallbackAudio.currentTime = 0;
+    } catch {
+      // Ignore
+    }
+    activeFallbackAudio = null;
+  }
   if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
     try {
       window.speechSynthesis.cancel();
     } catch {
       // Ignore
     }
-    globalActiveUtterance = null;
+    if (globalActiveUtterance) {
+      globalActiveUtterance = null;
+    }
   }
 }
 

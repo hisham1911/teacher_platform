@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import { PortalVideoPlayer } from './portal-video-player';
 
 describe('PortalVideoPlayer', () => {
-  it('renders a native HTML5 video with preload="none" for local MP4 files', () => {
+  it('renders a native HTML5 video with preload="metadata" for local MP4 files', () => {
     const { container } = render(
       <PortalVideoPlayer
         src="/content/videos/present-simple-podcast.mp4"
@@ -16,7 +16,7 @@ describe('PortalVideoPlayer', () => {
     expect(videoEl).toBeInTheDocument();
     expect(videoEl).toHaveAttribute('src', '/content/videos/present-simple-podcast.mp4');
     expect(videoEl).toHaveAttribute('poster', '/content/videos/posters/present-simple-podcast.jpg');
-    expect(videoEl).toHaveAttribute('preload', 'none');
+    expect(videoEl).toHaveAttribute('preload', 'metadata');
   });
 
   it('renders an iframe when given an external or YouTube video URL', () => {
