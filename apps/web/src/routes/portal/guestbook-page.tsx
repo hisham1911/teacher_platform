@@ -157,7 +157,7 @@ export default function GuestbookPage() {
   }
 
   return (
-    <div className="relative flex min-h-dvh flex-col overflow-x-hidden bg-slate-50/50" dir="rtl">
+    <div className="relative flex min-h-dvh flex-col overflow-x-clip bg-slate-50/50" dir="rtl">
       <PublicBackdrop />
       <PortalNav />
 
@@ -200,7 +200,7 @@ export default function GuestbookPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               <div>
                 <label htmlFor="guestbook-name" className="block text-xs font-bold text-slate-700 mb-1">
-                  الاسم الكريم <span className="text-rose-500">*</span>
+                  اسم الكريم <span className="text-rose-500">*</span>
                 </label>
                 <input
                   id="guestbook-name"

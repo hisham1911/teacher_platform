@@ -198,7 +198,7 @@ export default function TeacherAdminPage() {
   // If NOT authenticated, show the Teacher Login screen
   if (!isAuthenticated) {
     return (
-      <div className="relative flex min-h-dvh flex-col overflow-x-hidden bg-slate-50/50" dir="rtl">
+      <div className="relative flex min-h-dvh flex-col overflow-x-clip bg-slate-50/50" dir="rtl">
         <PublicBackdrop />
         <PortalNav />
 
@@ -295,7 +295,7 @@ export default function TeacherAdminPage() {
   const teacherSession = getTeacherSession();
 
   return (
-    <div className="relative flex min-h-dvh flex-col overflow-x-hidden bg-slate-50/50" dir="rtl">
+    <div className="relative flex min-h-dvh flex-col overflow-x-clip bg-slate-50/50" dir="rtl">
       <PublicBackdrop />
       <PortalNav />
 

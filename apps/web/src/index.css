@@ -48,11 +48,18 @@
 .animate-float-medium { animation: float-medium 6s ease-in-out infinite; }
 
 @keyframes page-enter {
-  0% { opacity: 0; transform: translateY(12px); }
-  100% { opacity: 1; transform: translateY(0); }
+  0% { opacity: 0; transform: translateY(6px); }
+  100% { opacity: 1; transform: none; }
 }
 .animate-page-enter {
-  animation: page-enter 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: page-enter 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (max-width: 768px) {
+  .animate-float-slow,
+  .animate-float-medium {
+    animation: none !important;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

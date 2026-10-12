@@ -402,7 +402,7 @@ export function PortalShell({
   wide?: boolean;
 }) {
   return (
-    <div className="relative flex min-h-dvh flex-col overflow-x-hidden bg-slate-50/40" dir="rtl">
+    <div className="relative flex min-h-dvh flex-col overflow-x-clip bg-slate-50/40" dir="rtl">
       <PortalNav />
       <div
         className={`relative z-10 mx-auto w-full flex-1 px-4 pb-16 pt-6 sm:px-6 ${

@@ -14,6 +14,7 @@ import {
 import { PublicBackdrop } from '../../components/layout/root-layout';
 import { PortalNav, PortalFooter } from '../../components/portal/portal-nav';
 import { writingPrompts } from '../../data/content/writing';
+import { useSpeechPlayer } from '../../lib/speech-player';
 
 function playTone(type: 'correct' | 'submitted') {
   try {
@@ -56,7 +57,8 @@ export default function WritingActivityPage() {
 
   const [studentText, setStudentText] = useState('');
   const [submitted, setSubmitted] = useState(false);
-  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+
+  const { isPlaying: isPlayingAudio, toggle: speakModelAnswer } = useSpeechPlayer(prompt?.modelAnswer);
 
   if (!prompt) return <Navigate to="/writing" replace />;
 
@@ -90,25 +92,8 @@ export default function WritingActivityPage() {
     setStudentText((prev) => (prev ? `${prev} ${cleanWord}` : cleanWord));
   }
 
-  function speakModelAnswer() {
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
-    if (isPlayingAudio) {
-      window.speechSynthesis.cancel();
-      setIsPlayingAudio(false);
-      return;
-    }
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(prompt?.modelAnswer ?? '');
-    utterance.lang = 'en-US';
-    utterance.rate = 0.88;
-    utterance.onend = () => setIsPlayingAudio(false);
-    utterance.onerror = () => setIsPlayingAudio(false);
-    setIsPlayingAudio(true);
-    window.speechSynthesis.speak(utterance);
-  }
-
   return (
-    <div className="relative flex min-h-dvh flex-col overflow-x-hidden bg-slate-50/50" dir="rtl">
+    <div className="relative flex min-h-dvh flex-col overflow-x-clip bg-slate-50/50" dir="rtl">
       <PublicBackdrop />
       <PortalNav />
 

@@ -19,7 +19,7 @@ function levelLabel(level: ReadingPassage['level']) {
 
 export default function ReadingIndexPage() {
   return (
-    <div className="relative flex min-h-dvh flex-col overflow-x-hidden bg-slate-50/50" dir="rtl">
+    <div className="relative flex min-h-dvh flex-col overflow-x-clip bg-slate-50/50" dir="rtl">
       <PublicBackdrop />
       <PortalNav />
 

@@ -128,16 +128,22 @@ export function InlineQuiz({ questions }: InlineQuizProps) {
     );
   }
 
-  const progressPercent = Math.round(((currentIndex + 1) / questions.length) * 100);
+  const answeredCount = selected !== null ? currentIndex + 1 : currentIndex;
+  const progressPercent = Math.round((answeredCount / questions.length) * 100);
 
   return (
     <div className="rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white/95 p-5 sm:p-7 shadow-xs backdrop-blur-xl">
       {/* Quiz Header & Progress */}
       <div className="mb-5">
         <div className="flex items-center justify-between text-xs font-black text-slate-500">
-          <span>
-            السؤال {currentIndex + 1} من {questions.length}
-          </span>
+          <div className="flex items-center gap-2">
+            <span>
+              السؤال {currentIndex + 1} من {questions.length}
+            </span>
+            <span className="text-[11px] font-bold text-slate-400">
+              (المُنجز: {answeredCount} من {questions.length})
+            </span>
+          </div>
           <span className="rounded-full bg-violet-100 px-3 py-0.5 font-bold text-violet-800">
             النقاط: {score}
           </span>

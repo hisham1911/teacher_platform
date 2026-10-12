@@ -6,6 +6,8 @@ import { authApi, tenantsApi } from '../../data/api-client/endpoints';
 import { useSessionSnapshot } from '../../features/auth/use-session';
 import { clearSession, getActiveTenantId, setActiveWorkspaceId } from '../../lib/auth/session';
 
+import { ScrollToTop } from './scroll-to-top';
+
 const studioNavItems: Array<{ to: string; label: string; icon: TeacherIconName }> = [
   { to: '/dashboard', label: 'الرئيسية', icon: 'home' },
   { to: '/dashboard/quizzes', label: 'الأنشطة', icon: 'quizzes' },
@@ -82,7 +84,14 @@ export function RootLayout({ children }: { children: ReactNode }) {
   const isPlatformAdmin = Boolean(session.user?.platformRoles.includes('PlatformAdmin'));
   const isCreatingActivity = location.pathname.startsWith('/dashboard/activities/');
 
-  if (isFocusedExperience) return <div className="min-h-dvh" dir="rtl">{children}</div>;
+  if (isFocusedExperience) {
+    return (
+      <div className="min-h-dvh" dir="rtl">
+        <ScrollToTop />
+        {children}
+      </div>
+    );
+  }
 
   async function onLogout() {
     try {
@@ -102,6 +111,7 @@ export function RootLayout({ children }: { children: ReactNode }) {
     const onLoginPage = location.pathname === '/auth/login';
     return (
       <div className="spark-public-shell relative flex min-h-dvh flex-col overflow-x-clip" dir="rtl">
+        <ScrollToTop />
         <PublicBackdrop />
         <header className="sticky top-0 z-40 border-b border-violet-100/80 bg-white/88 backdrop-blur-xl">
           <div className="mx-auto flex min-h-16 w-full max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
@@ -124,6 +134,7 @@ export function RootLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="teacher-app min-h-dvh" dir="rtl">
+      <ScrollToTop />
       <div className="mx-auto flex min-h-dvh w-full max-w-screen-2xl">
         <aside className="sticky top-0 hidden h-dvh w-[17rem] shrink-0 flex-col border-l border-slate-200 bg-white/96 px-4 py-5 lg:flex">
           <EnglishSparkBrand to="/dashboard" />
@@ -217,7 +228,7 @@ function PublicFooter() {
 
 export function PublicBackdrop() {
   return (
-    <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-0 overflow-hidden">
+    <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
       {/* Fluid CSS Ambient Mesh Glow — Fully responsive on mobile, tablet & desktop */}
       <div className="pointer-events-none absolute -top-28 left-1/2 -translate-x-1/2 h-[28rem] w-[92vw] max-w-4xl rounded-full bg-gradient-to-b from-violet-300/30 via-fuchsia-200/20 to-transparent blur-3xl" />
       <div className="pointer-events-none absolute top-16 -right-16 h-72 w-72 sm:h-96 sm:w-96 rounded-full bg-gradient-to-bl from-amber-200/35 via-orange-100/20 to-transparent blur-3xl" />

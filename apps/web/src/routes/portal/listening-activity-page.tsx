@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link, useParams, Navigate } from 'react-router';
 import {
   ChevronRight,
@@ -14,10 +14,10 @@ import { PortalNav, PortalFooter } from '../../components/portal/portal-nav';
 import { InlineQuiz } from '../../components/portal/inline-quiz';
 import { PortalVideoPlayer } from '../../components/portal/portal-video-player';
 import { listeningActivities } from '../../data/content/listening';
+import { useSpeechPlayer } from '../../lib/speech-player';
 
 export default function ListeningActivityPage() {
   const { activitySlug } = useParams<{ activitySlug: string }>();
-  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [showTranscript, setShowTranscript] = useState(false);
 
   const activityIndex = listeningActivities.findIndex(
@@ -25,39 +25,14 @@ export default function ListeningActivityPage() {
   );
   const activity = listeningActivities[activityIndex];
 
-  useEffect(() => {
-    return () => {
-      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-      }
-    };
-  }, [activitySlug]);
+  const { isPlaying: isPlayingAudio, toggle: toggleSpeech } = useSpeechPlayer(activity?.audioScript);
 
   if (!activity) return <Navigate to="/listening" replace />;
 
   const nextActivity = listeningActivities[activityIndex + 1];
 
-  function toggleSpeech() {
-    if (!activity || !activity.audioScript || typeof window === 'undefined' || !('speechSynthesis' in window)) return;
-
-    if (isPlayingAudio) {
-      window.speechSynthesis.cancel();
-      setIsPlayingAudio(false);
-      return;
-    }
-
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(activity.audioScript);
-    utterance.lang = 'en-US';
-    utterance.rate = 0.88;
-    utterance.onend = () => setIsPlayingAudio(false);
-    utterance.onerror = () => setIsPlayingAudio(false);
-    setIsPlayingAudio(true);
-    window.speechSynthesis.speak(utterance);
-  }
-
   return (
-    <div className="relative flex min-h-dvh flex-col overflow-x-hidden bg-slate-50/50" dir="rtl">
+    <div className="relative flex min-h-dvh flex-col overflow-x-clip bg-slate-50/50" dir="rtl">
       <PublicBackdrop />
       <PortalNav />
 
