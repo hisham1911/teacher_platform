@@ -90,10 +90,10 @@ export function PortalNav({ variant = 'light' }: { variant?: 'light' | 'dark' } 
 
   return (
     <nav
-      className={`portal-nav sticky top-0 z-40 border-b backdrop-blur-xl transition-colors duration-200 ${
+      className={`portal-nav sticky top-0 z-50 isolate transform-gpu border-b backdrop-blur-xl transition-colors duration-200 ${
         isDark
-          ? 'border-white/10 bg-slate-950/90 text-white shadow-md'
-          : 'border-violet-100/70 bg-white/90 text-slate-900 shadow-xs'
+          ? 'border-white/10 bg-slate-950/98 text-white shadow-md'
+          : 'border-violet-100/80 bg-white/98 text-slate-900 shadow-xs'
       }`}
       dir="rtl"
     >
@@ -217,7 +217,7 @@ export function PortalNav({ variant = 'light' }: { variant?: 'light' | 'dark' } 
       {/* Mobile Horizontal Pill Scroll (Fast, elegant single-tap access) */}
       <div
         className={`lg:hidden border-t px-2 py-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden flex items-center gap-1.5 transition-colors ${
-          isDark ? 'border-white/10 bg-slate-900/95' : 'border-slate-100/80 bg-slate-50/80'
+          isDark ? 'border-white/10 bg-slate-900/98' : 'border-slate-100/80 bg-slate-50/98'
         }`}
       >
         <Link

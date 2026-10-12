@@ -143,7 +143,7 @@ export default function MillionChallengePage() {
             المسابقات
           </Link>
           <ChevronRight className="h-3.5 w-3.5" />
-          <span className="text-amber-400 font-black">مسابقة المليون</span>
+          <span className="text-amber-400 font-black">تحدي Spark</span>
         </div>
 
         {stage === 'welcome' && (
@@ -152,9 +152,9 @@ export default function MillionChallengePage() {
               <Award className="h-9 w-9" />
             </span>
             <p className="text-xs font-black tracking-[0.2em] text-[var(--challenge-accent)]">
-              MILLION CHALLENGE
+              SPARK CHALLENGE
             </p>
-            <h1 className="mt-2 text-3xl font-black text-white sm:text-5xl">مسابقة المليون</h1>
+            <h1 className="mt-2 text-3xl font-black text-white sm:text-5xl">تحدي Spark</h1>
 
             <div className="mt-6 rounded-2xl bg-white/5 p-5 text-right border border-white/10">
               <ul className="flex flex-col gap-3 text-xs sm:text-sm font-semibold leading-relaxed text-sky-100">
@@ -326,7 +326,7 @@ export default function MillionChallengePage() {
 
             <h2 className="text-2xl sm:text-4xl font-black text-white">
               {finalLevel >= 15
-                ? `أسطورة يا ${name}! ربحت المليون!`
+                ? `أسطورة يا ${name}! حققت الفوز في تحدي Spark!`
                 : `محاولة رائعة يا ${name}!`}
             </h2>
 

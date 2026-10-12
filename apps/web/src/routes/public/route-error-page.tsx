@@ -43,7 +43,7 @@ export default function RouteErrorPage() {
             className="w-full inline-flex min-h-12 items-center justify-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 px-6 text-sm font-black text-amber-900 transition hover:bg-amber-100 sm:w-auto"
           >
             <span>🏆</span>
-            <span>مسابقة المليون</span>
+            <span>تحدي Spark</span>
           </Link>
         </div>
       </main>

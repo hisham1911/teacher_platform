@@ -92,7 +92,7 @@ export default function CompetitionsIndexPage() {
           </h1>
 
           <p className="mx-auto mt-4 max-w-2xl text-pretty text-xs sm:text-base font-semibold leading-relaxed text-slate-600">
-            اختر نوع التحدي الذي تفضله: تسلّق سلم مسابقة المليون، أو قيّم مستواك بدقة عبر اختبار تحديد المستوى، أو جرّب سرعتك في <span className="inline-block whitespace-nowrap">تحدي الـ 60 ثانية!</span>
+            اختر نوع التحدي الذي تفضله: تسلّق سلم تحدي Spark، أو قيّم مستواك بدقة عبر اختبار تحديد المستوى، أو جرّب سرعتك في <span className="inline-block whitespace-nowrap">تحدي الـ 60 ثانية!</span>
           </p>
         </section>
 

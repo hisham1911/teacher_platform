@@ -39,6 +39,7 @@ export interface ListeningActivity {
   level: 'easy' | 'medium' | 'hard';
   mediaUrl: string;
   posterUrl?: string;
+  audioUrl?: string;
   audioScript?: string;
   questions: QuizQuestion[];
 }

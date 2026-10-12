@@ -63,7 +63,7 @@ export function PortalVideoPlayer({
   if (isLocalOrDirect) {
     return (
       <div
-        className={`group relative overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-slate-950 shadow-md transition-shadow hover:shadow-xl ${className}`}
+        className={`group relative isolate z-0 overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-slate-950 shadow-md transition-shadow hover:shadow-xl ${className}`}
       >
         <video
           ref={videoRef}
@@ -71,7 +71,7 @@ export function PortalVideoPlayer({
           poster={poster}
           preload={preload}
           playsInline
-          controls
+          controls={hasStarted}
           onPlay={() => {
             setHasStarted(true);
             setLoadError(false);

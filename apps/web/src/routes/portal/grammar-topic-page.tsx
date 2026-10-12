@@ -27,7 +27,7 @@ export default function GrammarTopicPage() {
   const nextTopic = grammarTopics[topicIndex + 1];
 
   return (
-    <div className="relative flex min-h-dvh flex-col overflow-x-clip bg-slate-50/50" dir="rtl">
+    <div className="relative flex min-h-dvh flex-col bg-slate-50/50" dir="rtl">
       <PublicBackdrop />
       <PortalNav />
 

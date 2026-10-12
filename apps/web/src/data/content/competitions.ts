@@ -37,8 +37,8 @@ export const portalCompetitions: CompetitionMeta[] = [
   {
     id: 'million',
     slug: 'million',
-    titleAr: 'مسابقة المليون',
-    titleEn: 'Million Challenge',
+    titleAr: 'تحدي Spark',
+    titleEn: 'Spark Challenge',
     subtitle: 'تحدي المعرفة التصاعدي',
     badge: '15 سؤالاً',
     badgeColor: 'bg-amber-100 text-amber-900 border-amber-300',

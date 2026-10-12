@@ -34,30 +34,72 @@ export interface SpeechPlayerOptions {
   onError?: (err: unknown) => void;
 }
 
-let activeFallbackAudio: HTMLAudioElement | null = null;
+let activeAudioElement: HTMLAudioElement | null = null;
+
+function playAudioFile(url: string, options: SpeechPlayerOptions): () => void {
+  stopEnglishSpeech();
+
+  try {
+    const audio = new Audio(url);
+    activeAudioElement = audio;
+
+    audio.onplay = () => {
+      options.onStart?.();
+    };
+    audio.onended = () => {
+      activeAudioElement = null;
+      options.onEnd?.();
+    };
+    audio.onerror = (e) => {
+      activeAudioElement = null;
+      options.onError?.(e);
+      options.onEnd?.();
+    };
+
+    audio.play().catch((err) => {
+      activeAudioElement = null;
+      options.onError?.(err);
+      options.onEnd?.();
+    });
+
+    return () => {
+      stopEnglishSpeech();
+    };
+  } catch (err) {
+    options.onError?.(err);
+    options.onEnd?.();
+    return () => {};
+  }
+}
 
 function playFallbackAudio(text: string, options: SpeechPlayerOptions): () => void {
   try {
     const cleanChunk = encodeURIComponent(text.slice(0, 200).trim());
     const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=en&client=tw-ob&q=${cleanChunk}`;
     const audio = new Audio(url);
-    activeFallbackAudio = audio;
+    try {
+      (audio as unknown as { referrerPolicy?: string }).referrerPolicy = 'no-referrer';
+      audio.setAttribute('referrerpolicy', 'no-referrer');
+    } catch {
+      // Ignore
+    }
+    activeAudioElement = audio;
 
     audio.onplay = () => {
       options.onStart?.();
     };
     audio.onended = () => {
-      activeFallbackAudio = null;
+      activeAudioElement = null;
       options.onEnd?.();
     };
     audio.onerror = (e) => {
-      activeFallbackAudio = null;
+      activeAudioElement = null;
       options.onError?.(e);
       options.onEnd?.();
     };
 
     audio.play().catch((err) => {
-      activeFallbackAudio = null;
+      activeAudioElement = null;
       options.onError?.(err);
       options.onEnd?.();
     });
@@ -73,27 +115,56 @@ function playFallbackAudio(text: string, options: SpeechPlayerOptions): () => vo
 }
 
 /**
- * Robust cross-browser and mobile speech playback that handles:
- * 1. Synchronous invocation in user gesture context (no setTimeout, fixing iOS/Android block).
- * 2. Inclusive Android Google TTS and iOS voice discovery.
- * 3. Graceful streaming audio fallback if mobile browser blocks Web Speech API.
- * 4. Resolving cancel/speak race conditions.
+ * Robust cross-browser and mobile audio/speech playback that handles:
+ * 1. Direct MP3 audio playback if an audio URL is provided.
+ * 2. Synchronous invocation in user gesture context (no setTimeout, fixing iOS/Android block).
+ * 3. Inclusive Android Google TTS and iOS voice discovery.
+ * 4. Graceful streaming audio fallback with no-referrer policy if mobile browser blocks Web Speech API.
+ * 5. Resolving cancel/speak race conditions.
  */
 export function playEnglishSpeech(
-  text: string,
+  textOrUrl: string,
   options: SpeechPlayerOptions = {},
 ): () => void {
   if (typeof window === 'undefined') {
     return () => {};
   }
 
-  stopEnglishSpeech();
+  const cleanSource = textOrUrl.trim();
+  if (!cleanSource) return () => {};
 
-  const cleanText = text.trim();
-  if (!cleanText) return () => {};
+  // If source is a direct audio file or URL, play it directly
+  if (
+    cleanSource.endsWith('.mp3') ||
+    cleanSource.startsWith('/content/audio/') ||
+    cleanSource.startsWith('blob:') ||
+    cleanSource.startsWith('data:audio') ||
+    cleanSource.includes('.mp3?')
+  ) {
+    return playAudioFile(cleanSource, options);
+  }
+
+  // Only cancel if speech synthesis is currently active to protect iOS user-gesture flag
+  if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
+    try {
+      window.speechSynthesis.cancel();
+    } catch {
+      // Ignore
+    }
+  }
+
+  if (activeAudioElement) {
+    try {
+      activeAudioElement.pause();
+      activeAudioElement.currentTime = 0;
+    } catch {
+      // Ignore
+    }
+    activeAudioElement = null;
+  }
 
   if (!('speechSynthesis' in window)) {
-    return playFallbackAudio(cleanText, options);
+    return playFallbackAudio(cleanSource, options);
   }
 
   // Resume synthesis in case browser paused it
@@ -105,7 +176,10 @@ export function playEnglishSpeech(
     }
   }
 
-  const utterance = new SpeechSynthesisUtterance(cleanText);
+  // Clean conversational transcripts (remove character name prefixes like "Sarah:")
+  const textToSpeak = cleanSource.replace(/^[A-Za-z]+:\s*/gm, '').trim();
+
+  const utterance = new SpeechSynthesisUtterance(textToSpeak);
   utterance.lang = options.lang || 'en-US';
   utterance.rate = options.rate ?? 0.88;
   utterance.pitch = options.pitch ?? 1.0;
@@ -132,7 +206,7 @@ export function playEnglishSpeech(
     if (e.error !== 'canceled' && e.error !== 'interrupted') {
       if (!hasStartedSpeaking) {
         // Fallback to audio stream if speech synthesis fails to start on mobile
-        playFallbackAudio(cleanText, options);
+        playFallbackAudio(textToSpeak, options);
         return;
       }
       options.onError?.(e);
@@ -149,7 +223,7 @@ export function playEnglishSpeech(
     }
   } catch {
     globalActiveUtterance = null;
-    return playFallbackAudio(cleanText, options);
+    return playFallbackAudio(textToSpeak, options);
   }
 
   return () => {
@@ -158,18 +232,20 @@ export function playEnglishSpeech(
 }
 
 export function stopEnglishSpeech(): void {
-  if (activeFallbackAudio) {
+  if (activeAudioElement) {
     try {
-      activeFallbackAudio.pause();
-      activeFallbackAudio.currentTime = 0;
+      activeAudioElement.pause();
+      activeAudioElement.currentTime = 0;
     } catch {
       // Ignore
     }
-    activeFallbackAudio = null;
+    activeAudioElement = null;
   }
   if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
     try {
-      window.speechSynthesis.cancel();
+      if (window.speechSynthesis.speaking || window.speechSynthesis.paused) {
+        window.speechSynthesis.cancel();
+      }
     } catch {
       // Ignore
     }

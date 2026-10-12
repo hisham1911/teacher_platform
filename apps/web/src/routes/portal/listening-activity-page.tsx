@@ -25,14 +25,15 @@ export default function ListeningActivityPage() {
   );
   const activity = listeningActivities[activityIndex];
 
-  const { isPlaying: isPlayingAudio, toggle: toggleSpeech } = useSpeechPlayer(activity?.audioScript);
+  const audioSource = activity?.audioUrl || activity?.audioScript;
+  const { isPlaying: isPlayingAudio, toggle: toggleSpeech } = useSpeechPlayer(audioSource);
 
   if (!activity) return <Navigate to="/listening" replace />;
 
   const nextActivity = listeningActivities[activityIndex + 1];
 
   return (
-    <div className="relative flex min-h-dvh flex-col overflow-x-clip bg-slate-50/50" dir="rtl">
+    <div className="relative flex min-h-dvh flex-col bg-slate-50/50" dir="rtl">
       <PublicBackdrop />
       <PortalNav />
 

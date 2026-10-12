@@ -7,6 +7,7 @@ export const listeningActivities: ListeningActivity[] = [
     titleAr: 'تقديم نفسك',
     level: 'easy',
     mediaUrl: '',
+    audioUrl: '/content/audio/introducing-yourself.mp3',
     audioScript: `Sarah: Hello! My name is Sarah. I am from Saudi Arabia. Nice to meet you!
 Alex: Hi Sarah! My name is Alex. It is very nice to meet you too. Where are you from in Saudi Arabia?
 Sarah: I am from Riyadh. Welcome to our school!`,
@@ -49,6 +50,7 @@ Sarah: I am from Riyadh. Welcome to our school!`,
     titleAr: 'السؤال عن الاتجاهات',
     level: 'easy',
     mediaUrl: '',
+    audioUrl: '/content/audio/asking-for-directions.mp3',
     audioScript: `Visitor: Excuse me! Could you please tell me how to get to the city library?
 Local Guide: Sure! Go straight ahead, then turn right at the traffic lights. Walk for two minutes, and the library will be on your left next to the park.
 Visitor: Thank you very much!
@@ -92,6 +94,7 @@ Local Guide: You are welcome!`,
     titleAr: 'طلب الطعام في المطعم',
     level: 'medium',
     mediaUrl: '',
+    audioUrl: '/content/audio/ordering-food.mp3',
     audioScript: `Waiter: Good evening! Welcome to the Green Garden Restaurant. May I take your order?
 Customer: Good evening! Yes, please. Could I have the grilled chicken with vegetables?
 Waiter: Excellent choice. And what would you like to drink?

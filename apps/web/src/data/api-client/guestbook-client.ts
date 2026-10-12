@@ -56,7 +56,7 @@ const DEFAULT_GUESTBOOK_ENTRIES: GuestbookEntry[] = [
     id: 'entry-4',
     name: 'ريناد محمد',
     role: 'طالبة — الصف الثالث متوسط',
-    message: 'مسابقة المليون وتحدي السرعة من أمتع ما جربت! تنافسنا في الفصل وكان الحماس عالي جداً.',
+    message: 'تحدي Spark وتحدي السرعة من أمتع ما جربت! تنافسنا في الفصل وكان الحماس عالي جداً.',
     createdAt: new Date(Date.now() - 5 * 24 * 3600 * 1000).toISOString(),
     likes: 15,
   },

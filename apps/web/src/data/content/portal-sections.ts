@@ -59,7 +59,7 @@ export const portalSections: PortalSection[] = [
     id: 'competitions',
     titleAr: 'المسابقات',
     titleEn: 'Competitions',
-    description: 'مسابقة المليون، تحديد المستوى، وتحدي السرعة 60 ثانية — تنافس واختبر معلوماتك',
+    description: 'تحدي Spark، تحديد المستوى، وتحدي السرعة 60 ثانية — تنافس واختبر معلوماتك',
     icon: 'trophy',
     color: 'from-amber-500 to-yellow-600',
     path: '/competitions',
