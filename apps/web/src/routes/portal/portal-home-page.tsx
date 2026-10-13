@@ -37,18 +37,29 @@ export default function PortalHomePage() {
         {/* Hero Section */}
         <section className="animate-page-enter mx-auto max-w-4xl px-4 pt-8 pb-12 text-center sm:pt-12 sm:pb-16">
           {/* Official English Spark Logo Lockup */}
-          <div className="mb-6 flex justify-center">
+          <div className="mb-4 flex justify-center">
             <EnglishSparkLogo
               variant="full"
-              subtitle="مدرسة متوسطة وثانوية الجرادية — إشراف المعلمة مريم الصميلي"
+              subtitle="إدارة تعليم جازان • متوسطة وثانوية الجرادية — إشراف معلمات اللغة الإنجليزية"
               showSubtitle={true}
               className="drop-shadow-xs"
             />
           </div>
 
-          <div className="mb-4 flex flex-col items-center justify-center gap-1.5">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-violet-200/90 bg-violet-50/90 px-4 py-1.5 text-xs font-black tracking-wide text-violet-800 shadow-xs">
-              <Sparkles className="h-3.5 w-3.5 text-violet-600 animate-pulse" />
+          {/* Inspirational Platform Motto Banner */}
+          <div className="mb-6 flex flex-col items-center justify-center gap-2">
+            <div className="inline-flex flex-col sm:flex-row items-center gap-2 sm:gap-3 rounded-2xl border border-amber-200/90 bg-gradient-to-r from-amber-50/95 via-white/95 to-sky-50/95 px-5 py-2.5 shadow-xs backdrop-blur-xs ring-1 ring-amber-400/20">
+              <span className="text-xs sm:text-sm font-black text-amber-950 flex items-center gap-1.5">
+                <Sparkles className="h-4 w-4 text-amber-600 shrink-0 animate-pulse" />
+                <span>لكل صوت حكاية، ولكل حلم بداية</span>
+              </span>
+              <span className="hidden sm:inline text-amber-300 font-bold" aria-hidden="true">✦</span>
+              <span className="text-[11px] sm:text-xs font-bold text-sky-900 tracking-wide font-sans" dir="ltr">
+                Every Voice Has a Story. Every Dream Has a Beginning.
+              </span>
+            </div>
+
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-violet-200/80 bg-violet-50/80 px-3.5 py-1 text-[11px] font-black text-violet-800">
               إنتاج معرفي • وزارة التعليم
             </span>
           </div>

@@ -393,8 +393,8 @@ export default function PlacementTestPage() {
                 اختبار تحديد المستوى والتشخيص اللغوي
               </h1>
               <p className="mx-auto mt-2.5 max-w-2xl text-xs sm:text-sm font-semibold leading-relaxed text-slate-600">
-                منصة معتمدة وموجهة لطلاب وطالبات مدرسة متوسطة وثانوية الجرادية وكافة الزوار بإشراف المعلمة{' '}
-                <span className="font-black text-indigo-900">{TEACHER_OFFICIAL_NAME}</span>.
+                منصة معتمدة وموجهة لطلاب وطالبات مدرسة متوسطة وثانوية الجرادية وكافة الزوار بإشراف{' '}
+                <span className="font-black text-indigo-900">معلمات اللغة الإنجليزية</span>.
                 اختر مستواك المناسب أو خُض التقييم الشامل للحصول على تقرير أداء وشهادة تشخيصية رقمية.
               </p>
 
@@ -714,7 +714,7 @@ export default function PlacementTestPage() {
                 تقرير تشخيص المستوى: {studentName}
               </h1>
               <p className="mt-1 text-xs sm:text-sm font-semibold text-slate-500">
-                {studentGrade} • مدرسة متوسطة وثانوية الجرادية • إشراف أ. {TEACHER_OFFICIAL_NAME}
+                {studentGrade} • مدرسة متوسطة وثانوية الجرادية • إشراف معلمات اللغة الإنجليزية
               </p>
 
               {/* CEFR Level Badge */}
@@ -963,14 +963,14 @@ export default function PlacementTestPage() {
 
               {/* Dual Signatures, Gold Seal & Accreditation Footer */}
               <div className="relative z-10 mt-6 pt-5 border-t border-indigo-200/80 grid grid-cols-1 sm:grid-cols-3 items-center gap-5">
-                {/* Supervising Teacher */}
+                {/* Supervising Teachers Department */}
                 <div className="text-center sm:text-right">
-                  <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide">Supervising Teacher</span>
+                  <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide">Supervising Department</span>
                   <span className="block text-xs sm:text-sm font-black text-indigo-950 mt-1 leading-normal">
-                    أ. {TEACHER_OFFICIAL_NAME}
+                    {TEACHER_OFFICIAL_NAME}
                   </span>
                   <span className="block text-[10px] font-bold text-slate-500 mt-0.5 leading-normal">
-                    معلمة اللغة الإنجليزية المشرفة
+                    قسم اللغة الإنجليزية • متوسطة وثانوية الجرادية
                   </span>
                   <div className="mt-2 inline-flex items-center gap-1 rounded-md bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
                     <ShieldCheck className="h-3 w-3 text-emerald-600" />
@@ -993,14 +993,14 @@ export default function PlacementTestPage() {
                   </span>
                 </div>
 
-                {/* Assessment Board */}
+                {/* School Leadership */}
                 <div className="text-center sm:text-left" dir="ltr">
-                  <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide">Assessment Board</span>
+                  <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide">School Leadership</span>
                   <span className="block text-xs sm:text-sm font-black text-indigo-950 mt-1 leading-normal">
-                    English Spark Academy
+                    أ. آمنة دغريري
                   </span>
                   <span className="block text-[10px] font-bold text-slate-500 mt-0.5 leading-normal" dir="rtl">
-                    مدرسة متوسطة وثانوية الجرادية
+                    مديرة مدرسة متوسطة وثانوية الجرادية
                   </span>
                   <div className="mt-2 text-[10px] font-bold text-slate-500">
                     <span>Issued: </span>
@@ -1140,7 +1140,7 @@ export default function PlacementTestPage() {
                   مراجعة تفصيلية للإجابات والشروحات التعليمية
                 </h2>
                 <p className="mt-1 text-xs font-semibold text-slate-500">
-                  استفد من توضيحات المعلمة {TEACHER_OFFICIAL_NAME} للأسئلة لتعزيز فهمك وتجنب الأخطاء مستقبلاً:
+                  استفد من توضيحات معلمات اللغة الإنجليزية للأسئلة لتعزيز فهمك وتجنب الأخطاء مستقبلاً:
                 </p>
               </div>
 
@@ -1214,7 +1214,7 @@ export default function PlacementTestPage() {
 
                       <div className="mt-3 rounded-xl bg-slate-50/90 p-3 text-xs leading-relaxed text-slate-700 border border-slate-100">
                         <div className="font-black text-indigo-900 mb-0.5">
-                          توضيح المعلمة {TEACHER_OFFICIAL_NAME}:
+                          توضيح معلمات المادة:
                         </div>
                         <p className="text-slate-800 font-medium">{q.explanationAr}</p>
                         <p className="text-[11px] text-slate-500 font-sans mt-1" dir="ltr">

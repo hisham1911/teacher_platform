@@ -15,7 +15,7 @@ describe('Guestbook Client & Validation', () => {
 
   describe('validateCommentContent', () => {
     it('accepts thoughtful, educational comments', () => {
-      const result = validateCommentContent('مبادرة رائعة ومفيدة جداً للمعلمة مريم شكراً لكِ');
+      const result = validateCommentContent('مبادرة رائعة ومفيدة جداً للمعلمات شكراً لكم');
       expect(result.isValid).toBe(true);
     });
 
@@ -141,7 +141,7 @@ describe('Guestbook Client & Validation', () => {
       expect(res2.newLikes).toBe(initialLikes);
     });
 
-    it('authenticates Teacher Maryam Al-Somaili with fixed credentials', () => {
+    it('authenticates Teacher with fixed credentials', () => {
       expect(guestbookClient).toBeDefined();
       expect(isTeacherLoggedIn()).toBe(false);
 
@@ -156,7 +156,7 @@ describe('Guestbook Client & Validation', () => {
       expect(isTeacherLoggedIn()).toBe(true);
 
       const session = getTeacherSession();
-      expect(session?.name).toBe('مريم الصميلي');
+      expect(session?.name).toBe('معلمات اللغة الإنجليزية');
 
       // Logout
       logoutTeacher();

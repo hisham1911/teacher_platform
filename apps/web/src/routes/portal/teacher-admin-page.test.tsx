@@ -4,7 +4,7 @@ import { MemoryRouter } from 'react-router';
 import TeacherAdminPage from './teacher-admin-page';
 import { loginTeacher, logoutTeacher } from '../../data/api-client/guestbook-client';
 
-describe('TeacherAdminPage (بوابة المعلمة مريم الصميلي)', () => {
+describe('TeacherAdminPage (بوابة إشراف معلمات اللغة الإنجليزية)', () => {
   beforeEach(() => {
     localStorage.clear();
     logoutTeacher();
@@ -18,7 +18,7 @@ describe('TeacherAdminPage (بوابة المعلمة مريم الصميلي)',
       </MemoryRouter>
     );
 
-    expect(screen.getByRole('heading', { name: /لوحة المعلمة مريم الصميلي/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /لوحة معلمات اللغة الإنجليزية/i })).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/maryam/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /تسجيل الدخول إلى اللوحة/i })).toBeInTheDocument();
   });
@@ -46,7 +46,7 @@ describe('TeacherAdminPage (بوابة المعلمة مريم الصميلي)',
     fireEvent.click(submitBtn);
 
     await waitFor(() => {
-      expect(screen.getByText(/أهلاً بكِ أ\. مريم الصميلي/i)).toBeInTheDocument();
+      expect(screen.getByText(/أهلاً بكم: معلمات اللغة الإنجليزية/i)).toBeInTheDocument();
       expect(screen.getByText(/إجمالي الأسئلة/i)).toBeInTheDocument();
     });
   });
@@ -61,7 +61,7 @@ describe('TeacherAdminPage (بوابة المعلمة مريم الصميلي)',
     );
 
     await waitFor(() => {
-      expect(screen.getByText(/أهلاً بكِ أ\. مريم الصميلي/i)).toBeInTheDocument();
+      expect(screen.getByText(/أهلاً بكم: معلمات اللغة الإنجليزية/i)).toBeInTheDocument();
     });
 
     // Check stats are rendered
@@ -72,6 +72,6 @@ describe('TeacherAdminPage (بوابة المعلمة مريم الصميلي)',
     const logoutBtn = screen.getByRole('button', { name: /تسجيل الخروج/i });
     fireEvent.click(logoutBtn);
 
-    expect(screen.getByRole('heading', { name: /لوحة المعلمة مريم الصميلي/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /لوحة معلمات اللغة الإنجليزية/i })).toBeInTheDocument();
   });
 });

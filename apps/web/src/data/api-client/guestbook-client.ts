@@ -24,7 +24,8 @@ const TEACHER_AUTH_KEY = 'english_spark_teacher_session_v1';
 
 export const TEACHER_USERNAME = 'maryam';
 export const TEACHER_PASSCODE_HASH = 'maryam2026'; // رمز مرور المعلمة
-export const TEACHER_OFFICIAL_NAME = 'مريم الصميلي';
+export const TEACHER_OFFICIAL_NAME = 'معلمات اللغة الإنجليزية';
+export const SCHOOL_PRINCIPAL_NAME = 'آمنة دغريري';
 
 // تعليقات عامة أولية لسجل الزوار
 const DEFAULT_GUESTBOOK_ENTRIES: GuestbookEntry[] = [
@@ -32,7 +33,7 @@ const DEFAULT_GUESTBOOK_ENTRIES: GuestbookEntry[] = [
     id: 'entry-1',
     name: 'سارة خالد',
     role: 'طالبة — الصف الثاني متوسط',
-    message: 'مبادرة رائعة ومفيدة جداً من المعلمة مريم الصميلي، بطاقات القواعد والألوان جعلت حفظ الأزمنة وفهمها أسهل بكثير!',
+    message: 'مبادرة رائعة ومفيدة جداً من معلمات اللغة الإنجليزية، بطاقات القواعد والألوان جعلت حفظ الأزمنة وفهمها أسهل بكثير!',
     createdAt: new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString(),
     likes: 18,
   },
@@ -40,7 +41,7 @@ const DEFAULT_GUESTBOOK_ENTRIES: GuestbookEntry[] = [
     id: 'entry-2',
     name: 'أ. هدى الحربي',
     role: 'معلمة لغة إنجليزية',
-    message: 'بارك الله في هذه الجهود المميزة في إنتاج المعرفة. تصميم المنصة وتنوع المسابقات يرفع دافعية الطالبات للتعلم. شكر خاص للمعلمة مريم الصميلي.',
+    message: 'بارك الله في هذه الجهود المميزة في إنتاج المعرفة. تصميم المنصة وتنوع المسابقات يرفع دافعية الطالبات للتعلم. شكر خاص لمعلمات اللغة الإنجليزية وإدارة المدرسة.',
     createdAt: new Date(Date.now() - 3 * 24 * 3600 * 1000).toISOString(),
     likes: 24,
   },
@@ -48,7 +49,7 @@ const DEFAULT_GUESTBOOK_ENTRIES: GuestbookEntry[] = [
     id: 'entry-3',
     name: 'أم محمد (ولي أمر)',
     role: 'ولي أمر',
-    message: 'أشكر مدرسة متوسطة وثانوية الجرادية والمعلمة مريم الصميلي على هذا العمل التعليمي المتقن. بناتي يستمتعن بحل التمارين يومياً.',
+    message: 'أشكر مدرسة متوسطة وثانوية الجرادية ومعلمات اللغة الإنجليزية على هذا العمل التعليمي المتقن. بناتي يستمتعن بحل التمارين يومياً.',
     createdAt: new Date(Date.now() - 4 * 24 * 3600 * 1000).toISOString(),
     likes: 19,
   },
@@ -62,14 +63,14 @@ const DEFAULT_GUESTBOOK_ENTRIES: GuestbookEntry[] = [
   },
 ];
 
-// استفسارات وأسئلة افتراضية مجابة من المعلمة مريم الصميلي لكل درس
+// استفسارات وأسئلة افتراضية مجابة من معلمات اللغة الإنجليزية لكل درس
 export const DEFAULT_LESSON_QUESTIONS: Record<string, GuestbookEntry[]> = {
   'present-simple': [
     {
       id: 'q-ps-1',
       name: 'شهد عبدالله',
       role: 'طالبة — الصف الثاني متوسط',
-      message: 'أستاذة مريم، متى نستخدم does ومتى نستخدم do في صياغة السؤال؟',
+      message: 'أستاذتي، متى نستخدم does ومتى نستخدم do في صياغة السؤال؟',
       createdAt: new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString(),
       likes: 8,
       topicSlug: 'present-simple',
@@ -80,7 +81,7 @@ export const DEFAULT_LESSON_QUESTIONS: Record<string, GuestbookEntry[]> = {
       id: 'q-ps-2',
       name: 'ريم القحطاني',
       role: 'طالبة — الصف الأول متوسط',
-      message: 'شكراً أستاذة مريم الصميلي على الشرح الكرتوني، بطاقة الدرس واضحة جداً وسهلت علي الواجب!',
+      message: 'شكراً لمعلمات اللغة الإنجليزية على الشرح الكرتوني، بطاقة الدرس واضحة جداً وسهلت علي الواجب!',
       createdAt: new Date(Date.now() - 1 * 24 * 3600 * 1000).toISOString(),
       likes: 5,
       topicSlug: 'present-simple',
@@ -104,7 +105,7 @@ export const DEFAULT_LESSON_QUESTIONS: Record<string, GuestbookEntry[]> = {
       id: 'q-rc-1',
       name: 'أثير محمد',
       role: 'طالبة — المرحلة الثانوية',
-      message: 'أستاذة مريم، ما الفرق بين who و which في ضمائر الوصل؟',
+      message: 'أستاذتي، ما الفرق بين who و which في ضمائر الوصل؟',
       createdAt: new Date(Date.now() - 1 * 24 * 3600 * 1000).toISOString(),
       likes: 7,
       topicSlug: 'relative-clauses',
@@ -271,7 +272,7 @@ export function saveLikedEntries(ids: string[]) {
 }
 
 // -------------------------------------------------------------
-// إدارة جلسة المعلمة مريم الصميلي (Teacher Authentication)
+// إدارة جلسة معلمات المادة (Teacher Authentication)
 // -------------------------------------------------------------
 export function isTeacherLoggedIn(): boolean {
   try {

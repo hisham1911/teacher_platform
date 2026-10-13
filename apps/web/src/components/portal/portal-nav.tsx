@@ -276,7 +276,7 @@ export function PortalNav({ variant = 'light' }: { variant?: 'light' | 'dark' } 
                 مبادرة إنتاج معرفي • وزارة التعليم
               </span>
               <p className={`mt-1.5 text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                مدرسة متوسطة وثانوية الجرادية — المعلمة مريم الصميلي
+                إدارة تعليم جازان • متوسطة وثانوية الجرادية — معلمات اللغة الإنجليزية
               </p>
             </div>
 
@@ -436,7 +436,7 @@ export function PortalFooter({ variant = 'light' }: { variant?: 'light' | 'dark'
               />
             </div>
             <p className={`mt-1 text-xs font-semibold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-              مبادرة إنتاج معرفي • وزارة التعليم — مدرسة متوسطة وثانوية الجرادية (إشراف المعلمة مريم الصميلي)
+              إدارة تعليم جازان • متوسطة وثانوية الجرادية — مديرة المدرسة: أ. آمنة دغريري • إشراف: معلمات اللغة الإنجليزية
             </p>
           </div>
         </div>

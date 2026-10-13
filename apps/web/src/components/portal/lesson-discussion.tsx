@@ -211,10 +211,10 @@ export function LessonDiscussion({ topicSlug, topicTitle }: LessonDiscussionProp
           </div>
           <div>
             <h2 className="text-lg sm:text-xl font-black text-slate-900">
-              اسأل المعلمة {TEACHER_OFFICIAL_NAME} حول الدرس
+              اسأل {TEACHER_OFFICIAL_NAME} حول الدرس
             </h2>
             <p className="mt-0.5 text-xs sm:text-sm font-semibold text-slate-500">
-              هل توجد نقطة غير واضحة في قاعدة ({topicTitle})؟ اطرح سؤالك هنا وستجيبك المعلمة
+              هل توجد نقطة غير واضحة في قاعدة ({topicTitle})؟ اطرحي سؤالكِ هنا وستجيبكِ معلمات المادة
             </p>
           </div>
         </div>
@@ -223,7 +223,7 @@ export function LessonDiscussion({ topicSlug, topicTitle }: LessonDiscussionProp
         {isTeacherAdmin && (
           <div className="flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-800 border border-emerald-200">
             <ShieldCheck className="h-4 w-4 text-emerald-600" />
-            <span>أ. {TEACHER_OFFICIAL_NAME} (وضع الرد مفعّل)</span>
+            <span>{TEACHER_OFFICIAL_NAME} (وضع الرد مفعّل)</span>
           </div>
         )}
       </div>
@@ -290,7 +290,7 @@ export function LessonDiscussion({ topicSlug, topicTitle }: LessonDiscussionProp
             id={`question-text-${topicSlug}`}
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            placeholder={`مثال: أستاذة مريم، متى أستخدم هذه الصيغة في جمل النفي؟`}
+            placeholder={`مثال: أستاذتي، متى أستخدم هذه الصيغة في جمل النفي؟`}
             rows={3}
             maxLength={350}
             className="w-full resize-none rounded-xl border border-slate-200 bg-white p-3 text-xs sm:text-sm font-medium text-slate-800 placeholder-slate-400 focus:border-violet-500 focus:outline-hidden focus:ring-2 focus:ring-violet-200"
@@ -312,7 +312,7 @@ export function LessonDiscussion({ topicSlug, topicTitle }: LessonDiscussionProp
         {successMsg && (
           <div className="mt-3 flex items-center gap-2 rounded-xl bg-emerald-50 p-2.5 text-xs font-bold text-emerald-700 border border-emerald-200">
             <CheckCircle2 className="h-4 w-4 shrink-0" />
-            <span>تم إرسال استفسارك بنجاح! ستجيب المعلمة مريم الصميلي عليه قريباً.</span>
+            <span>تم إرسال استفسارك بنجاح! ستجيب معلمات المادة عليه قريباً.</span>
           </div>
         )}
 
@@ -449,10 +449,10 @@ export function LessonDiscussion({ topicSlug, topicTitle }: LessonDiscussionProp
                             <Sparkles className="h-3 w-3" />
                           </div>
                           <span className="text-xs font-black text-violet-900 whitespace-nowrap">
-                            إجابة المعلمة {TEACHER_OFFICIAL_NAME}
+                            إجابة {TEACHER_OFFICIAL_NAME}
                           </span>
                           <span className="inline-flex items-center shrink-0 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold text-violet-700 whitespace-nowrap">
-                            معلمة المادة
+                            معلمات المادة
                           </span>
                         </div>
                         {entry.repliedAt && (
@@ -473,7 +473,7 @@ export function LessonDiscussion({ topicSlug, topicTitle }: LessonDiscussionProp
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-xs font-black text-violet-900 flex items-center gap-1">
                           <CornerDownLeft className="h-3.5 w-3.5 text-violet-700" />
-                          <span>كتابة إجابة المعلمة {TEACHER_OFFICIAL_NAME} على هذا السؤال:</span>
+                          <span>كتابة إجابة {TEACHER_OFFICIAL_NAME} على هذا السؤال:</span>
                         </span>
                         <button
                           type="button"

@@ -214,10 +214,10 @@ export default function TeacherAdminPage() {
                 إدارة المنصة التعليمية
               </span>
               <h1 className="mt-2 text-2xl font-black text-slate-900">
-                لوحة المعلمة {TEACHER_OFFICIAL_NAME}
+                لوحة {TEACHER_OFFICIAL_NAME}
               </h1>
               <p className="mt-1 text-xs font-semibold text-slate-500">
-                مدرسة متوسطة وثانوية الجرادية — متابعة الاستفسارات والردود
+                إدارة تعليم جازان • متوسطة وثانوية الجرادية — متابعة الاستفسارات والردود
               </p>
             </div>
 
@@ -310,14 +310,14 @@ export default function TeacherAdminPage() {
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-lg sm:text-2xl font-black text-slate-900">
-                    أهلاً بكِ أ. {teacherSession?.name || TEACHER_OFFICIAL_NAME} 🌸
+                    أهلاً بكم: {teacherSession?.name || TEACHER_OFFICIAL_NAME} 🌸
                   </h1>
                   <span className="rounded-md bg-emerald-100 px-2 py-0.5 text-[11px] font-black text-emerald-800">
                     جلسة نشطة
                   </span>
                 </div>
                 <p className="mt-0.5 text-xs sm:text-sm font-semibold text-slate-500">
-                  لوحة تحكم المعلمة • مدرسة متوسطة وثانوية الجرادية — متابعة استفسارات الدروس وسجل الزوار
+                  لوحة إشراف المعلمات • إدارة تعليم جازان • متوسطة وثانوية الجرادية — متابعة استفسارات الدروس وسجل الزوار
                 </p>
               </div>
             </div>

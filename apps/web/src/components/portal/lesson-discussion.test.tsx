@@ -17,7 +17,7 @@ describe('LessonDiscussion component', () => {
     );
 
     expect(
-      screen.getByRole('heading', { name: /اسأل المعلمة مريم الصميلي حول الدرس/i })
+      screen.getByRole('heading', { name: /اسأل معلمات اللغة الإنجليزية حول الدرس/i })
     ).toBeInTheDocument();
     expect(screen.getByText(/المضارع البسيط/)).toBeInTheDocument();
 
@@ -27,7 +27,7 @@ describe('LessonDiscussion component', () => {
     });
 
     // Check teacher reply is visible
-    expect(screen.getByText(/إجابة المعلمة مريم الصميلي/i)).toBeInTheDocument();
+    expect(screen.getByText(/إجابة معلمات اللغة الإنجليزية/i)).toBeInTheDocument();
   });
 
   it('allows student to submit a valid question', async () => {
@@ -81,7 +81,7 @@ describe('LessonDiscussion component', () => {
       JSON.stringify({
         authenticated: true,
         username: 'maryam',
-        name: 'مريم الصميلي',
+        name: 'معلمات اللغة الإنجليزية',
         loggedInAt: new Date().toISOString(),
       })
     );
