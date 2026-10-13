@@ -7,6 +7,7 @@ import { useSessionSnapshot } from '../../features/auth/use-session';
 import { clearSession, getActiveTenantId, setActiveWorkspaceId } from '../../lib/auth/session';
 
 import { ScrollToTop } from './scroll-to-top';
+import { EnglishSparkLogo } from '../portal/english-spark-logo';
 
 const studioNavItems: Array<{ to: string; label: string; icon: TeacherIconName }> = [
   { to: '/dashboard', label: 'الرئيسية', icon: 'home' },
@@ -207,9 +208,12 @@ export function RootLayout({ children }: { children: ReactNode }) {
 
 function EnglishSparkBrand({ to, compact = false }: { to: string; compact?: boolean }) {
   return (
-    <Link to={to} className="inline-flex min-h-11 items-center gap-2.5 text-base font-bold text-slate-950 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-100">
-      <span aria-hidden="true" className={`spark-brand-mark ${compact ? 'h-10 w-10 text-xl' : 'h-11 w-11 text-2xl'} flex items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 via-fuchsia-500 to-violet-700 text-white`}>✦</span>
-      <span className="leading-tight"><span className="block tracking-wide">English Spark</span></span>
+    <Link to={to} className="inline-flex min-h-11 items-center gap-2.5 text-base font-bold text-slate-950 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-100 transition-transform duration-200 hover:scale-[1.02]">
+      {compact ? (
+        <EnglishSparkLogo variant="icon" className="h-10 w-10 shadow-xs rounded-xl" />
+      ) : (
+        <EnglishSparkLogo variant="horizontal" showSubtitle={false} />
+      )}
     </Link>
   );
 }

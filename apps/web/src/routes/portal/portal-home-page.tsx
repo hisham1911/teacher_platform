@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { PublicBackdrop } from '../../components/layout/root-layout';
 import { PortalNav, PortalFooter } from '../../components/portal/portal-nav';
+import { EnglishSparkLogo } from '../../components/portal/english-spark-logo';
 import { portalSections } from '../../data/content/portal-sections';
 import { SectionIcon, getSectionTheme } from '../../components/portal/portal-icons';
 import { grammarTopics } from '../../data/content/grammar';
@@ -34,15 +35,22 @@ export default function PortalHomePage() {
 
       <main className="relative z-10 flex-1">
         {/* Hero Section */}
-        <section className="animate-page-enter mx-auto max-w-4xl px-4 pt-10 pb-12 text-center sm:pt-16 sm:pb-16">
+        <section className="animate-page-enter mx-auto max-w-4xl px-4 pt-8 pb-12 text-center sm:pt-12 sm:pb-16">
+          {/* Official English Spark Logo Lockup */}
+          <div className="mb-6 flex justify-center">
+            <EnglishSparkLogo
+              variant="full"
+              subtitle="مدرسة متوسطة وثانوية الجرادية — إشراف المعلمة مريم الصميلي"
+              showSubtitle={true}
+              className="drop-shadow-xs"
+            />
+          </div>
+
           <div className="mb-4 flex flex-col items-center justify-center gap-1.5">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-violet-200/90 bg-violet-50/90 px-4 py-1.5 text-xs font-black tracking-wide text-violet-800 shadow-xs">
               <Sparkles className="h-3.5 w-3.5 text-violet-600 animate-pulse" />
               إنتاج معرفي • وزارة التعليم
             </span>
-            <p className="text-xs font-bold text-slate-500 sm:text-sm">
-              مدرسة متوسطة وثانوية الجرادية — إشراف المعلمة مريم الصميلي
-            </p>
           </div>
 
           <h1 className="text-balance text-3xl font-black leading-tight text-slate-950 sm:text-5xl md:text-6xl">

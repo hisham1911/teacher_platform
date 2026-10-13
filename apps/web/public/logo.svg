@@ -1,0 +1,49 @@
+<svg width="460" height="145" viewBox="0 0 460 145" fill="none" xmlns="http://www.w3.org/2000/svg" style="direction: ltr;">
+  <!-- Flight Trail Curve -->
+  <path d="M 235 48 C 255 46, 272 40, 286 30 C 294 24, 302 21, 310 22" 
+        stroke="#93c5fd" stroke-width="2.2" stroke-dasharray="3.5 4.5" stroke-linecap="round" opacity="0.85" />
+  
+  <!-- Origami Paper Airplane -->
+  <g transform="translate(304, 2) rotate(16)">
+    <polygon points="42,4 4,18 22,30" fill="#7dd3fc" />
+    <polygon points="42,4 22,30 36,40" fill="#bae6fd" />
+    <polygon points="22,30 36,40 26,38" fill="#0284c7" />
+    <line x1="42" y1="4" x2="22" y2="30" stroke="#ffffff" stroke-width="1.2" opacity="0.85" />
+  </g>
+
+  <!-- Spark Rays (Left of 'English') -->
+  <g stroke="#1e293b" stroke-width="3.5" stroke-linecap="round">
+    <line x1="45" y1="62" x2="49" y2="48" />
+    <line x1="40" y1="72" x2="24" y2="60" />
+    <line x1="38" y1="86" x2="22" y2="90" />
+  </g>
+
+  <!-- Text Group -->
+  <g font-family="'Poppins', 'Plus Jakarta Sans', system-ui, sans-serif" font-size="44" font-weight="800" letter-spacing="-0.5px">
+    <text x="62" y="96" fill="#0f172a">English</text>
+    <text x="242" y="96" fill="#0284c7">Spark</text>
+  </g>
+
+  <!-- Spark Rays (Right of 'Spark') -->
+  <g stroke="#0284c7" stroke-width="3.2" stroke-linecap="round">
+    <line x1="386" y1="72" x2="402" y2="64" />
+    <line x1="386" y1="84" x2="402" y2="92" />
+  </g>
+
+  <!-- Sparkle Star -->
+  <path d="M 395 102 Q 395 107 400 107 Q 395 107 395 112 Q 395 107 390 107 Q 395 107 395 102 Z" 
+        fill="#0ea5e9" opacity="0.85" />
+
+  <!-- Subtitle Badge Pill -->
+  <g transform="translate(85, 114)">
+    <rect x="0" y="0" width="280" height="28" rx="14" 
+          fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.2" />
+    <text x="140" y="19" 
+          font-family="'Cairo', sans-serif" 
+          font-size="12" 
+          font-weight="700" 
+          fill="#475569" 
+          text-anchor="middle"
+          direction="rtl">مدرسة متوسطة وثانوية الجرادية</text>
+  </g>
+</svg>

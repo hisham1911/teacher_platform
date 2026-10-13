@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { PublicBackdrop } from '../../components/layout/root-layout';
 import { PortalNav, PortalFooter } from '../../components/portal/portal-nav';
+import { EnglishSparkLogo } from '../../components/portal/english-spark-logo';
 import {
   PLACEMENT_LEVELS_META,
   getQuestionsForLevel,
@@ -773,7 +774,7 @@ export default function PlacementTestPage() {
             {/* ============================================================= */}
             {/* OFFICIAL DIGITAL CERTIFICATE DIPLOMA (MASTERPIECE) */}
             {/* ============================================================= */}
-            <div className="relative overflow-hidden rounded-3xl border-8 border-double border-indigo-950 bg-gradient-to-b from-[#fdfbf7] via-white to-[#f7f9fd] p-6 sm:p-12 shadow-2xl text-center ring-1 ring-amber-400/50 print:border-4 print:p-6 print:shadow-none print:m-0">
+            <div id="placement-certificate" className="relative overflow-hidden rounded-3xl border-8 border-double border-indigo-950 bg-gradient-to-b from-[#fdfbf7] via-white to-[#f7f9fd] p-6 sm:p-12 shadow-2xl text-center ring-1 ring-amber-400/50 print:border-4 print:p-6 print:shadow-none print:m-0">
               {/* Classical Corner Accent Flourishes */}
               <div className="absolute top-3 right-3 h-8 w-8 rounded-tr-md border-t-2 border-r-2 border-amber-500/80 pointer-events-none" />
               <div className="absolute top-3 left-3 h-8 w-8 rounded-tl-md border-t-2 border-l-2 border-amber-500/80 pointer-events-none" />
@@ -800,8 +801,12 @@ export default function PlacementTestPage() {
 
                 {/* Center Medallion Emblem */}
                 <div className="mx-auto hidden md:flex flex-col items-center justify-center">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-950 via-indigo-900 to-violet-950 text-amber-300 shadow-md ring-2 ring-amber-400/50">
-                    <GraduationCap className="h-8 w-8" />
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl shadow-md ring-2 ring-amber-400/60 overflow-hidden bg-slate-950">
+                    <EnglishSparkLogo
+                      variant="icon"
+                      isDark={true}
+                      className="h-14 w-14"
+                    />
                   </div>
                 </div>
 

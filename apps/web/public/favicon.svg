@@ -1,11 +1,33 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
   <defs>
-    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#7c3aed" />
-      <stop offset="100%" stop-color="#4f46e5" />
+    <linearGradient id="fav-bg" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0f172a" />
+      <stop offset="1" stop-color="#1e1b4b" />
     </linearGradient>
   </defs>
-  <rect width="32" height="32" rx="8" fill="url(#grad)" />
-  <!-- Sparkle icon -->
-  <path d="M16 6 L18.5 13.5 L26 16 L18.5 18.5 L16 26 L13.5 18.5 L6 16 L13.5 13.5 Z" fill="#fbbf24" />
+  <!-- Background Container -->
+  <rect width="64" height="64" rx="16" fill="url(#fav-bg)" />
+  
+  <!-- Spark Rays -->
+  <g stroke="#38bdf8" stroke-width="2.4" stroke-linecap="round">
+    <line x1="14" y1="22" x2="9" y2="16" />
+    <line x1="12" y1="31" x2="5" y2="31" />
+    <line x1="49" y1="38" x2="57" y2="34" />
+    <line x1="48" y1="46" x2="55" y2="50" />
+  </g>
+
+  <!-- Origami Paper Airplane -->
+  <g transform="translate(19, 16) scale(0.85) rotate(8)">
+    <!-- Top/Main Wing -->
+    <polygon points="42,4 4,18 22,30" fill="#38bdf8" />
+    <!-- Highlight Fold -->
+    <polygon points="42,4 22,30 36,40" fill="#bae6fd" />
+    <!-- Underbody Keel Fold -->
+    <polygon points="22,30 36,40 26,38" fill="#0284c7" />
+    <!-- Spine Highlight -->
+    <line x1="42" y1="4" x2="22" y2="30" stroke="#ffffff" stroke-width="1.2" opacity="0.85" />
+  </g>
+
+  <!-- Tiny Spark Star -->
+  <path d="M 50 49 Q 50 52 53 52 Q 50 52 50 55 Q 50 52 47 52 Q 50 52 50 49 Z" fill="#38bdf8" />
 </svg>

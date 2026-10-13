@@ -14,6 +14,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import type { ComponentType } from 'react';
+import { EnglishSparkLogo } from './english-spark-logo';
 
 interface NavItem {
   path: string;
@@ -101,30 +102,14 @@ export function PortalNav({ variant = 'light' }: { variant?: 'light' | 'dark' } 
         {/* Brand */}
         <Link
           to="/"
-          className="group flex shrink-0 items-center gap-2.5 rounded-xl py-1 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-200"
+          className="group flex shrink-0 items-center rounded-xl py-0.5 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-200 transition-transform duration-200 hover:scale-[1.02]"
         >
-          <span
-            aria-hidden="true"
-            className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 via-fuchsia-500 to-violet-700 text-white shadow-sm transition-transform duration-300 group-hover:scale-105"
-          >
-            <Sparkles className="h-5 w-5" />
-          </span>
-          <div className="flex flex-col">
-            <span
-              className={`text-sm font-black tracking-wide sm:text-base ${
-                isDark ? 'text-white' : 'text-slate-950'
-              }`}
-            >
-              English Spark
-            </span>
-            <span
-              className={`hidden text-[10px] font-bold sm:block ${
-                isDark ? 'text-amber-400' : 'text-violet-600'
-              }`}
-            >
-              نادي اللغة الإنجليزية
-            </span>
-          </div>
+          <EnglishSparkLogo
+            variant="horizontal"
+            isDark={isDark}
+            subtitle="نادي اللغة الإنجليزية"
+            showSubtitle={true}
+          />
         </Link>
 
         {/* Desktop Section Links */}
@@ -430,17 +415,26 @@ export function PortalFooter({ variant = 'light' }: { variant?: 'light' | 'dark'
     >
       <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-8 px-4 sm:px-6">
         {/* Initiative Branding Card */}
-        <div className="flex flex-col sm:flex-row items-center gap-3.5 text-center sm:text-right">
+        <div className="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-right">
           <Link
             to="/"
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 via-fuchsia-500 to-violet-700 text-white shadow-md"
+            className="shrink-0 transition-transform hover:scale-105"
+            aria-label="الرئيسية"
           >
-            <Sparkles className="h-6 w-6" />
+            <EnglishSparkLogo
+              variant="icon"
+              isDark={isDark}
+              className="h-12 w-12 shadow-md rounded-2xl"
+            />
           </Link>
           <div>
-            <p className={`text-base font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
-              English Spark — نادي اللغة الإنجليزية
-            </p>
+            <div className="flex items-center justify-center sm:justify-start">
+              <EnglishSparkLogo
+                variant="horizontal"
+                isDark={isDark}
+                showSubtitle={false}
+              />
+            </div>
             <p className={`mt-1 text-xs font-semibold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
               مبادرة إنتاج معرفي • وزارة التعليم — مدرسة متوسطة وثانوية الجرادية (إشراف المعلمة مريم الصميلي)
             </p>
