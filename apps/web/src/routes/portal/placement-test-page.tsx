@@ -825,17 +825,17 @@ export default function PlacementTestPage() {
 
               {/* Certificate Title (Bilingual & Prestigious) */}
               <div className="relative z-10 mb-6">
-                <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-200/80 px-3.5 py-1 text-xs font-black text-amber-950 mb-2">
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-200/80 px-3.5 py-1 text-xs font-black text-amber-950 mb-3">
                   <Sparkles className="h-3.5 w-3.5 text-amber-600" />
                   <span>ACCREDITED ENGLISH PROFICIENCY ASSESSMENT</span>
                 </div>
-                <h2 className="text-2xl sm:text-4xl font-black text-slate-950 tracking-tight">
+                <h2 className="text-2xl sm:text-4xl font-black text-slate-950 tracking-normal leading-snug">
                   شهادة تحديد المستوى والتشخيص اللغوي
                 </h2>
-                <p className="text-xs sm:text-sm font-black tracking-widest text-indigo-900 uppercase mt-1">
+                <p className="text-xs sm:text-sm font-black tracking-widest text-indigo-900 uppercase mt-2.5 leading-relaxed">
                   Certificate of English Language Proficiency & Placement
                 </p>
-                <div className="mt-3 flex items-center justify-center gap-2">
+                <div className="mt-4 flex items-center justify-center gap-2">
                   <div className="h-0.5 w-16 bg-gradient-to-r from-transparent to-amber-400" />
                   <Star className="h-4 w-4 text-amber-500 fill-amber-400" />
                   <div className="h-0.5 w-16 bg-gradient-to-l from-transparent to-amber-400" />
@@ -843,21 +843,21 @@ export default function PlacementTestPage() {
               </div>
 
               {/* Awardee Presentation */}
-              <div className="relative z-10 my-4 max-w-2xl mx-auto">
-                <p className="text-xs sm:text-sm font-semibold text-slate-500">
+              <div className="relative z-10 my-6 max-w-2xl mx-auto">
+                <p className="text-xs sm:text-sm font-semibold text-slate-500 leading-relaxed mb-1">
                   تَفخَر المنصة ومبادرة English Spark بمنح هذه الشهادة الرسمية إلى / This is to Proudly Certify that:
                 </p>
-                <h3 className="text-3xl sm:text-5xl font-black text-indigo-950 my-2.5 tracking-tight font-serif">
+                <h3 className="text-3xl sm:text-5xl font-black text-indigo-950 my-4 sm:my-5 tracking-normal leading-normal font-sans">
                   {studentName}
                 </h3>
                 {studentGrade && (
-                  <div className="my-1.5">
-                    <span className="inline-block text-xs sm:text-sm font-bold text-indigo-900 bg-indigo-50 border border-indigo-200/90 px-4 py-1 rounded-full shadow-2xs">
+                  <div className="my-2.5">
+                    <span className="inline-block text-xs sm:text-sm font-bold text-indigo-900 bg-indigo-50 border border-indigo-200/90 px-4 py-1.5 rounded-full shadow-2xs">
                       {studentGrade}
                     </span>
                   </div>
                 )}
-                <p className="text-xs sm:text-sm font-medium text-slate-700 mt-3 leading-relaxed">
+                <p className="text-xs sm:text-sm font-medium text-slate-700 mt-4 leading-relaxed">
                   تقديرًا لإتمام تقييم تحديد المستوى اللغوي والتشخيص التحريري لمسار{' '}
                   <span className="font-black text-indigo-950">({activeLevelMeta.titleAr})</span>، وأظهر أداءً معتمدًا يعكس مستوى الكفاءة والمعايير الآتية وفق الإطار الأوروبي المشترك (CEFR):
                 </p>
@@ -866,49 +866,49 @@ export default function PlacementTestPage() {
               {/* The Grand Proficiency & Honors Banner */}
               <div className="relative z-10 my-6 max-w-3xl mx-auto rounded-2xl border-2 border-indigo-200/90 bg-gradient-to-br from-indigo-50/70 via-white to-purple-50/50 p-5 sm:p-7 shadow-md">
                 {/* Level + Standing Row */}
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-indigo-100 pb-4 mb-4">
+                <div className="flex flex-wrap items-center justify-between gap-4 border-b border-indigo-100 pb-4 mb-4">
                   <div className="text-right">
-                    <span className="text-[11px] font-bold text-slate-500 block">المستوى المعياري الدولي (CEFR Framework)</span>
-                    <span className="text-base sm:text-xl font-black text-indigo-950 flex items-center gap-2 mt-0.5">
+                    <span className="text-[11px] font-bold text-slate-500 block mb-1">المستوى المعياري الدولي (CEFR Framework)</span>
+                    <span className="text-base sm:text-xl font-black text-indigo-950 flex items-center gap-2 mt-1 leading-normal">
                       <Award className="h-5 w-5 text-indigo-600" />
                       <span>{resultData.cefrTitleAr}</span>
                     </span>
-                    <span className="text-xs font-bold text-indigo-700 block mt-0.5" dir="ltr">
+                    <span className="text-xs font-bold text-indigo-700 block mt-1.5 leading-normal" dir="ltr">
                       {resultData.cefrTitleEn}
                     </span>
                   </div>
 
                   <div className="text-center sm:text-left">
-                    <span className="text-[11px] font-bold text-slate-500 block">التقدير الأكاديمي العام</span>
+                    <span className="text-[11px] font-bold text-slate-500 block mb-1">التقدير الأكاديمي العام</span>
                     <div className={`mt-1 inline-block rounded-xl px-4 py-1.5 text-xs sm:text-sm font-black border shadow-2xs ${resultData.standingBadgeClass}`}>
                       {resultData.standingAr}
                     </div>
-                    <span className="block text-[10px] font-bold text-slate-400 mt-0.5" dir="ltr">
+                    <span className="block text-[10px] font-bold text-slate-400 mt-1.5 leading-normal" dir="ltr">
                       {resultData.standingEn} • {resultData.percent}%
                     </span>
                   </div>
                 </div>
 
                 {/* Academic Evaluation Statement */}
-                <div className="rounded-xl bg-white/95 border border-slate-100 p-3.5 text-right shadow-2xs">
+                <div className="rounded-xl bg-white/95 border border-slate-100 p-4 text-right shadow-2xs space-y-2">
                   <p className="text-xs sm:text-sm font-semibold leading-relaxed text-slate-800">
                     {resultData.evaluationStatementAr}
                   </p>
-                  <p className="mt-1 text-[11px] font-medium text-slate-500 italic text-left" dir="ltr">
+                  <p className="text-[11px] font-medium text-slate-500 italic text-left pt-2 border-t border-slate-100/80 leading-relaxed" dir="ltr">
                     {resultData.evaluationStatementEn}
                   </p>
                 </div>
 
                 {/* In-Certificate Skills Mini-Matrix */}
-                <div className="mt-4 pt-3 border-t border-indigo-100/70">
-                  <span className="block text-[11px] font-bold text-slate-500 text-right mb-2">
+                <div className="mt-5 pt-3.5 border-t border-indigo-100/70">
+                  <span className="block text-[11px] font-bold text-slate-500 text-right mb-2.5">
                     مصفوفة كفاءة المهارات اللغوية (Language Domains Matrix):
                   </span>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-right">
                     {resultData.skillStats.grammar.total > 0 && (
-                      <div className="rounded-lg bg-slate-50 p-2 border border-slate-200/60">
+                      <div className="rounded-lg bg-slate-50 p-2.5 border border-slate-200/60">
                         <span className="block text-[10px] font-bold text-slate-500">القواعد والتراكيب (Grammar)</span>
-                        <div className="flex items-baseline justify-between mt-0.5">
+                        <div className="flex items-baseline justify-between mt-1">
                           <span className="text-xs font-black text-indigo-950">
                             {Math.round((resultData.skillStats.grammar.correct / resultData.skillStats.grammar.total) * 100)}%
                           </span>
@@ -919,9 +919,9 @@ export default function PlacementTestPage() {
                       </div>
                     )}
                     {resultData.skillStats.vocabulary.total > 0 && (
-                      <div className="rounded-lg bg-slate-50 p-2 border border-slate-200/60">
+                      <div className="rounded-lg bg-slate-50 p-2.5 border border-slate-200/60">
                         <span className="block text-[10px] font-bold text-slate-500">المفردات والسياق (Vocabulary)</span>
-                        <div className="flex items-baseline justify-between mt-0.5">
+                        <div className="flex items-baseline justify-between mt-1">
                           <span className="text-xs font-black text-indigo-950">
                             {Math.round((resultData.skillStats.vocabulary.correct / resultData.skillStats.vocabulary.total) * 100)}%
                           </span>
@@ -932,9 +932,9 @@ export default function PlacementTestPage() {
                       </div>
                     )}
                     {resultData.skillStats.knowledge.total > 0 && (
-                      <div className="rounded-lg bg-slate-50 p-2 border border-slate-200/60">
+                      <div className="rounded-lg bg-slate-50 p-2.5 border border-slate-200/60">
                         <span className="block text-[10px] font-bold text-slate-500">المعرفة العامة والوطنية</span>
-                        <div className="flex items-baseline justify-between mt-0.5">
+                        <div className="flex items-baseline justify-between mt-1">
                           <span className="text-xs font-black text-indigo-950">
                             {Math.round((resultData.skillStats.knowledge.correct / resultData.skillStats.knowledge.total) * 100)}%
                           </span>
@@ -945,9 +945,9 @@ export default function PlacementTestPage() {
                       </div>
                     )}
                     {resultData.skillStats['life-skills'].total > 0 && (
-                      <div className="rounded-lg bg-slate-50 p-2 border border-slate-200/60">
+                      <div className="rounded-lg bg-slate-50 p-2.5 border border-slate-200/60">
                         <span className="block text-[10px] font-bold text-slate-500">مهارات الحياة والتفكير</span>
-                        <div className="flex items-baseline justify-between mt-0.5">
+                        <div className="flex items-baseline justify-between mt-1">
                           <span className="text-xs font-black text-indigo-950">
                             {Math.round((resultData.skillStats['life-skills'].correct / resultData.skillStats['life-skills'].total) * 100)}%
                           </span>
@@ -962,17 +962,17 @@ export default function PlacementTestPage() {
               </div>
 
               {/* Dual Signatures, Gold Seal & Accreditation Footer */}
-              <div className="relative z-10 mt-6 pt-5 border-t border-indigo-200/80 grid grid-cols-1 sm:grid-cols-3 items-center gap-4">
+              <div className="relative z-10 mt-6 pt-5 border-t border-indigo-200/80 grid grid-cols-1 sm:grid-cols-3 items-center gap-5">
                 {/* Supervising Teacher */}
                 <div className="text-center sm:text-right">
-                  <span className="block text-[10px] font-bold text-slate-400 uppercase">Supervising Teacher</span>
-                  <span className="block text-xs sm:text-sm font-black text-indigo-950 mt-0.5">
+                  <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide">Supervising Teacher</span>
+                  <span className="block text-xs sm:text-sm font-black text-indigo-950 mt-1 leading-normal">
                     أ. {TEACHER_OFFICIAL_NAME}
                   </span>
-                  <span className="block text-[10px] font-bold text-slate-500">
+                  <span className="block text-[10px] font-bold text-slate-500 mt-0.5 leading-normal">
                     معلمة اللغة الإنجليزية المشرفة
                   </span>
-                  <div className="mt-1.5 inline-flex items-center gap-1 rounded-md bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
+                  <div className="mt-2 inline-flex items-center gap-1 rounded-md bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
                     <ShieldCheck className="h-3 w-3 text-emerald-600" />
                     <span>اعتماد أكاديمي معتمد ✓</span>
                   </div>
@@ -988,21 +988,21 @@ export default function PlacementTestPage() {
                       <span className="text-[7px] font-bold text-amber-300">2026 ACADEMY</span>
                     </div>
                   </div>
-                  <span className="mt-1 text-[9px] font-black tracking-widest text-indigo-950 uppercase">
+                  <span className="mt-1.5 text-[9px] font-black tracking-widest text-indigo-950 uppercase">
                     Verified Diagnostic Credential
                   </span>
                 </div>
 
                 {/* Assessment Board */}
                 <div className="text-center sm:text-left" dir="ltr">
-                  <span className="block text-[10px] font-bold text-slate-400 uppercase">Assessment Board</span>
-                  <span className="block text-xs sm:text-sm font-black text-indigo-950 mt-0.5">
+                  <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide">Assessment Board</span>
+                  <span className="block text-xs sm:text-sm font-black text-indigo-950 mt-1 leading-normal">
                     English Spark Academy
                   </span>
-                  <span className="block text-[10px] font-bold text-slate-500" dir="rtl">
+                  <span className="block text-[10px] font-bold text-slate-500 mt-0.5 leading-normal" dir="rtl">
                     مدرسة متوسطة وثانوية الجرادية
                   </span>
-                  <div className="mt-1.5 text-[10px] font-bold text-slate-500">
+                  <div className="mt-2 text-[10px] font-bold text-slate-500">
                     <span>Issued: </span>
                     <span className="font-mono text-indigo-900 font-black">{new Date().toLocaleDateString('ar-SA')}</span>
                   </div>

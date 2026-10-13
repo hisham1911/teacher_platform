@@ -1,16 +1,15 @@
-
 export interface EnglishSparkLogoProps {
   /**
    * 'horizontal': Compact for navbars and headers (default)
-   * 'full': Stacked lockup with airplane above, spark rays, and school pill
-   * 'hero': Grand prominent lockup for hero banners or landing pages
-   * 'icon': Standalone emblem (origami airplane + spark burst)
+   * 'full': Stacked lockup with origami airplane above, delicate spark rays, and school pill
+   * 'hero': Prominent lockup for hero banners
+   * 'icon': Standalone emblem (origami airplane + gentle spark)
    */
   variant?: 'horizontal' | 'full' | 'hero' | 'icon';
   /**
    * Color theme:
-   * 'authentic': Sage teal & slate navy directly from the teacher's lesson infographics
-   * 'vibrant': High-contrast modern cyan & navy
+   * 'authentic': Soft slate charcoal & sky-blue from teacher's infographics
+   * 'vibrant': High-contrast modern cyan & slate
    * 'auto': Automatically adapts based on isDark prop
    */
   colorTheme?: 'authentic' | 'vibrant' | 'auto';
@@ -22,8 +21,11 @@ export interface EnglishSparkLogoProps {
 
 /**
  * Authentic "English Spark" Brand Logo
- * Faithfully designed after the official infographics and materials
- * created for the English Language Club at Al-Jaradiyah Middle & High School.
+ * Crafted faithfully after the official teacher infographics:
+ * - Gentle pastel sky-blue origami airplane flying upwards with soft folds and curved flight trail
+ * - Warm, friendly, rounded "English Spark" lettering (soft charcoal + sky blue)
+ * - Delicate rounded radiating spark rays and four-pointed sparkle star
+ * - Responsive, auto-fitting affiliation pill that never clips or overflows
  */
 export function EnglishSparkLogo({
   variant = 'horizontal',
@@ -33,21 +35,15 @@ export function EnglishSparkLogo({
   subtitle = 'نادي اللغة الإنجليزية',
   className = '',
 }: EnglishSparkLogoProps) {
-  // Determine color palette
-  const isVibrant = colorTheme === 'vibrant' || (colorTheme === 'auto' && !isDark);
-  const englishColor = isDark ? '#ffffff' : '#0f172a';
-  const sparkColor = isDark
-    ? '#38bdf8'
-    : isVibrant
-    ? '#0284c7'
-    : '#527d77';
-  const leftRaysColor = isDark ? '#f8fafc' : '#1e293b';
-  const rightRaysColor = sparkColor;
-  const trailColor = isDark ? '#60a5fa' : '#93c5fd';
+  // Gentle, friendly palette faithful to the teacher's infographics
+  const isTeal = colorTheme === 'authentic';
+  const englishColor = isDark ? '#f1f5f9' : '#273444';
+  const sparkColor = isDark ? '#38bdf8' : isTeal ? '#0284c7' : '#0284c7';
+  const raysLeftColor = isDark ? '#94a3b8' : '#475569';
+  const raysRightColor = isDark ? '#38bdf8' : '#0ea5e9';
+  const trailColor = isDark ? 'rgba(56, 189, 248, 0.45)' : 'rgba(2, 132, 199, 0.35)';
 
-  // Subtitle styling
-  const subtitleColor = isDark ? 'text-amber-300' : 'text-slate-500';
-
+  // Icon Only (Favicon, app emblem, avatar)
   if (variant === 'icon') {
     return (
       <svg
@@ -62,163 +58,161 @@ export function EnglishSparkLogo({
           width="96"
           height="96"
           rx="24"
-          fill={isDark ? '#1e293b' : '#0f172a'}
+          fill={isDark ? '#0f172a' : '#0f172a'}
         />
-        {/* Spark Rays */}
-        <g stroke="#38bdf8" strokeWidth="3" strokeLinecap="round">
-          <line x1="22" y1="34" x2="14" y2="26" />
-          <line x1="18" y1="46" x2="8" y2="46" />
-          <line x1="74" y1="56" x2="84" y2="50" />
-          <line x1="72" y1="68" x2="82" y2="74" />
+        {/* Soft background glow */}
+        <circle cx="58" cy="38" r="28" fill="#0284c7" opacity="0.3" filter="blur(8px)" />
+
+        {/* Delicate Spark Rays */}
+        <g stroke="#38bdf8" strokeWidth="2.8" strokeLinecap="round" opacity="0.9">
+          <line x1="22" y1="36" x2="14" y2="30" />
+          <line x1="20" y1="48" x2="10" y2="48" />
+          <line x1="74" y1="58" x2="84" y2="52" />
+          <line x1="72" y1="70" x2="82" y2="76" />
         </g>
-        {/* Origami Paper Airplane centered */}
-        <g transform="translate(30, 26) scale(1.18) rotate(6)">
+
+        {/* Origami Paper Airplane - Soft pastel facets with curved keel */}
+        <g transform="translate(30, 24) rotate(8)">
+          {/* Main Wing (Pastel Cyan) */}
           <polygon points="42,4 4,18 22,30" fill="#38bdf8" />
+          {/* Top Wing / Highlight facet */}
           <polygon points="42,4 22,30 36,40" fill="#bae6fd" />
+          {/* Underbody keel / Shadow facet */}
           <polygon points="22,30 36,40 26,38" fill="#0284c7" />
+          {/* Spine crease highlight */}
           <line
             x1="42"
             y1="4"
             x2="22"
             y2="30"
             stroke="#ffffff"
-            strokeWidth="1.2"
-            opacity="0.8"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            opacity="0.9"
           />
         </g>
       </svg>
     );
   }
 
+  // Full & Hero variants (Centered lockup)
   if (variant === 'full' || variant === 'hero') {
     const isHero = variant === 'hero';
-    const svgWidth = isHero ? 480 : 420;
-    const svgHeight = isHero ? 165 : 145;
+    const svgWidth = isHero ? 440 : 390;
+    const svgHeight = isHero ? 118 : 106;
 
     return (
       <div className={`inline-flex flex-col items-center text-center select-none ${className}`}>
+        {/* Core Brand Mark SVG (Wordmark + Airplane + Sparkles) */}
         <svg
           width={svgWidth}
           height={svgHeight}
-          viewBox="0 0 460 145"
+          viewBox="0 0 420 115"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
           style={{ direction: 'ltr' }}
-          className="max-w-full h-auto"
+          className="max-w-full h-auto drop-shadow-2xs"
           aria-label="English Spark Official Logo"
           role="img"
         >
-          {/* Flight Trail */}
+          {/* Graceful curved dashed flight trail */}
           <path
-            d="M 235 48 C 255 46, 272 40, 286 30 C 294 24, 302 21, 310 22"
+            d="M 220 38 C 242 36, 260 30, 274 20 C 282 14, 288 12, 296 14"
             stroke={trailColor}
-            strokeWidth="2.2"
-            strokeDasharray="3.5 4.5"
+            strokeWidth="2"
+            strokeDasharray="3 4"
             strokeLinecap="round"
-            opacity="0.85"
           />
 
-          {/* Origami Paper Airplane */}
-          <g transform="translate(304, 2) rotate(16)">
-            {/* Left Wing (Top facet) */}
-            <polygon points="42,4 4,18 22,30" fill="#7dd3fc" />
-            {/* Right Wing (Upper highlight facet) */}
-            <polygon points="42,4 22,30 36,40" fill="#bae6fd" />
-            {/* Keel / Underbody fold (Shadow facet) */}
-            <polygon points="22,30 36,40 26,38" fill="#0284c7" />
-            {/* Spine edge highlight */}
+          {/* Gentle Origami Paper Airplane (matching teacher infographics) */}
+          <g transform="translate(290, 0) rotate(14) scale(0.95)">
+            {/* Main wing */}
+            <polygon points="44,4 4,19 23,31" fill="#7dd3fc" />
+            {/* Top highlight facet */}
+            <polygon points="44,4 23,31 38,41" fill="#bae6fd" />
+            {/* Keel shadow facet */}
+            <polygon points="23,31 38,41 27,39" fill="#0284c7" />
+            {/* Central spine fold highlight */}
             <line
-              x1="42"
+              x1="44"
               y1="4"
-              x2="22"
-              y2="30"
+              x2="23"
+              y2="31"
               stroke="#ffffff"
-              strokeWidth="1.2"
-              opacity="0.85"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+              opacity="0.95"
             />
           </g>
 
-          {/* Spark Rays (Left of 'English') */}
-          <g stroke={leftRaysColor} strokeWidth="3.5" strokeLinecap="round">
-            {/* Top ray: pointing up (~75°) */}
-            <line x1="45" y1="62" x2="49" y2="48" />
-            {/* Middle ray: pointing up-left (~135°) */}
-            <line x1="40" y1="72" x2="24" y2="60" />
-            {/* Bottom ray: pointing left (~185°) */}
-            <line x1="38" y1="86" x2="22" y2="90" />
+          {/* Left Spark Rays (delicate, rounded caps) */}
+          <g stroke={raysLeftColor} strokeWidth="3" strokeLinecap="round" opacity="0.85">
+            <line x1="38" y1="52" x2="43" y2="40" />
+            <line x1="32" y1="63" x2="18" y2="52" />
+            <line x1="30" y1="76" x2="16" y2="80" />
           </g>
 
-          {/* Text Group */}
+          {/* English Spark Typography - Gentle, rounded, friendly */}
           <g
-            fontFamily="'Poppins', 'Plus Jakarta Sans', system-ui, sans-serif"
-            fontSize="44"
+            fontFamily="'Fredoka', 'Quicksand', 'Comfortaa', 'Plus Jakarta Sans', system-ui, sans-serif"
+            fontSize="46"
             fontWeight="800"
             letterSpacing="-0.5px"
           >
-            <text x="62" y="96" fill={englishColor}>
+            <text x="56" y="86" fill={englishColor}>
               English
             </text>
-            <text x="242" y="96" fill={sparkColor}>
+            <text x="238" y="86" fill={sparkColor}>
               Spark
             </text>
           </g>
 
-          {/* Spark Rays (Right of 'Spark') */}
-          <g stroke={rightRaysColor} strokeWidth="3.2" strokeLinecap="round">
-            <line x1="386" y1="72" x2="402" y2="64" />
-            <line x1="386" y1="84" x2="402" y2="92" />
+          {/* Right Spark Rays */}
+          <g stroke={raysRightColor} strokeWidth="2.8" strokeLinecap="round" opacity="0.9">
+            <line x1="378" y1="64" x2="394" y2="56" />
+            <line x1="378" y1="76" x2="394" y2="83" />
           </g>
 
-          {/* Sparkle Star (Bottom right accent) */}
+          {/* 4-point Sparkle Star Accent */}
           <path
-            d="M 395 102 Q 395 107 400 107 Q 395 107 395 112 Q 395 107 390 107 Q 395 107 395 102 Z"
+            d="M 388 94 Q 388 99 393 99 Q 388 99 388 104 Q 388 99 383 99 Q 388 99 388 94 Z"
             fill={sparkColor}
-            opacity="0.85"
+            opacity="0.9"
           />
-
-          {/* Subtitle Badge Pill */}
-          {showSubtitle && (
-            <g transform="translate(85, 114)">
-              <rect
-                x="0"
-                y="0"
-                width="280"
-                height="28"
-                rx="14"
-                fill={isDark ? 'rgba(255, 255, 255, 0.08)' : '#f8fafc'}
-                stroke={isDark ? 'rgba(255, 255, 255, 0.16)' : '#e2e8f0'}
-                strokeWidth="1.2"
-              />
-              <text
-                x="140"
-                y="19"
-                fontFamily="'Cairo', sans-serif"
-                fontSize="12"
-                fontWeight="700"
-                fill={isDark ? '#cbd5e1' : '#475569'}
-                textAnchor="middle"
-                direction="rtl"
-              >
-                {subtitle || 'مدرسة متوسطة وثانوية الجرادية'}
-              </text>
-            </g>
-          )}
         </svg>
+
+        {/* Responsive, perfectly fitted Affiliation Pill (Clean HTML, never clips) */}
+        {showSubtitle && subtitle && (
+          <div className="mt-2.5 inline-flex max-w-full items-center justify-center gap-2 rounded-full border border-sky-100 bg-white/95 px-4 sm:px-5 py-1.5 shadow-2xs backdrop-blur-xs ring-1 ring-slate-900/5">
+            <span
+              className="h-1.5 w-1.5 rounded-full bg-sky-500 shrink-0 animate-pulse"
+              aria-hidden="true"
+            />
+            <span
+              className={`text-xs sm:text-sm font-bold tracking-normal text-pretty text-center ${
+                isDark ? 'text-slate-300' : 'text-slate-700'
+              }`}
+              dir="rtl"
+            >
+              {subtitle}
+            </span>
+          </div>
+        )}
       </div>
     );
   }
 
-  // Default: 'horizontal' (compact for navbars)
+  // Default: 'horizontal' (compact for navbars and headers)
   return (
     <div
-      className={`inline-flex items-center gap-2.5 select-none ${className}`}
+      className={`inline-flex items-center gap-3 select-none ${className}`}
       dir="rtl"
     >
-      <div className="flex flex-col items-start" dir="ltr">
+      <div className="flex items-center" dir="ltr">
         <svg
           width="215"
           height="46"
-          viewBox="0 0 268 56"
+          viewBox="0 0 268 54"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
           style={{ direction: 'ltr' }}
@@ -226,82 +220,82 @@ export function EnglishSparkLogo({
           aria-label="English Spark Logo"
           role="img"
         >
-          {/* Flight Trail */}
+          {/* Dotted Flight Trail */}
           <path
-            d="M 148 18 C 160 17, 172 14, 180 9"
+            d="M 148 16 C 160 15, 172 12, 180 7"
             stroke={trailColor}
             strokeWidth="1.8"
             strokeDasharray="2.5 3"
             strokeLinecap="round"
-            opacity="0.8"
           />
 
-          {/* Origami Airplane */}
-          <g transform="translate(182, 0) rotate(16) scale(0.65)">
-            <polygon points="42,4 4,18 22,30" fill="#38bdf8" />
-            <polygon points="42,4 22,30 36,40" fill="#bae6fd" />
-            <polygon points="22,30 36,40 26,38" fill="#0284c7" />
+          {/* Soft Origami Airplane */}
+          <g transform="translate(182, -2) rotate(14) scale(0.68)">
+            <polygon points="44,4 4,19 23,31" fill="#7dd3fc" />
+            <polygon points="44,4 23,31 38,41" fill="#bae6fd" />
+            <polygon points="23,31 38,41 27,39" fill="#0284c7" />
             <line
-              x1="42"
+              x1="44"
               y1="4"
-              x2="22"
-              y2="30"
+              x2="23"
+              y2="31"
               stroke="#ffffff"
-              strokeWidth="1.2"
-              opacity="0.8"
+              strokeWidth="1.4"
+              strokeLinecap="round"
+              opacity="0.9"
             />
           </g>
 
           {/* Left Rays */}
-          <g stroke={leftRaysColor} strokeWidth="2.5" strokeLinecap="round">
-            <line x1="24" y1="21" x2="27" y2="13" />
-            <line x1="20" y1="28" x2="10" y2="21" />
-            <line x1="18" y1="36" x2="8" y2="38" />
+          <g stroke={raysLeftColor} strokeWidth="2.4" strokeLinecap="round" opacity="0.85">
+            <line x1="22" y1="21" x2="25" y2="13" />
+            <line x1="18" y1="28" x2="8" y2="21" />
+            <line x1="17" y1="36" x2="7" y2="38" />
           </g>
 
-          {/* Text */}
+          {/* Soft Rounded Text */}
           <g
-            fontFamily="'Poppins', 'Plus Jakarta Sans', system-ui, sans-serif"
+            fontFamily="'Fredoka', 'Quicksand', 'Comfortaa', 'Plus Jakarta Sans', system-ui, sans-serif"
             fontSize="28"
-            fontWeight="900"
+            fontWeight="800"
             letterSpacing="-0.3px"
           >
-            <text x="34" y="41" fill={englishColor}>
+            <text x="32" y="39" fill={englishColor}>
               English
             </text>
-            <text x="146" y="41" fill={sparkColor}>
+            <text x="144" y="39" fill={sparkColor}>
               Spark
             </text>
           </g>
 
           {/* Right Rays */}
-          <g stroke={rightRaysColor} strokeWidth="2.2" strokeLinecap="round">
-            <line x1="236" y1="26" x2="246" y2="20" />
-            <line x1="236" y1="34" x2="246" y2="39" />
+          <g stroke={raysRightColor} strokeWidth="2.2" strokeLinecap="round" opacity="0.9">
+            <line x1="234" y1="25" x2="244" y2="19" />
+            <line x1="234" y1="33" x2="244" y2="38" />
           </g>
 
           {/* Spark Star */}
           <path
-            d="M 242 44 Q 242 47 245 47 Q 242 47 242 50 Q 242 47 239 47 Q 242 47 242 44 Z"
+            d="M 240 42 Q 240 45 243 45 Q 240 45 240 48 Q 240 45 237 45 Q 240 45 240 42 Z"
             fill={sparkColor}
           />
         </svg>
       </div>
 
       {showSubtitle && subtitle && (
-        <>
+        <div className="hidden sm:flex items-center gap-2.5">
           <div
-            className={`hidden sm:block h-6 w-px ${
-              isDark ? 'bg-white/15' : 'bg-slate-200'
-            }`}
+            className={`h-5 w-px ${isDark ? 'bg-white/15' : 'bg-slate-200'}`}
             aria-hidden="true"
           />
           <span
-            className={`hidden sm:inline-block text-[11px] font-bold ${subtitleColor}`}
+            className={`text-xs font-bold ${
+              isDark ? 'text-slate-300' : 'text-slate-600'
+            }`}
           >
             {subtitle}
           </span>
-        </>
+        </div>
       )}
     </div>
   );
