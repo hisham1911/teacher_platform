@@ -24,6 +24,7 @@ appsettings.Development.json
 # Test results & coverage
 TestResults/
 coverage/
+*.zip
 
 # Local email/Data Protection test artifacts (gitignored)
 .test-mail/
@@ -70,4 +71,9 @@ apps/web/*.log
 
 # Client raw source assets archive
 assets/
+
+# Lightweight branch media exclusion
+apps/web/public/content/videos/*.mp4
+apps/web/public/content/videos/posters/*.jpg
+apps/web/public/content/audio/*.mp3
 
