@@ -26,7 +26,7 @@ import {
   type PlacementQuestionItem,
   type SkillCategory,
 } from '../../data/content/placement-data';
-import { TEACHER_OFFICIAL_NAME } from '../../data/api-client/guestbook-client';
+import { TEACHER_OFFICIAL_NAME, studentResultsClient } from '../../data/api-client/guestbook-client';
 
 type Stage = 'select-level' | 'testing' | 'result';
 type LevelChoiceId = 'comprehensive' | 'level-1' | 'level-2' | 'level-3';
@@ -97,6 +97,20 @@ export default function PlacementTestPage() {
       if (startTime) {
         setElapsedSeconds(Math.round((Date.now() - startTime) / 1000));
       }
+      const finalCorrect = questions.reduce((acc, q, idx) => {
+        const picked = updated[idx];
+        const corr = q.options.find((o) => o.id === picked && o.isCorrect);
+        return acc + (corr ? 1 : 0);
+      }, 0);
+      void studentResultsClient.recordResult({
+        studentName,
+        studentGrade,
+        category: 'placement',
+        activityTitle: activeLevelMeta.titleAr,
+        score: finalCorrect,
+        totalQuestions,
+        verificationCode,
+      });
       setStage('result');
     }
   }

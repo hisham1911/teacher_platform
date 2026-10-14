@@ -2,9 +2,10 @@ import { Link } from 'react-router';
 import { BookOpen, ArrowLeft, CheckCircle2, Sparkles, Video } from 'lucide-react';
 import { PublicBackdrop } from '../../components/layout/root-layout';
 import { PortalNav, PortalFooter } from '../../components/portal/portal-nav';
-import { grammarTopics } from '../../data/content/grammar';
+import { getMergedGrammarTopics } from '../../data/api-client/guestbook-client';
 
 export default function GrammarIndexPage() {
+  const grammarTopics = getMergedGrammarTopics();
   return (
     <div className="relative flex min-h-dvh flex-col overflow-x-clip bg-slate-50/50" dir="rtl">
       <PublicBackdrop />

@@ -1,3 +1,6 @@
+import type { GrammarTopic, QuizQuestion } from '../content/types';
+import { grammarTopics } from '../content/grammar';
+
 export interface GuestbookEntry {
   id: string;
   name: string;
@@ -17,10 +20,49 @@ export interface TeacherSession {
   loggedInAt: string;
 }
 
+export interface StudentQuizResultRecord {
+  id: string;
+  studentName: string;
+  studentGrade: string;
+  category: 'placement' | 'grammar' | 'reading' | 'listening' | 'million' | 'speed';
+  activityTitle: string;
+  score: number;
+  totalQuestions: number;
+  percentage: number;
+  cefrLevel?: string;
+  verificationCode?: string;
+  createdAt: string;
+}
+
+export interface CustomLessonRecord {
+  id: string;
+  section: 'grammar' | 'reading' | 'listening';
+  slug: string;
+  titleAr: string;
+  titleEn: string;
+  description: string;
+  imageUrl: string;
+  videoUrl?: string;
+  questions: QuizQuestion[];
+  updatedAt: string;
+}
+
+export interface HonorStudentRecord {
+  id: string;
+  studentName: string;
+  studentGrade: string;
+  badges: string[];
+  note: string;
+  createdAt: string;
+}
+
 const STORAGE_KEY = 'english_spark_guestbook_entries_v1';
 const RATE_LIMIT_KEY = 'english_spark_last_comment_time';
 const LIKED_ENTRIES_KEY = 'english_spark_liked_entries_v1';
 const TEACHER_AUTH_KEY = 'english_spark_teacher_session_v1';
+const RESULTS_STORAGE_KEY = 'english_spark_student_results_v1';
+const CUSTOM_LESSONS_STORAGE_KEY = 'english_spark_custom_lessons_v1';
+const HONOR_STORAGE_KEY = 'english_spark_honor_roll_v1';
 
 export const TEACHER_USERNAME = 'maryam';
 export const TEACHER_PASSCODE_HASH = 'maryam2026'; // رمز مرور المعلمة
@@ -665,3 +707,389 @@ export const guestbookClient = {
     return true;
   },
 };
+
+// ============================================================================
+// 2. SUPABASE STORAGE MEDIA UPLOADER
+// ============================================================================
+/**
+ * دالة ترفع ملف فيديو (.mp4) أو صورة من جوال المعلمة في الداشبورد
+ * مباشرة إلى Supabase Storage وتعيد الرابط المباشر (Public URL)
+ */
+export async function uploadMediaToSupabase(
+  file: File,
+  folder: 'videos' | 'images' = 'videos'
+): Promise<{ url: string; error?: string }> {
+  // التحقق من حجم الفيديو (الحد الأقصى 50 ميجابايت في الباقة المجانية)
+  const maxBytes = 50 * 1024 * 1024;
+  if (file.size > maxBytes) {
+    return {
+      url: '',
+      error: 'حجم الفيديو أكبر من 50 ميجابايت. يرجى اختيار مقطع أقصر أو وضع رابط يوتيوب.',
+    };
+  }
+
+  const config = getSupabaseConfig();
+  if (!config) {
+    return {
+      url: '',
+      error: 'يرجى التأكد من إضافة VITE_SUPABASE_URL و VITE_SUPABASE_ANON_KEY في إعدادات البيئة.',
+    };
+  }
+
+  // توليد اسم ملف نظيف وفريد لمنع تكرار الأسماء أو مشاكل الحروف العربية
+  const ext = file.name.split('.').pop()?.toLowerCase() || 'mp4';
+  const safeFileName = `${folder}/${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${ext}`;
+
+  try {
+    const uploadUrl = `${config.url}/storage/v1/object/videos/${safeFileName}`;
+    const res = await fetch(uploadUrl, {
+      method: 'POST',
+      headers: {
+        apikey: config.anonKey,
+        Authorization: `Bearer ${config.anonKey}`,
+        'Content-Type': file.type || 'video/mp4',
+        'x-upsert': 'true',
+      },
+      body: file,
+    });
+
+    if (!res.ok) {
+      const errText = await res.text().catch(() => '');
+      console.error('[Storage Upload Error]:', errText);
+      return { url: '', error: 'تعذر رفع الفيديو إلى السحابة، تأكدي من تفعيل مجلد videos في Supabase.' };
+    }
+
+    // إرجاع الرابط العام المباشر الذي سيُحفظ في جدول custom_lessons
+    const publicUrl = `${config.url}/storage/v1/object/public/videos/${safeFileName}`;
+    return { url: publicUrl };
+  } catch (err) {
+    console.error('[Storage Upload Exception]:', err);
+    return { url: '', error: 'حدث خطأ في الاتصال بالإنترنت أثناء رفع الفيديو.' };
+  }
+}
+
+// ============================================================================
+// 3. STUDENT QUIZ & PLACEMENT RESULTS CLIENT (SUPABASE + LOCAL FALLBACK)
+// ============================================================================
+const DEFAULT_STUDENT_RESULTS: StudentQuizResultRecord[] = [
+  {
+    id: 'seed-res-1',
+    studentName: 'فاطمة أحمد دغريري',
+    studentGrade: 'الأول الثانوي',
+    category: 'placement',
+    activityTitle: 'التشخيص الشامل (Comprehensive Diagnostic)',
+    score: 22,
+    totalQuestions: 24,
+    percentage: 92,
+    cefrLevel: 'B2',
+    verificationCode: 'SPARK-PL-89A1',
+    createdAt: new Date(Date.now() - 3 * 3600 * 1000).toISOString(),
+  },
+  {
+    id: 'seed-res-2',
+    studentName: 'رغد محمد الحكمي',
+    studentGrade: 'الثالث المتوسط',
+    category: 'grammar',
+    activityTitle: 'المضارع البسيط (Present Simple)',
+    score: 4,
+    totalQuestions: 4,
+    percentage: 100,
+    cefrLevel: 'A2+',
+    verificationCode: 'SPARK-GR-44B2',
+    createdAt: new Date(Date.now() - 6 * 3600 * 1000).toISOString(),
+  },
+];
+
+function getLocalResults(): StudentQuizResultRecord[] {
+  try {
+    const raw = localStorage.getItem(RESULTS_STORAGE_KEY);
+    if (!raw) {
+      localStorage.setItem(RESULTS_STORAGE_KEY, JSON.stringify(DEFAULT_STUDENT_RESULTS));
+      return DEFAULT_STUDENT_RESULTS;
+    }
+    const parsed = JSON.parse(raw) as StudentQuizResultRecord[];
+    return Array.isArray(parsed) ? parsed : DEFAULT_STUDENT_RESULTS;
+  } catch {
+    return DEFAULT_STUDENT_RESULTS;
+  }
+}
+
+export const studentResultsClient = {
+  async getAllResults(): Promise<StudentQuizResultRecord[]> {
+    const config = getSupabaseConfig();
+    if (config) {
+      try {
+        const res = await fetch(
+          `${config.url}/rest/v1/student_results?select=*&order=created_at.desc&limit=300`,
+          {
+            headers: {
+              apikey: config.anonKey,
+              Authorization: `Bearer ${config.anonKey}`,
+            },
+          }
+        );
+        if (res.ok) {
+          const rows = (await res.json()) as Array<{
+            id: string | number;
+            student_name: string;
+            student_grade: string;
+            section_title: string;
+            score: number;
+            total_questions: number;
+            percentage: number;
+            created_at: string;
+          }>;
+          return rows.map((r) => ({
+            id: String(r.id),
+            studentName: r.student_name,
+            studentGrade: r.student_grade || 'المرحلة المتوسطة',
+            category: 'grammar',
+            activityTitle: r.section_title,
+            score: Number(r.score),
+            totalQuestions: Number(r.total_questions),
+            percentage: Number(r.percentage),
+            verificationCode: `SPARK-${r.id}`,
+            createdAt: r.created_at,
+          }));
+        }
+      } catch {
+        // fallback to local
+      }
+    }
+    return getLocalResults();
+  },
+
+  async recordResult(input: {
+    studentName: string;
+    studentGrade?: string;
+    category: StudentQuizResultRecord['category'];
+    activityTitle: string;
+    score: number;
+    totalQuestions: number;
+    cefrLevel?: string;
+    verificationCode?: string;
+  }): Promise<StudentQuizResultRecord> {
+    const percentage = Math.round((input.score / Math.max(1, input.totalQuestions)) * 100);
+    const verificationCode =
+      input.verificationCode ||
+      'SPARK-' + Math.random().toString(36).substring(2, 7).toUpperCase();
+
+    const config = getSupabaseConfig();
+    if (config) {
+      try {
+        await fetch(`${config.url}/rest/v1/student_results`, {
+          method: 'POST',
+          headers: {
+            apikey: config.anonKey,
+            Authorization: `Bearer ${config.anonKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            student_name: input.studentName.trim(),
+            student_grade: input.studentGrade || 'عام',
+            section_title: input.activityTitle,
+            score: input.score,
+            total_questions: input.totalQuestions,
+            percentage,
+          }),
+        });
+      } catch {
+        // fallback
+      }
+    }
+
+    const record: StudentQuizResultRecord = {
+      id: `res-${Date.now()}`,
+      studentName: input.studentName.trim(),
+      studentGrade: input.studentGrade || 'عام',
+      category: input.category,
+      activityTitle: input.activityTitle,
+      score: input.score,
+      totalQuestions: input.totalQuestions,
+      percentage,
+      cefrLevel: input.cefrLevel,
+      verificationCode,
+      createdAt: new Date().toISOString(),
+    };
+
+    try {
+      const current = getLocalResults();
+      localStorage.setItem(RESULTS_STORAGE_KEY, JSON.stringify([record, ...current]));
+    } catch {
+      // ignore
+    }
+    return record;
+  },
+
+  async deleteResult(id: string): Promise<boolean> {
+    if (!isTeacherLoggedIn()) return false;
+    const config = getSupabaseConfig();
+    if (config) {
+      try {
+        await fetch(`${config.url}/rest/v1/student_results?id=eq.${id}`, {
+          method: 'DELETE',
+          headers: {
+            apikey: config.anonKey,
+            Authorization: `Bearer ${config.anonKey}`,
+          },
+        });
+      } catch {
+        // ignore
+      }
+    }
+    try {
+      const current = getLocalResults().filter((r) => r.id !== id);
+      localStorage.setItem(RESULTS_STORAGE_KEY, JSON.stringify(current));
+    } catch {
+      // ignore
+    }
+    return true;
+  },
+};
+
+// ============================================================================
+// 4. CUSTOM LESSONS & QUESTIONS MANAGER (ALLOWS TEACHER TO EDIT/ADD LESSONS)
+// ============================================================================
+export function getLocalCustomLessons(): CustomLessonRecord[] {
+  try {
+    const raw = localStorage.getItem(CUSTOM_LESSONS_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as CustomLessonRecord[];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+export function getMergedGrammarTopics(): GrammarTopic[] {
+  const custom = getLocalCustomLessons().filter((c) => c.section === 'grammar');
+  const customMap = new Map(custom.map((c) => [c.slug, c]));
+  const merged: GrammarTopic[] = grammarTopics.map((builtIn) => {
+    const override = customMap.get(builtIn.slug);
+    if (override) {
+      customMap.delete(builtIn.slug);
+      return {
+        slug: override.slug,
+        titleAr: override.titleAr,
+        titleEn: override.titleEn,
+        description: override.description,
+        imageUrl: override.imageUrl || builtIn.imageUrl,
+        videoUrl: override.videoUrl ?? builtIn.videoUrl,
+        posterUrl: builtIn.posterUrl,
+        questions: override.questions,
+      };
+    }
+    return builtIn;
+  });
+
+  for (const extra of customMap.values()) {
+    merged.push({
+      slug: extra.slug,
+      titleAr: extra.titleAr,
+      titleEn: extra.titleEn,
+      description: extra.description,
+      imageUrl: extra.imageUrl || '/content/grammar/present-simple.jpg',
+      videoUrl: extra.videoUrl,
+      questions: extra.questions,
+    });
+  }
+  return merged;
+}
+
+export const customLessonsClient = {
+  async saveLesson(lesson: Omit<CustomLessonRecord, 'updatedAt'>): Promise<CustomLessonRecord> {
+    const saved: CustomLessonRecord = {
+      ...lesson,
+      updatedAt: new Date().toISOString(),
+    };
+    const config = getSupabaseConfig();
+    if (config) {
+      try {
+        await fetch(`${config.url}/rest/v1/custom_lessons`, {
+          method: 'POST',
+          headers: {
+            apikey: config.anonKey,
+            Authorization: `Bearer ${config.anonKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            section_id: saved.section,
+            slug: saved.slug,
+            title_ar: saved.titleAr,
+            title_en: saved.titleEn,
+            description: saved.description,
+            video_url: saved.videoUrl || '',
+            image_url: saved.imageUrl || '',
+            questions: saved.questions,
+          }),
+        });
+      } catch {
+        // fallback
+      }
+    }
+
+    try {
+      const current = getLocalCustomLessons().filter((c) => c.slug !== saved.slug);
+      localStorage.setItem(CUSTOM_LESSONS_STORAGE_KEY, JSON.stringify([saved, ...current]));
+    } catch {
+      // ignore
+    }
+    return saved;
+  },
+
+  async deleteCustomLesson(slug: string): Promise<void> {
+    try {
+      const current = getLocalCustomLessons().filter((c) => c.slug !== slug);
+      localStorage.setItem(CUSTOM_LESSONS_STORAGE_KEY, JSON.stringify(current));
+    } catch {
+      // ignore
+    }
+  },
+};
+
+// ============================================================================
+// 5. HONOR ROLL & BADGES CLIENT
+// ============================================================================
+const DEFAULT_HONOR_STUDENTS: HonorStudentRecord[] = [
+  {
+    id: 'honor-1',
+    studentName: 'فاطمة أحمد دغريري',
+    studentGrade: 'الأول الثانوي',
+    badges: ['grammar_star', 'million_winner', 'fluent_speaker'],
+    note: 'تميز استثنائي في اختبار تحديد المستوى الشامل وحصولها على مستوى B2.',
+    createdAt: new Date(Date.now() - 24 * 3600 * 1000).toISOString(),
+  },
+  {
+    id: 'honor-2',
+    studentName: 'رغد محمد الحكمي',
+    studentGrade: 'الثالث المتوسط',
+    badges: ['grammar_star', 'active_reader'],
+    note: 'إتمام جميع تدريبات القواعد بالدرجة الكاملة 100%.',
+    createdAt: new Date(Date.now() - 48 * 3600 * 1000).toISOString(),
+  },
+];
+
+export const honorRollClient = {
+  getHonorStudents(): HonorStudentRecord[] {
+    try {
+      const raw = localStorage.getItem(HONOR_STORAGE_KEY);
+      if (!raw) {
+        localStorage.setItem(HONOR_STORAGE_KEY, JSON.stringify(DEFAULT_HONOR_STUDENTS));
+        return DEFAULT_HONOR_STUDENTS;
+      }
+      const parsed = JSON.parse(raw) as HonorStudentRecord[];
+      return Array.isArray(parsed) ? parsed : DEFAULT_HONOR_STUDENTS;
+    } catch {
+      return DEFAULT_HONOR_STUDENTS;
+    }
+  },
+
+  saveHonorStudents(list: HonorStudentRecord[]): void {
+    try {
+      localStorage.setItem(HONOR_STORAGE_KEY, JSON.stringify(list));
+    } catch {
+      // ignore
+    }
+  },
+};
+
