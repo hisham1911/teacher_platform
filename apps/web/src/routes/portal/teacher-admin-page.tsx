@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link } from 'react-router';
 import {
   ShieldCheck,
@@ -27,6 +27,7 @@ import {
   Check,
   Upload,
   Loader2,
+  RefreshCw,
 } from 'lucide-react';
 import { PublicBackdrop } from '../../components/layout/root-layout';
 import { PortalNav, PortalFooter } from '../../components/portal/portal-nav';
@@ -121,30 +122,26 @@ export default function TeacherAdminPage() {
     setIsAuthenticated(isTeacherLoggedIn());
   }, []);
 
-  useEffect(() => {
-    if (!isAuthenticated) return;
-    let mounted = true;
+  const loadData = useCallback(() => {
     setLoading(true);
-
     Promise.all([
       guestbookClient.getAllEntriesAcrossPlatform(),
       studentResultsClient.getAllResults(),
     ])
       .then(([qnaData, resultsData]) => {
-        if (mounted) {
-          setEntries(qnaData);
-          setResults(resultsData);
-          setLoading(false);
-        }
+        setEntries(qnaData);
+        setResults(resultsData);
+        setLoading(false);
       })
       .catch(() => {
-        if (mounted) setLoading(false);
+        setLoading(false);
       });
+  }, []);
 
-    return () => {
-      mounted = false;
-    };
-  }, [isAuthenticated]);
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    loadData();
+  }, [isAuthenticated, loadData]);
 
   function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -465,6 +462,16 @@ export default function TeacherAdminPage() {
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={loadData}
+                disabled={loading}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition shadow-xs disabled:opacity-50"
+                title="تحديث البيانات فورياً"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 text-violet-600 ${loading ? 'animate-spin' : ''}`} />
+                <span>تحديث البيانات</span>
+              </button>
               <Link
                 to="/grammar"
                 className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition shadow-xs"
@@ -527,7 +534,10 @@ export default function TeacherAdminPage() {
         <section className="mb-6 flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-xs">
           <button
             type="button"
-            onClick={() => setDashboardSection('qna')}
+            onClick={() => {
+              setDashboardSection('qna');
+              loadData();
+            }}
             className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-black transition ${
               dashboardSection === 'qna'
                 ? 'bg-violet-700 text-white shadow-xs'
@@ -540,7 +550,10 @@ export default function TeacherAdminPage() {
 
           <button
             type="button"
-            onClick={() => setDashboardSection('results')}
+            onClick={() => {
+              setDashboardSection('results');
+              loadData();
+            }}
             className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-black transition ${
               dashboardSection === 'results'
                 ? 'bg-indigo-600 text-white shadow-xs'
