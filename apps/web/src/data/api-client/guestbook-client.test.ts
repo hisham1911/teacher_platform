@@ -6,6 +6,11 @@ import {
   loginTeacher,
   logoutTeacher,
   getTeacherSession,
+  studentResultsClient,
+  customLessonsClient,
+  getMergedGrammarTopics,
+  honorRollClient,
+  uploadMediaToSupabase,
 } from './guestbook-client';
 
 describe('Guestbook Client & Validation', () => {
@@ -169,6 +174,115 @@ describe('Guestbook Client & Validation', () => {
       // Contains both guestbook (null topicSlug) and lesson topics
       expect(all.some((e) => !e.topicSlug)).toBe(true);
       expect(all.some((e) => e.topicSlug === 'present-simple')).toBe(true);
+    });
+  });
+
+  describe('studentResultsClient', () => {
+    it('returns default seed results when empty', async () => {
+      const results = await studentResultsClient.getAllResults();
+      expect(results.length).toBeGreaterThanOrEqual(2);
+      expect(results[0]?.studentName).toBeTruthy();
+    });
+
+    it('records a new quiz result and retrieves it', async () => {
+      const recorded = await studentResultsClient.recordResult({
+        studentName: 'نورة إبراهيم',
+        studentGrade: 'الصف الثاني متوسط',
+        category: 'placement',
+        activityTitle: 'التشخيص اللغوي',
+        score: 18,
+        totalQuestions: 20,
+      });
+
+      expect(recorded.id).toBeTruthy();
+      expect(recorded.percentage).toBe(90);
+      expect(recorded.studentName).toBe('نورة إبراهيم');
+
+      const all = await studentResultsClient.getAllResults();
+      expect(all.some((r) => r.studentName === 'نورة إبراهيم')).toBe(true);
+    });
+
+    it('deletes result when teacher is logged in', async () => {
+      const recorded = await studentResultsClient.recordResult({
+        studentName: 'طالبة للاختبار',
+        category: 'grammar',
+        activityTitle: 'اختبار تجريبي',
+        score: 5,
+        totalQuestions: 5,
+      });
+
+      // Cannot delete without login
+      const fail = await studentResultsClient.deleteResult(recorded.id);
+      expect(fail).toBe(false);
+
+      // Login
+      loginTeacher('maryam', 'maryam2026');
+      const ok = await studentResultsClient.deleteResult(recorded.id);
+      expect(ok).toBe(true);
+
+      const all = await studentResultsClient.getAllResults();
+      expect(all.some((r) => r.id === recorded.id)).toBe(false);
+      logoutTeacher();
+    });
+  });
+
+  describe('customLessonsClient & getMergedGrammarTopics', () => {
+    it('merges custom lesson into grammar topics', async () => {
+      const initial = getMergedGrammarTopics();
+      expect(initial.length).toBeGreaterThanOrEqual(9);
+
+      await customLessonsClient.saveLesson({
+        id: 'new-grammar-rule',
+        section: 'grammar',
+        slug: 'new-grammar-rule',
+        titleAr: 'قاعدة تجريبية مضافة',
+        titleEn: 'Experimental Rule',
+        description: 'شرح القاعدة التجريبية',
+        imageUrl: '/content/grammar/present-simple.jpg',
+        questions: [],
+      });
+
+      const updated = getMergedGrammarTopics();
+      expect(updated.some((t) => t.slug === 'new-grammar-rule')).toBe(true);
+
+      // Delete custom lesson
+      await customLessonsClient.deleteCustomLesson('new-grammar-rule');
+      const afterDelete = getMergedGrammarTopics();
+      expect(afterDelete.some((t) => t.slug === 'new-grammar-rule')).toBe(false);
+    });
+  });
+
+  describe('honorRollClient', () => {
+    it('returns default honor students and allows saving updates', () => {
+      const list = honorRollClient.getHonorStudents();
+      expect(list.length).toBeGreaterThanOrEqual(2);
+
+      const updated = [
+        {
+          id: 'test-honor-1',
+          studentName: 'ريما عبدالله',
+          studentGrade: 'الأول الثانوي',
+          badges: ['grammar_star'],
+          note: 'متفوقة',
+          createdAt: new Date().toISOString(),
+        },
+        ...list,
+      ];
+      honorRollClient.saveHonorStudents(updated);
+
+      const saved = honorRollClient.getHonorStudents();
+      expect(saved[0]?.studentName).toBe('ريما عبدالله');
+    });
+  });
+
+  describe('uploadMediaToSupabase', () => {
+    it('rejects files larger than 50MB', async () => {
+      const largeFile = new File(['x'.repeat(100)], 'large-video.mp4', { type: 'video/mp4' });
+      Object.defineProperty(largeFile, 'size', { value: 55 * 1024 * 1024 });
+
+      const res = await uploadMediaToSupabase(largeFile);
+      expect(res.url).toBe('');
+      expect(res.error).toContain('50 ميجابايت');
     });
   });
 });

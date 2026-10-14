@@ -13,12 +13,13 @@ import { InlineQuiz } from '../../components/portal/inline-quiz';
 import { LessonDiscussion } from '../../components/portal/lesson-discussion';
 import { ImageLightbox } from '../../components/portal/image-lightbox';
 import { PortalVideoPlayer } from '../../components/portal/portal-video-player';
-import { grammarTopics } from '../../data/content/grammar';
+import { getMergedGrammarTopics } from '../../data/api-client/guestbook-client';
 
 export default function GrammarTopicPage() {
   const { topicSlug } = useParams<{ topicSlug: string }>();
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
+  const grammarTopics = getMergedGrammarTopics();
   const topicIndex = grammarTopics.findIndex((t) => t.slug === topicSlug);
   const topic = grammarTopics[topicIndex];
 

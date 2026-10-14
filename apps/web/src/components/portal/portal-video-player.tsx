@@ -23,8 +23,8 @@ export function PortalVideoPlayer({
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const isLocalOrDirect =
-    src.endsWith('.mp4') ||
-    src.endsWith('.webm') ||
+    /\.(mp4|webm|mov)(\?.*)?$/i.test(src) ||
+    src.includes('/storage/v1/object/public/') ||
     src.startsWith('/content/') ||
     src.startsWith('blob:');
 
