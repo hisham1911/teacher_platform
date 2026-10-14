@@ -3,7 +3,7 @@ import { Link } from 'react-router';
 import { PenLine, ArrowLeft, Sparkles, CheckCircle2 } from 'lucide-react';
 import { PublicBackdrop } from '../../components/layout/root-layout';
 import { PortalNav, PortalFooter } from '../../components/portal/portal-nav';
-import { writingPrompts } from '../../data/content/writing';
+import { getMergedWritingPrompts } from '../../data/api-client/guestbook-client';
 import type { WritingPrompt } from '../../data/content/types';
 
 function categoryBadge(category: WritingPrompt['category']) {
@@ -32,6 +32,7 @@ function levelLabel(level: WritingPrompt['level']) {
 
 export default function WritingIndexPage() {
   const [filter, setFilter] = useState<'all' | 'sentence' | 'correction' | 'paragraph'>('all');
+  const writingPrompts = getMergedWritingPrompts();
 
   const filtered = filter === 'all'
     ? writingPrompts

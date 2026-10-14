@@ -9,11 +9,12 @@ import {
 import { PublicBackdrop } from '../../components/layout/root-layout';
 import { PortalNav, PortalFooter } from '../../components/portal/portal-nav';
 import { InlineQuiz } from '../../components/portal/inline-quiz';
-import { readingPassages } from '../../data/content/reading';
+import { getMergedReadingPassages } from '../../data/api-client/guestbook-client';
 import { useSpeechPlayer } from '../../lib/speech-player';
 
 export default function ReadingPassagePage() {
   const { passageSlug } = useParams<{ passageSlug: string }>();
+  const readingPassages = getMergedReadingPassages();
   const passageIndex = readingPassages.findIndex((p) => p.slug === passageSlug);
   const passage = readingPassages[passageIndex];
 

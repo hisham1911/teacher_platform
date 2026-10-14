@@ -1,5 +1,14 @@
-import type { GrammarTopic, QuizQuestion } from '../content/types';
+import type {
+  GrammarTopic,
+  ReadingPassage,
+  ListeningActivity,
+  WritingPrompt,
+  QuizQuestion,
+} from '../content/types';
 import { grammarTopics } from '../content/grammar';
+import { readingPassages } from '../content/reading';
+import { listeningActivities } from '../content/listening';
+import { writingPrompts } from '../content/writing';
 
 export interface GuestbookEntry {
   id: string;
@@ -62,6 +71,9 @@ const LIKED_ENTRIES_KEY = 'english_spark_liked_entries_v1';
 const TEACHER_AUTH_KEY = 'english_spark_teacher_session_v1';
 const RESULTS_STORAGE_KEY = 'english_spark_student_results_v1';
 const CUSTOM_LESSONS_STORAGE_KEY = 'english_spark_custom_lessons_v1';
+const CUSTOM_READING_STORAGE_KEY = 'english_spark_custom_reading_v1';
+const CUSTOM_LISTENING_STORAGE_KEY = 'english_spark_custom_listening_v1';
+const CUSTOM_WRITING_STORAGE_KEY = 'english_spark_custom_writing_v1';
 const HONOR_STORAGE_KEY = 'english_spark_honor_roll_v1';
 
 export const TEACHER_USERNAME = 'maryam';
@@ -948,7 +960,7 @@ export const studentResultsClient = {
 };
 
 // ============================================================================
-// 4. CUSTOM LESSONS & QUESTIONS MANAGER (ALLOWS TEACHER TO EDIT/ADD LESSONS)
+// 4. MULTI-SKILL CONTENT & QUESTIONS CMS (GRAMMAR, READING, LISTENING, WRITING)
 // ============================================================================
 export function getLocalCustomLessons(): CustomLessonRecord[] {
   try {
@@ -996,6 +1008,88 @@ export function getMergedGrammarTopics(): GrammarTopic[] {
   return merged;
 }
 
+export function getMergedReadingPassages(): ReadingPassage[] {
+  try {
+    const raw = localStorage.getItem(CUSTOM_READING_STORAGE_KEY);
+    const customList: ReadingPassage[] = raw ? JSON.parse(raw) : [];
+    const customMap = new Map(customList.map((c) => [c.slug, c]));
+
+    const merged: ReadingPassage[] = readingPassages.map((builtIn) => {
+      const override = customMap.get(builtIn.slug);
+      if (override) {
+        customMap.delete(builtIn.slug);
+        return {
+          ...builtIn,
+          ...override,
+        };
+      }
+      return builtIn;
+    });
+
+    for (const extra of customMap.values()) {
+      merged.push(extra);
+    }
+    return merged;
+  } catch {
+    return readingPassages;
+  }
+}
+
+export function getMergedListeningActivities(): ListeningActivity[] {
+  try {
+    const raw = localStorage.getItem(CUSTOM_LISTENING_STORAGE_KEY);
+    const customList: ListeningActivity[] = raw ? JSON.parse(raw) : [];
+    const customMap = new Map(customList.map((c) => [c.slug, c]));
+
+    const merged: ListeningActivity[] = listeningActivities.map((builtIn) => {
+      const override = customMap.get(builtIn.slug);
+      if (override) {
+        customMap.delete(builtIn.slug);
+        return {
+          ...builtIn,
+          ...override,
+        };
+      }
+      return builtIn;
+    });
+
+    for (const extra of customMap.values()) {
+      merged.push(extra);
+    }
+    return merged;
+  } catch {
+    return listeningActivities;
+  }
+}
+
+export function getMergedWritingPrompts(): WritingPrompt[] {
+  try {
+    const raw = localStorage.getItem(CUSTOM_WRITING_STORAGE_KEY);
+    const customList: WritingPrompt[] = raw ? JSON.parse(raw) : [];
+    const customMap = new Map(customList.map((c) => [c.id || c.slug, c]));
+
+    const merged: WritingPrompt[] = writingPrompts.map((builtIn) => {
+      const key = builtIn.id || builtIn.slug;
+      const override = customMap.get(key);
+      if (override) {
+        customMap.delete(key);
+        return {
+          ...builtIn,
+          ...override,
+        };
+      }
+      return builtIn;
+    });
+
+    for (const extra of customMap.values()) {
+      merged.push(extra);
+    }
+    return merged;
+  } catch {
+    return writingPrompts;
+  }
+}
+
 export const customLessonsClient = {
   async saveLesson(lesson: Omit<CustomLessonRecord, 'updatedAt'>): Promise<CustomLessonRecord> {
     const saved: CustomLessonRecord = {
@@ -1041,6 +1135,95 @@ export const customLessonsClient = {
     try {
       const current = getLocalCustomLessons().filter((c) => c.slug !== slug);
       localStorage.setItem(CUSTOM_LESSONS_STORAGE_KEY, JSON.stringify(current));
+    } catch {
+      // ignore
+    }
+  },
+
+  async saveGrammarTopic(topic: GrammarTopic): Promise<GrammarTopic> {
+    await this.saveLesson({
+      id: topic.slug,
+      section: 'grammar',
+      slug: topic.slug,
+      titleAr: topic.titleAr,
+      titleEn: topic.titleEn,
+      description: topic.description,
+      imageUrl: topic.imageUrl,
+      videoUrl: topic.videoUrl,
+      questions: topic.questions,
+    });
+    return topic;
+  },
+
+  async deleteGrammarTopic(slug: string): Promise<void> {
+    await this.deleteCustomLesson(slug);
+  },
+
+  async saveReadingPassage(passage: ReadingPassage): Promise<ReadingPassage> {
+    try {
+      const raw = localStorage.getItem(CUSTOM_READING_STORAGE_KEY);
+      const customOnly: ReadingPassage[] = raw ? JSON.parse(raw) : [];
+      const filtered = customOnly.filter((p) => p.slug !== passage.slug);
+      localStorage.setItem(CUSTOM_READING_STORAGE_KEY, JSON.stringify([passage, ...filtered]));
+    } catch {
+      // ignore
+    }
+    return passage;
+  },
+
+  async deleteReadingPassage(slug: string): Promise<void> {
+    try {
+      const raw = localStorage.getItem(CUSTOM_READING_STORAGE_KEY);
+      const customOnly: ReadingPassage[] = raw ? JSON.parse(raw) : [];
+      const filtered = customOnly.filter((p) => p.slug !== slug);
+      localStorage.setItem(CUSTOM_READING_STORAGE_KEY, JSON.stringify(filtered));
+    } catch {
+      // ignore
+    }
+  },
+
+  async saveListeningActivity(activity: ListeningActivity): Promise<ListeningActivity> {
+    try {
+      const raw = localStorage.getItem(CUSTOM_LISTENING_STORAGE_KEY);
+      const customOnly: ListeningActivity[] = raw ? JSON.parse(raw) : [];
+      const filtered = customOnly.filter((p) => p.slug !== activity.slug);
+      localStorage.setItem(CUSTOM_LISTENING_STORAGE_KEY, JSON.stringify([activity, ...filtered]));
+    } catch {
+      // ignore
+    }
+    return activity;
+  },
+
+  async deleteListeningActivity(slug: string): Promise<void> {
+    try {
+      const raw = localStorage.getItem(CUSTOM_LISTENING_STORAGE_KEY);
+      const customOnly: ListeningActivity[] = raw ? JSON.parse(raw) : [];
+      const filtered = customOnly.filter((p) => p.slug !== slug);
+      localStorage.setItem(CUSTOM_LISTENING_STORAGE_KEY, JSON.stringify(filtered));
+    } catch {
+      // ignore
+    }
+  },
+
+  async saveWritingPrompt(prompt: WritingPrompt): Promise<WritingPrompt> {
+    try {
+      const raw = localStorage.getItem(CUSTOM_WRITING_STORAGE_KEY);
+      const customOnly: WritingPrompt[] = raw ? JSON.parse(raw) : [];
+      const key = prompt.id || prompt.slug;
+      const filtered = customOnly.filter((p) => (p.id || p.slug) !== key);
+      localStorage.setItem(CUSTOM_WRITING_STORAGE_KEY, JSON.stringify([prompt, ...filtered]));
+    } catch {
+      // ignore
+    }
+    return prompt;
+  },
+
+  async deleteWritingPrompt(idOrSlug: string): Promise<void> {
+    try {
+      const raw = localStorage.getItem(CUSTOM_WRITING_STORAGE_KEY);
+      const customOnly: WritingPrompt[] = raw ? JSON.parse(raw) : [];
+      const filtered = customOnly.filter((p) => (p.id || p.slug) !== idOrSlug);
+      localStorage.setItem(CUSTOM_WRITING_STORAGE_KEY, JSON.stringify(filtered));
     } catch {
       // ignore
     }

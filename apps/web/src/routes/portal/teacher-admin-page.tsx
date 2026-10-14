@@ -12,11 +12,13 @@ import {
   Trash2,
   Send,
   CornerDownLeft,
-  X,
   Search,
   BookOpen,
+  BookText,
+  Headphones,
+  PenLine,
+  Lightbulb,
   MessageSquareHeart,
-  ExternalLink,
   ChevronRight,
   GraduationCap,
   Trophy,
@@ -27,7 +29,6 @@ import {
   Check,
   Upload,
   Loader2,
-  RefreshCw,
 } from 'lucide-react';
 import { PublicBackdrop } from '../../components/layout/root-layout';
 import { PortalNav, PortalFooter } from '../../components/portal/portal-nav';
@@ -38,6 +39,9 @@ import {
   honorRollClient,
   uploadMediaToSupabase,
   getMergedGrammarTopics,
+  getMergedReadingPassages,
+  getMergedListeningActivities,
+  getMergedWritingPrompts,
   type GuestbookEntry,
   type StudentQuizResultRecord,
   type HonorStudentRecord,
@@ -49,7 +53,13 @@ import {
   TEACHER_USERNAME,
 } from '../../data/api-client/guestbook-client';
 import { grammarTopics } from '../../data/content/grammar';
-import type { GrammarTopic } from '../../data/content/types';
+import type {
+  GrammarTopic,
+  ReadingPassage,
+  ListeningActivity,
+  WritingPrompt,
+  QuizQuestion,
+} from '../../data/content/types';
 
 const TOPIC_LABELS: Record<string, string> = Object.fromEntries(
   grammarTopics.map((t) => [t.slug, t.titleAr]),
@@ -60,7 +70,8 @@ const HONOR_BADGES = [
   { id: 'million_winner', title: 'بطلة المليون', icon: '🏆', color: 'bg-amber-100 text-amber-900 border-amber-300' },
   { id: 'active_reader', title: 'قارئة متميزة', icon: '📖', color: 'bg-sky-100 text-sky-800 border-sky-300' },
   { id: 'listening_pro', title: 'سفيرة الاستماع', icon: '🎧', color: 'bg-purple-100 text-purple-800 border-purple-300' },
-  { id: 'fluent_speaker', title: 'متحدثة لبقة', icon: '🎙️', color: 'bg-emerald-100 text-emerald-800 border-emerald-300' },
+  { id: 'writing_talent', title: 'موهوبة الكتابة', icon: '✍️', color: 'bg-emerald-100 text-emerald-800 border-emerald-300' },
+  { id: 'fluent_speaker', title: 'متحدثة لبقة', icon: '🎙️', color: 'bg-pink-100 text-pink-800 border-pink-300' },
 ];
 
 function formatTimeAgo(dateString: string): string {
@@ -81,6 +92,197 @@ function formatTimeAgo(dateString: string): string {
   }
 }
 
+/**
+ * مكون محرر بنك الأسئلة الموحد (يدعم نص السؤال + الملاحظة/الشرح التوضيحي Hint + الخيارات)
+ */
+function QuestionsListEditor({
+  questions,
+  onChange,
+}: {
+  questions: QuizQuestion[];
+  onChange: (updated: QuizQuestion[]) => void;
+}) {
+  function handleAddQuestion() {
+    const newQ: QuizQuestion = {
+      id: `q-${Date.now()}`,
+      prompt: '',
+      hint: '',
+      options: [
+        { text: '', isCorrect: true },
+        { text: '', isCorrect: false },
+        { text: '', isCorrect: false },
+        { text: '', isCorrect: false },
+      ],
+    };
+    onChange([...questions, newQ]);
+  }
+
+  function handleRemoveQuestion(idx: number) {
+    if (questions.length <= 1) return;
+    onChange(questions.filter((_, i) => i !== idx));
+  }
+
+  function handleUpdatePrompt(idx: number, prompt: string) {
+    onChange(
+      questions.map((q, i) => (i === idx ? { ...q, prompt } : q))
+    );
+  }
+
+  function handleUpdateHint(idx: number, hint: string) {
+    onChange(
+      questions.map((q, i) => (i === idx ? { ...q, hint } : q))
+    );
+  }
+
+  function handleSetCorrectOption(qIdx: number, optIdx: number) {
+    onChange(
+      questions.map((q, i) => {
+        if (i !== qIdx) return q;
+        return {
+          ...q,
+          options: q.options.map((o, oIdx) => ({
+            ...o,
+            isCorrect: oIdx === optIdx,
+          })),
+        };
+      })
+    );
+  }
+
+  function handleUpdateOptionText(qIdx: number, optIdx: number, text: string) {
+    onChange(
+      questions.map((q, i) => {
+        if (i !== qIdx) return q;
+        return {
+          ...q,
+          options: q.options.map((o, oIdx) => (oIdx === optIdx ? { ...o, text } : o)),
+        };
+      })
+    );
+  }
+
+  return (
+    <div className="space-y-4 pt-3">
+      <div className="flex items-center justify-between border-b border-slate-200/80 pb-2">
+        <div className="flex items-center gap-2">
+          <h4 className="text-xs sm:text-sm font-black text-slate-900">
+            بنك الأسئلة التفاعلية والملاحظات ({questions.length})
+          </h4>
+          <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-black text-violet-800">
+            تغذية راجعة فورية
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={handleAddQuestion}
+          className="inline-flex items-center gap-1.5 rounded-xl bg-violet-100 px-3 py-1.5 text-xs font-black text-violet-800 hover:bg-violet-200 transition"
+        >
+          <Plus className="h-3.5 w-3.5" />
+          <span>إضافة سؤال</span>
+        </button>
+      </div>
+
+      {questions.map((q, qIdx) => (
+        <div
+          key={q.id || qIdx}
+          className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3.5 sm:p-4 space-y-3"
+        >
+          <div className="flex items-center justify-between">
+            <span className="rounded-lg bg-slate-200/80 px-2.5 py-0.5 text-[11px] font-black text-slate-700">
+              سؤال #{qIdx + 1}
+            </span>
+            {questions.length > 1 && (
+              <button
+                type="button"
+                onClick={() => handleRemoveQuestion(qIdx)}
+                className="inline-flex items-center gap-1 text-xs font-bold text-rose-600 hover:text-rose-800 transition"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                <span>حذف السؤال</span>
+              </button>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-[11px] font-bold text-slate-700 mb-1">
+              نص السؤال (بالإنجليزية)
+            </label>
+            <input
+              type="text"
+              dir="ltr"
+              required
+              placeholder="e.g. She usually ______ to school by bus."
+              value={q.prompt}
+              onChange={(e) => handleUpdatePrompt(qIdx, e.target.value)}
+              className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs sm:text-sm font-bold text-slate-900 placeholder-slate-400 focus:border-violet-500 focus:outline-hidden"
+            />
+          </div>
+
+          {/* حقل الملاحظة التوضيحية والشرح Hint */}
+          <div className="rounded-xl border border-amber-200/90 bg-amber-50/70 p-3 space-y-1.5">
+            <div className="flex items-center gap-1.5 text-xs font-black text-amber-950">
+              <Lightbulb className="h-4 w-4 text-amber-600 shrink-0" />
+              <span>ملاحظة وتوضيح الإجابة (Hint / Explanation)</span>
+              <span className="text-[10px] font-normal text-amber-800">
+                (تظهر للطالبة في صندوق المصباح 💡 عند الحل)
+              </span>
+            </div>
+            <input
+              type="text"
+              dir="ltr"
+              value={q.hint || ''}
+              onChange={(e) => handleUpdateHint(qIdx, e.target.value)}
+              placeholder="e.g. Notice that 'usually' is a keyword for Present Simple with 3rd-person singular 'goes'."
+              className="w-full rounded-lg border border-amber-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 placeholder-slate-400 focus:border-amber-500 focus:outline-hidden"
+            />
+          </div>
+
+          <div>
+            <span className="block text-[11px] font-bold text-slate-700 mb-2">
+              الخيارات الأربعة (حددي الإجابة الصحيحة بالضغط على الدائرة):
+            </span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              {q.options.map((opt, optIdx) => (
+                <div
+                  key={optIdx}
+                  className={`flex items-center gap-2 rounded-xl border p-2 transition ${
+                    opt.isCorrect
+                      ? 'border-emerald-400 bg-emerald-50/50 shadow-xs'
+                      : 'border-slate-200 bg-white'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name={`correct-q-${qIdx}`}
+                    checked={opt.isCorrect}
+                    onChange={() => handleSetCorrectOption(qIdx, optIdx)}
+                    className="h-4 w-4 text-emerald-600 accent-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                    title="تحديد كإجابة صحيحة"
+                  />
+                  <input
+                    type="text"
+                    dir="ltr"
+                    required
+                    placeholder={`الخيار ${optIdx + 1}${opt.isCorrect ? ' (الصحيح)' : ''}...`}
+                    value={opt.text}
+                    onChange={(e) => handleUpdateOptionText(qIdx, optIdx, e.target.value)}
+                    className="flex-1 bg-transparent text-xs font-bold text-slate-800 placeholder-slate-400 focus:outline-hidden"
+                  />
+                  {opt.isCorrect && (
+                    <span className="rounded-md bg-emerald-100 px-1.5 py-0.5 text-[10px] font-black text-emerald-800">
+                      صحيح
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function TeacherAdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [usernameInput, setUsernameInput] = useState(TEACHER_USERNAME);
@@ -89,6 +291,9 @@ export default function TeacherAdminPage() {
 
   // Main Dashboard Section Switcher
   const [dashboardSection, setDashboardSection] = useState<'qna' | 'results' | 'lessons' | 'honor'>('qna');
+
+  // Sub-skill Switcher inside CMS
+  const [activeSkill, setActiveSkill] = useState<'grammar' | 'reading' | 'listening' | 'writing'>('grammar');
 
   // 1. Q&A Data
   const [entries, setEntries] = useState<GuestbookEntry[]>([]);
@@ -104,11 +309,21 @@ export default function TeacherAdminPage() {
   const [results, setResults] = useState<StudentQuizResultRecord[]>([]);
   const [resultSearch, setResultSearch] = useState('');
 
-  // 3. Lessons & Questions Data
+  // 3. Multi-Skill Educational Content Data
   const [topicsList, setTopicsList] = useState<GrammarTopic[]>(() => getMergedGrammarTopics());
+  const [passagesList, setPassagesList] = useState<ReadingPassage[]>(() => getMergedReadingPassages());
+  const [listeningList, setListeningList] = useState<ListeningActivity[]>(() => getMergedListeningActivities());
+  const [writingList, setWritingList] = useState<WritingPrompt[]>(() => getMergedWritingPrompts());
+
+  // Editing items
   const [editingTopic, setEditingTopic] = useState<GrammarTopic | null>(null);
-  const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [editingPassage, setEditingPassage] = useState<ReadingPassage | null>(null);
+  const [editingListening, setEditingListening] = useState<ListeningActivity | null>(null);
+  const [editingWriting, setEditingWriting] = useState<WritingPrompt | null>(null);
+
+  const [uploadingMedia, setUploadingMedia] = useState(false);
   const [uploadMessage, setUploadMessage] = useState<string | null>(null);
+  const [feedbackNotice, setFeedbackNotice] = useState<string | null>(null);
 
   // 4. Honor Roll Data
   const [honorStudents, setHonorStudents] = useState<HonorStudentRecord[]>(() =>
@@ -142,6 +357,13 @@ export default function TeacherAdminPage() {
     if (!isAuthenticated) return;
     loadData();
   }, [isAuthenticated, loadData]);
+
+  function showToast(msg: string) {
+    setFeedbackNotice(msg);
+    setTimeout(() => {
+      setFeedbackNotice(null);
+    }, 4500);
+  }
 
   function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -184,6 +406,7 @@ export default function TeacherAdminPage() {
         );
         setActiveReplyId(null);
         setReplyText('');
+        showToast('تم إرسال الرد المعتمد للطالبة بنجاح! ✅');
       }
     } finally {
       setSubmittingReply(false);
@@ -195,6 +418,7 @@ export default function TeacherAdminPage() {
     const ok = await guestbookClient.deleteEntry(entry.id, undefined, entry.topicSlug);
     if (ok) {
       setEntries((prev) => prev.filter((item) => item.id !== entry.id));
+      showToast('تم حذف المشاركة بنجاح');
     }
   }
 
@@ -220,45 +444,102 @@ export default function TeacherAdminPage() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+    showToast('تم تصدير كشف الدرجات بصيغة Excel (CSV) بنجاح! 📊');
   }
 
+  // --- Handlers: Grammar ---
   async function handleSaveTopic(e: React.FormEvent) {
     e.preventDefault();
     if (!editingTopic || !editingTopic.titleAr.trim() || !editingTopic.titleEn.trim()) return;
-    await customLessonsClient.saveLesson({
-      id: editingTopic.slug,
-      section: 'grammar',
-      slug: editingTopic.slug,
-      titleAr: editingTopic.titleAr.trim(),
-      titleEn: editingTopic.titleEn.trim(),
-      description: editingTopic.description.trim(),
-      imageUrl: editingTopic.imageUrl || '/content/grammar/present-simple.jpg',
-      videoUrl: editingTopic.videoUrl || '',
-      questions: editingTopic.questions,
-    });
+    await customLessonsClient.saveGrammarTopic(editingTopic);
     setTopicsList(getMergedGrammarTopics());
     setEditingTopic(null);
     setUploadMessage(null);
+    showToast('تم حفظ درس القواعد والأسئلة بنجاح وستظهر للطالبات فوراً! ✅');
   }
 
-  async function handleVideoFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleDeleteTopic(slug: string) {
+    if (!window.confirm('هل أنتِ متأكدة من حذف هذا الدرس؟')) return;
+    await customLessonsClient.deleteGrammarTopic(slug);
+    setTopicsList(getMergedGrammarTopics());
+    showToast('تم حذف الدرس بنجاح');
+  }
+
+  // --- Handlers: Reading ---
+  async function handleSavePassage(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingPassage || !editingPassage.titleAr.trim() || !editingPassage.titleEn.trim()) return;
+    await customLessonsClient.saveReadingPassage(editingPassage);
+    setPassagesList(getMergedReadingPassages());
+    setEditingPassage(null);
+    showToast('تم حفظ نص القراءة وأسئلة الفهم بنجاح! ✅');
+  }
+
+  async function handleDeletePassage(slug: string) {
+    if (!window.confirm('هل أنتِ متأكدة من حذف هذا النص القرائي؟')) return;
+    await customLessonsClient.deleteReadingPassage(slug);
+    setPassagesList(getMergedReadingPassages());
+    showToast('تم حذف نص القراءة بنجاح');
+  }
+
+  // --- Handlers: Listening ---
+  async function handleSaveListening(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingListening || !editingListening.titleAr.trim() || !editingListening.titleEn.trim()) return;
+    await customLessonsClient.saveListeningActivity(editingListening);
+    setListeningList(getMergedListeningActivities());
+    setEditingListening(null);
+    showToast('تم حفظ نشاط الاستماع وأسئلته بنجاح! ✅');
+  }
+
+  async function handleDeleteListening(slug: string) {
+    if (!window.confirm('هل أنتِ متأكدة من حذف نشاط الاستماع هذا؟')) return;
+    await customLessonsClient.deleteListeningActivity(slug);
+    setListeningList(getMergedListeningActivities());
+    showToast('تم حذف نشاط الاستماع بنجاح');
+  }
+
+  // --- Handlers: Writing ---
+  async function handleSaveWriting(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingWriting || !editingWriting.titleAr.trim() || !editingWriting.titleEn.trim()) return;
+    await customLessonsClient.saveWritingPrompt(editingWriting);
+    setWritingList(getMergedWritingPrompts());
+    setEditingWriting(null);
+    showToast('تم حفظ تدريب الكتابة ونموذج الإجابة بنجاح! ✅');
+  }
+
+  async function handleDeleteWriting(idOrSlug: string) {
+    if (!window.confirm('هل أنتِ متأكدة من حذف هذا التدريب؟')) return;
+    await customLessonsClient.deleteWritingPrompt(idOrSlug);
+    setWritingList(getMergedWritingPrompts());
+    showToast('تم حذف تدريب الكتابة بنجاح');
+  }
+
+  // --- Media Upload (Audio / Video) ---
+  async function handleMediaUpload(e: React.ChangeEvent<HTMLInputElement>, target: 'grammar' | 'listening') {
     const file = e.target.files?.[0];
-    if (!file || !editingTopic) return;
-    setUploadingVideo(true);
+    if (!file) return;
+    setUploadingMedia(true);
     setUploadMessage(null);
     try {
       const res = await uploadMediaToSupabase(file, 'videos');
       if (res.url) {
-        setEditingTopic({ ...editingTopic, videoUrl: res.url });
-        setUploadMessage('تم رفع الفيديو وحفظ الرابط بنجاح! ✅');
+        if (target === 'grammar' && editingTopic) {
+          setEditingTopic({ ...editingTopic, videoUrl: res.url });
+        } else if (target === 'listening' && editingListening) {
+          setEditingListening({ ...editingListening, mediaUrl: res.url, audioUrl: res.url });
+        }
+        setUploadMessage('تم رفع الملف السحابي وحفظ الرابط بنجاح! ✅');
       } else {
-        setUploadMessage(res.error || 'تعذر رفع الفيديو');
+        setUploadMessage(res.error || 'تعذر رفع الملف');
       }
     } finally {
-      setUploadingVideo(false);
+      setUploadingMedia(false);
     }
   }
 
+  // --- Honor Roll Handlers ---
   function handleAddHonorStudent(e: React.FormEvent) {
     e.preventDefault();
     if (!newHonorName.trim()) return;
@@ -277,6 +558,7 @@ export default function TeacherAdminPage() {
     honorRollClient.saveHonorStudents(updated);
     setNewHonorName('');
     setNewHonorNote('');
+    showToast('تمت إضافة الطالبة إلى لوحة الشرف! 🌟');
   }
 
   function handleToggleBadge(studentId: string, badgeId: string) {
@@ -301,16 +583,23 @@ export default function TeacherAdminPage() {
       } else if (activeTab === 'guestbook') {
         if (entry.topicSlug) return false;
       }
+
       if (selectedTopic !== 'all') {
-        if (entry.topicSlug !== selectedTopic) return false;
+        if (selectedTopic === 'guestbook') {
+          if (entry.topicSlug) return false;
+        } else if (entry.topicSlug !== selectedTopic) {
+          return false;
+        }
       }
+
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const inName = entry.name.toLowerCase().includes(q);
-        const inMessage = entry.message.toLowerCase().includes(q);
-        const inReply = entry.teacherReply?.toLowerCase().includes(q) ?? false;
-        if (!inName && !inMessage && !inReply) return false;
+        const inMsg = entry.message.toLowerCase().includes(q);
+        const inReply = (entry.teacherReply || '').toLowerCase().includes(q);
+        if (!inName && !inMsg && !inReply) return false;
       }
+
       return true;
     });
   }, [entries, activeTab, selectedTopic, searchQuery]);
@@ -321,50 +610,53 @@ export default function TeacherAdminPage() {
     return results.filter(
       (r) =>
         r.studentName.toLowerCase().includes(q) ||
-        r.activityTitle.toLowerCase().includes(q) ||
-        r.studentGrade.toLowerCase().includes(q)
+        r.studentGrade.toLowerCase().includes(q) ||
+        r.activityTitle.toLowerCase().includes(q)
     );
   }, [results, resultSearch]);
 
   const stats = useMemo(() => {
-    const totalQuestions = entries.filter((e) => e.topicSlug).length;
-    const pendingQuestions = entries.filter((e) => e.topicSlug && !e.teacherReply).length;
-    const answeredQuestions = entries.filter((e) => e.topicSlug && e.teacherReply).length;
+    const questionEntries = entries.filter((e) => Boolean(e.topicSlug));
+    const pending = questionEntries.filter((e) => !e.teacherReply).length;
+    const answered = questionEntries.filter((e) => Boolean(e.teacherReply)).length;
     const guestbookCount = entries.filter((e) => !e.topicSlug).length;
-    return { totalQuestions, pendingQuestions, answeredQuestions, guestbookCount };
-  }, [entries]);
+    return {
+      totalQuestions: questionEntries.length,
+      pending,
+      answered,
+      guestbookCount,
+      resultsCount: results.length,
+    };
+  }, [entries, results]);
 
-  // Login view
+  // LOGIN SCREEN (Strictly matches vitest tests)
   if (!isAuthenticated) {
     return (
       <div className="relative flex min-h-dvh flex-col overflow-x-clip bg-slate-50/50" dir="rtl">
         <PublicBackdrop />
         <PortalNav />
 
-        <div className="relative z-10 mx-auto flex w-full max-w-md flex-1 items-center justify-center px-4 py-12">
-          <div className="w-full rounded-3xl border border-violet-100 bg-white/95 p-6 sm:p-8 shadow-xl backdrop-blur-xl">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-violet-600 to-indigo-700 text-white shadow-lg shadow-violet-600/30">
-              <ShieldCheck className="h-8 w-8" />
-            </div>
-
+        <div className="relative z-10 flex flex-1 items-center justify-center px-4 py-12">
+          <div className="w-full max-w-md rounded-2xl sm:rounded-3xl border border-violet-100 bg-white/95 p-6 shadow-xl backdrop-blur-xl sm:p-8">
             <div className="text-center">
-              <span className="inline-flex items-center gap-1 rounded-full bg-violet-100/90 px-3 py-1 text-xs font-black text-violet-800">
-                <Sparkles className="h-3.5 w-3.5 text-violet-600" />
-                إدارة المنصة التعليمية
+              <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-700 text-white shadow-lg shadow-violet-600/30">
+                <ShieldCheck className="h-7 w-7" />
+              </div>
+              <span className="inline-flex items-center gap-1 rounded-full bg-violet-100 px-3 py-0.5 text-xs font-black text-violet-800">
+                <Sparkles className="h-3 w-3" />
+                English Spark
               </span>
-              <h1 className="mt-2 text-2xl font-black text-slate-900">
+              <h1 className="mt-2 text-xl sm:text-2xl font-black text-slate-900">
                 لوحة معلمات اللغة الإنجليزية
               </h1>
-              <p className="mt-1 text-xs font-semibold text-slate-500">
-                إدارة تعليم جازان • متوسطة وثانوية الجرادية — متابعة الاستفسارات والدرجات
+              <p className="mt-1 text-xs sm:text-sm font-semibold text-slate-500">
+                إدارة المحتوى وسجل درجات الطالبات واستفسارات المنهج
               </p>
             </div>
 
             <form onSubmit={handleLogin} className="mt-6 space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  اسم المستخدم:
-                </label>
+                <label className="block text-xs font-bold text-slate-700 mb-1">اسم المعلمة</label>
                 <div className="relative">
                   <input
                     type="text"
@@ -377,11 +669,8 @@ export default function TeacherAdminPage() {
                   <User className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                 </div>
               </div>
-
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  كلمة المرور:
-                </label>
+                <label className="block text-xs font-bold text-slate-700 mb-1">الرقم السري</label>
                 <div className="relative">
                   <input
                     type="password"
@@ -398,45 +687,47 @@ export default function TeacherAdminPage() {
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                 </div>
               </div>
-
               {loginError && (
                 <div className="rounded-xl border border-rose-200 bg-rose-50 p-2.5 text-xs font-bold text-rose-700 text-center">
-                  اسم المستخدم أو كلمة المرور غير صحيحة.
+                  اسم المستخدم أو كلمة المرور غير صحيحة
                 </div>
               )}
-
               <button
                 type="submit"
                 className="w-full rounded-2xl bg-gradient-to-r from-violet-700 to-indigo-700 py-3 text-sm font-black text-white shadow-md shadow-violet-700/20 hover:from-violet-800 hover:to-indigo-800 transition active:scale-98"
               >
                 تسجيل الدخول إلى اللوحة
               </button>
-
               <div className="pt-2 text-center">
                 <Link
                   to="/"
                   className="inline-flex items-center gap-1 text-xs font-bold text-slate-500 hover:text-violet-700"
                 >
                   <ChevronRight className="h-3.5 w-3.5" />
-                  <span>العودة إلى بوابة <span dir="ltr">English Spark</span></span>
+                  <span>العودة إلى <span dir="ltr">English Spark</span></span>
                 </Link>
               </div>
             </form>
           </div>
         </div>
-
         <PortalFooter />
       </div>
     );
   }
 
-  // Authenticated View
   const teacherSession = getTeacherSession();
 
   return (
     <div className="relative flex min-h-dvh flex-col overflow-x-clip bg-slate-50/50" dir="rtl">
       <PublicBackdrop />
       <PortalNav />
+
+      {/* Floating feedback toast */}
+      {feedbackNotice && (
+        <div className="fixed bottom-6 left-6 z-50 rounded-2xl bg-slate-900/95 text-white px-5 py-3 shadow-2xl backdrop-blur-md text-xs sm:text-sm font-bold border border-slate-800 animate-page-enter">
+          {feedbackNotice}
+        </div>
+      )}
 
       <main className="relative z-10 mx-auto w-full max-w-6xl flex-1 px-4 pb-20 pt-8 sm:px-6 sm:pt-10">
         {/* Top Header Card */}
@@ -449,29 +740,18 @@ export default function TeacherAdminPage() {
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-lg sm:text-2xl font-black text-slate-900">
-                    أهلاً بكم: {teacherSession?.name || TEACHER_OFFICIAL_NAME} 🌸
+                    أهلاً بكم: {teacherSession?.name || TEACHER_OFFICIAL_NAME}
                   </h1>
                   <span className="rounded-md bg-emerald-100 px-2 py-0.5 text-[11px] font-black text-emerald-800">
                     جلسة نشطة
                   </span>
                 </div>
                 <p className="mt-0.5 text-xs sm:text-sm font-semibold text-slate-500">
-                  لوحة إشراف المعلمات • إدارة تعليم جازان • متوسطة وثانوية الجرادية — متابعة استفسارات الدروس والنتائج
+                  لوحة إشراف المعلمات • إدارة تعليم جازان — متوسطة وثانوية الجرادية — متابعة استفسارات الدروس والنتائج
                 </p>
               </div>
             </div>
-
             <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={loadData}
-                disabled={loading}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition shadow-xs disabled:opacity-50"
-                title="تحديث البيانات فورياً"
-              >
-                <RefreshCw className={`h-3.5 w-3.5 text-violet-600 ${loading ? 'animate-spin' : ''}`} />
-                <span>تحديث البيانات</span>
-              </button>
               <Link
                 to="/grammar"
                 className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition shadow-xs"
@@ -501,22 +781,22 @@ export default function TeacherAdminPage() {
               <span className="text-[10px] text-slate-400">حول جميع الدروس</span>
             </div>
 
-            <div className="rounded-2xl border border-amber-200 bg-amber-50/50 p-4">
+            <div className="rounded-2xl border border-amber-100 bg-amber-50/50 p-4">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-amber-800">بانتظار الإجابة</span>
+                <span className="text-xs font-bold text-amber-700">بانتظار الإجابة</span>
                 <Clock className="h-4 w-4 text-amber-600" />
               </div>
-              <p className="mt-2 text-2xl font-black text-amber-950">{stats.pendingQuestions}</p>
-              <span className="text-[10px] text-amber-700">تحتاج رد المعلمة</span>
+              <p className="mt-2 text-2xl font-black text-amber-950">{stats.pending}</p>
+              <span className="text-[10px] text-slate-400">تحتاج رد المعلمة</span>
             </div>
 
-            <div className="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-4">
+            <div className="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-4">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-emerald-800">تمت الإجابة</span>
+                <span className="text-xs font-bold text-emerald-700">تمت الإجابة</span>
                 <CheckCircle2 className="h-4 w-4 text-emerald-600" />
               </div>
-              <p className="mt-2 text-2xl font-black text-emerald-950">{stats.answeredQuestions}</p>
-              <span className="text-[10px] text-emerald-700">إجابات منشورة للجميع</span>
+              <p className="mt-2 text-2xl font-black text-emerald-950">{stats.answered}</p>
+              <span className="text-[10px] text-slate-400">إجابات منشورة للجميع</span>
             </div>
 
             <div className="rounded-2xl border border-rose-100 bg-rose-50/50 p-4">
@@ -525,19 +805,16 @@ export default function TeacherAdminPage() {
                 <MessageSquareHeart className="h-4 w-4 text-rose-600" />
               </div>
               <p className="mt-2 text-2xl font-black text-rose-950">{stats.guestbookCount}</p>
-              <span className="text-[10px] text-slate-400">رسائل وكلمات داعمة</span>
+              <span className="text-[10px] text-slate-400">رسائل وصلت داعمة</span>
             </div>
           </div>
         </section>
 
-        {/* 4 Main Section Tabs */}
+        {/* Main 4 Section Tabs */}
         <section className="mb-6 flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-xs">
           <button
             type="button"
-            onClick={() => {
-              setDashboardSection('qna');
-              loadData();
-            }}
+            onClick={() => setDashboardSection('qna')}
             className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-black transition ${
               dashboardSection === 'qna'
                 ? 'bg-violet-700 text-white shadow-xs'
@@ -550,10 +827,7 @@ export default function TeacherAdminPage() {
 
           <button
             type="button"
-            onClick={() => {
-              setDashboardSection('results');
-              loadData();
-            }}
+            onClick={() => setDashboardSection('results')}
             className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-black transition ${
               dashboardSection === 'results'
                 ? 'bg-indigo-600 text-white shadow-xs'
@@ -574,7 +848,7 @@ export default function TeacherAdminPage() {
             }`}
           >
             <BookOpen className="h-4 w-4" />
-            <span>إدارة الدروس والأسئلة والفيديوهات ({topicsList.length})</span>
+            <span>إدارة المحتوى التعليمي والدروس ({topicsList.length + passagesList.length + listeningList.length + writingList.length})</span>
           </button>
 
           <button
@@ -591,7 +865,9 @@ export default function TeacherAdminPage() {
           </button>
         </section>
 
-        {/* SECTION 1: Q&A & GUESTBOOK */}
+        {/* =============================================================== */}
+        {/* SECTION 1: Q&A AND GUESTBOOK                                    */}
+        {/* =============================================================== */}
         {dashboardSection === 'qna' && (
           <>
             <section className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -600,7 +876,9 @@ export default function TeacherAdminPage() {
                   type="button"
                   onClick={() => setActiveTab('all')}
                   className={`rounded-xl px-3 py-1.5 text-xs font-black transition ${
-                    activeTab === 'all' ? 'bg-violet-700 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'
+                    activeTab === 'all'
+                      ? 'bg-violet-700 text-white'
+                      : 'text-slate-600 hover:bg-slate-100'
                   }`}
                 >
                   الكل ({entries.length})
@@ -608,55 +886,62 @@ export default function TeacherAdminPage() {
                 <button
                   type="button"
                   onClick={() => setActiveTab('pending')}
-                  className={`rounded-xl px-3 py-1.5 text-xs font-black transition ${
-                    activeTab === 'pending' ? 'bg-amber-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'
+                  className={`inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-black transition ${
+                    activeTab === 'pending'
+                      ? 'bg-amber-500 text-slate-950'
+                      : 'text-amber-800 bg-amber-50 hover:bg-amber-100'
                   }`}
                 >
-                  بانتظار الرد ({stats.pendingQuestions})
+                  <Clock className="h-3 w-3" />
+                  <span>بانتظار الرد ({stats.pending})</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setActiveTab('answered')}
-                  className={`rounded-xl px-3 py-1.5 text-xs font-black transition ${
-                    activeTab === 'answered' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'
+                  className={`inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-black transition ${
+                    activeTab === 'answered'
+                      ? 'bg-emerald-600 text-white'
+                      : 'text-emerald-800 bg-emerald-50 hover:bg-emerald-100'
                   }`}
                 >
-                  تم الرد ({stats.answeredQuestions})
+                  <CheckCircle2 className="h-3 w-3" />
+                  <span>تم الرد ({stats.answered})</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setActiveTab('guestbook')}
-                  className={`rounded-xl px-3 py-1.5 text-xs font-black transition ${
-                    activeTab === 'guestbook' ? 'bg-rose-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'
+                  className={`inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-black transition ${
+                    activeTab === 'guestbook'
+                      ? 'bg-rose-600 text-white'
+                      : 'text-rose-800 bg-rose-50 hover:bg-rose-100'
                   }`}
                 >
-                  سجل الزوار ({stats.guestbookCount})
+                  <MessageSquareHeart className="h-3 w-3" />
+                  <span>سجل الزوار ({stats.guestbookCount})</span>
                 </button>
               </div>
 
               <div className="flex items-center gap-2">
-                <div className="relative flex-1 sm:w-48">
-                  <select
-                    value={selectedTopic}
-                    onChange={(e) => setSelectedTopic(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-xs focus:border-violet-500 focus:outline-hidden"
-                  >
-                    <option value="all">جميع الدروس</option>
-                    {topicsList.map((topic) => (
-                      <option key={topic.slug} value={topic.slug}>
-                        {topic.titleAr}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="relative flex-1 sm:w-56">
+                <select
+                  value={selectedTopic}
+                  onChange={(e) => setSelectedTopic(e.target.value)}
+                  className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-xs focus:border-violet-500 focus:outline-hidden"
+                >
+                  <option value="all">جميع المواضيع</option>
+                  <option value="guestbook">سجل الزوار العام</option>
+                  {topicsList.map((t) => (
+                    <option key={t.slug} value={t.slug}>
+                      {t.titleAr}
+                    </option>
+                  ))}
+                </select>
+                <div className="relative">
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="بحث في الرسائل..."
-                    className="w-full rounded-xl border border-slate-200 bg-white pl-8 pr-3 py-2 text-xs font-semibold text-slate-800 placeholder-slate-400 focus:border-violet-500 focus:outline-hidden shadow-xs"
+                    placeholder="بحث في الأسئلة والأسماء..."
+                    className="w-44 sm:w-56 rounded-xl border border-slate-200 bg-white pl-8 pr-3 py-2 text-xs font-bold text-slate-800 placeholder-slate-400 focus:border-violet-500 focus:outline-hidden"
                   />
                   <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
                 </div>
@@ -665,121 +950,106 @@ export default function TeacherAdminPage() {
 
             <section className="space-y-4">
               {loading ? (
-                <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center text-slate-400">
-                  <Sparkles className="mx-auto h-8 w-8 animate-spin text-violet-600 mb-2" />
-                  <p className="text-xs font-bold">جاري تحميل المشاركات...</p>
+                <div className="rounded-3xl border border-slate-200 bg-white p-12 text-center text-slate-400">
+                  <Loader2 className="mx-auto h-8 w-8 animate-spin text-violet-600" />
+                  <p className="mt-2 text-xs font-bold">جاري تحميل الاستفسارات والمشاركات...</p>
                 </div>
               ) : filteredEntries.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center">
-                  <MessageCircleQuestion className="mx-auto h-10 w-10 text-slate-300 mb-2" />
-                  <p className="text-sm font-bold text-slate-700">لا توجد رسائل مطابقة</p>
+                <div className="rounded-3xl border border-slate-200 bg-white p-12 text-center text-slate-400">
+                  <MessageCircleQuestion className="mx-auto h-12 w-12 text-slate-300" />
+                  <p className="mt-3 text-sm font-bold text-slate-600">لا توجد مشاركات مطابقة</p>
                 </div>
               ) : (
                 filteredEntries.map((entry) => {
+                  const isReplying = activeReplyId === entry.id;
+                  const isQuestion = Boolean(entry.topicSlug);
                   const topicName = entry.topicSlug
                     ? TOPIC_LABELS[entry.topicSlug] || entry.topicSlug
                     : 'سجل الزوار';
-                  const isReplying = activeReplyId === entry.id;
+
                   return (
                     <div
                       key={entry.id}
-                      className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs transition hover:border-violet-200"
+                      className={`rounded-2xl sm:rounded-3xl border p-4 sm:p-5 transition shadow-xs ${
+                        entry.teacherReply
+                          ? 'border-emerald-100 bg-white'
+                          : isQuestion
+                          ? 'border-amber-200 bg-amber-50/30'
+                          : 'border-slate-200 bg-white'
+                      }`}
                     >
-                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-100 pb-3">
                         <div className="flex items-center gap-2.5">
-                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-700 font-bold text-xs">
-                            <User className="h-4 w-4" />
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-xs font-black text-violet-800">
+                            {entry.name.slice(0, 1)}
                           </div>
                           <div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-black text-slate-900">{entry.name}</span>
-                              <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
-                                {entry.role}
-                              </span>
-                            </div>
-                            <span className="text-[11px] text-slate-400">
-                              {formatTimeAgo(entry.createdAt)}
+                            <span className="font-black text-sm text-slate-900">{entry.name}</span>
+                            <span className="mr-2 rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-600">
+                              {entry.role}
                             </span>
                           </div>
                         </div>
+
                         <div className="flex items-center gap-2">
                           <span
-                            className={`rounded-lg px-2.5 py-1 text-xs font-bold ${
-                              entry.topicSlug
-                                ? 'bg-violet-50 text-violet-800 border border-violet-200'
-                                : 'bg-rose-50 text-rose-800 border border-rose-200'
+                            className={`rounded-full px-2.5 py-0.5 text-[11px] font-black ${
+                              isQuestion
+                                ? 'bg-indigo-50 text-indigo-700 border border-indigo-200/60'
+                                : 'bg-rose-50 text-rose-700 border border-rose-200/60'
                             }`}
                           >
                             {topicName}
                           </span>
-                          {entry.topicSlug && (
-                            <Link
-                              to={`/grammar/${entry.topicSlug}`}
-                              className="rounded-lg p-1 text-slate-400 hover:text-violet-700 hover:bg-slate-100 transition"
-                              target="_blank"
-                            >
-                              <ExternalLink className="h-3.5 w-3.5" />
-                            </Link>
-                          )}
+                          <span className="text-[11px] font-semibold text-slate-400">
+                            {formatTimeAgo(entry.createdAt)}
+                          </span>
                         </div>
                       </div>
 
-                      <div className="py-3">
-                        <p className="text-sm font-semibold leading-relaxed text-slate-800">
-                          {entry.message}
-                        </p>
-                      </div>
+                      <p className="mt-3 text-xs sm:text-sm font-semibold leading-relaxed text-slate-800">
+                        {entry.message}
+                      </p>
 
-                      {entry.teacherReply && !isReplying && (
-                        <div className="mt-2 rounded-xl border border-violet-200 bg-violet-50/60 p-3.5">
-                          <div className="flex items-center justify-between mb-1.5 border-b border-violet-200/50 pb-1.5">
-                            <div className="flex items-center gap-1.5">
-                              <Sparkles className="h-3.5 w-3.5 text-violet-600" />
-                              <span className="text-xs font-black text-violet-900">
-                                إجابة المعلمة {TEACHER_OFFICIAL_NAME}
-                              </span>
-                            </div>
+                      {entry.teacherReply && (
+                        <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50/60 p-3 sm:p-3.5">
+                          <div className="flex items-center justify-between text-xs font-black text-emerald-900 mb-1">
+                            <span className="flex items-center gap-1.5">
+                              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                              <span>رد المعلمة المعتمد</span>
+                            </span>
+                            <span className="text-[10px] font-normal text-slate-400">
+                              {entry.repliedAt ? formatTimeAgo(entry.repliedAt) : ''}
+                            </span>
                           </div>
-                          <p className="text-xs sm:text-sm font-medium leading-relaxed text-slate-800">
+                          <p className="text-xs sm:text-sm font-semibold leading-relaxed text-slate-800">
                             {entry.teacherReply}
                           </p>
                         </div>
                       )}
 
                       {isReplying && (
-                        <div className="mt-3 rounded-xl border border-violet-300 bg-violet-50/80 p-3.5">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs font-black text-violet-900 flex items-center gap-1.5">
-                              <CornerDownLeft className="h-4 w-4 text-violet-700" />
-                              <span>كتابة إجابة المعلمة {TEACHER_OFFICIAL_NAME}:</span>
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => setActiveReplyId(null)}
-                              className="text-slate-400 hover:text-slate-600"
-                            >
-                              <X className="h-4 w-4" />
-                            </button>
-                          </div>
+                        <div className="mt-3 rounded-xl border border-violet-200 bg-violet-50/50 p-3 space-y-2">
                           <textarea
+                            rows={3}
                             value={replyText}
                             onChange={(e) => setReplyText(e.target.value)}
-                            placeholder="اكتبي الإجابة للطالبة..."
-                            rows={3}
-                            className="w-full resize-none rounded-xl border border-violet-200 bg-white p-3 text-xs sm:text-sm font-medium text-slate-800"
+                            placeholder="اكتبي الرد الشافي للطالبة..."
+                            className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs sm:text-sm font-semibold text-slate-800 placeholder-slate-400 focus:border-violet-500 focus:outline-hidden"
+                            autoFocus
                           />
-                          <div className="mt-2.5 flex justify-end gap-2">
+                          <div className="flex items-center justify-end gap-2">
                             <button
                               type="button"
                               onClick={() => setActiveReplyId(null)}
-                              className="rounded-xl px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-200/50"
+                              className="rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-100"
                             >
                               إلغاء
                             </button>
                             <button
                               type="button"
-                              onClick={() => handleReplySubmit(entry)}
                               disabled={submittingReply || !replyText.trim()}
+                              onClick={() => handleReplySubmit(entry)}
                               className="inline-flex items-center gap-1.5 rounded-xl bg-violet-700 px-4 py-1.5 text-xs font-black text-white hover:bg-violet-800 transition disabled:opacity-50"
                             >
                               <Send className="h-3.5 w-3.5 rotate-180" />
@@ -823,7 +1093,9 @@ export default function TeacherAdminPage() {
           </>
         )}
 
-        {/* SECTION 2: RESULTS & EXCEL */}
+        {/* =============================================================== */}
+        {/* SECTION 2: STUDENT RESULTS & EXCEL EXPORT                       */}
+        {/* =============================================================== */}
         {dashboardSection === 'results' && (
           <section className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-6 shadow-xs space-y-5">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-4">
@@ -909,302 +1181,924 @@ export default function TeacherAdminPage() {
           </section>
         )}
 
-        {/* SECTION 3: LESSONS & QUESTIONS CMS */}
+        {/* =============================================================== */}
+        {/* SECTION 3: MULTI-SKILL CONTENT CMS (GRAMMAR, READING, LISTENING, WRITING) */}
+        {/* =============================================================== */}
         {dashboardSection === 'lessons' && (
-          <section className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-6 shadow-xs space-y-5">
-            {!editingTopic ? (
-              <>
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-4">
-                  <div>
-                    <h2 className="text-lg font-black text-slate-950">إدارة الدروس والأسئلة والفيديوهات</h2>
-                    <p className="text-xs font-semibold text-slate-500">
-                      عدّلي أي درس حالي أو أضيفي درساً جديداً مع رفع فيديو أو رابط يوتيوب والأسئلة التفاعلية.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setEditingTopic({
-                        slug: `custom-${Date.now().toString(36)}`,
-                        titleAr: '',
-                        titleEn: '',
-                        description: '',
-                        imageUrl: '/content/grammar/present-simple.jpg',
-                        videoUrl: '',
-                        questions: [
-                          {
-                            id: `q-${Date.now()}`,
-                            prompt: '',
-                            hint: '',
-                            options: [
-                              { text: '', isCorrect: true },
-                              { text: '', isCorrect: false },
-                              { text: '', isCorrect: false },
-                              { text: '', isCorrect: false },
-                            ],
-                          },
-                        ],
-                      })
-                    }
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-violet-700 px-4 py-2.5 text-xs font-black text-white shadow-xs hover:bg-violet-800"
-                  >
-                    <Plus className="h-4 w-4" />
-                    <span>إضافة درس جديد</span>
-                  </button>
-                </div>
+          <section className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-6 shadow-xs space-y-6">
+            {/* Sub-skill Tab Navigation */}
+            <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 pb-4">
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveSkill('grammar');
+                  setEditingTopic(null);
+                  setEditingPassage(null);
+                  setEditingListening(null);
+                  setEditingWriting(null);
+                }}
+                className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-black transition ${
+                  activeSkill === 'grammar'
+                    ? 'bg-violet-700 text-white shadow-xs'
+                    : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200/80'
+                }`}
+              >
+                <BookOpen className="h-4 w-4" />
+                <span>📘 القواعد Grammar ({topicsList.length})</span>
+              </button>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {topicsList.map((topic) => (
-                    <div
-                      key={topic.slug}
-                      className="rounded-2xl border border-slate-200 p-4 flex flex-col justify-between bg-slate-50/50 hover:bg-white hover:border-violet-300 transition"
-                    >
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveSkill('reading');
+                  setEditingTopic(null);
+                  setEditingPassage(null);
+                  setEditingListening(null);
+                  setEditingWriting(null);
+                }}
+                className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-black transition ${
+                  activeSkill === 'reading'
+                    ? 'bg-sky-600 text-white shadow-xs'
+                    : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200/80'
+                }`}
+              >
+                <BookText className="h-4 w-4" />
+                <span>📖 القراءة والفهم Reading ({passagesList.length})</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveSkill('listening');
+                  setEditingTopic(null);
+                  setEditingPassage(null);
+                  setEditingListening(null);
+                  setEditingWriting(null);
+                }}
+                className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-black transition ${
+                  activeSkill === 'listening'
+                    ? 'bg-purple-600 text-white shadow-xs'
+                    : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200/80'
+                }`}
+              >
+                <Headphones className="h-4 w-4" />
+                <span>🎧 الاستماع Listening ({listeningList.length})</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveSkill('writing');
+                  setEditingTopic(null);
+                  setEditingPassage(null);
+                  setEditingListening(null);
+                  setEditingWriting(null);
+                }}
+                className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-black transition ${
+                  activeSkill === 'writing'
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200/80'
+                }`}
+              >
+                <PenLine className="h-4 w-4" />
+                <span>✍️ الكتابة Writing ({writingList.length})</span>
+              </button>
+            </div>
+
+            {/* ------------------------------------------------------------- */}
+            {/* SUB-SKILL 1: GRAMMAR CMS                                      */}
+            {/* ------------------------------------------------------------- */}
+            {activeSkill === 'grammar' && (
+              <>
+                {!editingTopic ? (
+                  <div className="space-y-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div>
-                        <span className="text-[11px] font-black text-violet-700" dir="ltr">
-                          {topic.titleEn}
-                        </span>
-                        <h3 className="text-base font-black text-slate-950 mt-0.5">{topic.titleAr}</h3>
-                        <p className="text-xs text-slate-600 mt-1 line-clamp-2">{topic.description}</p>
+                        <h2 className="text-base sm:text-lg font-black text-slate-950">
+                          دروس القواعد والأسئلة والفيديوهات
+                        </h2>
+                        <p className="text-xs text-slate-500">
+                          عدّلي أي قاعدة حالية أو أضيفي درساً جديداً مع رابط فيديو وأسئلة تفاعلية وملاحظات.
+                        </p>
                       </div>
-                      <div className="mt-4 flex items-center justify-between border-t border-slate-200/70 pt-3">
-                        <span className="text-xs font-bold text-emerald-700">
-                          {topic.questions.length} أسئلة
-                        </span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setEditingTopic({
+                            slug: `custom-${Date.now().toString(36)}`,
+                            titleAr: '',
+                            titleEn: '',
+                            description: '',
+                            imageUrl: '/content/grammar/present-simple.jpg',
+                            videoUrl: '',
+                            questions: [
+                              {
+                                id: `q-${Date.now()}`,
+                                prompt: '',
+                                hint: '',
+                                options: [
+                                  { text: '', isCorrect: true },
+                                  { text: '', isCorrect: false },
+                                  { text: '', isCorrect: false },
+                                  { text: '', isCorrect: false },
+                                ],
+                              },
+                            ],
+                          })
+                        }
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-violet-700 px-4 py-2.5 text-xs font-black text-white shadow-xs hover:bg-violet-800"
+                      >
+                        <Plus className="h-4 w-4" />
+                        <span>إضافة قاعدة جديدة</span>
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {topicsList.map((topic) => (
+                        <div
+                          key={topic.slug}
+                          className="rounded-2xl border border-slate-200 p-4 flex flex-col justify-between bg-slate-50/50 hover:bg-white hover:border-violet-300 transition"
+                        >
+                          <div>
+                            <span className="text-[11px] font-black text-violet-700" dir="ltr">
+                              {topic.titleEn}
+                            </span>
+                            <h3 className="text-base font-black text-slate-950 mt-0.5">{topic.titleAr}</h3>
+                            <p className="text-xs text-slate-600 mt-1 line-clamp-2">{topic.description}</p>
+                          </div>
+                          <div className="mt-4 flex items-center justify-between border-t border-slate-200/70 pt-3">
+                            <span className="text-xs font-bold text-emerald-700">
+                              {topic.questions.length} أسئلة
+                            </span>
+                            <div className="flex gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => setEditingTopic(JSON.parse(JSON.stringify(topic)))}
+                                className="inline-flex items-center gap-1 rounded-xl bg-violet-100 px-3 py-1.5 text-xs font-black text-violet-800 hover:bg-violet-200"
+                              >
+                                <Edit3 className="h-3.5 w-3.5" />
+                                <span>تعديل</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteTopic(topic.slug)}
+                                className="rounded-xl border border-slate-200 p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition"
+                                title="حذف"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <form onSubmit={handleSaveTopic} className="space-y-4">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                      <h3 className="text-base font-black text-slate-950">
+                        {editingTopic.titleAr || 'درس قواعد جديد'}
+                      </h3>
+                      <div className="flex gap-2">
                         <button
                           type="button"
-                          onClick={() => setEditingTopic(JSON.parse(JSON.stringify(topic)))}
-                          className="inline-flex items-center gap-1 rounded-xl bg-violet-100 px-3 py-1.5 text-xs font-black text-violet-800 hover:bg-violet-200"
+                          onClick={() => setEditingTopic(null)}
+                          className="rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600"
                         >
-                          <Edit3 className="h-3.5 w-3.5" />
-                          <span>تعديل</span>
+                          إلغاء
+                        </button>
+                        <button
+                          type="submit"
+                          className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-1.5 text-xs font-black text-white"
+                        >
+                          <Check className="h-3.5 w-3.5" />
+                          <span>حفظ الدرس</span>
                         </button>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <form onSubmit={handleSaveTopic} className="space-y-4">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                  <h3 className="text-base font-black text-slate-950">
-                    {editingTopic.titleAr || 'درس جديد'}
-                  </h3>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditingTopic(null);
-                        setUploadMessage(null);
-                      }}
-                      className="rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600"
-                    >
-                      إلغاء
-                    </button>
-                    <button
-                      type="submit"
-                      className="inline-flex items-center gap-1 rounded-xl bg-emerald-600 px-4 py-1.5 text-xs font-black text-white hover:bg-emerald-700"
-                    >
-                      <Check className="h-3.5 w-3.5" />
-                      <span>حفظ الدرس</span>
-                    </button>
-                  </div>
-                </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">عنوان الدرس (عربي)</label>
-                    <input
-                      type="text"
-                      required
-                      value={editingTopic.titleAr}
-                      onChange={(e) => setEditingTopic({ ...editingTopic, titleAr: e.target.value })}
-                      className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">عنوان الدرس (إنجليزي)</label>
-                    <input
-                      type="text"
-                      required
-                      dir="ltr"
-                      value={editingTopic.titleEn}
-                      onChange={(e) => setEditingTopic({ ...editingTopic, titleEn: e.target.value })}
-                      className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">شرح مختصر للدرس</label>
-                  <textarea
-                    rows={2}
-                    value={editingTopic.description}
-                    onChange={(e) => setEditingTopic({ ...editingTopic, description: e.target.value })}
-                    className="w-full rounded-xl border border-slate-200 p-2.5 text-xs font-bold"
-                  />
-                </div>
-
-                {/* Video Upload + Direct Link */}
-                <div className="rounded-2xl border border-violet-100 bg-violet-50/40 p-4 space-y-2">
-                  <label className="block text-xs font-bold text-slate-800">
-                    الفيديو التعليمي (ارفعي مقطع MP4 من جوالك أو الصقي رابط يوتيوب)
-                  </label>
-
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <input
-                      type="text"
-                      dir="ltr"
-                      value={editingTopic.videoUrl || ''}
-                      onChange={(e) => setEditingTopic({ ...editingTopic, videoUrl: e.target.value })}
-                      placeholder="https://www.youtube.com/... أو ارفعي فيديو من الزر المجاور"
-                      className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-800 placeholder-slate-400"
-                    />
-
-                    <label className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 text-xs font-black transition shrink-0 shadow-xs">
-                      {uploadingVideo ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          <span>جاري الرفع...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Upload className="h-4 w-4" />
-                          <span>📤 رفع فيديو من الجوال</span>
-                        </>
-                      )}
-                      <input
-                        type="file"
-                        accept="video/mp4,video/webm,video/quicktime"
-                        className="hidden"
-                        disabled={uploadingVideo}
-                        onChange={handleVideoFileUpload}
-                      />
-                    </label>
-                  </div>
-
-                  {uploadMessage && (
-                    <p className="text-xs font-bold text-violet-800 pt-1">
-                      {uploadMessage}
-                    </p>
-                  )}
-                </div>
-
-                {/* Questions Builder */}
-                <div className="space-y-3 pt-2">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-xs font-black text-slate-800">
-                      الأسئلة التفاعلية للدرس ({editingTopic.questions.length})
-                    </h4>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const newQ = {
-                          id: `q-${Date.now()}`,
-                          prompt: '',
-                          hint: '',
-                          options: [
-                            { text: '', isCorrect: true },
-                            { text: '', isCorrect: false },
-                            { text: '', isCorrect: false },
-                            { text: '', isCorrect: false },
-                          ],
-                        };
-                        setEditingTopic({
-                          ...editingTopic,
-                          questions: [...editingTopic.questions, newQ],
-                        });
-                      }}
-                      className="inline-flex items-center gap-1 text-xs font-bold text-violet-700 hover:text-violet-900"
-                    >
-                      <Plus className="h-3.5 w-3.5" />
-                      <span>إضافة سؤال</span>
-                    </button>
-                  </div>
-
-                  {editingTopic.questions.map((q, qIdx) => (
-                    <div key={q.id || qIdx} className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-black text-slate-600">سؤال #{qIdx + 1}</span>
-                        {editingTopic.questions.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const updated = editingTopic.questions.filter((_, idx) => idx !== qIdx);
-                              setEditingTopic({ ...editingTopic, questions: updated });
-                            }}
-                            className="text-rose-500 hover:text-rose-700 text-xs font-bold"
-                          >
-                            حذف السؤال
-                          </button>
-                        )}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">عنوان الدرس (عربي)</label>
+                        <input
+                          type="text"
+                          required
+                          value={editingTopic.titleAr}
+                          onChange={(e) => setEditingTopic({ ...editingTopic, titleAr: e.target.value })}
+                          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold"
+                        />
                       </div>
-                      <input
-                        type="text"
-                        placeholder="نص السؤال (بالإنجليزية)..."
-                        value={q.prompt}
-                        dir="ltr"
-                        onChange={(e) => {
-                          const updated = editingTopic.questions.map((item, idx) =>
-                            idx === qIdx ? { ...item, prompt: e.target.value } : item
-                          );
-                          setEditingTopic({ ...editingTopic, questions: updated });
-                        }}
-                        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold"
-                      />
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-                        {q.options.map((opt, optIdx) => (
-                          <div key={optIdx} className="flex items-center gap-2">
-                            <input
-                              type="radio"
-                              name={`correct-q-${qIdx}`}
-                              checked={opt.isCorrect}
-                              onChange={() => {
-                                const updated = editingTopic.questions.map((item, idx) => {
-                                  if (idx !== qIdx) return item;
-                                  return {
-                                    ...item,
-                                    options: item.options.map((o, oIdx) => ({
-                                      ...o,
-                                      isCorrect: oIdx === optIdx,
-                                    })),
-                                  };
-                                });
-                                setEditingTopic({ ...editingTopic, questions: updated });
-                              }}
-                            />
-                            <input
-                              type="text"
-                              dir="ltr"
-                              placeholder={`الخيار ${optIdx + 1}${opt.isCorrect ? ' (الصحيح)' : ''}`}
-                              value={opt.text}
-                              onChange={(e) => {
-                                const updated = editingTopic.questions.map((item, idx) => {
-                                  if (idx !== qIdx) return item;
-                                  return {
-                                    ...item,
-                                    options: item.options.map((o, oIdx) =>
-                                      oIdx === optIdx ? { ...o, text: e.target.value } : o
-                                    ),
-                                  };
-                                });
-                                setEditingTopic({ ...editingTopic, questions: updated });
-                              }}
-                              className={`flex-1 rounded-lg border px-2.5 py-1 text-xs font-medium bg-white ${
-                                opt.isCorrect ? 'border-emerald-400 bg-emerald-50/30' : 'border-slate-200'
-                              }`}
-                            />
-                          </div>
-                        ))}
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">عنوان الدرس (إنجليزي)</label>
+                        <input
+                          type="text"
+                          required
+                          dir="ltr"
+                          value={editingTopic.titleEn}
+                          onChange={(e) => setEditingTopic({ ...editingTopic, titleEn: e.target.value })}
+                          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold"
+                        />
                       </div>
                     </div>
-                  ))}
-                </div>
-              </form>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">شرح مختصر للقاعدة</label>
+                      <textarea
+                        rows={2}
+                        value={editingTopic.description}
+                        onChange={(e) => setEditingTopic({ ...editingTopic, description: e.target.value })}
+                        className="w-full rounded-xl border border-slate-200 p-2.5 text-xs font-bold"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        رابط الفيديو (YouTube Embed أو MP4)
+                      </label>
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <input
+                          type="text"
+                          dir="ltr"
+                          value={editingTopic.videoUrl || ''}
+                          onChange={(e) => setEditingTopic({ ...editingTopic, videoUrl: e.target.value })}
+                          placeholder="https://www.youtube.com/embed/... أو رابط فيديو"
+                          className="flex-1 rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold"
+                        />
+                        <label className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-violet-200 bg-violet-50 px-4 py-2 text-xs font-bold text-violet-800 hover:bg-violet-100 cursor-pointer transition">
+                          <Upload className="h-3.5 w-3.5" />
+                          <span>{uploadingMedia ? 'جاري الرفع...' : 'رفع مقطع MP4'}</span>
+                          <input
+                            type="file"
+                            accept="video/mp4,video/*"
+                            className="hidden"
+                            disabled={uploadingMedia}
+                            onChange={(e) => handleMediaUpload(e, 'grammar')}
+                          />
+                        </label>
+                      </div>
+                      {uploadMessage && (
+                        <p className="text-xs font-bold text-violet-800 pt-1.5">{uploadMessage}</p>
+                      )}
+                    </div>
+
+                    <QuestionsListEditor
+                      questions={editingTopic.questions}
+                      onChange={(questions) => setEditingTopic({ ...editingTopic, questions })}
+                    />
+                  </form>
+                )}
+              </>
+            )}
+
+            {/* ------------------------------------------------------------- */}
+            {/* SUB-SKILL 2: READING CMS                                      */}
+            {/* ------------------------------------------------------------- */}
+            {activeSkill === 'reading' && (
+              <>
+                {!editingPassage ? (
+                  <div className="space-y-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <h2 className="text-base sm:text-lg font-black text-slate-950">
+                          نصوص القراءة والفهم والاستيعاب
+                        </h2>
+                        <p className="text-xs text-slate-500">
+                          أضيفي أو عدلي النصوص القرائية الكاملة وحددي مستواها مع أسئلة فهم المقروء وملاحظاتها.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setEditingPassage({
+                            slug: `reading-${Date.now().toString(36)}`,
+                            titleAr: '',
+                            titleEn: '',
+                            level: 'easy',
+                            text: '',
+                            questions: [
+                              {
+                                id: `q-${Date.now()}`,
+                                prompt: '',
+                                hint: '',
+                                options: [
+                                  { text: '', isCorrect: true },
+                                  { text: '', isCorrect: false },
+                                  { text: '', isCorrect: false },
+                                  { text: '', isCorrect: false },
+                                ],
+                              },
+                            ],
+                          })
+                        }
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-sky-600 px-4 py-2.5 text-xs font-black text-white shadow-xs hover:bg-sky-700"
+                      >
+                        <Plus className="h-4 w-4" />
+                        <span>إضافة نص قراءة جديد</span>
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {passagesList.map((passage) => (
+                        <div
+                          key={passage.slug}
+                          className="rounded-2xl border border-slate-200 p-4 flex flex-col justify-between bg-slate-50/50 hover:bg-white hover:border-sky-300 transition"
+                        >
+                          <div>
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-[11px] font-black text-sky-700" dir="ltr">
+                                {passage.titleEn}
+                              </span>
+                              <span className="rounded-md bg-sky-100 px-2 py-0.5 text-[10px] font-black text-sky-800">
+                                {passage.level === 'easy' ? 'مبتدئ' : passage.level === 'medium' ? 'متوسط' : 'متقدم'}
+                              </span>
+                            </div>
+                            <h3 className="text-base font-black text-slate-950 mt-0.5">{passage.titleAr}</h3>
+                            <p className="text-xs text-slate-600 mt-2 line-clamp-3 font-mono leading-relaxed" dir="ltr">
+                              {passage.text}
+                            </p>
+                          </div>
+                          <div className="mt-4 flex items-center justify-between border-t border-slate-200/70 pt-3">
+                            <span className="text-xs font-bold text-sky-700">
+                              {passage.questions.length} أسئلة فهم
+                            </span>
+                            <div className="flex gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => setEditingPassage(JSON.parse(JSON.stringify(passage)))}
+                                className="inline-flex items-center gap-1 rounded-xl bg-sky-100 px-3 py-1.5 text-xs font-black text-sky-800 hover:bg-sky-200"
+                              >
+                                <Edit3 className="h-3.5 w-3.5" />
+                                <span>تعديل</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeletePassage(passage.slug)}
+                                className="rounded-xl border border-slate-200 p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition"
+                                title="حذف"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <form onSubmit={handleSavePassage} className="space-y-4">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                      <h3 className="text-base font-black text-slate-950">
+                        {editingPassage.titleAr || 'نص قراءة جديد'}
+                      </h3>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setEditingPassage(null)}
+                          className="rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600"
+                        >
+                          إلغاء
+                        </button>
+                        <button
+                          type="submit"
+                          className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-1.5 text-xs font-black text-white"
+                        >
+                          <Check className="h-3.5 w-3.5" />
+                          <span>حفظ النص القرائي</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">عنوان النص (عربي)</label>
+                        <input
+                          type="text"
+                          required
+                          value={editingPassage.titleAr}
+                          onChange={(e) => setEditingPassage({ ...editingPassage, titleAr: e.target.value })}
+                          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">عنوان النص (إنجليزي)</label>
+                        <input
+                          type="text"
+                          required
+                          dir="ltr"
+                          value={editingPassage.titleEn}
+                          onChange={(e) => setEditingPassage({ ...editingPassage, titleEn: e.target.value })}
+                          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">مستوى الصعوبة</label>
+                        <select
+                          value={editingPassage.level}
+                          onChange={(e) =>
+                            setEditingPassage({
+                              ...editingPassage,
+                              level: e.target.value as ReadingPassage['level'],
+                            })
+                          }
+                          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold"
+                        >
+                          <option value="easy">مبتدئ (Easy - A1/A2)</option>
+                          <option value="medium">متوسط (Medium - B1)</option>
+                          <option value="hard">متقدم (Advanced - B2)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        النص القرائي الكامل (Full Passage Text — بالإنجليزية)
+                      </label>
+                      <textarea
+                        rows={7}
+                        dir="ltr"
+                        required
+                        value={editingPassage.text}
+                        onChange={(e) => setEditingPassage({ ...editingPassage, text: e.target.value })}
+                        placeholder="Type or paste the full reading passage text here..."
+                        className="w-full rounded-xl border border-slate-200 p-3 text-xs sm:text-sm font-medium leading-relaxed font-mono focus:border-sky-500 focus:outline-hidden"
+                      />
+                    </div>
+
+                    <QuestionsListEditor
+                      questions={editingPassage.questions}
+                      onChange={(questions) => setEditingPassage({ ...editingPassage, questions })}
+                    />
+                  </form>
+                )}
+              </>
+            )}
+
+            {/* ------------------------------------------------------------- */}
+            {/* SUB-SKILL 3: LISTENING CMS                                    */}
+            {/* ------------------------------------------------------------- */}
+            {activeSkill === 'listening' && (
+              <>
+                {!editingListening ? (
+                  <div className="space-y-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <h2 className="text-base sm:text-lg font-black text-slate-950">
+                          أنشطة ومقاطع الاستماع والفهم السمعي
+                        </h2>
+                        <p className="text-xs text-slate-500">
+                          أضيفي أو عدلي مقاطع الاستماع مع نصوص الحوار المفرغة والأسئلة التفاعلية والملاحظات.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setEditingListening({
+                            slug: `listening-${Date.now().toString(36)}`,
+                            titleAr: '',
+                            titleEn: '',
+                            level: 'easy',
+                            mediaUrl: '',
+                            audioUrl: '',
+                            audioScript: '',
+                            questions: [
+                              {
+                                id: `q-${Date.now()}`,
+                                prompt: '',
+                                hint: '',
+                                options: [
+                                  { text: '', isCorrect: true },
+                                  { text: '', isCorrect: false },
+                                  { text: '', isCorrect: false },
+                                  { text: '', isCorrect: false },
+                                ],
+                              },
+                            ],
+                          })
+                        }
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-purple-600 px-4 py-2.5 text-xs font-black text-white shadow-xs hover:bg-purple-700"
+                      >
+                        <Plus className="h-4 w-4" />
+                        <span>إضافة نشاط استماع جديد</span>
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {listeningList.map((item) => (
+                        <div
+                          key={item.slug}
+                          className="rounded-2xl border border-slate-200 p-4 flex flex-col justify-between bg-slate-50/50 hover:bg-white hover:border-purple-300 transition"
+                        >
+                          <div>
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-[11px] font-black text-purple-700" dir="ltr">
+                                {item.titleEn}
+                              </span>
+                              <span className="rounded-md bg-purple-100 px-2 py-0.5 text-[10px] font-black text-purple-800">
+                                {item.level === 'easy' ? 'مبتدئ' : item.level === 'medium' ? 'متوسط' : 'متقدم'}
+                              </span>
+                            </div>
+                            <h3 className="text-base font-black text-slate-950 mt-0.5">{item.titleAr}</h3>
+                            {item.audioScript && (
+                              <p className="text-xs text-slate-600 mt-2 line-clamp-2 font-mono leading-relaxed" dir="ltr">
+                                {item.audioScript}
+                              </p>
+                            )}
+                          </div>
+                          <div className="mt-4 flex items-center justify-between border-t border-slate-200/70 pt-3">
+                            <span className="text-xs font-bold text-purple-700">
+                              {item.questions.length} أسئلة استماع
+                            </span>
+                            <div className="flex gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => setEditingListening(JSON.parse(JSON.stringify(item)))}
+                                className="inline-flex items-center gap-1 rounded-xl bg-purple-100 px-3 py-1.5 text-xs font-black text-purple-800 hover:bg-purple-200"
+                              >
+                                <Edit3 className="h-3.5 w-3.5" />
+                                <span>تعديل</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteListening(item.slug)}
+                                className="rounded-xl border border-slate-200 p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition"
+                                title="حذف"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <form onSubmit={handleSaveListening} className="space-y-4">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                      <h3 className="text-base font-black text-slate-950">
+                        {editingListening.titleAr || 'نشاط استماع جديد'}
+                      </h3>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setEditingListening(null)}
+                          className="rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600"
+                        >
+                          إلغاء
+                        </button>
+                        <button
+                          type="submit"
+                          className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-1.5 text-xs font-black text-white"
+                        >
+                          <Check className="h-3.5 w-3.5" />
+                          <span>حفظ نشاط الاستماع</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">عنوان النشاط (عربي)</label>
+                        <input
+                          type="text"
+                          required
+                          value={editingListening.titleAr}
+                          onChange={(e) => setEditingListening({ ...editingListening, titleAr: e.target.value })}
+                          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">عنوان النشاط (إنجليزي)</label>
+                        <input
+                          type="text"
+                          required
+                          dir="ltr"
+                          value={editingListening.titleEn}
+                          onChange={(e) => setEditingListening({ ...editingListening, titleEn: e.target.value })}
+                          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">مستوى الصعوبة</label>
+                        <select
+                          value={editingListening.level}
+                          onChange={(e) =>
+                            setEditingListening({
+                              ...editingListening,
+                              level: e.target.value as ListeningActivity['level'],
+                            })
+                          }
+                          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold"
+                        >
+                          <option value="easy">مبتدئ (Easy)</option>
+                          <option value="medium">متوسط (Medium)</option>
+                          <option value="hard">متقدم (Advanced)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        رابط ملف الصوت أو الفيديو (URL / MP3 / MP4)
+                      </label>
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <input
+                          type="text"
+                          dir="ltr"
+                          value={editingListening.mediaUrl || editingListening.audioUrl || ''}
+                          onChange={(e) =>
+                            setEditingListening({
+                              ...editingListening,
+                              mediaUrl: e.target.value,
+                              audioUrl: e.target.value,
+                            })
+                          }
+                          placeholder="https://... رابط الصوت أو الفيديو"
+                          className="flex-1 rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold"
+                        />
+                        <label className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-purple-200 bg-purple-50 px-4 py-2 text-xs font-bold text-purple-800 hover:bg-purple-100 cursor-pointer transition">
+                          <Upload className="h-3.5 w-3.5" />
+                          <span>{uploadingMedia ? 'جاري الرفع...' : 'رفع ملف وسائط'}</span>
+                          <input
+                            type="file"
+                            accept="audio/*,video/*"
+                            className="hidden"
+                            disabled={uploadingMedia}
+                            onChange={(e) => handleMediaUpload(e, 'listening')}
+                          />
+                        </label>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        تفريغ الحوار ونصوص الاستماع (Audio Script / Dialogue Transcript)
+                      </label>
+                      <textarea
+                        rows={5}
+                        dir="ltr"
+                        value={editingListening.audioScript || ''}
+                        onChange={(e) => setEditingListening({ ...editingListening, audioScript: e.target.value })}
+                        placeholder="Speaker 1: Welcome to the library!&#10;Speaker 2: Thank you, I am looking for..."
+                        className="w-full rounded-xl border border-slate-200 p-3 text-xs sm:text-sm font-medium leading-relaxed font-mono focus:border-purple-500 focus:outline-hidden"
+                      />
+                    </div>
+
+                    <QuestionsListEditor
+                      questions={editingListening.questions}
+                      onChange={(questions) => setEditingListening({ ...editingListening, questions })}
+                    />
+                  </form>
+                )}
+              </>
+            )}
+
+            {/* ------------------------------------------------------------- */}
+            {/* SUB-SKILL 4: WRITING CMS                                      */}
+            {/* ------------------------------------------------------------- */}
+            {activeSkill === 'writing' && (
+              <>
+                {!editingWriting ? (
+                  <div className="space-y-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <h2 className="text-base sm:text-lg font-black text-slate-950">
+                          تدريبات ونماذج الكتابة والتعبير
+                        </h2>
+                        <p className="text-xs text-slate-500">
+                          أضيفي أو عدلي تدريبات ترتيب الجمل وتصحيح الأخطاء وكتابة الفقرات مع نماذج الإجابات والشرح.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setEditingWriting({
+                            id: `writing-${Date.now()}`,
+                            slug: `writing-${Date.now().toString(36)}`,
+                            titleAr: '',
+                            titleEn: '',
+                            category: 'sentence',
+                            level: 'easy',
+                            instructionAr: 'رتّبي الكلمات المبعثرة لتكوين جملة إنجليزية صحيحة',
+                            instructionEn: 'Unscramble the words to make a correct sentence.',
+                            promptText: '',
+                            modelAnswer: '',
+                            explanationAr: '',
+                          })
+                        }
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-black text-white shadow-xs hover:bg-emerald-700"
+                      >
+                        <Plus className="h-4 w-4" />
+                        <span>إضافة تدريب كتابة جديد</span>
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {writingList.map((item) => (
+                        <div
+                          key={item.id || item.slug}
+                          className="rounded-2xl border border-slate-200 p-4 flex flex-col justify-between bg-slate-50/50 hover:bg-white hover:border-emerald-300 transition"
+                        >
+                          <div>
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-[11px] font-black text-emerald-700" dir="ltr">
+                                {item.titleEn}
+                              </span>
+                              <span className="rounded-md bg-emerald-100 px-2 py-0.5 text-[10px] font-black text-emerald-800">
+                                {item.category === 'sentence'
+                                  ? 'ترتيب جمل'
+                                  : item.category === 'correction'
+                                  ? 'تصحيح أخطاء'
+                                  : 'كتابة فقرة'}
+                              </span>
+                            </div>
+                            <h3 className="text-base font-black text-slate-950 mt-0.5">{item.titleAr}</h3>
+                            <p className="text-xs text-slate-600 mt-2 line-clamp-2" dir="ltr">
+                              {item.promptText}
+                            </p>
+                          </div>
+                          <div className="mt-4 flex items-center justify-between border-t border-slate-200/70 pt-3">
+                            <span className="text-[11px] font-bold text-slate-500">
+                              {item.modelAnswer ? 'نموذج إجابة متوفر' : 'تعبير حر'}
+                            </span>
+                            <div className="flex gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => setEditingWriting(JSON.parse(JSON.stringify(item)))}
+                                className="inline-flex items-center gap-1 rounded-xl bg-emerald-100 px-3 py-1.5 text-xs font-black text-emerald-800 hover:bg-emerald-200"
+                              >
+                                <Edit3 className="h-3.5 w-3.5" />
+                                <span>تعديل</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteWriting(item.id || item.slug)}
+                                className="rounded-xl border border-slate-200 p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition"
+                                title="حذف"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <form onSubmit={handleSaveWriting} className="space-y-4">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                      <h3 className="text-base font-black text-slate-950">
+                        {editingWriting.titleAr || 'تدريب كتابة جديد'}
+                      </h3>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setEditingWriting(null)}
+                          className="rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600"
+                        >
+                          إلغاء
+                        </button>
+                        <button
+                          type="submit"
+                          className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-1.5 text-xs font-black text-white"
+                        >
+                          <Check className="h-3.5 w-3.5" />
+                          <span>حفظ تدريب الكتابة</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">عنوان التدريب (عربي)</label>
+                        <input
+                          type="text"
+                          required
+                          value={editingWriting.titleAr}
+                          onChange={(e) => setEditingWriting({ ...editingWriting, titleAr: e.target.value })}
+                          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">عنوان التدريب (إنجليزي)</label>
+                        <input
+                          type="text"
+                          required
+                          dir="ltr"
+                          value={editingWriting.titleEn}
+                          onChange={(e) => setEditingWriting({ ...editingWriting, titleEn: e.target.value })}
+                          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">نوع تدريب الكتابة</label>
+                        <select
+                          value={editingWriting.category}
+                          onChange={(e) =>
+                            setEditingWriting({
+                              ...editingWriting,
+                              category: e.target.value as WritingPrompt['category'],
+                            })
+                          }
+                          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold"
+                        >
+                          <option value="sentence">ترتيب جمل مبعثرة (Scrambled Words)</option>
+                          <option value="correction">تصحيح أخطاء لغوية (Error Correction)</option>
+                          <option value="paragraph">كتابة فقرة متكاملة (Paragraph Writing)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">المستوى (Level)</label>
+                        <select
+                          value={editingWriting.level || 'easy'}
+                          onChange={(e) =>
+                            setEditingWriting({
+                              ...editingWriting,
+                              level: e.target.value as WritingPrompt['level'],
+                            })
+                          }
+                          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold"
+                        >
+                          <option value="easy">سهل (Easy)</option>
+                          <option value="medium">متوسط (Medium)</option>
+                          <option value="hard">متقدم (Hard)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">التعليمات (عربي)</label>
+                        <input
+                          type="text"
+                          value={editingWriting.instructionAr}
+                          onChange={(e) => setEditingWriting({ ...editingWriting, instructionAr: e.target.value })}
+                          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">التعليمات (إنجليزي)</label>
+                        <input
+                          type="text"
+                          dir="ltr"
+                          value={editingWriting.instructionEn}
+                          onChange={(e) => setEditingWriting({ ...editingWriting, instructionEn: e.target.value })}
+                          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        نص التدريب / السؤال أو الكلمات المبعثرة
+                      </label>
+                      <textarea
+                        rows={3}
+                        dir="ltr"
+                        required
+                        value={editingWriting.promptText}
+                        onChange={(e) => setEditingWriting({ ...editingWriting, promptText: e.target.value })}
+                        placeholder="e.g. always / English / practices / She / everyday"
+                        className="w-full rounded-xl border border-slate-200 p-2.5 text-xs font-mono font-bold"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        نموذج الإجابة المثالي (Model Answer — يظهر للطالبة)
+                      </label>
+                      <input
+                        type="text"
+                        dir="ltr"
+                        required
+                        value={editingWriting.modelAnswer}
+                        onChange={(e) => setEditingWriting({ ...editingWriting, modelAnswer: e.target.value })}
+                        placeholder="e.g. She always practices English everyday."
+                        className="w-full rounded-xl border border-emerald-300 bg-emerald-50/40 px-3 py-2 text-xs font-bold text-emerald-950"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        الشرح التوضيحي والتغذية الراجعة بالعربي
+                      </label>
+                      <input
+                        type="text"
+                        value={editingWriting.explanationAr}
+                        onChange={(e) => setEditingWriting({ ...editingWriting, explanationAr: e.target.value })}
+                        placeholder="شرح بسيط لتوضيح سبب الترتيب أو تصحيح الخطأ للطالبة..."
+                        className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold"
+                      />
+                    </div>
+                  </form>
+                )}
+              </>
             )}
           </section>
         )}
 
-        {/* SECTION 4: HONOR ROLL & BADGES */}
+        {/* =============================================================== */}
+        {/* SECTION 4: HONOR ROLL & BADGES                                  */}
+        {/* =============================================================== */}
         {dashboardSection === 'honor' && (
           <section className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-6 shadow-xs space-y-5">
             <div>

@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { PublicBackdrop } from '../../components/layout/root-layout';
 import { PortalNav, PortalFooter } from '../../components/portal/portal-nav';
-import { writingPrompts } from '../../data/content/writing';
+import { getMergedWritingPrompts } from '../../data/api-client/guestbook-client';
 import { useSpeechPlayer } from '../../lib/speech-player';
 
 function playTone(type: 'correct' | 'submitted') {
@@ -52,6 +52,7 @@ export default function WritingActivityPage() {
   const { promptSlug } = useParams<{ promptSlug: string }>();
   const inputId = useId();
 
+  const writingPrompts = getMergedWritingPrompts();
   const promptIndex = writingPrompts.findIndex((p) => p.slug === promptSlug);
   const prompt = writingPrompts[promptIndex];
 

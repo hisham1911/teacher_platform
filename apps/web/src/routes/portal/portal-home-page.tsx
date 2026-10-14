@@ -11,23 +11,29 @@ import { PortalNav, PortalFooter } from '../../components/portal/portal-nav';
 import { EnglishSparkLogo } from '../../components/portal/english-spark-logo';
 import { portalSections } from '../../data/content/portal-sections';
 import { SectionIcon, getSectionTheme } from '../../components/portal/portal-icons';
-import { grammarTopics } from '../../data/content/grammar';
-import { readingPassages } from '../../data/content/reading';
-import { listeningActivities } from '../../data/content/listening';
-import { writingPrompts } from '../../data/content/writing';
+import {
+  getMergedGrammarTopics,
+  getMergedReadingPassages,
+  getMergedListeningActivities,
+  getMergedWritingPrompts,
+} from '../../data/api-client/guestbook-client';
 import { portalCompetitions } from '../../data/content/competitions';
 
-const sectionBadges: Record<string, string> = {
-  grammar: `${grammarTopics.length} قواعد تفاعلية`,
-  reading: `${readingPassages.length} نصوص وتمارين`,
-  listening: `${listeningActivities.length} مقاطع صوتية`,
-  writing: `${writingPrompts.length} تمارين صياغة`,
-  speaking: 'أنشطة نطق ومحادثة',
-  competitions: `${portalCompetitions.length} مسابقات تفاعلية`,
-  guestbook: 'آراء ورسائل الزوار',
-};
-
 export default function PortalHomePage() {
+  const grammarCount = getMergedGrammarTopics().length;
+  const readingCount = getMergedReadingPassages().length;
+  const listeningCount = getMergedListeningActivities().length;
+  const writingCount = getMergedWritingPrompts().length;
+
+  const sectionBadges: Record<string, string> = {
+    grammar: `${grammarCount} قواعد تفاعلية`,
+    reading: `${readingCount} نصوص وتمارين`,
+    listening: `${listeningCount} مقاطع صوتية`,
+    writing: `${writingCount} تمارين صياغة`,
+    speaking: 'أنشطة نطق ومحادثة',
+    competitions: `${portalCompetitions.length} مسابقات تفاعلية`,
+    guestbook: 'آراء ورسائل الزوار',
+  };
   return (
     <div className="relative flex min-h-dvh flex-col overflow-x-clip bg-slate-50/50" dir="rtl">
       <PublicBackdrop />

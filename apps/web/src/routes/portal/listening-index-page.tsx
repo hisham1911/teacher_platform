@@ -2,7 +2,7 @@ import { Link } from 'react-router';
 import { Headphones, ArrowLeft, Sparkles, CheckCircle2, Video } from 'lucide-react';
 import { PublicBackdrop } from '../../components/layout/root-layout';
 import { PortalNav, PortalFooter } from '../../components/portal/portal-nav';
-import { listeningActivities } from '../../data/content/listening';
+import { getMergedListeningActivities } from '../../data/api-client/guestbook-client';
 import type { ListeningActivity } from '../../data/content/types';
 
 function levelBadge(level: ListeningActivity['level']) {
@@ -18,6 +18,7 @@ function levelLabel(level: ListeningActivity['level']) {
 }
 
 export default function ListeningIndexPage() {
+  const listeningActivities = getMergedListeningActivities();
   return (
     <div className="relative flex min-h-dvh flex-col overflow-x-clip bg-slate-50/50" dir="rtl">
       <PublicBackdrop />

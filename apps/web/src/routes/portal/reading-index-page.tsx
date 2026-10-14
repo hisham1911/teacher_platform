@@ -2,7 +2,7 @@ import { Link } from 'react-router';
 import { BookText, ArrowLeft, Sparkles, CheckCircle2 } from 'lucide-react';
 import { PublicBackdrop } from '../../components/layout/root-layout';
 import { PortalNav, PortalFooter } from '../../components/portal/portal-nav';
-import { readingPassages } from '../../data/content/reading';
+import { getMergedReadingPassages } from '../../data/api-client/guestbook-client';
 import type { ReadingPassage } from '../../data/content/types';
 
 function levelBadge(level: ReadingPassage['level']) {
@@ -18,6 +18,7 @@ function levelLabel(level: ReadingPassage['level']) {
 }
 
 export default function ReadingIndexPage() {
+  const readingPassages = getMergedReadingPassages();
   return (
     <div className="relative flex min-h-dvh flex-col overflow-x-clip bg-slate-50/50" dir="rtl">
       <PublicBackdrop />

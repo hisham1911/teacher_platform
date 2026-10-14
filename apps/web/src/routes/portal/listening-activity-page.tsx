@@ -13,13 +13,14 @@ import { PublicBackdrop } from '../../components/layout/root-layout';
 import { PortalNav, PortalFooter } from '../../components/portal/portal-nav';
 import { InlineQuiz } from '../../components/portal/inline-quiz';
 import { PortalVideoPlayer } from '../../components/portal/portal-video-player';
-import { listeningActivities } from '../../data/content/listening';
+import { getMergedListeningActivities } from '../../data/api-client/guestbook-client';
 import { useSpeechPlayer } from '../../lib/speech-player';
 
 export default function ListeningActivityPage() {
   const { activitySlug } = useParams<{ activitySlug: string }>();
   const [showTranscript, setShowTranscript] = useState(false);
 
+  const listeningActivities = getMergedListeningActivities();
   const activityIndex = listeningActivities.findIndex(
     (a) => a.slug === activitySlug,
   );
