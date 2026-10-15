@@ -9,7 +9,6 @@ import {
   studentResultsClient,
   customLessonsClient,
   getMergedGrammarTopics,
-  honorRollClient,
   uploadMediaToSupabase,
 } from './guestbook-client';
 
@@ -249,29 +248,6 @@ describe('Guestbook Client & Validation', () => {
       await customLessonsClient.deleteCustomLesson('new-grammar-rule');
       const afterDelete = getMergedGrammarTopics();
       expect(afterDelete.some((t) => t.slug === 'new-grammar-rule')).toBe(false);
-    });
-  });
-
-  describe('honorRollClient', () => {
-    it('returns default honor students and allows saving updates', () => {
-      const list = honorRollClient.getHonorStudents();
-      expect(list.length).toBeGreaterThanOrEqual(2);
-
-      const updated = [
-        {
-          id: 'test-honor-1',
-          studentName: 'ريما عبدالله',
-          studentGrade: 'الأول الثانوي',
-          badges: ['grammar_star'],
-          note: 'متفوقة',
-          createdAt: new Date().toISOString(),
-        },
-        ...list,
-      ];
-      honorRollClient.saveHonorStudents(updated);
-
-      const saved = honorRollClient.getHonorStudents();
-      expect(saved[0]?.studentName).toBe('ريما عبدالله');
     });
   });
 

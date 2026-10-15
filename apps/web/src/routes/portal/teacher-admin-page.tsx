@@ -21,7 +21,6 @@ import {
   MessageSquareHeart,
   ChevronRight,
   GraduationCap,
-  Trophy,
   Plus,
   Edit3,
   FileSpreadsheet,
@@ -36,7 +35,6 @@ import {
   guestbookClient,
   studentResultsClient,
   customLessonsClient,
-  honorRollClient,
   uploadMediaToSupabase,
   getMergedGrammarTopics,
   getMergedReadingPassages,
@@ -44,7 +42,6 @@ import {
   getMergedWritingPrompts,
   type GuestbookEntry,
   type StudentQuizResultRecord,
-  type HonorStudentRecord,
   loginTeacher,
   logoutTeacher,
   isTeacherLoggedIn,
@@ -64,15 +61,6 @@ import type {
 const TOPIC_LABELS: Record<string, string> = Object.fromEntries(
   grammarTopics.map((t) => [t.slug, t.titleAr]),
 );
-
-const HONOR_BADGES = [
-  { id: 'grammar_star', title: 'نجمة القواعد', icon: '✨', color: 'bg-violet-100 text-violet-800 border-violet-300' },
-  { id: 'million_winner', title: 'بطلة المليون', icon: '🏆', color: 'bg-amber-100 text-amber-900 border-amber-300' },
-  { id: 'active_reader', title: 'قارئة متميزة', icon: '📖', color: 'bg-sky-100 text-sky-800 border-sky-300' },
-  { id: 'listening_pro', title: 'سفيرة الاستماع', icon: '🎧', color: 'bg-purple-100 text-purple-800 border-purple-300' },
-  { id: 'writing_talent', title: 'موهوبة الكتابة', icon: '✍️', color: 'bg-emerald-100 text-emerald-800 border-emerald-300' },
-  { id: 'fluent_speaker', title: 'متحدثة لبقة', icon: '🎙️', color: 'bg-pink-100 text-pink-800 border-pink-300' },
-];
 
 function formatTimeAgo(dateString: string): string {
   try {
@@ -290,7 +278,7 @@ export default function TeacherAdminPage() {
   const [loginError, setLoginError] = useState(false);
 
   // Main Dashboard Section Switcher
-  const [dashboardSection, setDashboardSection] = useState<'qna' | 'results' | 'lessons' | 'honor'>('qna');
+  const [dashboardSection, setDashboardSection] = useState<'qna' | 'results' | 'lessons'>('qna');
 
   // Sub-skill Switcher inside CMS
   const [activeSkill, setActiveSkill] = useState<'grammar' | 'reading' | 'listening' | 'writing'>('grammar');
@@ -324,14 +312,6 @@ export default function TeacherAdminPage() {
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const [uploadMessage, setUploadMessage] = useState<string | null>(null);
   const [feedbackNotice, setFeedbackNotice] = useState<string | null>(null);
-
-  // 4. Honor Roll Data
-  const [honorStudents, setHonorStudents] = useState<HonorStudentRecord[]>(() =>
-    honorRollClient.getHonorStudents()
-  );
-  const [newHonorName, setNewHonorName] = useState('');
-  const [newHonorGrade, setNewHonorGrade] = useState('الأول الثانوي');
-  const [newHonorNote, setNewHonorNote] = useState('');
 
   useEffect(() => {
     setIsAuthenticated(isTeacherLoggedIn());
@@ -537,41 +517,6 @@ export default function TeacherAdminPage() {
     } finally {
       setUploadingMedia(false);
     }
-  }
-
-  // --- Honor Roll Handlers ---
-  function handleAddHonorStudent(e: React.FormEvent) {
-    e.preventDefault();
-    if (!newHonorName.trim()) return;
-    const updated: HonorStudentRecord[] = [
-      {
-        id: `honor-${Date.now()}`,
-        studentName: newHonorName.trim(),
-        studentGrade: newHonorGrade,
-        badges: ['grammar_star'],
-        note: newHonorNote.trim() || 'تميز ومشاركة فاعلة في أنشطة المنصة.',
-        createdAt: new Date().toISOString(),
-      },
-      ...honorStudents,
-    ];
-    setHonorStudents(updated);
-    honorRollClient.saveHonorStudents(updated);
-    setNewHonorName('');
-    setNewHonorNote('');
-    showToast('تمت إضافة الطالبة إلى لوحة الشرف! 🌟');
-  }
-
-  function handleToggleBadge(studentId: string, badgeId: string) {
-    const updated = honorStudents.map((st) => {
-      if (st.id !== studentId) return st;
-      const exists = st.badges.includes(badgeId);
-      return {
-        ...st,
-        badges: exists ? st.badges.filter((b) => b !== badgeId) : [...st.badges, badgeId],
-      };
-    });
-    setHonorStudents(updated);
-    honorRollClient.saveHonorStudents(updated);
   }
 
   const filteredEntries = useMemo(() => {
@@ -849,19 +794,6 @@ export default function TeacherAdminPage() {
           >
             <BookOpen className="h-4 w-4" />
             <span>إدارة المحتوى التعليمي والدروس ({topicsList.length + passagesList.length + listeningList.length + writingList.length})</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setDashboardSection('honor')}
-            className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-black transition ${
-              dashboardSection === 'honor'
-                ? 'bg-amber-500 text-slate-950 shadow-xs'
-                : 'text-slate-600 hover:bg-slate-100'
-            }`}
-          >
-            <Trophy className="h-4 w-4" />
-            <span>لوحة الشرف والأوسمة ({honorStudents.length})</span>
           </button>
         </section>
 
@@ -2096,84 +2028,6 @@ export default function TeacherAdminPage() {
           </section>
         )}
 
-        {/* =============================================================== */}
-        {/* SECTION 4: HONOR ROLL & BADGES                                  */}
-        {/* =============================================================== */}
-        {dashboardSection === 'honor' && (
-          <section className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-6 shadow-xs space-y-5">
-            <div>
-              <h2 className="text-lg font-black text-slate-950">إدارة لوحة الشرف والأوسمة التشجيعية</h2>
-              <p className="text-xs font-semibold text-slate-500">
-                أضيفي أسماء الطالبات المتفوقات وامنحيهن الأوسمة التشجيعية لمشاركتها مع المدرسة وأولياء الأمور.
-              </p>
-            </div>
-
-            <form onSubmit={handleAddHonorStudent} className="grid grid-cols-1 sm:grid-cols-4 gap-3 rounded-2xl bg-amber-50/60 border border-amber-200 p-4">
-              <input
-                type="text"
-                required
-                value={newHonorName}
-                onChange={(e) => setNewHonorName(e.target.value)}
-                placeholder="اسم الطالبة..."
-                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold"
-              />
-              <input
-                type="text"
-                value={newHonorGrade}
-                onChange={(e) => setNewHonorGrade(e.target.value)}
-                placeholder="الصف الدراسي..."
-                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold"
-              />
-              <input
-                type="text"
-                value={newHonorNote}
-                onChange={(e) => setNewHonorNote(e.target.value)}
-                placeholder="سبب التكريم..."
-                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold"
-              />
-              <button
-                type="submit"
-                className="rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs py-2 px-4 shadow-xs"
-              >
-                + إضافة للوحة الشرف
-              </button>
-            </form>
-
-            <div className="space-y-3">
-              {honorStudents.map((st) => (
-                <div
-                  key={st.id}
-                  className="rounded-2xl border border-slate-200 p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
-                >
-                  <div>
-                    <span className="font-black text-sm text-slate-950">{st.studentName}</span>
-                    <span className="mr-2 rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-600">
-                      {st.studentGrade}
-                    </span>
-                    <p className="text-xs text-slate-500 mt-1">{st.note}</p>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {HONOR_BADGES.map((b) => {
-                      const has = st.badges.includes(b.id);
-                      return (
-                        <button
-                          key={b.id}
-                          type="button"
-                          onClick={() => handleToggleBadge(st.id, b.id)}
-                          className={`rounded-xl border px-2.5 py-1 text-xs font-bold transition ${
-                            has ? b.color : 'border-slate-200 bg-slate-50 text-slate-400'
-                          }`}
-                        >
-                          {b.icon} {b.title}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
       </main>
 
       <PortalFooter />

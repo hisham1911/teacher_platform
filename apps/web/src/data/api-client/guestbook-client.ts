@@ -56,15 +56,6 @@ export interface CustomLessonRecord {
   updatedAt: string;
 }
 
-export interface HonorStudentRecord {
-  id: string;
-  studentName: string;
-  studentGrade: string;
-  badges: string[];
-  note: string;
-  createdAt: string;
-}
-
 const STORAGE_KEY = 'english_spark_guestbook_entries_v1';
 const RATE_LIMIT_KEY = 'english_spark_last_comment_time';
 const LIKED_ENTRIES_KEY = 'english_spark_liked_entries_v1';
@@ -74,7 +65,6 @@ const CUSTOM_LESSONS_STORAGE_KEY = 'english_spark_custom_lessons_v1';
 const CUSTOM_READING_STORAGE_KEY = 'english_spark_custom_reading_v1';
 const CUSTOM_LISTENING_STORAGE_KEY = 'english_spark_custom_listening_v1';
 const CUSTOM_WRITING_STORAGE_KEY = 'english_spark_custom_writing_v1';
-const HONOR_STORAGE_KEY = 'english_spark_honor_roll_v1';
 
 export const TEACHER_USERNAME = 'maryam';
 export const TEACHER_PASSCODE_HASH = 'maryam2026'; // رمز مرور المعلمة
@@ -1224,52 +1214,6 @@ export const customLessonsClient = {
       const customOnly: WritingPrompt[] = raw ? JSON.parse(raw) : [];
       const filtered = customOnly.filter((p) => (p.id || p.slug) !== idOrSlug);
       localStorage.setItem(CUSTOM_WRITING_STORAGE_KEY, JSON.stringify(filtered));
-    } catch {
-      // ignore
-    }
-  },
-};
-
-// ============================================================================
-// 5. HONOR ROLL & BADGES CLIENT
-// ============================================================================
-const DEFAULT_HONOR_STUDENTS: HonorStudentRecord[] = [
-  {
-    id: 'honor-1',
-    studentName: 'فاطمة أحمد دغريري',
-    studentGrade: 'الأول الثانوي',
-    badges: ['grammar_star', 'million_winner', 'fluent_speaker'],
-    note: 'تميز استثنائي في اختبار تحديد المستوى الشامل وحصولها على مستوى B2.',
-    createdAt: new Date(Date.now() - 24 * 3600 * 1000).toISOString(),
-  },
-  {
-    id: 'honor-2',
-    studentName: 'رغد محمد الحكمي',
-    studentGrade: 'الثالث المتوسط',
-    badges: ['grammar_star', 'active_reader'],
-    note: 'إتمام جميع تدريبات القواعد بالدرجة الكاملة 100%.',
-    createdAt: new Date(Date.now() - 48 * 3600 * 1000).toISOString(),
-  },
-];
-
-export const honorRollClient = {
-  getHonorStudents(): HonorStudentRecord[] {
-    try {
-      const raw = localStorage.getItem(HONOR_STORAGE_KEY);
-      if (!raw) {
-        localStorage.setItem(HONOR_STORAGE_KEY, JSON.stringify(DEFAULT_HONOR_STUDENTS));
-        return DEFAULT_HONOR_STUDENTS;
-      }
-      const parsed = JSON.parse(raw) as HonorStudentRecord[];
-      return Array.isArray(parsed) ? parsed : DEFAULT_HONOR_STUDENTS;
-    } catch {
-      return DEFAULT_HONOR_STUDENTS;
-    }
-  },
-
-  saveHonorStudents(list: HonorStudentRecord[]): void {
-    try {
-      localStorage.setItem(HONOR_STORAGE_KEY, JSON.stringify(list));
     } catch {
       // ignore
     }
