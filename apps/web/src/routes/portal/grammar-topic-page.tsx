@@ -60,25 +60,27 @@ export default function GrammarTopicPage() {
               {topic.description}
             </p>
 
-            {/* Grammar Card Image */}
-            <div className="mt-6 rounded-2xl border border-slate-200/80 bg-slate-50/70 p-2 sm:p-4">
-              <div className="relative overflow-hidden rounded-xl bg-white shadow-xs ring-1 ring-slate-900/5">
-                <img
-                  src={topic.imageUrl}
-                  alt={topic.titleEn}
-                  className="w-full cursor-zoom-in object-contain max-h-[550px] mx-auto"
-                  onClick={() => setLightboxOpen(true)}
-                />
-                <button
-                  type="button"
-                  onClick={() => setLightboxOpen(true)}
-                  className="absolute bottom-3 left-3 flex items-center gap-1.5 rounded-xl bg-slate-950/80 px-3 py-1.5 text-xs font-bold text-white shadow-lg backdrop-blur-md transition hover:bg-slate-950 active:scale-95"
-                >
-                  <ZoomIn className="h-3.5 w-3.5" />
-                  <span>تكبير البطاقة</span>
-                </button>
+            {/* Grammar Card Image (only if provided) */}
+            {Boolean(topic.imageUrl) && (
+              <div className="mt-6 rounded-2xl border border-slate-200/80 bg-slate-50/70 p-2 sm:p-4">
+                <div className="relative overflow-hidden rounded-xl bg-white shadow-xs ring-1 ring-slate-900/5">
+                  <img
+                    src={topic.imageUrl}
+                    alt={topic.titleEn}
+                    className="w-full cursor-zoom-in object-contain max-h-[550px] mx-auto"
+                    onClick={() => setLightboxOpen(true)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setLightboxOpen(true)}
+                    className="absolute bottom-3 left-3 flex items-center gap-1.5 rounded-xl bg-slate-950/80 px-3 py-1.5 text-xs font-bold text-white shadow-lg backdrop-blur-md transition hover:bg-slate-950 active:scale-95"
+                  >
+                    <ZoomIn className="h-3.5 w-3.5" />
+                    <span>تكبير البطاقة</span>
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Video (if available) */}
             {topic.videoUrl && (
@@ -141,12 +143,14 @@ export default function GrammarTopicPage() {
         </div>
       </div>
 
-      <ImageLightbox
-        src={topic.imageUrl}
-        alt={topic.titleEn}
-        isOpen={lightboxOpen}
-        onClose={() => setLightboxOpen(false)}
-      />
+      {topic.imageUrl && (
+        <ImageLightbox
+          src={topic.imageUrl}
+          alt={topic.titleEn}
+          isOpen={lightboxOpen}
+          onClose={() => setLightboxOpen(false)}
+        />
+      )}
 
       <PortalFooter />
     </div>

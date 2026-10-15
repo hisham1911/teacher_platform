@@ -2,7 +2,8 @@ import { useState, useRef } from 'react';
 import { Play, Video, RotateCcw, AlertCircle } from 'lucide-react';
 
 interface PortalVideoPlayerProps {
-  src: string;
+  src?: string;
+  videoUrl?: string;
   poster?: string;
   title?: string;
   aspectRatio?: 'video' | 'portrait' | 'auto';
@@ -10,8 +11,11 @@ interface PortalVideoPlayerProps {
   className?: string;
 }
 
+import { toEmbedVideoUrl } from './video-utils';
+
 export function PortalVideoPlayer({
   src,
+  videoUrl,
   poster,
   title = 'فيديو تعليمي',
   aspectRatio = 'auto',
@@ -22,11 +26,14 @@ export function PortalVideoPlayer({
   const [loadError, setLoadError] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
+  const raw = src || videoUrl || '';
+  const embedUrl = toEmbedVideoUrl(raw);
+
   const isLocalOrDirect =
-    /\.(mp4|webm|mov)(\?.*)?$/i.test(src) ||
-    src.includes('/storage/v1/object/public/') ||
-    src.startsWith('/content/') ||
-    src.startsWith('blob:');
+    /\.(mp4|webm|mov|ogg)(\?.*)?$/i.test(raw) ||
+    raw.includes('/storage/v1/object/public/') ||
+    raw.startsWith('/content/') ||
+    raw.startsWith('blob:');
 
   const handleStartPlayback = () => {
     if (videoRef.current) {
@@ -67,7 +74,7 @@ export function PortalVideoPlayer({
       >
         <video
           ref={videoRef}
-          src={src}
+          src={raw}
           poster={poster}
           preload={preload}
           playsInline
@@ -81,7 +88,7 @@ export function PortalVideoPlayer({
             aspectRatio === 'video' ? 'aspect-video' : ''
           }`}
         >
-          <source src={src} type="video/mp4" />
+          <source src={raw} type="video/mp4" />
           <track kind="captions" />
           متصفحك لا يدعم تشغيل الفيديو المباشر.
         </video>
@@ -129,11 +136,12 @@ export function PortalVideoPlayer({
       className={`overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200 bg-slate-950 shadow-md aspect-video ${className}`}
     >
       <iframe
-        src={src}
+        src={embedUrl}
         title={title}
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
         allowFullScreen
-        className="h-full w-full"
+        referrerPolicy="strict-origin-when-cross-origin"
+        className="h-full w-full border-0"
       />
     </div>
   );

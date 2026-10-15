@@ -28,9 +28,14 @@ import {
   Check,
   Upload,
   Loader2,
+  Image as ImageIcon,
+  Video,
+  X,
 } from 'lucide-react';
 import { PublicBackdrop } from '../../components/layout/root-layout';
 import { PortalNav, PortalFooter } from '../../components/portal/portal-nav';
+import { PortalVideoPlayer } from '../../components/portal/portal-video-player';
+import { toEmbedVideoUrl } from '../../components/portal/video-utils';
 import {
   guestbookClient,
   studentResultsClient,
@@ -431,7 +436,12 @@ export default function TeacherAdminPage() {
   async function handleSaveTopic(e: React.FormEvent) {
     e.preventDefault();
     if (!editingTopic || !editingTopic.titleAr.trim() || !editingTopic.titleEn.trim()) return;
-    await customLessonsClient.saveGrammarTopic(editingTopic);
+    const normalized: GrammarTopic = {
+      ...editingTopic,
+      videoUrl: editingTopic.videoUrl ? toEmbedVideoUrl(editingTopic.videoUrl) : '',
+      imageUrl: editingTopic.imageUrl?.trim() || '',
+    };
+    await customLessonsClient.saveGrammarTopic(normalized);
     setTopicsList(getMergedGrammarTopics());
     setEditingTopic(null);
     setUploadMessage(null);
@@ -496,21 +506,32 @@ export default function TeacherAdminPage() {
     showToast('تم حذف تدريب الكتابة بنجاح');
   }
 
-  // --- Media Upload (Audio / Video) ---
-  async function handleMediaUpload(e: React.ChangeEvent<HTMLInputElement>, target: 'grammar' | 'listening') {
+  // --- Media Upload (Audio / Video / Image) ---
+  async function handleMediaUpload(
+    e: React.ChangeEvent<HTMLInputElement>,
+    target: 'grammar-video' | 'grammar-image' | 'listening-audio' | 'grammar' | 'listening'
+  ) {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploadingMedia(true);
     setUploadMessage(null);
     try {
-      const res = await uploadMediaToSupabase(file, 'videos');
+      const folder =
+        target === 'grammar-image'
+          ? 'images'
+          : target === 'listening' || target === 'listening-audio'
+          ? 'audio'
+          : 'videos';
+      const res = await uploadMediaToSupabase(file, folder);
       if (res.url) {
-        if (target === 'grammar' && editingTopic) {
+        if ((target === 'grammar-video' || target === 'grammar') && editingTopic) {
           setEditingTopic({ ...editingTopic, videoUrl: res.url });
-        } else if (target === 'listening' && editingListening) {
+        } else if (target === 'grammar-image' && editingTopic) {
+          setEditingTopic({ ...editingTopic, imageUrl: res.url });
+        } else if ((target === 'listening-audio' || target === 'listening') && editingListening) {
           setEditingListening({ ...editingListening, mediaUrl: res.url, audioUrl: res.url });
         }
-        setUploadMessage('تم رفع الملف السحابي وحفظ الرابط بنجاح! ✅');
+        setUploadMessage('تم رفع الملف بنجاح! ✅');
       } else {
         setUploadMessage(res.error || 'تعذر رفع الملف');
       }
@@ -1221,7 +1242,7 @@ export default function TeacherAdminPage() {
                             titleAr: '',
                             titleEn: '',
                             description: '',
-                            imageUrl: '/content/grammar/present-simple.jpg',
+                            imageUrl: '',
                             videoUrl: '',
                             questions: [
                               {
@@ -1343,20 +1364,100 @@ export default function TeacherAdminPage() {
                       />
                     </div>
 
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
-                        رابط الفيديو (YouTube Embed أو MP4)
-                      </label>
+                    {/* Optional Infographic Card Image */}
+                    <div className="rounded-2xl border border-slate-200/80 bg-slate-50/50 p-3.5 space-y-2">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                        <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                          <ImageIcon className="h-4 w-4 text-violet-600" />
+                          <span>صورة بطاقة القاعدة (إنفوجرافيك اختياري)</span>
+                        </label>
+                        <span className="text-[11px] text-slate-500 font-medium">
+                          اتركيها فارغة إذا لم تكن هناك بطاقة مصممة للقاعدة
+                        </span>
+                      </div>
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <input
+                          type="text"
+                          dir="ltr"
+                          value={editingTopic.imageUrl || ''}
+                          onChange={(e) => setEditingTopic({ ...editingTopic, imageUrl: e.target.value })}
+                          placeholder="https://... أو /content/grammar/... (اختياري)"
+                          className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold"
+                        />
+                        <label className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-violet-200 bg-violet-50 px-4 py-2 text-xs font-bold text-violet-800 hover:bg-violet-100 cursor-pointer transition shrink-0">
+                          <Upload className="h-3.5 w-3.5" />
+                          <span>{uploadingMedia ? 'جاري الرفع...' : 'رفع صورة بطاقة'}</span>
+                          <input
+                            type="file"
+                            accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                            className="hidden"
+                            disabled={uploadingMedia}
+                            onChange={(e) => handleMediaUpload(e, 'grammar-image')}
+                          />
+                        </label>
+                      </div>
+
+                      {editingTopic.imageUrl?.trim() ? (
+                        <div className="flex items-center gap-3 rounded-xl border border-violet-100 bg-white p-2.5">
+                          <img
+                            src={editingTopic.imageUrl}
+                            alt="معاينة بطاقة القاعدة"
+                            className="h-16 w-24 rounded-lg border border-slate-200 object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLElement).style.display = 'none';
+                            }}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-bold text-slate-700 truncate" dir="ltr">
+                              {editingTopic.imageUrl}
+                            </p>
+                            <p className="text-[11px] text-emerald-600 font-bold">
+                              ستظهر هذه البطاقة أعلى صفحة الدرس مع إمكانية التكبير
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setEditingTopic({ ...editingTopic, imageUrl: '' })}
+                            className="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1 text-xs font-bold text-rose-700 hover:bg-rose-100 transition shrink-0"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                            <span>إزالة الصورة</span>
+                          </button>
+                        </div>
+                      ) : (
+                        <p className="text-[11px] text-slate-500 font-medium">
+                          💡 لن تظهر أي بطاقة عشوائية أو سابقة عند ترك هذا الحقل فارغاً.
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Video URL & Upload with Live Preview */}
+                    <div className="rounded-2xl border border-slate-200/80 bg-slate-50/50 p-3.5 space-y-2">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                        <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                          <Video className="h-4 w-4 text-violet-600" />
+                          <span>رابط الفيديو التعليمي أو الإثرائي (اختياري)</span>
+                        </label>
+                        <span className="text-[11px] text-slate-500 font-medium">
+                          يدعم روابط YouTube العادية والمباشرة
+                        </span>
+                      </div>
                       <div className="flex flex-col sm:flex-row gap-2">
                         <input
                           type="text"
                           dir="ltr"
                           value={editingTopic.videoUrl || ''}
                           onChange={(e) => setEditingTopic({ ...editingTopic, videoUrl: e.target.value })}
-                          placeholder="https://www.youtube.com/embed/... أو رابط فيديو"
-                          className="flex-1 rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold"
+                          onBlur={(e) => {
+                            const trimmed = e.target.value.trim();
+                            if (trimmed) {
+                              setEditingTopic({ ...editingTopic, videoUrl: toEmbedVideoUrl(trimmed) });
+                            }
+                          }}
+                          placeholder="https://www.youtube.com/watch?v=... أو https://youtu.be/... أو MP4"
+                          className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold"
                         />
-                        <label className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-violet-200 bg-violet-50 px-4 py-2 text-xs font-bold text-violet-800 hover:bg-violet-100 cursor-pointer transition">
+                        <label className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-violet-200 bg-violet-50 px-4 py-2 text-xs font-bold text-violet-800 hover:bg-violet-100 cursor-pointer transition shrink-0">
                           <Upload className="h-3.5 w-3.5" />
                           <span>{uploadingMedia ? 'جاري الرفع...' : 'رفع مقطع MP4'}</span>
                           <input
@@ -1364,12 +1465,42 @@ export default function TeacherAdminPage() {
                             accept="video/mp4,video/*"
                             className="hidden"
                             disabled={uploadingMedia}
-                            onChange={(e) => handleMediaUpload(e, 'grammar')}
+                            onChange={(e) => handleMediaUpload(e, 'grammar-video')}
                           />
                         </label>
                       </div>
+
                       {uploadMessage && (
-                        <p className="text-xs font-bold text-violet-800 pt-1.5">{uploadMessage}</p>
+                        <p className="text-xs font-bold text-violet-800 pt-1">{uploadMessage}</p>
+                      )}
+
+                      {editingTopic.videoUrl?.trim() ? (
+                        <div className="mt-2 space-y-2 rounded-xl border border-violet-100 bg-white p-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-violet-900 flex items-center gap-1">
+                              <Video className="h-3.5 w-3.5 text-violet-600" />
+                              معاينة مشغل الفيديو المباشرة في الدرس:
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setEditingTopic({ ...editingTopic, videoUrl: '' })}
+                              className="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-2 py-0.5 text-xs font-bold text-rose-700 hover:bg-rose-100 transition"
+                            >
+                              <X className="h-3 w-3" />
+                              <span>إزالة الفيديو</span>
+                            </button>
+                          </div>
+                          <div className="max-w-md mx-auto overflow-hidden rounded-xl border border-slate-200 shadow-xs">
+                            <PortalVideoPlayer
+                              src={editingTopic.videoUrl}
+                              title={editingTopic.titleAr || 'معاينة الفيديو'}
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-[11px] text-slate-500 font-medium">
+                          💡 يمكنكِ لصق أي رابط يوتيوب عادي وسيتكفل النظام بتهيئته تلقائياً ليعمل بسلاسة وبدون شاشة سوداء.
+                        </p>
                       )}
                     </div>
 

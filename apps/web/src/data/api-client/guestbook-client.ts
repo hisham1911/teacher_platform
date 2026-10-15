@@ -719,14 +719,14 @@ export const guestbookClient = {
  */
 export async function uploadMediaToSupabase(
   file: File,
-  folder: 'videos' | 'images' = 'videos'
+  folder: 'videos' | 'images' | 'audio' = 'videos'
 ): Promise<{ url: string; error?: string }> {
-  // التحقق من حجم الفيديو (الحد الأقصى 50 ميجابايت في الباقة المجانية)
+  // التحقق من حجم الملف (الحد الأقصى 50 ميجابايت في الباقة المجانية)
   const maxBytes = 50 * 1024 * 1024;
   if (file.size > maxBytes) {
     return {
       url: '',
-      error: 'حجم الفيديو أكبر من 50 ميجابايت. يرجى اختيار مقطع أقصر أو وضع رابط يوتيوب.',
+      error: 'حجم الملف أكبر من 50 ميجابايت. يرجى اختيار ملف أصغر أو وضع رابط خارجي.',
     };
   }
 
@@ -985,12 +985,17 @@ export function getMergedGrammarTopics(): GrammarTopic[] {
   });
 
   for (const extra of customMap.values()) {
+    const safeImageUrl =
+      extra.imageUrl === '/content/grammar/present-simple.jpg' && extra.slug !== 'present-simple'
+        ? ''
+        : (extra.imageUrl || '');
+
     merged.push({
       slug: extra.slug,
       titleAr: extra.titleAr,
       titleEn: extra.titleEn,
       description: extra.description,
-      imageUrl: extra.imageUrl || '/content/grammar/present-simple.jpg',
+      imageUrl: safeImageUrl,
       videoUrl: extra.videoUrl,
       questions: extra.questions,
     });
