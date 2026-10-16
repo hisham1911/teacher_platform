@@ -33,7 +33,7 @@ export interface StudentQuizResultRecord {
   id: string;
   studentName: string;
   studentGrade: string;
-  category: 'placement' | 'grammar' | 'reading' | 'listening' | 'million' | 'speed';
+  category: 'placement' | 'grammar' | 'reading' | 'listening' | 'million' | 'speed' | 'competition';
   activityTitle: string;
   score: number;
   totalQuestions: number;

@@ -5,6 +5,8 @@ import {
   Trophy,
   PenLine,
   BookOpen,
+  Crown,
+  Award,
 } from 'lucide-react';
 import { PublicBackdrop } from '../../components/layout/root-layout';
 import { PortalNav, PortalFooter } from '../../components/portal/portal-nav';
@@ -107,6 +109,51 @@ export default function PortalHomePage() {
                 <PenLine className="h-4 w-4 text-emerald-600" />
                 <span>قسم الكتابة</span>
               </Link>
+            </div>
+          </div>
+        </section>
+
+        {/* National Initiative Royal Banner */}
+        <section className="animate-page-enter mx-auto max-w-6xl px-4 pb-8 sm:pb-12">
+          <div className="relative overflow-hidden rounded-3xl border-2 border-amber-300/80 bg-gradient-to-br from-emerald-950 via-emerald-900 to-teal-950 p-6 sm:p-9 text-white shadow-xl">
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute -top-24 -right-24 h-64 w-64 rounded-full bg-amber-400/20 blur-3xl"
+            />
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-emerald-400/20 blur-3xl"
+            />
+
+            <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-6 text-center lg:text-right">
+              <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
+                <div className="flex h-16 w-16 sm:h-20 sm:w-20 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-tr from-amber-400 to-amber-500 text-slate-950 shadow-lg ring-4 ring-amber-300/30">
+                  <Crown className="h-8 w-8 sm:h-10 sm:w-10" />
+                </div>
+                <div>
+                  <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-400/20 border border-amber-300/40 px-3.5 py-1 text-xs font-black text-amber-200 mb-2">
+                    <Sparkles className="h-3.5 w-3.5 text-amber-300 shrink-0" />
+                    <span>مبادرة وطنية حصرية · 🇸🇦 Saudi Homeland Ambassador</span>
+                  </div>
+                  <h2 className="text-xl sm:text-3xl font-black text-white">
+                    مبادرة في القلب وطن وقيادة | Journey of Glory 🇸🇦
+                  </h2>
+                  <p className="mt-1 text-xs sm:text-sm font-semibold text-emerald-100 max-w-xl">
+                    رحلة تفاعلية من 5 محطات في تاريخ المملكة ومدنها وطبيعتها وتراثها؛ توّجي مشاركتكِ بكتابة عهد المستقبل والحصول على شهادة «سفيرة الوطن».
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center gap-3 shrink-0 w-full sm:w-auto">
+                <Link
+                  to="/national-journey"
+                  className="w-full sm:w-auto inline-flex min-h-13 items-center justify-center gap-2.5 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-400 px-7 py-3.5 text-sm sm:text-base font-black text-slate-950 shadow-lg shadow-amber-400/20 transition hover:brightness-105 active:scale-95"
+                >
+                  <Award className="h-5 w-5 text-emerald-950 shrink-0" />
+                  <span>ابدئي رحلة المجد</span>
+                  <ArrowLeft className="h-4 w-4 shrink-0 text-emerald-950" />
+                </Link>
+              </div>
             </div>
           </div>
         </section>

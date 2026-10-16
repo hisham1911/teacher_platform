@@ -75,6 +75,14 @@ const navLinks: NavItem[] = [
     color: 'from-amber-500 to-yellow-600',
   },
   {
+    path: '/national-journey',
+    label: '🇸🇦 وطن وقيادة',
+    labelEn: 'National Journey',
+    id: 'national-journey',
+    Icon: Sparkles,
+    color: 'from-emerald-600 to-teal-700',
+  },
+  {
     path: '/guestbook',
     label: 'سجل الزوار',
     labelEn: 'Guestbook',

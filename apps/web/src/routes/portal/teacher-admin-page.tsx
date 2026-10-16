@@ -63,9 +63,10 @@ import type {
   QuizQuestion,
 } from '../../data/content/types';
 
-const TOPIC_LABELS: Record<string, string> = Object.fromEntries(
-  grammarTopics.map((t) => [t.slug, t.titleAr]),
-);
+const TOPIC_LABELS: Record<string, string> = {
+  ...Object.fromEntries(grammarTopics.map((t) => [t.slug, t.titleAr])),
+  'national-pride': '🇸🇦 مبادرة في القلب وطن وقيادة (أصوات تحب الوطن)',
+};
 
 function formatTimeAgo(dateString: string): string {
   try {
@@ -882,6 +883,7 @@ export default function TeacherAdminPage() {
                 >
                   <option value="all">جميع المواضيع</option>
                   <option value="guestbook">سجل الزوار العام</option>
+                  <option value="national-pride">🇸🇦 أصوات تحب الوطن</option>
                   {topicsList.map((t) => (
                     <option key={t.slug} value={t.slug}>
                       {t.titleAr}
