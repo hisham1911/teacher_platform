@@ -36,6 +36,15 @@ describe('RootLayout', () => {
     view.unmount();
   });
 
+  it('يفصل مسار المبادرة الوطنية عن شل تسجيل الدخول لمنع تكرار الهيدر والفوتر', () => {
+    clearSession();
+    const view = renderLayout('/national-journey');
+    expect(screen.getByText('محتوى')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /تسجيل الدخول/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('navigation', { name: 'التنقل الرئيسي' })).not.toBeInTheDocument();
+    view.unmount();
+  });
+
   it('يعرض Player بلا تنقل Studio', () => {
     clearSession();
     const view = renderLayout('/play/ABC123');

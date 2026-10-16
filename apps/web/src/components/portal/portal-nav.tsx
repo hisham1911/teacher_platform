@@ -477,6 +477,9 @@ export function PortalFooter({ variant = 'light' }: { variant?: 'light' | 'dark'
             <Link to="/competitions" className={isDark ? 'hover:text-amber-400 transition-colors' : 'hover:text-violet-700 transition-colors'}>
               المسابقات
             </Link>
+            <Link to="/national-journey" className={isDark ? 'hover:text-amber-400 transition-colors' : 'hover:text-violet-700 transition-colors'}>
+              🇸🇦 وطن وقيادة
+            </Link>
             <Link to="/guestbook" className={isDark ? 'hover:text-amber-400 transition-colors' : 'hover:text-violet-700 transition-colors'}>
               سجل الزوار
             </Link>
