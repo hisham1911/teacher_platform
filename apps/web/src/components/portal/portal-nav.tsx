@@ -507,30 +507,21 @@ export function PortalFooter({ variant = 'light' }: { variant?: 'light' | 'dark'
     >
       <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-8 px-4 sm:px-6">
         {/* Initiative Branding Card */}
-        <div className="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-right">
+        <div className="flex flex-col items-center text-center">
           <Link
             to="/"
-            className="shrink-0 transition-transform hover:scale-105"
+            className="inline-flex transition-transform hover:scale-105"
             aria-label="الرئيسية"
           >
             <EnglishSparkLogo
-              variant="icon"
+              variant="horizontal"
               isDark={isDark}
-              className="h-12 w-12 shadow-md rounded-2xl"
+              showSubtitle={false}
             />
           </Link>
-          <div>
-            <div className="flex items-center justify-center sm:justify-start">
-              <EnglishSparkLogo
-                variant="horizontal"
-                isDark={isDark}
-                showSubtitle={false}
-              />
-            </div>
-            <p className={`mt-1 text-xs font-semibold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-              إدارة تعليم جازان • متوسطة وثانوية الجرادية — مديرة المدرسة: أ. آمنة دغريري • إشراف: معلمات اللغة الإنجليزية
-            </p>
-          </div>
+          <p className={`mt-2 text-xs font-semibold text-center ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+            إدارة تعليم جازان • متوسطة وثانوية الجرادية — مديرة المدرسة: أ. آمنة دغريري • إشراف: معلمات اللغة الإنجليزية
+          </p>
         </div>
 
         {/* Structured Links on Mobile & Desktop */}

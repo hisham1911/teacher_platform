@@ -174,7 +174,7 @@ export default function MillionChallengePage() {
     setResultReason('walked');
     setStage('result');
     void studentResultsClient.recordResult({
-      studentName: name.trim() || 'طالبة متميزة',
+      studentName: name.trim() || 'طالب متميز',
       category: 'million',
       activityTitle: 'تحدي المليون Spark',
       score: banked,
@@ -214,7 +214,7 @@ export default function MillionChallengePage() {
           setStage('result');
           playTone('win');
           void studentResultsClient.recordResult({
-            studentName: name.trim() || 'طالبة متميزة',
+            studentName: name.trim() || 'طالب متميز',
             category: 'million',
             activityTitle: 'تحدي المليون Spark',
             score: 1000000,
@@ -232,7 +232,7 @@ export default function MillionChallengePage() {
         setResultReason(guaranteed > 0 ? 'safe_haven' : 'lost');
         setStage('result');
         void studentResultsClient.recordResult({
-          studentName: name.trim() || 'طالبة متميزة',
+          studentName: name.trim() || 'طالب متميز',
           category: 'million',
           activityTitle: 'تحدي المليون Spark',
           score: guaranteed,
@@ -281,34 +281,19 @@ export default function MillionChallengePage() {
       >
         {/* Top Compact App HUD */}
         <header className="shrink-0 border-b border-white/10 bg-slate-950/60 px-3.5 py-2.5 backdrop-blur-md">
-          <div className="mx-auto flex max-w-5xl items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={handleRestart}
-                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/5 text-sky-200 hover:bg-white/10 hover:text-white transition"
-                title="خروج من المسابقة"
-                aria-label="خروج"
-              >
-                <X className="h-4 w-4" />
-              </button>
+          <div className="mx-auto flex max-w-5xl items-center justify-between gap-3">
+            <button
+              type="button"
+              onClick={handleRestart}
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/5 text-sky-200 hover:bg-white/10 hover:text-white transition"
+              title="خروج من المسابقة"
+              aria-label="خروج"
+            >
+              <X className="h-4 w-4" />
+            </button>
 
-              {totalPoints > 0 && selected === null && (
-                <button
-                  type="button"
-                  onClick={handleWalkAway}
-                  className="inline-flex items-center gap-1 rounded-xl border border-emerald-400/40 bg-emerald-500/15 px-2.5 py-1.5 text-[11px] font-black text-emerald-300 hover:bg-emerald-500/25 active:scale-95 transition"
-                  title="انسحاب وتأمين الرصيد الحالي"
-                >
-                  <LogOut className="h-3.5 w-3.5 rotate-180" />
-                  <span className="hidden sm:inline">انسحاب وتأمين الرصيد</span>
-                  <span className="sm:hidden">انسحاب</span>
-                </button>
-              )}
-            </div>
-
-            <div className="flex flex-1 flex-col gap-1 px-2">
-              <div className="flex items-center justify-between text-[11px] font-black">
+            <div className="flex flex-1 flex-col gap-1 px-1 sm:px-3 min-w-0">
+              <div className="flex items-center justify-between text-[11px] font-black whitespace-nowrap gap-2">
                 <span className="text-sky-200">
                   المستوى {question.level} من 15
                 </span>
@@ -324,9 +309,9 @@ export default function MillionChallengePage() {
               </div>
             </div>
 
-            <div className="shrink-0 rounded-xl border border-amber-400/30 bg-amber-400/10 px-2.5 py-1 text-center">
-              <span className="block text-[9px] font-bold text-amber-200">رصيدك الحالي</span>
-              <span className="block text-xs font-black text-amber-300" dir="ltr">
+            <div className="shrink-0 rounded-xl border border-amber-400/30 bg-amber-400/10 px-2.5 py-1 text-center min-w-[72px]">
+              <span className="block text-[9px] font-bold text-amber-200 whitespace-nowrap">رصيدك الحالي</span>
+              <span className="block text-xs font-black text-amber-300 whitespace-nowrap" dir="ltr">
                 ⭐ {totalPoints.toLocaleString()}
               </span>
             </div>
@@ -552,7 +537,7 @@ export default function MillionChallengePage() {
 
         {/* Bottom Docked Status Bar (Zero Layout Shift) */}
         <footer
-          className={`shrink-0 border-t px-4 py-2.5 transition-colors ${
+          className={`shrink-0 border-t px-4 py-2 sm:py-2.5 transition-colors ${
             isCorrectFeedback === true
               ? 'border-emerald-500/40 bg-emerald-950/90'
               : isCorrectFeedback === false
@@ -560,35 +545,52 @@ export default function MillionChallengePage() {
               : 'border-white/10 bg-slate-950/70'
           }`}
         >
-          <div className="mx-auto flex max-w-5xl items-center justify-between text-xs font-black">
-            {isCorrectFeedback === true ? (
-              <span className="text-emerald-300">
-                ✨ إجابة صحيحة! أحسنتِ، رصيدك الآن: ⭐ {question.points.toLocaleString()} نقطة!
-              </span>
-            ) : isCorrectFeedback === false ? (
-              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-rose-200">
-                <span>
-                  ❌ إجابة خاطئة! الإجابة الصحيحة هي:{' '}
-                  <strong className="text-emerald-300" dir="ltr">
-                    "{correctOption?.text}"
-                  </strong>
+          <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 text-xs font-black">
+            <div className="flex-1 min-w-0">
+              {isCorrectFeedback === true ? (
+                <span className="text-emerald-300">
+                  ✨ إجابة صحيحة! أحسنت، رصيدك الآن: ⭐ {question.points.toLocaleString()} نقطة!
                 </span>
-                {calculateGuaranteedPoints(currentLevel) > 0 ? (
-                  <span className="text-amber-300">
-                    🛡️ تم تأمين {calculateGuaranteedPoints(currentLevel).toLocaleString()} نقطة في محطة الأمان!
+              ) : isCorrectFeedback === false ? (
+                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-rose-200">
+                  <span>
+                    ❌ إجابة خاطئة! الإجابة الصحيحة هي:{' '}
+                    <strong className="text-emerald-300" dir="ltr">
+                      "{correctOption?.text}"
+                    </strong>
                   </span>
-                ) : (
-                  <span className="text-sky-300/80">لم تصلي لمحطة الأمان بعد.</span>
-                )}
-              </div>
-            ) : (
-              <span className="text-sky-200/80">
-                المتسابقة: <strong className="text-white">{name}</strong>
-              </span>
-            )}
-            <span className="text-amber-300 shrink-0">
-              المستوى {question.level} / 15
-            </span>
+                  {calculateGuaranteedPoints(currentLevel) > 0 ? (
+                    <span className="text-amber-300">
+                      🛡️ تم تأمين {calculateGuaranteedPoints(currentLevel).toLocaleString()} نقطة في محطة الأمان!
+                    </span>
+                  ) : (
+                    <span className="text-sky-300/80">لم تصل لمحطة الأمان بعد.</span>
+                  )}
+                </div>
+              ) : (
+                <span className="text-sky-200/80 truncate block">
+                  الاسم: <strong className="text-white">{name}</strong>
+                </span>
+              )}
+            </div>
+
+            <div className="shrink-0 flex items-center gap-2">
+              {totalPoints > 0 && selected === null ? (
+                <button
+                  type="button"
+                  onClick={handleWalkAway}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-400/50 bg-emerald-500/20 px-3 py-1.5 text-xs font-black text-emerald-300 hover:bg-emerald-500/30 active:scale-95 transition shadow-xs whitespace-nowrap"
+                  title="انسحاب وتأمين الرصيد الحالي"
+                >
+                  <LogOut className="h-3.5 w-3.5 rotate-180 shrink-0" />
+                  <span>انسحاب ({totalPoints.toLocaleString()} ⭐)</span>
+                </button>
+              ) : (
+                <span className="text-amber-300 whitespace-nowrap">
+                  المستوى {question.level} / 15
+                </span>
+              )}
+            </div>
           </div>
         </footer>
       </div>
@@ -599,8 +601,8 @@ export default function MillionChallengePage() {
     <div className="challenge-shell flex min-h-dvh flex-col" dir="rtl">
       <PortalNav variant="dark" />
 
-      <main className="relative z-10 flex flex-1 flex-col items-center justify-center px-4 py-5 sm:py-10">
-        <div className="mb-3 self-start max-w-6xl w-full mx-auto flex items-center gap-1.5 text-xs font-bold text-sky-200/70">
+      <main className="relative z-10 flex min-h-[calc(100dvh-6.5rem)] flex-1 flex-col items-center justify-center px-4 py-8 sm:py-12">
+        <div className="mb-4 self-start max-w-xl w-full mx-auto flex items-center gap-1.5 text-xs font-bold text-sky-200/70">
           <Link className="hover:text-amber-400 transition" to="/competitions">
             المسابقات والتحديات
           </Link>
@@ -609,20 +611,22 @@ export default function MillionChallengePage() {
         </div>
 
         {stage === 'welcome' && (
-          <div className="challenge-panel challenge-enter w-full max-w-xl p-5 text-center sm:p-10">
-            <span className="mb-3 inline-flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 text-slate-950 shadow-[0_0_30px_rgba(251,191,36,0.3)]">
-              <Award className="h-8 w-8 sm:h-9 sm:w-9" />
-            </span>
-            <p className="text-xs font-black tracking-[0.2em] text-[var(--challenge-accent)]">
-              SPARK CHALLENGE
-            </p>
-            <h1 className="mt-1.5 text-2xl font-black text-white sm:text-4xl">تحدي المليون Spark</h1>
+          <div className="challenge-panel challenge-enter w-full max-w-xl py-8 px-5 sm:p-10 space-y-6 text-center">
+            <div>
+              <span className="mb-3 inline-flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 text-slate-950 shadow-[0_0_30px_rgba(251,191,36,0.3)]">
+                <Award className="h-8 w-8 sm:h-9 sm:w-9" />
+              </span>
+              <p className="text-xs font-black tracking-[0.2em] text-[var(--challenge-accent)]">
+                SPARK CHALLENGE
+              </p>
+              <h1 className="mt-1.5 text-2xl font-black text-white sm:text-4xl">تحدي المليون Spark</h1>
+            </div>
 
             {/* Input & Start Button First on Mobile for Immediate Thumb Reach */}
-            <div className="mt-5">
+            <div>
               <input
                 type="text"
-                placeholder="اكتبي اسمكِ هنا للبدء..."
+                placeholder="اكتب اسمك هنا للبدء..."
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 className="w-full min-h-12 rounded-2xl bg-white/10 px-5 py-3 text-center text-base sm:text-lg font-bold text-white placeholder-white/40 outline-none ring-2 ring-white/10 transition-all focus:bg-white/15 focus:ring-[var(--challenge-accent)]"
@@ -639,7 +643,7 @@ export default function MillionChallengePage() {
               </button>
             </div>
 
-            <div className="mt-5 rounded-2xl bg-white/5 p-4 text-right border border-white/10">
+            <div className="rounded-2xl bg-white/5 p-4 text-right border border-white/10">
               <ul className="flex flex-col gap-2 text-xs sm:text-sm font-semibold leading-relaxed text-sky-100">
                 <li className="flex items-start gap-2">
                   <span className="text-[var(--challenge-accent)] font-black">1.</span>
@@ -655,7 +659,11 @@ export default function MillionChallengePage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-sky-300 font-black">4.</span>
-                  <span>يمكنكِ الانسحاب في أي وقت وتأمين رصيدك الحالي كاملاً!</span>
+                  <span>يمكنك الانسحاب في أي وقت وتأمين رصيدك الحالي كاملاً!</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-rose-400 font-black">5.</span>
+                  <span>احذر: أي إجابة خاطئة تنهي الجولة فوراً!</span>
                 </li>
               </ul>
             </div>
@@ -664,52 +672,54 @@ export default function MillionChallengePage() {
 
         {stage === 'result' && (
           <div
-            className={`challenge-panel challenge-enter w-full max-w-xl p-6 text-center sm:p-10 ${
+            className={`challenge-panel challenge-enter w-full max-w-xl py-8 px-5 sm:p-10 space-y-6 text-center ${
               resultReason === 'win'
                 ? 'challenge-result-win'
                 : 'challenge-result-lose'
             }`}
           >
-            <span className="mb-4 inline-flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-2xl sm:rounded-3xl bg-white/10 text-white shadow-xl backdrop-blur-md">
-              {resultReason === 'win' ? (
-                <Trophy className="h-8 w-8 sm:h-10 sm:w-10 text-amber-400" />
-              ) : resultReason === 'safe_haven' ? (
-                <Shield className="h-8 w-8 sm:h-10 sm:w-10 text-emerald-400" />
-              ) : resultReason === 'walked' ? (
-                <Award className="h-8 w-8 sm:h-10 sm:w-10 text-sky-400" />
-              ) : (
-                <RotateCcw className="h-8 w-8 sm:h-10 sm:w-10 text-rose-400" />
-              )}
-            </span>
+            <div>
+              <span className="mb-4 inline-flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-2xl sm:rounded-3xl bg-white/10 text-white shadow-xl backdrop-blur-md">
+                {resultReason === 'win' ? (
+                  <Trophy className="h-8 w-8 sm:h-10 sm:w-10 text-amber-400" />
+                ) : resultReason === 'safe_haven' ? (
+                  <Shield className="h-8 w-8 sm:h-10 sm:w-10 text-emerald-400" />
+                ) : resultReason === 'walked' ? (
+                  <Award className="h-8 w-8 sm:h-10 sm:w-10 text-sky-400" />
+                ) : (
+                  <RotateCcw className="h-8 w-8 sm:h-10 sm:w-10 text-rose-400" />
+                )}
+              </span>
 
-            <h2 className="text-2xl sm:text-4xl font-black text-white">
-              {resultReason === 'win'
-                ? `مبروك يا ${name}! فزتِ بمليون نقطة Spark! 👑`
-                : resultReason === 'walked'
-                ? `قرار ذكي يا ${name}! انسحبتِ واحتفظتِ برصيدك 👏`
-                : resultReason === 'safe_haven'
-                ? `محاولة ممتازة يا ${name}! وصلتِ لمحطة الأمان 🛡️`
-                : `محاولة جيدة يا ${name}! حظاً أوفر في الجولة القادمة`}
-            </h2>
+              <h2 className="text-2xl sm:text-4xl font-black text-white">
+                {resultReason === 'win'
+                  ? `مبروك يا ${name}! الفوز الكبير في تحدي Spark! 🏆`
+                  : resultReason === 'walked'
+                  ? `قرار ذكي يا ${name}! تم الانسحاب وتأمين الرصيد بنجاح 👏`
+                  : resultReason === 'safe_haven'
+                  ? `محاولة ممتازة يا ${name}! تم الوصول لمحطة الأمان 🛡️`
+                  : `محاولة جيدة يا ${name}! حظاً أوفر في الجولة القادمة`}
+              </h2>
 
-            <p className="mt-2 text-sm sm:text-base font-bold text-sky-200">
-              {resultReason === 'win'
-                ? 'أنتِ بطلة Spark الرسمية وحققتِ العلامة الكاملة عن جدارة واستحقاق!'
-                : resultReason === 'walked'
-                ? `تم تأمين رصيدك بنجاح عند المستوى ${finalLevel} من 15`
-                : resultReason === 'safe_haven'
-                ? `توقفتِ عند المستوى ${finalLevel} وخرجتِ برصيد محطة الأمان المضمون!`
-                : `توقفتِ عند المستوى ${finalLevel} قبل الوصول لمحطة الأمان الأولى.`}
-            </p>
+              <p className="mt-2 text-sm sm:text-base font-bold text-sky-200">
+                {resultReason === 'win'
+                  ? 'أنت بطل Spark الرسمي وحققت العلامة الكاملة عن جدارة واستحقاق!'
+                  : resultReason === 'walked'
+                  ? `تم تأمين رصيدك بنجاح عند المستوى ${finalLevel} من 15`
+                  : resultReason === 'safe_haven'
+                  ? `توقفت عند المستوى ${finalLevel} وخرجت برصيد محطة الأمان المضمون!`
+                  : `توقفت عند المستوى ${finalLevel} قبل الوصول لمحطة الأمان الأولى.`}
+              </p>
+            </div>
 
-            <div className="mt-5 inline-flex items-center gap-2.5 rounded-2xl bg-black/40 px-6 py-3 border border-white/10">
+            <div className="inline-flex items-center gap-2.5 rounded-2xl bg-black/40 px-6 py-3 border border-white/10">
               <span className="text-xs sm:text-sm font-bold text-sky-300">الرصيد النهائي المحقق:</span>
               <span className="text-2xl sm:text-3xl font-black text-[var(--challenge-accent)]">
                 ⭐ {finalPoints.toLocaleString()}
               </span>
             </div>
 
-            <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
               <button
                 type="button"
                 onClick={handleRestart}

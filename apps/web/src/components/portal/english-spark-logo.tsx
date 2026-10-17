@@ -115,17 +115,17 @@ export function EnglishSparkLogo({
           aria-label="English Spark Official Logo"
           role="img"
         >
-          {/* Graceful curved dashed flight trail lifted above text */}
+          {/* Graceful curved dashed flight trail lifted safely above text */}
           <path
-            d="M 226 28 C 246 24, 264 18, 280 12"
+            d="M 218 32 C 234 24, 250 16, 266 10"
             stroke={trailColor}
             strokeWidth="2"
             strokeDasharray="3 4"
             strokeLinecap="round"
           />
 
-          {/* Gentle Origami Paper Airplane hovering 8-10px safely above Spark text */}
-          <g transform="translate(284, 8) rotate(10) scale(0.88)">
+          {/* Gentle Origami Paper Airplane hovering safely above Spark text away from letter r */}
+          <g transform="translate(266, 6) rotate(8) scale(0.78)">
             {/* Main wing */}
             <polygon points="44,4 4,19 23,31" fill="#7dd3fc" />
             {/* Top highlight facet */}
@@ -220,17 +220,17 @@ export function EnglishSparkLogo({
           aria-label="English Spark Logo"
           role="img"
         >
-          {/* Dotted Flight Trail lifted above text */}
+          {/* Dotted Flight Trail lifted cleanly above text */}
           <path
-            d="M 144 14 C 156 11, 166 8, 176 3"
+            d="M 136 22 C 148 16, 158 10, 168 5"
             stroke={trailColor}
             strokeWidth="1.8"
             strokeDasharray="2.5 3"
             strokeLinecap="round"
           />
 
-          {/* Soft Origami Airplane hovering 7-8px above Spark letters */}
-          <g transform="translate(178, -3) rotate(10) scale(0.62)">
+          {/* Soft Origami Airplane hovering safely above Spark letters away from letter r */}
+          <g transform="translate(168, -2) rotate(8) scale(0.52)">
             <polygon points="44,4 4,19 23,31" fill="#7dd3fc" />
             <polygon points="44,4 23,31 38,41" fill="#bae6fd" />
             <polygon points="23,31 38,41 27,39" fill="#0284c7" />
