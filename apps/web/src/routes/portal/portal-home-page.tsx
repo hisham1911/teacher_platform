@@ -5,11 +5,9 @@ import {
   Trophy,
   PenLine,
   BookOpen,
-  Crown,
-  Award,
 } from 'lucide-react';
 import { PublicBackdrop } from '../../components/layout/root-layout';
-import { PortalNav, PortalFooter } from '../../components/portal/portal-nav';
+import { PortalNav, PortalFooter, SaudiEmblemIcon } from '../../components/portal/portal-nav';
 import { EnglishSparkLogo } from '../../components/portal/english-spark-logo';
 import { portalSections } from '../../data/content/portal-sections';
 import { SectionIcon, getSectionTheme } from '../../components/portal/portal-icons';
@@ -113,49 +111,56 @@ export default function PortalHomePage() {
           </div>
         </section>
 
-        {/* National Initiative Royal Banner */}
-        <section className="animate-page-enter mx-auto max-w-6xl px-4 pb-8 sm:pb-12">
-          <div className="relative overflow-hidden rounded-3xl border-2 border-amber-300/80 bg-gradient-to-br from-emerald-950 via-emerald-900 to-teal-950 p-6 sm:p-9 text-white shadow-xl">
+        {/* Luminous Glassmorphic National Initiative Banner — مبادرة في القلب وطن وقيادة */}
+        <section className="animate-page-enter mx-auto max-w-6xl px-4 pb-8">
+          <Link
+            className="group relative flex flex-col lg:flex-row items-center justify-between gap-5 overflow-hidden rounded-2xl sm:rounded-3xl border border-emerald-200/90 bg-gradient-to-br from-white via-emerald-50/40 to-amber-50/45 p-5 sm:p-7 shadow-xs backdrop-blur-xl ring-1 ring-emerald-900/5 transition-all duration-300 hover:-translate-y-1 hover:border-emerald-400 hover:shadow-xl hover:shadow-emerald-900/10"
+            to="/national-journey"
+          >
+            {/* Luminous Specular Top Highlight */}
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute -top-24 -right-24 h-64 w-64 rounded-full bg-amber-400/20 blur-3xl"
+              className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/95 to-transparent"
+            />
+            {/* Ambient Emerald & Gold Corner Glows */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute -top-12 -right-12 h-40 w-40 rounded-full bg-gradient-to-br from-emerald-400/20 via-teal-400/10 to-transparent blur-2xl opacity-75 group-hover:opacity-100 transition-opacity"
             />
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-emerald-400/20 blur-3xl"
+              className="pointer-events-none absolute -bottom-12 -left-12 h-40 w-40 rounded-full bg-gradient-to-tr from-amber-400/20 via-yellow-400/10 to-transparent blur-2xl opacity-75 group-hover:opacity-100 transition-opacity"
             />
 
-            <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-6 text-center lg:text-right">
-              <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
-                <div className="flex h-16 w-16 sm:h-20 sm:w-20 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-tr from-amber-400 to-amber-500 text-slate-950 shadow-lg ring-4 ring-amber-300/30">
-                  <Crown className="h-8 w-8 sm:h-10 sm:w-10" />
-                </div>
-                <div>
-                  <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-400/20 border border-amber-300/40 px-3.5 py-1 text-xs font-black text-amber-200 mb-2">
-                    <Sparkles className="h-3.5 w-3.5 text-amber-300 shrink-0" />
-                    <span>مبادرة وطنية حصرية · 🇸🇦 Saudi Homeland Ambassador</span>
-                  </div>
-                  <h2 className="text-xl sm:text-3xl font-black text-white">
-                    مبادرة في القلب وطن وقيادة | Journey of Glory 🇸🇦
-                  </h2>
-                  <p className="mt-1 text-xs sm:text-sm font-semibold text-emerald-100 max-w-xl">
-                    رحلة تفاعلية من 5 محطات في تاريخ المملكة ومدنها وطبيعتها وتراثها؛ توّجي مشاركتكِ بكتابة عهد المستقبل والحصول على شهادة «سفيرة الوطن».
-                  </p>
-                </div>
+            <div className="relative z-10 flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-right gap-4 sm:gap-5">
+              <div className="flex h-15 w-15 sm:h-18 sm:w-18 shrink-0 items-center justify-center rounded-2xl sm:rounded-3xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white shadow-md shadow-emerald-700/20 group-hover:scale-105 transition-transform">
+                <SaudiEmblemIcon className="h-8 w-8 sm:h-10 sm:w-10 text-white" />
               </div>
-
-              <div className="flex flex-col sm:flex-row items-center gap-3 shrink-0 w-full sm:w-auto">
-                <Link
-                  to="/national-journey"
-                  className="w-full sm:w-auto inline-flex min-h-13 items-center justify-center gap-2.5 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-400 px-7 py-3.5 text-sm sm:text-base font-black text-slate-950 shadow-lg shadow-amber-400/20 transition hover:brightness-105 active:scale-95"
-                >
-                  <Award className="h-5 w-5 text-emerald-950 shrink-0" />
-                  <span>ابدئي رحلة المجد</span>
-                  <ArrowLeft className="h-4 w-4 shrink-0 text-emerald-950" />
-                </Link>
+              <div>
+                <div className="inline-flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                  <span className="rounded-full border border-emerald-200 bg-emerald-100/80 px-3 py-0.5 text-[11px] font-black text-emerald-900">
+                    مبادرة وطنية تفاعلية
+                  </span>
+                  <span className="text-xs font-black tracking-wider text-amber-700" dir="ltr">
+                    JOURNEY OF GLORY · رحلة المجد
+                  </span>
+                </div>
+                <h2 className="mt-1.5 text-xl sm:text-2xl font-black text-slate-950 group-hover:text-emerald-950 transition-colors">
+                  مبادرة «في القلب وطن وقيادة»
+                </h2>
+                <p className="mt-1 max-w-2xl text-xs sm:text-sm font-semibold leading-relaxed text-slate-600">
+                  رحلة تفاعلية من 5 محطات في تاريخ المملكة ومدنها وطبيعتها وتراثها، تختتمينها بكتابة رسالتكِ في
+                  جدار «أصوات تحب الوطن» والحصول على شهادة{' '}
+                  <strong className="text-emerald-800">«سفيرة الوطن | Saudi Homeland Ambassador»</strong>.
+                </p>
               </div>
             </div>
-          </div>
+
+            <div className="relative z-10 w-full sm:w-auto flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-700 px-6 py-3.5 text-xs sm:text-sm font-black text-white shadow-md shadow-emerald-700/20 transition group-hover:brightness-110">
+              <span>ابدئي رحلة المجد</span>
+              <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
+            </div>
+          </Link>
         </section>
 
         {/* Section Cards */}

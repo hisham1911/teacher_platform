@@ -14,6 +14,7 @@ import {
 import { PublicBackdrop } from '../../components/layout/root-layout';
 import { PortalNav, PortalFooter } from '../../components/portal/portal-nav';
 import { speedQuestions } from '../../data/content/competitions';
+import { studentResultsClient } from '../../data/api-client/guestbook-client';
 import { useStageScrollReset } from '../../lib/scroll-reset';
 
 type GameState = 'lobby' | 'playing' | 'timesup';
@@ -92,6 +93,7 @@ export default function SpeedChallengePage() {
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const hasRecordedResultRef = useRef(false);
 
   useStageScrollReset(gameState);
 
@@ -101,6 +103,7 @@ export default function SpeedChallengePage() {
   // Start / Restart game
   function handleStart() {
     if (playerName.trim().length < 2) return;
+    hasRecordedResultRef.current = false;
     setGameState('playing');
     setTimeLeft(60);
     setCurrentIndex(0);
@@ -111,6 +114,22 @@ export default function SpeedChallengePage() {
     setWrongCount(0);
     setFeedback(null);
   }
+
+  // Auto-record results on timesup
+  useEffect(() => {
+    if (gameState === 'timesup' && !hasRecordedResultRef.current) {
+      hasRecordedResultRef.current = true;
+      const totalAnswered = correctCount + wrongCount;
+      void studentResultsClient.recordResult({
+        studentName: playerName.trim() || 'طالبة متميزة',
+        category: 'speed',
+        activityTitle: 'تحدي السرعة Spark',
+        score: score,
+        totalQuestions: Math.max(1, totalAnswered),
+        cefrLevel: score >= 15 ? 'B2 - Advanced' : score >= 8 ? 'B1 - Intermediate' : 'A2 - Elementary',
+      });
+    }
+  }, [gameState, score, correctCount, wrongCount, playerName]);
 
   // Timer tick
   useEffect(() => {

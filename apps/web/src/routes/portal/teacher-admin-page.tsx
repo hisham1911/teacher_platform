@@ -33,7 +33,7 @@ import {
   X,
 } from 'lucide-react';
 import { PublicBackdrop } from '../../components/layout/root-layout';
-import { PortalNav, PortalFooter } from '../../components/portal/portal-nav';
+import { PortalNav, PortalFooter, SaudiEmblemIcon } from '../../components/portal/portal-nav';
 import { PortalVideoPlayer } from '../../components/portal/portal-video-player';
 import { toEmbedVideoUrl } from '../../components/portal/video-utils';
 import {
@@ -54,6 +54,9 @@ import {
   TEACHER_OFFICIAL_NAME,
   TEACHER_USERNAME,
 } from '../../data/api-client/guestbook-client';
+import {
+  parseVoiceMessage,
+} from '../../data/content/national-journey-data';
 import { grammarTopics } from '../../data/content/grammar';
 import type {
   GrammarTopic,
@@ -284,7 +287,7 @@ export default function TeacherAdminPage() {
   const [loginError, setLoginError] = useState(false);
 
   // Main Dashboard Section Switcher
-  const [dashboardSection, setDashboardSection] = useState<'qna' | 'results' | 'lessons'>('qna');
+  const [dashboardSection, setDashboardSection] = useState<'qna' | 'results' | 'lessons' | 'national'>('qna');
 
   // Sub-skill Switcher inside CMS
   const [activeSkill, setActiveSkill] = useState<'grammar' | 'reading' | 'listening' | 'writing'>('grammar');
@@ -302,6 +305,7 @@ export default function TeacherAdminPage() {
   // 2. Student Results Data
   const [results, setResults] = useState<StudentQuizResultRecord[]>([]);
   const [resultSearch, setResultSearch] = useState('');
+  const [resultCategoryFilter, setResultCategoryFilter] = useState<'all' | 'placement' | 'competition'>('all');
 
   // 3. Multi-Skill Educational Content Data
   const [topicsList, setTopicsList] = useState<GrammarTopic[]>(() => getMergedGrammarTopics());
@@ -433,6 +437,52 @@ export default function TeacherAdminPage() {
     showToast('تم تصدير كشف الدرجات بصيغة Excel (CSV) بنجاح! 📊');
   }
 
+  async function handleDeleteResult(id: string) {
+    if (!window.confirm('هل أنتِ متأكدة من حذف هذه النتيجة نهائياً من السجل؟')) return;
+    const ok = await studentResultsClient.deleteResult(id);
+    if (ok) {
+      setResults((prev) => prev.filter((r) => r.id !== id));
+      showToast('تم حذف النتيجة من السجل بنجاح! 🗑️');
+    }
+  }
+
+  function handleExportNationalCsv() {
+    const headers = [
+      'اسم الطالبة / السفيرة',
+      'الصف الدراسي',
+      'حلمي للمملكة (Dream)',
+      'عهدي وعملي (Promise)',
+      'رسالة الفخر (Pride)',
+      'إشادة وتوثيق المعلمة',
+      'الإعجابات',
+      'التاريخ',
+    ];
+    const rows = nationalEntries.map((e) => {
+      const parsed = parseVoiceMessage(e.message);
+      return [
+        `"${e.name}"`,
+        `"${e.role}"`,
+        `"${parsed.dream.replace(/"/g, '""')}"`,
+        `"${parsed.promise.replace(/"/g, '""')}"`,
+        `"${parsed.pride.replace(/"/g, '""')}"`,
+        `"${(e.teacherReply || '').replace(/"/g, '""')}"`,
+        e.likes,
+        `"${new Date(e.createdAt).toLocaleDateString('ar-SA')}"`,
+      ];
+    });
+    const csv = '\uFEFF' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `national_voices_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('تم تصدير سجل أصوات الوطن بصيغة Excel (CSV) بنجاح! 🇸🇦');
+  }
+
   // --- Handlers: Grammar ---
   async function handleSaveTopic(e: React.FormEvent) {
     e.preventDefault();
@@ -541,8 +591,15 @@ export default function TeacherAdminPage() {
     }
   }
 
+  const nationalEntries = useMemo(() => {
+    return entries.filter((e) => e.topicSlug === 'national-pride');
+  }, [entries]);
+
   const filteredEntries = useMemo(() => {
     return entries.filter((entry) => {
+      // Exclude national initiative entries from general Q&A
+      if (entry.topicSlug === 'national-pride') return false;
+
       if (activeTab === 'pending') {
         if (!entry.topicSlug || entry.teacherReply) return false;
       } else if (activeTab === 'answered') {
@@ -572,18 +629,41 @@ export default function TeacherAdminPage() {
   }, [entries, activeTab, selectedTopic, searchQuery]);
 
   const filteredResults = useMemo(() => {
-    if (!resultSearch.trim()) return results;
+    let list = results;
+    if (resultCategoryFilter === 'placement') {
+      list = list.filter((r) => r.category === 'placement');
+    } else if (resultCategoryFilter === 'competition') {
+      list = list.filter((r) => r.category === 'million' || r.category === 'speed');
+    }
+
+    if (!resultSearch.trim()) return list;
     const q = resultSearch.toLowerCase();
-    return results.filter(
+    return list.filter(
       (r) =>
         r.studentName.toLowerCase().includes(q) ||
         r.studentGrade.toLowerCase().includes(q) ||
         r.activityTitle.toLowerCase().includes(q)
     );
-  }, [results, resultSearch]);
+  }, [results, resultSearch, resultCategoryFilter]);
+
+  const resultStats = useMemo(() => {
+    if (results.length === 0) {
+      return { totalAttempts: 0, avgPercentage: 0, highestScore: 0 };
+    }
+    const totalPercentage = results.reduce((acc, r) => acc + (r.percentage || 0), 0);
+    const avgPercentage = Math.round(totalPercentage / results.length);
+    const highestScore = Math.max(...results.map((r) => r.percentage || 0));
+    return {
+      totalAttempts: results.length,
+      avgPercentage,
+      highestScore,
+    };
+  }, [results]);
 
   const stats = useMemo(() => {
-    const questionEntries = entries.filter((e) => Boolean(e.topicSlug));
+    const questionEntries = entries.filter(
+      (e) => Boolean(e.topicSlug) && e.topicSlug !== 'national-pride'
+    );
     const pending = questionEntries.filter((e) => !e.teacherReply).length;
     const answered = questionEntries.filter((e) => Boolean(e.teacherReply)).length;
     const guestbookCount = entries.filter((e) => !e.topicSlug).length;
@@ -789,7 +869,22 @@ export default function TeacherAdminPage() {
             }`}
           >
             <MessageCircleQuestion className="h-4 w-4" />
-            <span>استفسارات الدروس وسجل الزوار ({entries.length})</span>
+            <span>استفسارات الدروس وسجل الزوار ({entries.length - nationalEntries.length})</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setDashboardSection('national')}
+            className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-black transition ${
+              dashboardSection === 'national'
+                ? 'bg-emerald-700 text-white shadow-xs'
+                : 'text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            <SaudiEmblemIcon
+              className={`h-4 w-4 ${dashboardSection === 'national' ? 'text-amber-300' : 'text-emerald-700'}`}
+            />
+            <span>وطن وقيادة · أصوات الوطن ({nationalEntries.length})</span>
           </button>
 
           <button
@@ -1057,7 +1152,7 @@ export default function TeacherAdminPage() {
               <div>
                 <h2 className="text-lg font-black text-slate-950">سجل درجات الطالبات والشهادات</h2>
                 <p className="text-xs font-semibold text-slate-500">
-                  توثيق تلقائي لنتائج اختبارات تحديد المستوى وأوراق عمل الدروس مع إمكانية التصدير لملف Excel.
+                  توثيق تلقائي لنتائج اختبارات تحديد المستوى والمسابقات مع إمكانية التصفية والتصدير لملف Excel.
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -1080,15 +1175,74 @@ export default function TeacherAdminPage() {
               </div>
             </div>
 
-            <div className="relative max-w-sm">
-              <input
-                type="text"
-                value={resultSearch}
-                onChange={(e) => setResultSearch(e.target.value)}
-                placeholder="ابحثي باسم الطالبة أو الصف..."
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-8 pr-3 py-2 text-xs font-bold"
-              />
-              <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
+            {/* Top Results Metrics Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="rounded-2xl border border-indigo-100 bg-indigo-50/60 p-4">
+                <span className="block text-xs font-bold text-indigo-800">إجمالي المحاولات والاختبارات</span>
+                <p className="mt-1 text-2xl font-black text-indigo-950">{resultStats.totalAttempts}</p>
+                <span className="text-[10px] text-slate-500">عبر جميع الأقسام والمسابقات</span>
+              </div>
+              <div className="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4">
+                <span className="block text-xs font-bold text-emerald-800">متوسط نسبة الإتقان العامة</span>
+                <p className="mt-1 text-2xl font-black text-emerald-950">{resultStats.avgPercentage}%</p>
+                <span className="text-[10px] text-slate-500">متوسط درجات الطالبات</span>
+              </div>
+              <div className="rounded-2xl border border-amber-100 bg-amber-50/60 p-4">
+                <span className="block text-xs font-bold text-amber-800">أعلى نتيجة محققة</span>
+                <p className="mt-1 text-2xl font-black text-amber-950">{resultStats.highestScore}%</p>
+                <span className="text-[10px] text-slate-500">العلامة الكاملة والإتقان</span>
+              </div>
+            </div>
+
+            {/* Filter and Search Bar */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-2">
+              <div className="flex flex-wrap items-center gap-1.5 rounded-2xl border border-slate-200 bg-slate-50 p-1.5">
+                <button
+                  type="button"
+                  onClick={() => setResultCategoryFilter('all')}
+                  className={`rounded-xl px-3 py-1.5 text-xs font-black transition ${
+                    resultCategoryFilter === 'all'
+                      ? 'bg-indigo-600 text-white shadow-2xs'
+                      : 'text-slate-600 hover:bg-white'
+                  }`}
+                >
+                  الكل ({results.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setResultCategoryFilter('placement')}
+                  className={`rounded-xl px-3 py-1.5 text-xs font-black transition ${
+                    resultCategoryFilter === 'placement'
+                      ? 'bg-indigo-600 text-white shadow-2xs'
+                      : 'text-slate-600 hover:bg-white'
+                  }`}
+                >
+                  تحديد المستوى ({results.filter((r) => r.category === 'placement').length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setResultCategoryFilter('competition')}
+                  className={`rounded-xl px-3 py-1.5 text-xs font-black transition ${
+                    resultCategoryFilter === 'competition'
+                      ? 'bg-indigo-600 text-white shadow-2xs'
+                      : 'text-slate-600 hover:bg-white'
+                  }`}
+                >
+                  التحديات والمسابقات (
+                  {results.filter((r) => r.category === 'million' || r.category === 'speed').length})
+                </button>
+              </div>
+
+              <div className="relative max-w-sm w-full">
+                <input
+                  type="text"
+                  value={resultSearch}
+                  onChange={(e) => setResultSearch(e.target.value)}
+                  placeholder="ابحثي باسم الطالبة أو الصف..."
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-8 pr-3 py-2 text-xs font-bold"
+                />
+                <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
+              </div>
             </div>
 
             <div className="overflow-x-auto">
@@ -1097,17 +1251,18 @@ export default function TeacherAdminPage() {
                   <tr className="border-b border-slate-200 bg-slate-50 text-slate-500 font-black">
                     <th className="p-3">اسم الطالبة</th>
                     <th className="p-3">الصف الدراسي</th>
-                    <th className="p-3">الاختبار / الدرس</th>
+                    <th className="p-3">الاختبار / النشاط</th>
                     <th className="p-3">الدرجة</th>
                     <th className="p-3">النسبة</th>
                     <th className="p-3">رمز التحقق</th>
                     <th className="p-3">التاريخ</th>
+                    <th className="p-3 text-center">إجراءات</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {filteredResults.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="p-8 text-center text-slate-400">
+                      <td colSpan={8} className="p-8 text-center text-slate-400">
                         لا توجد نتائج مسجلة حتى الآن
                       </td>
                     </tr>
@@ -1127,12 +1282,234 @@ export default function TeacherAdminPage() {
                         </td>
                         <td className="p-3 font-mono text-xs text-slate-500">{r.verificationCode || '—'}</td>
                         <td className="p-3 text-xs text-slate-400">{formatTimeAgo(r.createdAt)}</td>
+                        <td className="p-3 text-center">
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteResult(r.id)}
+                            className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition"
+                            title="حذف النتيجة من السجل"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </td>
                       </tr>
                     ))
                   )}
                 </tbody>
               </table>
             </div>
+          </section>
+        )}
+
+        {/* =============================================================== */}
+        {/* SECTION 4: NATIONAL INITIATIVE & VOICES OF SAUDI PRIDE         */}
+        {/* =============================================================== */}
+        {dashboardSection === 'national' && (
+          <section className="rounded-3xl border border-emerald-200/90 bg-white p-5 sm:p-6 shadow-xs space-y-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <SaudiEmblemIcon className="h-6 w-6 text-emerald-700" />
+                  <h2 className="text-lg sm:text-xl font-black text-slate-950">
+                    مبادرة في القلب وطن وقيادة · أصوات سفيرات الوطن
+                  </h2>
+                </div>
+                <p className="text-xs font-semibold text-slate-500 mt-1">
+                  متابعة رسائل العهد وأحلام الطالبات لمستقبل المملكة مع إمكانية إضافة إشادة وتوثيق المعلمة المعتمد.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={handleExportNationalCsv}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-700 px-4 py-2.5 text-xs font-black text-white shadow-xs hover:bg-emerald-800 transition"
+                >
+                  <FileSpreadsheet className="h-4 w-4" />
+                  <span>تصدير أصوات الوطن Excel (CSV)</span>
+                </button>
+                <Link
+                  to="/national-journey"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-2.5 text-xs font-bold text-emerald-900 hover:bg-emerald-100 transition"
+                >
+                  <SaudiEmblemIcon className="h-3.5 w-3.5 text-emerald-700" />
+                  <span>معاينة صفحة المبادرة</span>
+                </Link>
+              </div>
+            </div>
+
+            {/* Metric Cards for National Pride */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="rounded-2xl border border-emerald-200/80 bg-emerald-50/60 p-4">
+                <span className="block text-xs font-bold text-emerald-800">إجمالي سفيرات الوطن المشاركات</span>
+                <p className="mt-1 text-2xl font-black text-emerald-950">{nationalEntries.length}</p>
+                <span className="text-[10px] text-slate-500">رسائل عهد وأحلام موثقة</span>
+              </div>
+              <div className="rounded-2xl border border-amber-200/80 bg-amber-50/60 p-4">
+                <span className="block text-xs font-bold text-amber-800">مشاركات بإشادة وتوثيق المعلمة</span>
+                <p className="mt-1 text-2xl font-black text-amber-950">
+                  {nationalEntries.filter((e) => Boolean(e.teacherReply)).length}
+                </p>
+                <span className="text-[10px] text-slate-500">تحفيز ودعم معتمد منشور</span>
+              </div>
+              <div className="rounded-2xl border border-teal-200/80 bg-teal-50/60 p-4">
+                <span className="block text-xs font-bold text-teal-800">إجمالي تفاعلات الإعجاب</span>
+                <p className="mt-1 text-2xl font-black text-teal-950">
+                  {nationalEntries.reduce((acc, e) => acc + (e.likes || 0), 0)}
+                </p>
+                <span className="text-[10px] text-slate-500">إعجابات بالرسائل الوطنية</span>
+              </div>
+            </div>
+
+            {/* List of National Entries with 3 Axes */}
+            {nationalEntries.length === 0 ? (
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-10 text-center text-xs font-bold text-slate-500">
+                لا توجد مشاركات مسجلة في مبادرة الوطن حتى الآن.
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {nationalEntries.map((entry) => {
+                  const parsed = parseVoiceMessage(entry.message);
+                  const isReplying = activeReplyId === entry.id;
+
+                  return (
+                    <article
+                      key={entry.id}
+                      className="rounded-2xl border border-emerald-200/90 bg-white p-4 sm:p-5 shadow-xs transition hover:border-emerald-400"
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-3 gap-2">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-emerald-800 text-amber-300 font-black text-sm">
+                            {entry.name.slice(0, 1)}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h3 className="text-sm font-black text-slate-950">{entry.name}</h3>
+                              <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-black text-emerald-800">
+                                سفيرة الوطن
+                              </span>
+                            </div>
+                            <span className="text-xs font-semibold text-slate-500">
+                              {entry.role} • {formatTimeAgo(entry.createdAt)}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 self-end sm:self-auto">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (isReplying) {
+                                setActiveReplyId(null);
+                                setReplyText('');
+                              } else {
+                                setActiveReplyId(entry.id);
+                                setReplyText(entry.teacherReply || '');
+                              }
+                            }}
+                            className="inline-flex items-center gap-1 rounded-xl bg-amber-50 border border-amber-200 px-3 py-1.5 text-xs font-black text-amber-900 hover:bg-amber-100 transition"
+                          >
+                            <Sparkles className="h-3.5 w-3.5 text-amber-600" />
+                            <span>
+                              {entry.teacherReply
+                                ? 'تعديل إشادة المعلمة ✨'
+                                : 'إضافة إشادة وتوثيق المعلمة ✨'}
+                            </span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(entry)}
+                            className="rounded-xl border border-rose-200 bg-rose-50 p-2 text-rose-600 hover:bg-rose-100 transition"
+                            title="حذف المشاركة"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* 3 Axes Breakdown */}
+                      <div className="mt-3.5 grid grid-cols-1 md:grid-cols-3 gap-2.5 text-left" dir="ltr">
+                        <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-3">
+                          <span className="block text-[10px] font-black text-emerald-900 uppercase">
+                            🌟 01. My Dream for Saudi Arabia
+                          </span>
+                          <p className="mt-1 text-xs font-bold text-slate-800 leading-relaxed">
+                            {parsed.dream || '—'}
+                          </p>
+                        </div>
+
+                        <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-3">
+                          <span className="block text-[10px] font-black text-amber-900 uppercase">
+                            🤝 02. My Promise in Action
+                          </span>
+                          <p className="mt-1 text-xs font-bold text-slate-800 leading-relaxed">
+                            {parsed.promise || '—'}
+                          </p>
+                        </div>
+
+                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                          <span className="flex items-center gap-1 text-[10px] font-black text-slate-800 uppercase">
+                            <SaudiEmblemIcon className="h-3 w-3 text-emerald-700" />
+                            <span>03. Message of Pride</span>
+                          </span>
+                          <p className="mt-1 text-xs font-bold text-slate-800 leading-relaxed">
+                            {parsed.pride || '—'}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Existing Teacher Commendation */}
+                      {entry.teacherReply && !isReplying && (
+                        <div className="mt-3 rounded-xl border border-emerald-300 bg-emerald-50 p-3 text-right">
+                          <span className="block text-xs font-black text-emerald-900">
+                            ✨ إشادة وتوثيق المعلمة ({TEACHER_OFFICIAL_NAME}):
+                          </span>
+                          <p className="mt-1 text-xs font-bold text-slate-800">
+                            {entry.teacherReply}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Reply Editor Form */}
+                      {isReplying && (
+                        <div className="mt-3 rounded-2xl border-2 border-amber-300 bg-amber-50/70 p-3.5 sm:p-4 text-right animate-page-enter">
+                          <label className="block text-xs font-black text-amber-950 mb-1.5">
+                            كتابة إشادة وتوثيق المعلمة المعتمد للطالبة (يظهر فوراً على جدار الوطن والشهادة):
+                          </label>
+                          <textarea
+                            rows={2}
+                            value={replyText}
+                            onChange={(e) => setReplyText(e.target.value)}
+                            placeholder="مثال: فخورة بكِ يا بطلتي الغالية وبكلماتكِ المضيئة لوطننا الغالي! بارك الله في همتكِ ونفع بكِ."
+                            className="w-full rounded-xl border border-amber-300 bg-white p-3 text-xs font-bold text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-amber-400"
+                          />
+                          <div className="mt-2.5 flex items-center justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActiveReplyId(null);
+                                setReplyText('');
+                              }}
+                              className="rounded-xl px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-100"
+                            >
+                              إلغاء
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleReplySubmit(entry)}
+                              disabled={submittingReply || !replyText.trim()}
+                              className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-700 px-4 py-2 text-xs font-black text-white shadow-xs hover:bg-emerald-800 transition disabled:opacity-50"
+                            >
+                              <Send className="h-3.5 w-3.5 rotate-180" />
+                              <span>اعتماد ونشر الإشادة للطالبة</span>
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </article>
+                  );
+                })}
+              </div>
+            )}
           </section>
         )}
 

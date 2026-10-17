@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { PortalNav, PortalFooter } from '../../components/portal/portal-nav';
 import { challengeQuestions } from '../../data/content/challenge';
+import { studentResultsClient } from '../../data/api-client/guestbook-client';
 import { useStageScrollReset } from '../../lib/scroll-reset';
 
 type Stage = 'welcome' | 'playing' | 'result';
@@ -112,10 +113,26 @@ export default function MillionChallengePage() {
           setFinalLevel(15);
           setStage('result');
           playTone('win');
+          void studentResultsClient.recordResult({
+            studentName: name.trim() || 'طالبة متميزة',
+            category: 'million',
+            activityTitle: 'تحدي المليون Spark',
+            score: 15,
+            totalQuestions: 15,
+            cefrLevel: 'B2 - Advanced',
+          });
         }
       } else {
         setFinalLevel(level);
         setStage('result');
+        void studentResultsClient.recordResult({
+          studentName: name.trim() || 'طالبة متميزة',
+          category: 'million',
+          activityTitle: 'تحدي المليون Spark',
+          score: level,
+          totalQuestions: 15,
+          cefrLevel: level >= 10 ? 'B1 - Intermediate' : 'A2 - Elementary',
+        });
       }
     }, 1500);
   }

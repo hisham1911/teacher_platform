@@ -27,7 +27,7 @@ import {
   X,
 } from 'lucide-react';
 import { PublicBackdrop } from '../../components/layout/root-layout';
-import { PortalNav, PortalFooter } from '../../components/portal/portal-nav';
+import { PortalNav, PortalFooter, SaudiEmblemIcon } from '../../components/portal/portal-nav';
 import { EnglishSparkLogo } from '../../components/portal/english-spark-logo';
 import {
   NATIONAL_INITIATIVE_META,
@@ -172,63 +172,42 @@ function StageBadgeIcon({
 
 function SaudiNationalBannerArtwork() {
   return (
-    <div className="relative mx-auto w-full overflow-hidden rounded-2xl border border-amber-300/50 bg-gradient-to-br from-emerald-950 via-emerald-900 to-teal-950 p-4 sm:p-6 shadow-xl">
+    <div className="relative mx-auto w-full overflow-hidden rounded-2xl border border-emerald-200/90 bg-gradient-to-br from-emerald-50/80 via-white/95 to-amber-50/60 p-4 sm:p-6 shadow-xs backdrop-blur-xl">
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -top-16 -right-16 h-48 w-48 rounded-full bg-amber-400/20 blur-3xl"
+        className="pointer-events-none absolute -top-16 -right-16 h-48 w-48 rounded-full bg-emerald-400/15 blur-3xl"
       />
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -bottom-16 -left-16 h-48 w-48 rounded-full bg-emerald-400/20 blur-3xl"
+        className="pointer-events-none absolute -bottom-16 -left-16 h-48 w-48 rounded-full bg-amber-400/15 blur-3xl"
       />
 
       <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex flex-col sm:flex-row items-center text-center sm:text-right gap-3.5">
-          <div className="relative flex h-16 w-16 sm:h-20 sm:w-20 shrink-0 items-center justify-center rounded-2xl sm:rounded-3xl border-2 border-amber-400/70 bg-gradient-to-b from-emerald-800/90 to-emerald-950 shadow-[0_0_25px_rgba(251,191,36,0.25)]">
-            <svg
-              viewBox="0 0 120 120"
-              className="h-11 w-11 sm:h-14 sm:w-14 drop-shadow-md"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              aria-hidden="true"
-            >
-              <path d="M60 32V68" stroke="#FBBF24" strokeWidth="5" strokeLinecap="round" />
-              <path
-                d="M60 35C48 25 34 30 28 38M60 35C72 25 86 30 92 38M60 42C46 36 35 43 32 50M60 42C74 36 85 43 88 50M60 30C52 18 42 20 38 25M60 30C68 18 78 20 82 25"
-                stroke="#FDE68A"
-                strokeWidth="4"
-                strokeLinecap="round"
-              />
-              <path
-                d="M26 92C48 82 72 68 92 58M94 92C72 82 48 68 28 58"
-                stroke="#F59E0B"
-                strokeWidth="4.5"
-                strokeLinecap="round"
-              />
-              <circle cx="25" cy="93" r="3.5" fill="#FDE68A" />
-              <circle cx="95" cy="93" r="3.5" fill="#FDE68A" />
-            </svg>
+          <div className="relative flex h-16 w-16 sm:h-20 sm:w-20 shrink-0 items-center justify-center rounded-2xl sm:rounded-3xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white shadow-md shadow-emerald-700/20">
+            <SaudiEmblemIcon className="h-10 w-10 sm:h-12 sm:w-12 text-white drop-shadow-sm" />
           </div>
 
           <div>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-400/20 border border-amber-300/40 px-3 py-0.5 text-[11px] font-black text-amber-200">
-              <span>🇸🇦 المملكة العربية السعودية</span>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100/90 border border-emerald-200 px-3 py-0.5 text-[11px] font-black text-emerald-900">
+              <SaudiEmblemIcon className="h-3.5 w-3.5 text-emerald-700" />
+              <span>المملكة العربية السعودية</span>
             </span>
-            <h2 className="mt-1 text-lg sm:text-2xl font-black text-white">
+            <h2 className="mt-1 text-lg sm:text-2xl font-black text-slate-950">
               {NATIONAL_INITIATIVE_META.initiativeTitleAr}
             </h2>
-            <p className="mt-0.5 text-xs sm:text-sm font-bold text-emerald-200/95">
+            <p className="mt-0.5 text-xs sm:text-sm font-bold text-emerald-800">
               {NATIONAL_INITIATIVE_META.mottoAr}
             </p>
           </div>
         </div>
 
         <div className="hidden sm:flex flex-col items-end text-left shrink-0" dir="ltr">
-          <span className="text-[10px] font-black tracking-[0.2em] text-amber-300 uppercase">
+          <span className="text-[10px] font-black tracking-[0.2em] text-emerald-800 uppercase">
             JOURNEY OF GLORY
           </span>
-          <div className="mt-1.5 inline-flex items-center gap-1.5 rounded-xl bg-white/10 px-3 py-1 text-[11px] font-black text-amber-200 backdrop-blur-xs border border-white/15">
-            <Award className="h-3.5 w-3.5 text-amber-300 shrink-0" />
+          <div className="mt-1.5 inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 px-3 py-1 text-[11px] font-black text-emerald-900 border border-emerald-200">
+            <Award className="h-3.5 w-3.5 text-emerald-700 shrink-0" />
             <span>Homeland Ambassador</span>
           </div>
         </div>
@@ -572,6 +551,170 @@ export default function NationalJourneyPage() {
     return `https://wa.me/?${new URLSearchParams({ text: shareText }).toString()}`;
   }, [studentName, studentGrade, verificationCode]);
 
+  function renderVoicesWall(showBackBtn = false) {
+    return (
+      <section className="mt-8 space-y-5 print:hidden animate-page-enter">
+        <div className="rounded-3xl border border-emerald-200/90 bg-gradient-to-br from-white via-emerald-50/70 to-amber-50/50 p-5 sm:p-8 text-slate-950 shadow-xs backdrop-blur-xl">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100/90 border border-emerald-200 px-3 py-0.5 text-xs font-black text-emerald-900">
+                <SaudiEmblemIcon className="h-3.5 w-3.5 text-emerald-700 shrink-0" />
+                <span dir="ltr">VOICES OF SAUDI PRIDE</span>
+              </span>
+              <h2 className="mt-2 text-xl sm:text-3xl font-black text-slate-950 flex items-center gap-2">
+                <span>جدار «أصواتٌ تحب الوطن | Voices of Saudi Pride»</span>
+                <SaudiEmblemIcon className="h-6 w-6 text-emerald-700 shrink-0 inline" />
+              </h2>
+              <p className="mt-1 text-xs sm:text-sm font-semibold text-emerald-800">
+                كلمات وأحلام وعُهود طالباتنا سفيرات الوطن لمستقبل المملكة العربية السعودية.
+              </p>
+            </div>
+
+            {showBackBtn && (
+              <button
+                type="button"
+                onClick={() => setPhase('welcome')}
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-700 to-teal-800 px-5 py-3 text-xs sm:text-sm font-black text-white shadow-md hover:brightness-105 transition shrink-0"
+              >
+                <Send className="h-4 w-4 rotate-180 shrink-0" />
+                <span>شاركي في الرحلة وأضيفي صوتكِ</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {loadingVoices ? (
+          <div className="rounded-3xl border border-slate-200 bg-white p-10 text-center text-xs font-bold text-slate-500">
+            جاري تحميل أصوات سفيرات الوطن...
+          </div>
+        ) : voices.length === 0 ? (
+          <div className="rounded-3xl border border-slate-200 bg-white p-10 text-center">
+            <p className="text-sm font-bold text-slate-600">
+              كوني أول سفيرة وطن تخلّد حلمها ورسالتها على هذا الجدار الوطني!
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {voices.map((entry) => {
+              const parsed = parseVoiceMessage(entry.message);
+              const isLiked = likedIds.has(entry.id);
+              return (
+                <article
+                  key={entry.id}
+                  className="flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-emerald-200/80 bg-white p-4 sm:p-5 shadow-xs transition hover:border-emerald-400 hover:shadow-md"
+                >
+                  <div>
+                    <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-emerald-900 text-amber-300 font-black text-sm">
+                          {entry.name.slice(0, 1)}
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-black text-slate-950">{entry.name}</h3>
+                          <span className="text-[11px] font-bold text-emerald-700">
+                            {entry.role}
+                          </span>
+                        </div>
+                      </div>
+
+                      {isTeacherAdmin && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteVoice(entry.id)}
+                          className="rounded-lg bg-rose-50 p-1.5 text-rose-600 hover:bg-rose-100 transition"
+                          title="حذف المشاركة"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                    </div>
+
+                    {parsed.dream || parsed.promise || parsed.pride ? (
+                      <div className="mt-3.5 space-y-2 text-left" dir="ltr">
+                        {parsed.dream && (
+                          <div className="rounded-xl bg-emerald-50/60 p-2.5 border border-emerald-100">
+                            <span className="block text-[10px] font-black text-emerald-800 uppercase">
+                              🌟 My Dream for Saudi Arabia
+                            </span>
+                            <p className="text-xs font-bold text-slate-800 mt-0.5 leading-relaxed">
+                              {parsed.dream}
+                            </p>
+                          </div>
+                        )}
+                        {parsed.promise && (
+                          <div className="rounded-xl bg-amber-50/60 p-2.5 border border-amber-100">
+                            <span className="block text-[10px] font-black text-amber-900 uppercase">
+                              🤝 My Promise in Action
+                            </span>
+                            <p className="text-xs font-bold text-slate-800 mt-0.5 leading-relaxed">
+                              {parsed.promise}
+                            </p>
+                          </div>
+                        )}
+                        {parsed.pride && (
+                          <div className="rounded-xl bg-slate-50 p-2.5 border border-slate-200/70">
+                            <span className="flex items-center gap-1 text-[10px] font-black text-slate-700 uppercase">
+                              <SaudiEmblemIcon className="h-3 w-3 text-emerald-700" />
+                              <span>A Message of Pride</span>
+                            </span>
+                            <p className="text-xs font-bold text-slate-800 mt-0.5 leading-relaxed">
+                              {parsed.pride}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <p
+                        className="mt-3 text-xs sm:text-sm font-semibold text-slate-700 whitespace-pre-line"
+                        dir="auto"
+                      >
+                        {entry.message}
+                      </p>
+                    )}
+
+                    {entry.teacherReply && (
+                      <div className="mt-3 rounded-xl border border-emerald-300 bg-emerald-50 p-3">
+                        <span className="block text-[11px] font-black text-emerald-900">
+                          ✨ إشادة المعلمة ({TEACHER_OFFICIAL_NAME}):
+                        </span>
+                        <p className="mt-1 text-xs font-bold text-slate-800">
+                          {entry.teacherReply}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
+                    <span className="inline-flex items-center gap-1 text-[11px] font-black text-emerald-800">
+                      <Crown className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                      <span>سفيرة الوطن · Saudi Homeland Ambassador</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleToggleLikeVoice(entry.id, entry.likes)}
+                      className={`inline-flex min-h-9 items-center gap-1.5 rounded-lg border px-3 py-1 text-xs font-bold transition active:scale-95 ${
+                        isLiked
+                          ? 'border-rose-300 bg-rose-50 text-rose-700'
+                          : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-rose-50'
+                      }`}
+                    >
+                      <Heart
+                        className={`h-3.5 w-3.5 ${
+                          isLiked ? 'fill-rose-500 text-rose-500' : 'text-slate-400'
+                        }`}
+                      />
+                      <span>{entry.likes}</span>
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </section>
+    );
+  }
+
   // =========================================================================
   // FULL-SCREEN MOBILE FOCUS MODE FOR STAGES 1–4 & BADGE CELEBRATION
   // No PortalNav, No PortalFooter, Zero Scroll on Mobile
@@ -579,16 +722,16 @@ export default function NationalJourneyPage() {
   if (phase === 'journey-quiz' || phase === 'stage-celebration') {
     return (
       <div
-        className="fixed inset-0 z-50 flex h-dvh w-full flex-col justify-between overflow-hidden bg-gradient-to-b from-emerald-950 via-slate-950 to-emerald-950 text-white select-none"
+        className="fixed inset-0 z-50 flex h-dvh w-full flex-col justify-between overflow-hidden bg-gradient-to-b from-emerald-50/70 via-slate-50 to-amber-50/40 text-slate-950 select-none"
         dir="rtl"
       >
         {/* Top Compact App HUD Bar */}
-        <header className="shrink-0 border-b border-white/10 bg-black/30 px-3.5 py-2.5 backdrop-blur-md">
+        <header className="shrink-0 border-b border-emerald-200/70 bg-white/90 px-3.5 py-2.5 backdrop-blur-md shadow-2xs">
           <div className="mx-auto flex max-w-3xl items-center justify-between gap-2">
             <button
               type="button"
               onClick={handleResetJourney}
-              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white transition"
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition"
               title="خروج"
               aria-label="خروج"
             >
@@ -597,16 +740,16 @@ export default function NationalJourneyPage() {
 
             <div className="flex flex-1 flex-col gap-1 px-2">
               <div className="flex items-center justify-between text-[11px] font-black">
-                <span className="text-amber-300 truncate">
+                <span className="text-emerald-950 truncate">
                   المرحلة {currentStage.stageNumber}: {currentStage.badgeTitleAr}
                 </span>
-                <span className="text-emerald-300" dir="ltr">
+                <span className="text-emerald-700" dir="ltr">
                   {currentQuestionIdx + 1} / {currentStage.questions.length}
                 </span>
               </div>
-              <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
+              <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200/80">
                 <div
-                  className="h-full rounded-full bg-gradient-to-l from-amber-400 to-emerald-400 transition-all duration-300"
+                  className="h-full rounded-full bg-gradient-to-l from-emerald-600 to-teal-500 transition-all duration-300"
                   style={{ width: `${totalProgressPercent}%` }}
                 />
               </div>
@@ -617,8 +760,8 @@ export default function NationalJourneyPage() {
               onClick={toggleAudioMute}
               className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border transition ${
                 !audioMuted
-                  ? 'border-amber-400/50 bg-amber-400/15 text-amber-300'
-                  : 'border-white/15 bg-white/5 text-slate-400'
+                  ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
+                  : 'border-slate-200 bg-white text-slate-400'
               }`}
               title={audioMuted ? 'تشغيل الصوت' : 'كتم الصوت'}
             >
@@ -626,7 +769,7 @@ export default function NationalJourneyPage() {
                 <VolumeX className="h-4 w-4" />
               ) : (
                 <Volume2
-                  className={`h-4 w-4 shrink-0 text-amber-300 ${
+                  className={`h-4 w-4 shrink-0 text-emerald-700 ${
                     audioPlaying ? 'animate-pulse' : ''
                   }`}
                 />
@@ -641,16 +784,16 @@ export default function NationalJourneyPage() {
             <div className="flex flex-col justify-center space-y-4">
               <div className="text-center">
                 <span
-                  className="inline-block rounded-full border border-emerald-400/30 bg-emerald-500/15 px-3 py-0.5 text-[11px] font-black text-emerald-300"
+                  className="inline-block rounded-full border border-emerald-200 bg-emerald-50 px-3 py-0.5 text-[11px] font-black text-emerald-900"
                   dir="ltr"
                 >
                   {currentStage.titleEn}
                 </span>
               </div>
 
-              <div className="rounded-2xl border border-white/15 bg-white/8 p-4 sm:p-6 text-center shadow-lg backdrop-blur-md">
+              <div className="rounded-2xl border border-emerald-200/90 bg-white/95 p-4 sm:p-6 text-center shadow-xs backdrop-blur-md">
                 <p
-                  className="text-base sm:text-2xl font-black leading-snug text-white select-text"
+                  className="text-base sm:text-2xl font-black leading-snug text-slate-950 select-text"
                   dir="ltr"
                 >
                   Q{currentQuestionIdx + 1}. {currentQuestion.prompt}
@@ -661,13 +804,13 @@ export default function NationalJourneyPage() {
                 {currentQuestion.options.map((opt) => {
                   const isSelected = selectedOptionId === opt.id;
                   let styleClass =
-                    'border-white/15 bg-white/6 text-white hover:border-amber-300/60 hover:bg-white/12';
+                    'border-slate-200/80 bg-white text-slate-900 hover:border-emerald-300 hover:bg-emerald-50/40';
 
                   if (answeredCorrectly && opt.isCorrect) {
                     styleClass =
-                      'border-emerald-400 bg-emerald-500/25 text-white ring-2 ring-emerald-400/40 shadow-[0_0_20px_rgba(16,185,129,0.25)]';
+                      'border-emerald-600 bg-emerald-50 text-emerald-950 ring-2 ring-emerald-200 shadow-xs font-black';
                   } else if (isSelected && !opt.isCorrect) {
-                    styleClass = 'border-amber-400 bg-amber-500/20 text-amber-100';
+                    styleClass = 'border-amber-400 bg-amber-50 text-amber-950 font-bold';
                   }
 
                   return (
@@ -682,19 +825,19 @@ export default function NationalJourneyPage() {
                         <span
                           className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-xs sm:text-sm font-black ${
                             answeredCorrectly && opt.isCorrect
-                              ? 'bg-emerald-400 text-slate-950'
+                              ? 'bg-emerald-600 text-white'
                               : isSelected && !opt.isCorrect
-                              ? 'bg-amber-400 text-slate-950'
-                              : 'bg-white/10 text-amber-300'
+                              ? 'bg-amber-500 text-white'
+                              : 'bg-slate-100 text-slate-700'
                           }`}
                         >
                           {opt.id}
                         </span>
-                        <span className="text-sm sm:text-lg font-black">{opt.text}</span>
+                        <span className="text-sm sm:text-lg font-bold">{opt.text}</span>
                       </div>
 
                       {answeredCorrectly && opt.isCorrect && (
-                        <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" />
+                        <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
                       )}
                     </button>
                   );
@@ -702,34 +845,34 @@ export default function NationalJourneyPage() {
               </div>
             </div>
           ) : (
-            <div className="rounded-3xl border-2 border-amber-400/60 bg-white/10 p-6 sm:p-8 text-center shadow-2xl backdrop-blur-xl animate-page-enter">
-              <div className="mx-auto flex h-18 w-18 sm:h-20 sm:w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-amber-400 via-amber-500 to-emerald-600 text-slate-950 shadow-xl">
+            <div className="rounded-3xl border border-emerald-200/90 bg-white/95 p-6 sm:p-8 text-center shadow-lg backdrop-blur-xl animate-page-enter">
+              <div className="mx-auto flex h-18 w-18 sm:h-20 sm:w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white shadow-xl shadow-emerald-700/20">
                 <StageBadgeIcon className="h-9 w-9 sm:h-10 sm:w-10" icon={currentStage.badgeIcon} />
               </div>
-              <span className="mt-4 inline-flex items-center gap-1 rounded-full bg-amber-400/20 border border-amber-300/40 px-3.5 py-1 text-xs font-black text-amber-300">
-                <Award className="h-3.5 w-3.5" />
+              <span className="mt-4 inline-flex items-center gap-1 rounded-full bg-emerald-100 border border-emerald-200 px-3.5 py-1 text-xs font-black text-emerald-900">
+                <Award className="h-3.5 w-3.5 text-emerald-700" />
                 <span>تم استحقاق الوسام بنجاح!</span>
               </span>
-              <h2 className="mt-2.5 text-2xl sm:text-3xl font-black text-white">
+              <h2 className="mt-2.5 text-2xl sm:text-3xl font-black text-slate-950">
                 وسام «{currentStage.badgeTitleAr}»
               </h2>
-              <p className="mt-1 text-xs sm:text-sm font-black text-emerald-300" dir="ltr">
+              <p className="mt-1 text-xs sm:text-sm font-black text-emerald-700" dir="ltr">
                 {currentStage.badgeTitleEn} Badge Unlocked!
               </p>
-              <p className="mx-auto mt-2.5 max-w-md text-xs sm:text-sm font-semibold text-emerald-100 leading-relaxed">
-                فخورون بكِ يا <strong className="text-amber-300">{studentName}</strong>! أُضيف هذا
+              <p className="mx-auto mt-2.5 max-w-md text-xs sm:text-sm font-semibold text-slate-600 leading-relaxed">
+                فخورون بكِ يا <strong className="text-emerald-900">{studentName}</strong>! أُضيف هذا
                 الوسام إلى جواز رحلتكِ الوطنية.
               </p>
 
               <button
                 type="button"
                 onClick={handleContinueToNextStage}
-                className="mt-6 w-full inline-flex min-h-13 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-300 px-6 py-3.5 text-sm sm:text-base font-black text-slate-950 shadow-lg transition hover:brightness-105 active:scale-95"
+                className="mt-6 w-full inline-flex min-h-13 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-700 px-6 py-3.5 text-sm sm:text-base font-black text-white shadow-lg shadow-emerald-700/20 transition hover:brightness-105 active:scale-95"
               >
                 <span>
                   {currentStageIdx + 1 < NATIONAL_JOURNEY_STAGES.length
                     ? `الانطلاق إلى المرحلة ${currentStageIdx + 2}`
-                    : 'المحطة الختامية: عهدٌ يرويه المستقبل 🇸🇦'}
+                    : 'المحطة الختامية: عهدٌ يرويه المستقبل'}
                 </span>
                 <ArrowLeft className="h-4 w-4 shrink-0" />
               </button>
@@ -737,27 +880,27 @@ export default function NationalJourneyPage() {
           )}
         </main>
 
-        {/* Bottom Docked Feedback & Action Bar (Duolingo-Style) */}
+        {/* Bottom Docked Feedback & Action Bar */}
         {phase === 'journey-quiz' && (
           <footer
             className={`shrink-0 border-t px-4 py-3 transition-colors duration-200 ${
               answeredCorrectly
-                ? 'border-emerald-500/40 bg-emerald-950/95'
+                ? 'border-emerald-300 bg-emerald-50/95'
                 : retryNotice
-                ? 'border-amber-500/40 bg-amber-950/90'
-                : 'border-white/10 bg-black/40'
+                ? 'border-amber-300 bg-amber-50/95'
+                : 'border-slate-200 bg-white/90'
             }`}
           >
             <div className="mx-auto max-w-2xl">
               {answeredCorrectly ? (
                 <div className="space-y-2.5 animate-page-enter">
                   <div className="flex items-start gap-2">
-                    <Sparkles className="h-4 w-4 text-amber-300 shrink-0 mt-0.5" />
+                    <Sparkles className="h-4 w-4 text-emerald-700 shrink-0 mt-0.5" />
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs font-black text-emerald-200 leading-relaxed">
+                      <p className="text-xs font-black text-emerald-950 leading-relaxed">
                         أحسنتِ إجابة صحيحة! {currentQuestion.factAr}
                       </p>
-                      <p className="text-[11px] font-medium text-emerald-300/90 mt-0.5" dir="ltr">
+                      <p className="text-[11px] font-medium text-emerald-800 mt-0.5" dir="ltr">
                         {currentQuestion.factEn}
                       </p>
                     </div>
@@ -765,7 +908,7 @@ export default function NationalJourneyPage() {
                   <button
                     type="button"
                     onClick={handleNextQuestion}
-                    className="flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-300 px-6 py-3 text-sm font-black text-slate-950 shadow-lg transition active:scale-95"
+                    className="flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-700 px-6 py-3 text-sm font-black text-white shadow-md shadow-emerald-700/20 transition active:scale-95 hover:brightness-105"
                   >
                     <span>
                       {currentQuestionIdx + 1 === currentStage.questions.length
@@ -777,12 +920,12 @@ export default function NationalJourneyPage() {
                 </div>
               ) : retryNotice ? (
                 <div className="flex items-center justify-between gap-3 py-1">
-                  <p className="text-xs font-black text-amber-200">
-                    اقتربتِ يا بطلة! فكّري مجدداً واختاري الإجابة الصحيحة لاكتشاف المعلومة الوطنية 🇸🇦
+                  <p className="text-xs font-black text-amber-900">
+                    اقتربتِ يا بطلة! فكّري مجدداً واختاري الإجابة الصحيحة لاكتشاف المعلومة الوطنية
                   </p>
                 </div>
               ) : (
-                <div className="flex items-center justify-center text-center text-xs font-bold text-slate-300 py-1">
+                <div className="flex items-center justify-center text-center text-xs font-bold text-slate-500 py-1">
                   <span>🏆 {currentStage.missionAr}</span>
                 </div>
               )}
@@ -812,25 +955,13 @@ export default function NationalJourneyPage() {
               الرئيسية
             </Link>
             <ChevronRight className="h-3.5 w-3.5 shrink-0" />
-            <span className="font-black text-emerald-800 truncate max-w-[180px] sm:max-w-none">
-              🇸🇦 {NATIONAL_INITIATIVE_META.initiativeTitleAr}
+            <span className="font-black text-emerald-800 truncate max-w-[200px] sm:max-w-none inline-flex items-center gap-1.5">
+              <SaudiEmblemIcon className="h-4 w-4 text-emerald-700 shrink-0" />
+              <span>{NATIONAL_INITIATIVE_META.initiativeTitleAr}</span>
             </span>
           </div>
 
           <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-            <button
-              type="button"
-              onClick={() => setPhase(phase === 'voices-wall' ? 'welcome' : 'voices-wall')}
-              className="flex-1 sm:flex-initial inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-emerald-200 bg-white px-3 py-1.5 text-xs font-black text-emerald-900 shadow-2xs transition hover:bg-emerald-50 active:scale-95"
-            >
-              <MessageSquareHeart className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-              <span>
-                {phase === 'voices-wall'
-                  ? 'العودة إلى رحلة المجد'
-                  : `جدار أصوات الوطن (${voices.length})`}
-              </span>
-            </button>
-
             <button
               type="button"
               onClick={toggleAudioMute}
@@ -854,6 +985,42 @@ export default function NationalJourneyPage() {
           </div>
         </div>
 
+        {/* Top Segmented Tab Bar */}
+        {(phase === 'welcome' || phase === 'voices-wall') && (
+          <div className="mb-6 flex items-center justify-center print:hidden">
+            <div className="inline-flex rounded-2xl border border-emerald-200/90 bg-white/90 p-1.5 shadow-2xs backdrop-blur-md">
+              <button
+                type="button"
+                onClick={() => setPhase('welcome')}
+                className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs sm:text-sm font-black transition active:scale-95 ${
+                  phase === 'welcome'
+                    ? 'bg-gradient-to-r from-emerald-700 to-teal-800 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-emerald-900 hover:bg-emerald-50/60'
+                }`}
+              >
+                <SaudiEmblemIcon
+                  className={`h-4 w-4 ${phase === 'welcome' ? 'text-amber-300' : 'text-emerald-700'}`}
+                />
+                <span>رحلة المجد والتحدي</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setPhase('voices-wall')}
+                className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs sm:text-sm font-black transition active:scale-95 ${
+                  phase === 'voices-wall'
+                    ? 'bg-gradient-to-r from-emerald-700 to-teal-800 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-emerald-900 hover:bg-emerald-50/60'
+                }`}
+              >
+                <MessageSquareHeart
+                  className={`h-4 w-4 ${phase === 'voices-wall' ? 'text-amber-300' : 'text-emerald-600'}`}
+                />
+                <span>جدار أصوات تحب الوطن ({voices.length})</span>
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* PHASE 1: WELCOME */}
         {phase === 'welcome' && (
           <div className="space-y-6 animate-page-enter">
@@ -861,8 +1028,8 @@ export default function NationalJourneyPage() {
               <SaudiNationalBannerArtwork />
 
               <div className="mt-5 inline-flex items-center gap-1.5 rounded-full bg-emerald-100/90 px-3.5 py-1 text-xs font-black text-emerald-900">
-                <Sparkles className="h-3.5 w-3.5 text-emerald-700 shrink-0" />
-                <span dir="ltr">🇸🇦 JOURNEY OF GLORY · رحلة المجد</span>
+                <SaudiEmblemIcon className="h-3.5 w-3.5 text-emerald-700 shrink-0" />
+                <span dir="ltr">JOURNEY OF GLORY · رحلة المجد</span>
               </div>
 
               <h1 className="mt-2.5 text-2xl sm:text-4xl font-black text-slate-950">
@@ -977,39 +1144,42 @@ export default function NationalJourneyPage() {
                 </div>
               </div>
             </div>
+
+            {/* Live Student Voices Showcase directly on Welcome Screen */}
+            {renderVoicesWall(false)}
           </div>
         )}
 
         {/* PHASE 4: STAGE 5 — THE FINAL CHAPTER */}
         {phase === 'final-chapter' && (
           <div className="space-y-5 animate-page-enter">
-            <div className="overflow-hidden rounded-3xl border border-amber-300/80 bg-gradient-to-br from-emerald-950 via-emerald-900 to-slate-950 p-5 sm:p-9 text-white shadow-xl">
-              <div className="inline-flex items-center gap-2 rounded-full bg-amber-400/20 border border-amber-300/40 px-3.5 py-1 text-xs font-black text-amber-300">
-                <Crown className="h-3.5 w-3.5 shrink-0" />
+            <div className="overflow-hidden rounded-3xl border border-emerald-200/90 bg-gradient-to-br from-white via-emerald-50/60 to-amber-50/60 p-5 sm:p-9 text-slate-950 shadow-sm backdrop-blur-xl">
+              <div className="inline-flex items-center gap-2 rounded-full bg-emerald-100 border border-emerald-200 px-3.5 py-1 text-xs font-black text-emerald-900">
+                <Crown className="h-3.5 w-3.5 text-amber-600 shrink-0" />
                 <span dir="ltr">JOURNEY OF GLORY · THE FINAL CHAPTER</span>
               </div>
 
-              <h1 className="mt-2.5 text-xl sm:text-3xl font-black text-white">
-                عهدٌ يرويه المستقبل | <span dir="ltr">The Promise That Lives On</span>
+              <h1 className="mt-2.5 text-xl sm:text-3xl font-black text-slate-950">
+                عهدٌ يرويه المستقبل | <span dir="ltr" className="text-emerald-800">The Promise That Lives On</span>
               </h1>
-              <p className="mt-1 text-xs sm:text-sm font-bold text-amber-200">
+              <p className="mt-1 text-xs sm:text-sm font-bold text-emerald-800">
                 {NATIONAL_INITIATIVE_META.mottoAr}
               </p>
 
-              <div className="mt-4 rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur-xs space-y-2.5">
-                <h2 className="text-xs sm:text-base font-black text-amber-300">
+              <div className="mt-4 rounded-2xl border border-emerald-200/80 bg-white/90 p-4 shadow-2xs space-y-2.5">
+                <h2 className="text-xs sm:text-base font-black text-emerald-950">
                   المحطة الأخيرة: لو سألني المستقبل عن وطني… |{' '}
                   <span dir="ltr">If the Future Asked Me About My Homeland…</span>
                 </h2>
-                <p className="text-xs sm:text-sm font-medium leading-relaxed text-emerald-50" dir="ltr">
+                <p className="text-xs sm:text-sm font-medium leading-relaxed text-slate-700" dir="ltr">
                   Imagine that ten years from today, someone asks you:{' '}
-                  <strong className="text-amber-300">
+                  <strong className="text-emerald-900">
                     “What did you do to make your homeland proud of you?”
                   </strong>
                 </p>
-                <p className="text-xs font-semibold leading-relaxed text-emerald-100 border-t border-white/10 pt-2">
+                <p className="text-xs font-semibold leading-relaxed text-slate-700 border-t border-slate-100 pt-2">
                   تخيّلي أن أحدهم سألك بعد عشر سنوات:{' '}
-                  <strong className="text-amber-300">ماذا فعلتِ لتجعلي وطنك فخوراً بكِ؟</strong>
+                  <strong className="text-emerald-900">ماذا فعلتِ لتجعلي وطنك فخوراً بكِ؟</strong>
                 </p>
               </div>
             </div>
@@ -1339,165 +1509,8 @@ export default function NationalJourneyPage() {
         )}
 
         {/* DIGITAL WALL */}
-        {(phase === 'voices-wall' || phase === 'coronation') && (
-          <section className="mt-8 space-y-5 print:hidden animate-page-enter">
-            <div className="rounded-3xl border border-emerald-200/90 bg-gradient-to-r from-emerald-900 via-emerald-800 to-teal-900 p-5 sm:p-8 text-white shadow-md">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-400/20 px-3 py-0.5 text-xs font-black text-amber-300">
-                    <Sparkles className="h-3.5 w-3.5 shrink-0" />
-                    <span dir="ltr">VOICES OF SAUDI PRIDE</span>
-                  </span>
-                  <h2 className="mt-2 text-xl sm:text-3xl font-black text-white">
-                    جدار «أصواتٌ تحب الوطن | Voices of Saudi Pride» 🇸🇦
-                  </h2>
-                  <p className="mt-1 text-xs sm:text-sm font-semibold text-emerald-100">
-                    كلمات وأحلام وعُهود طالباتنا سفيرات الوطن لمستقبل المملكة العربية السعودية.
-                  </p>
-                </div>
-
-                {phase === 'voices-wall' && (
-                  <button
-                    type="button"
-                    onClick={() => setPhase('welcome')}
-                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-amber-400 px-5 py-3 text-xs sm:text-sm font-black text-slate-950 shadow-md hover:bg-amber-300 transition shrink-0"
-                  >
-                    <Send className="h-4 w-4 rotate-180 shrink-0" />
-                    <span>شاركي في الرحلة وأضيفي صوتكِ</span>
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {loadingVoices ? (
-              <div className="rounded-3xl border border-slate-200 bg-white p-10 text-center text-xs font-bold text-slate-500">
-                جاري تحميل أصوات سفيرات الوطن...
-              </div>
-            ) : voices.length === 0 ? (
-              <div className="rounded-3xl border border-slate-200 bg-white p-10 text-center">
-                <p className="text-sm font-bold text-slate-600">
-                  كوني أول سفيرة وطن تخلّد حلمها ورسالتها على هذا الجدار الوطني!
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {voices.map((entry) => {
-                  const parsed = parseVoiceMessage(entry.message);
-                  const isLiked = likedIds.has(entry.id);
-                  return (
-                    <article
-                      key={entry.id}
-                      className="flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-emerald-200/80 bg-white p-4 sm:p-5 shadow-xs transition hover:border-emerald-400 hover:shadow-md"
-                    >
-                      <div>
-                        <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-3">
-                          <div className="flex items-center gap-2.5">
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-emerald-900 text-amber-300 font-black text-sm">
-                              {entry.name.slice(0, 1)}
-                            </div>
-                            <div>
-                              <h3 className="text-sm font-black text-slate-950">{entry.name}</h3>
-                              <span className="text-[11px] font-bold text-emerald-700">
-                                {entry.role}
-                              </span>
-                            </div>
-                          </div>
-
-                          {isTeacherAdmin && (
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteVoice(entry.id)}
-                              className="rounded-lg bg-rose-50 p-1.5 text-rose-600 hover:bg-rose-100 transition"
-                              title="حذف المشاركة"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
-                          )}
-                        </div>
-
-                        {parsed.dream || parsed.promise || parsed.pride ? (
-                          <div className="mt-3.5 space-y-2 text-left" dir="ltr">
-                            {parsed.dream && (
-                              <div className="rounded-xl bg-emerald-50/60 p-2.5 border border-emerald-100">
-                                <span className="block text-[10px] font-black text-emerald-800 uppercase">
-                                  🌟 My Dream for Saudi Arabia
-                                </span>
-                                <p className="text-xs font-bold text-slate-800 mt-0.5 leading-relaxed">
-                                  {parsed.dream}
-                                </p>
-                              </div>
-                            )}
-                            {parsed.promise && (
-                              <div className="rounded-xl bg-amber-50/60 p-2.5 border border-amber-100">
-                                <span className="block text-[10px] font-black text-amber-900 uppercase">
-                                  🤝 My Promise in Action
-                                </span>
-                                <p className="text-xs font-bold text-slate-800 mt-0.5 leading-relaxed">
-                                  {parsed.promise}
-                                </p>
-                              </div>
-                            )}
-                            {parsed.pride && (
-                              <div className="rounded-xl bg-slate-50 p-2.5 border border-slate-200/70">
-                                <span className="block text-[10px] font-black text-slate-700 uppercase">
-                                  🇸🇦 A Message of Pride
-                                </span>
-                                <p className="text-xs font-bold text-slate-800 mt-0.5 leading-relaxed">
-                                  {parsed.pride}
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          <p
-                            className="mt-3 text-xs sm:text-sm font-semibold text-slate-700 whitespace-pre-line"
-                            dir="auto"
-                          >
-                            {entry.message}
-                          </p>
-                        )}
-
-                        {entry.teacherReply && (
-                          <div className="mt-3 rounded-xl border border-emerald-300 bg-emerald-50 p-3">
-                            <span className="block text-[11px] font-black text-emerald-900">
-                              ✨ إشادة المعلمة ({TEACHER_OFFICIAL_NAME}):
-                            </span>
-                            <p className="mt-1 text-xs font-bold text-slate-800">
-                              {entry.teacherReply}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
-                        <span className="inline-flex items-center gap-1 text-[11px] font-black text-emerald-800">
-                          <Crown className="h-3.5 w-3.5 text-amber-500 shrink-0" />
-                          <span>سفيرة الوطن · Saudi Homeland Ambassador</span>
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => handleToggleLikeVoice(entry.id, entry.likes)}
-                          className={`inline-flex min-h-9 items-center gap-1.5 rounded-lg border px-3 py-1 text-xs font-bold transition active:scale-95 ${
-                            isLiked
-                              ? 'border-rose-300 bg-rose-50 text-rose-700'
-                              : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-rose-50'
-                          }`}
-                        >
-                          <Heart
-                            className={`h-3.5 w-3.5 ${
-                              isLiked ? 'fill-rose-500 text-rose-500' : 'text-slate-400'
-                            }`}
-                          />
-                          <span>{entry.likes}</span>
-                        </button>
-                      </div>
-                    </article>
-                  );
-                })}
-              </div>
-            )}
-          </section>
-        )}
+        {phase === 'voices-wall' && renderVoicesWall(true)}
+        {phase === 'coronation' && renderVoicesWall(false)}
       </main>
 
       {phase !== 'final-chapter' && (

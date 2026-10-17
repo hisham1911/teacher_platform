@@ -17,6 +17,9 @@ import {
 } from 'lucide-react';
 import type { ComponentType } from 'react';
 import { EnglishSparkLogo } from './english-spark-logo';
+import { SaudiEmblemIcon } from './saudi-emblem-icon';
+
+export { SaudiEmblemIcon };
 
 interface NavItem {
   path: string;
@@ -28,6 +31,14 @@ interface NavItem {
 }
 
 const navLinks: NavItem[] = [
+  {
+    path: '/national-journey',
+    label: 'وطن وقيادة',
+    labelEn: 'National Journey',
+    id: 'national-journey',
+    Icon: SaudiEmblemIcon,
+    color: 'from-emerald-600 to-teal-700',
+  },
   {
     path: '/grammar',
     label: 'القواعد',
@@ -75,14 +86,6 @@ const navLinks: NavItem[] = [
     id: 'competitions',
     Icon: Trophy,
     color: 'from-amber-500 to-yellow-600',
-  },
-  {
-    path: '/national-journey',
-    label: '🇸🇦 وطن وقيادة',
-    labelEn: 'National Journey',
-    id: 'national-journey',
-    Icon: Sparkles,
-    color: 'from-emerald-600 to-teal-700',
   },
   {
     path: '/guestbook',
@@ -162,7 +165,7 @@ export function PortalNav({ variant = 'light' }: { variant?: 'light' | 'dark' } 
             variant="horizontal"
             isDark={isDark}
             subtitle="نادي اللغة الإنجليزية"
-            showSubtitle={true}
+            showSubtitle={false}
           />
         </Link>
 
@@ -212,26 +215,8 @@ export function PortalNav({ variant = 'light' }: { variant?: 'light' | 'dark' } 
           })}
         </div>
 
-        {/* Right Actions & Badge */}
+        {/* Right Actions & Mobile Toggle */}
         <div className="flex items-center gap-2.5">
-          {/* Official badge (Desktop) */}
-          <span
-            className={`hidden shrink-0 rounded-xl border px-3.5 py-1.5 text-xs font-black md:inline-block ${
-              isDark
-                ? 'border-amber-400/30 bg-amber-400/10 text-amber-300'
-                : 'border-violet-100 bg-violet-50/80 text-violet-800'
-            }`}
-          >
-            إنتاج معرفي
-            <span
-              className={`mr-1.5 font-bold ${
-                isDark ? 'text-amber-400/80' : 'text-violet-500'
-              }`}
-            >
-              | وزارة التعليم
-            </span>
-          </span>
-
           {/* Mobile Menu Toggle Button */}
           <button
             type="button"

@@ -422,3 +422,45 @@ export const IMMORTAL_PLEDGE_STATEMENT = {
   certificateReasonAr:
     'لإتمام رحلة المجد والتعبير عن الاعتزاز والانتماء والالتزام بالمساهمة في مستقبل المملكة العربية السعودية.',
 } as const;
+
+export interface ParsedVoicePayload {
+  dream: string;
+  promise: string;
+  pride: string;
+  rawMessage: string;
+}
+
+export function encodeVoiceMessage(dream: string, promise: string, pride: string): string {
+  return [
+    `🌟 My Dream for Saudi Arabia: ${dream.trim()}`,
+    `🤝 My Promise in Action: ${promise.trim()}`,
+    `🇸🇦 A Message of Pride: ${pride.trim()}`,
+  ].join('\n');
+}
+
+export function parseVoiceMessage(message: string): ParsedVoicePayload {
+  const lines = message
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(Boolean);
+  let dream = '';
+  let promise = '';
+  let pride = '';
+
+  for (const line of lines) {
+    if (line.includes('My Dream for Saudi Arabia:')) {
+      dream = line.split('My Dream for Saudi Arabia:')[1]?.trim() ?? '';
+    } else if (line.includes('My Promise in Action:')) {
+      promise = line.split('My Promise in Action:')[1]?.trim() ?? '';
+    } else if (line.includes('A Message of Pride:')) {
+      pride = line.split('A Message of Pride:')[1]?.trim() ?? '';
+    }
+  }
+
+  return {
+    dream,
+    promise,
+    pride,
+    rawMessage: message,
+  };
+}
