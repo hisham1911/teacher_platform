@@ -7,6 +7,7 @@ import { useSessionSnapshot } from '../../features/auth/use-session';
 import { clearSession, getActiveTenantId, setActiveWorkspaceId } from '../../lib/auth/session';
 
 import { ScrollToTop } from './scroll-to-top';
+import { GlobalScrollReset } from '../../lib/scroll-reset';
 import { EnglishSparkLogo } from '../portal/english-spark-logo';
 
 const studioNavItems: Array<{ to: string; label: string; icon: TeacherIconName }> = [
@@ -89,6 +90,7 @@ export function RootLayout({ children }: { children: ReactNode }) {
   if (isFocusedExperience) {
     return (
       <div className="min-h-dvh" dir="rtl">
+        <GlobalScrollReset />
         <ScrollToTop />
         {children}
       </div>
@@ -113,6 +115,7 @@ export function RootLayout({ children }: { children: ReactNode }) {
     const onLoginPage = location.pathname === '/auth/login';
     return (
       <div className="spark-public-shell relative flex min-h-dvh flex-col overflow-x-clip" dir="rtl">
+        <GlobalScrollReset />
         <ScrollToTop />
         <PublicBackdrop />
         <header className="sticky top-0 z-40 border-b border-violet-100/80 bg-white/88 backdrop-blur-xl">
@@ -136,6 +139,7 @@ export function RootLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="teacher-app min-h-dvh" dir="rtl">
+      <GlobalScrollReset />
       <ScrollToTop />
       <div className="mx-auto flex min-h-dvh w-full max-w-screen-2xl">
         <aside className="sticky top-0 hidden h-dvh w-[17rem] shrink-0 flex-col border-l border-slate-200 bg-white/96 px-4 py-5 lg:flex">

@@ -20,6 +20,7 @@ import {
 import { PublicBackdrop } from '../../components/layout/root-layout';
 import { PortalNav, PortalFooter } from '../../components/portal/portal-nav';
 import { EnglishSparkLogo } from '../../components/portal/english-spark-logo';
+import { useStageScrollReset } from '../../lib/scroll-reset';
 import {
   PLACEMENT_LEVELS_META,
   getQuestionsForLevel,
@@ -58,6 +59,8 @@ export default function PlacementTestPage() {
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
   const [startTime, setStartTime] = useState<number | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  useStageScrollReset(stage, currentIndex);
 
   // Active question set
   const questions: PlacementQuestionItem[] = useMemo(() => {
@@ -374,18 +377,20 @@ export default function PlacementTestPage() {
     <div className="relative flex min-h-dvh flex-col overflow-x-clip bg-slate-50/50 print:bg-white" dir="rtl">
       <div className="print:hidden">
         <PublicBackdrop />
-        <PortalNav />
+        {stage !== 'testing' && <PortalNav />}
       </div>
 
       <main className="relative z-10 mx-auto flex w-full max-w-5xl flex-1 flex-col px-4 pb-20 pt-6 sm:pt-10 print:p-0 print:max-w-none">
         {/* Breadcrumb Navigation */}
-        <div className="mb-5 flex items-center gap-1.5 text-xs font-bold text-slate-500 print:hidden">
-          <Link to="/competitions" className="hover:text-violet-700 transition">
-            المسابقات والتقييم
-          </Link>
-          <ChevronRight className="h-3.5 w-3.5" />
-          <span className="text-violet-700 font-black">اختبار تحديد المستوى والتشخيص اللغوي</span>
-        </div>
+        {stage !== 'testing' && (
+          <div className="mb-5 flex items-center gap-1.5 text-xs font-bold text-slate-500 print:hidden">
+            <Link to="/competitions" className="hover:text-violet-700 transition">
+              المسابقات والتقييم
+            </Link>
+            <ChevronRight className="h-3.5 w-3.5" />
+            <span className="text-violet-700 font-black">اختبار تحديد المستوى والتشخيص اللغوي</span>
+          </div>
+        )}
 
         {/* ================================================================= */}
         {/* STAGE 1: LEVEL SELECTION HUB */}
@@ -674,7 +679,7 @@ export default function PlacementTestPage() {
             </div>
 
             {/* Bottom Actions Bar */}
-            <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-100 pt-5">
+            <div className="sticky bottom-0 z-20 -mx-5 mt-5 border-t border-slate-200 bg-white/95 px-5 py-3 backdrop-blur-md sm:static sm:mx-0 sm:bg-transparent sm:p-0 flex flex-col sm:flex-row items-center justify-between gap-3">
               <div className="flex items-center gap-2 w-full sm:w-auto">
                 {currentIndex > 0 && (
                   <button
@@ -1244,9 +1249,11 @@ export default function PlacementTestPage() {
         )}
       </main>
 
-      <div className="print:hidden">
-        <PortalFooter />
-      </div>
+      {stage !== 'testing' && (
+        <div className="print:hidden">
+          <PortalFooter />
+        </div>
+      )}
     </div>
   );
 }

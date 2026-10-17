@@ -24,6 +24,7 @@ import {
   MessageSquareHeart,
   Crown,
   Share2,
+  X,
 } from 'lucide-react';
 import { PublicBackdrop } from '../../components/layout/root-layout';
 import { PortalNav, PortalFooter } from '../../components/portal/portal-nav';
@@ -43,6 +44,7 @@ import {
   TEACHER_OFFICIAL_NAME,
   type GuestbookEntry,
 } from '../../data/api-client/guestbook-client';
+import { useStageScrollReset } from '../../lib/scroll-reset';
 
 type FlowPhase =
   | 'welcome'
@@ -106,9 +108,6 @@ function parseVoiceMessage(message: string): ParsedVoicePayload {
   };
 }
 
-/**
- * Web Audio API sound effects & ceremonial national melody generator
- */
 function playNationalSound(type: 'start' | 'correct' | 'retry' | 'badge' | 'coronation') {
   try {
     const AudioCtx =
@@ -141,7 +140,6 @@ function playNationalSound(type: 'start' | 'correct' | 'retry' | 'badge' | 'coro
         playNote(f, idx * 0.1, 0.35, 0.14);
       });
     } else if (type === 'start' || type === 'coronation') {
-      // Ceremonial Saudi-inspired majestic fanfare
       const melody = [
         { f: 392.0, t: 0, d: 0.35 },
         { f: 440.0, t: 0.22, d: 0.35 },
@@ -172,12 +170,9 @@ function StageBadgeIcon({
   return <Compass className={className} />;
 }
 
-/**
- * Custom Royal Saudi National Artwork (Vector SVG Banner)
- */
 function SaudiNationalBannerArtwork() {
   return (
-    <div className="relative mx-auto w-full overflow-hidden rounded-2xl border border-amber-300/50 bg-gradient-to-br from-emerald-950 via-emerald-900 to-teal-950 p-4 sm:p-7 shadow-xl">
+    <div className="relative mx-auto w-full overflow-hidden rounded-2xl border border-amber-300/50 bg-gradient-to-br from-emerald-950 via-emerald-900 to-teal-950 p-4 sm:p-6 shadow-xl">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute -top-16 -right-16 h-48 w-48 rounded-full bg-amber-400/20 blur-3xl"
@@ -187,12 +182,12 @@ function SaudiNationalBannerArtwork() {
         className="pointer-events-none absolute -bottom-16 -left-16 h-48 w-48 rounded-full bg-emerald-400/20 blur-3xl"
       />
 
-      <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-6">
-        <div className="flex flex-col sm:flex-row items-center text-center sm:text-right gap-3.5 sm:gap-4">
-          <div className="relative flex h-18 w-18 sm:h-22 sm:w-22 shrink-0 items-center justify-center rounded-3xl border-2 border-amber-400/70 bg-gradient-to-b from-emerald-800/90 to-emerald-950 shadow-[0_0_30px_rgba(251,191,36,0.25)]">
+      <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row items-center text-center sm:text-right gap-3.5">
+          <div className="relative flex h-16 w-16 sm:h-20 sm:w-20 shrink-0 items-center justify-center rounded-2xl sm:rounded-3xl border-2 border-amber-400/70 bg-gradient-to-b from-emerald-800/90 to-emerald-950 shadow-[0_0_25px_rgba(251,191,36,0.25)]">
             <svg
               viewBox="0 0 120 120"
-              className="h-12 w-12 sm:h-15 sm:w-15 drop-shadow-md"
+              className="h-11 w-11 sm:h-14 sm:w-14 drop-shadow-md"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
               aria-hidden="true"
@@ -219,7 +214,7 @@ function SaudiNationalBannerArtwork() {
             <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-400/20 border border-amber-300/40 px-3 py-0.5 text-[11px] font-black text-amber-200">
               <span>🇸🇦 المملكة العربية السعودية</span>
             </span>
-            <h2 className="mt-1.5 text-lg sm:text-2xl font-black text-white">
+            <h2 className="mt-1 text-lg sm:text-2xl font-black text-white">
               {NATIONAL_INITIATIVE_META.initiativeTitleAr}
             </h2>
             <p className="mt-0.5 text-xs sm:text-sm font-bold text-emerald-200/95">
@@ -228,17 +223,11 @@ function SaudiNationalBannerArtwork() {
           </div>
         </div>
 
-        <div
-          className="flex flex-col items-center sm:items-end text-center sm:text-left border-t sm:border-t-0 border-emerald-800/80 pt-3 sm:pt-0 w-full sm:w-auto"
-          dir="ltr"
-        >
+        <div className="hidden sm:flex flex-col items-end text-left shrink-0" dir="ltr">
           <span className="text-[10px] font-black tracking-[0.2em] text-amber-300 uppercase">
             JOURNEY OF GLORY
           </span>
-          <span className="mt-0.5 text-xs font-bold text-emerald-100">
-            5 Interactive Stations
-          </span>
-          <div className="mt-2 inline-flex items-center gap-1.5 rounded-xl bg-white/10 px-3 py-1 text-[11px] font-black text-amber-200 backdrop-blur-xs border border-white/15">
+          <div className="mt-1.5 inline-flex items-center gap-1.5 rounded-xl bg-white/10 px-3 py-1 text-[11px] font-black text-amber-200 backdrop-blur-xs border border-white/15">
             <Award className="h-3.5 w-3.5 text-amber-300 shrink-0" />
             <span>Homeland Ambassador</span>
           </div>
@@ -258,12 +247,10 @@ export default function NationalJourneyPage() {
     () => 'SPARK-KSA-' + Math.random().toString(36).substring(2, 8).toUpperCase(),
   );
 
-  // Audio player state
   const [audioMuted, setAudioMuted] = useState(false);
   const [audioPlaying, setAudioPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Stage 1-4 quiz state
   const [currentStageIdx, setCurrentStageIdx] = useState(0);
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
   const [selectedOptionId, setSelectedOptionId] = useState<'A' | 'B' | 'C' | null>(null);
@@ -271,14 +258,12 @@ export default function NationalJourneyPage() {
   const [retryNotice, setRetryNotice] = useState(false);
   const [earnedBadges, setEarnedBadges] = useState<string[]>([]);
 
-  // Stage 5 (The Final Chapter) state
   const [dreamText, setDreamText] = useState('');
   const [promiseText, setPromiseText] = useState('');
   const [prideText, setPrideText] = useState('');
   const [submittingPledge, setSubmittingPledge] = useState(false);
   const [pledgeError, setPledgeError] = useState<string | null>(null);
 
-  // Voices of Saudi Pride Digital Wall state
   const [voices, setVoices] = useState<GuestbookEntry[]>([]);
   const [loadingVoices, setLoadingVoices] = useState(false);
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
@@ -288,16 +273,8 @@ export default function NationalJourneyPage() {
   const currentQuestion =
     currentStage.questions[currentQuestionIdx] ?? currentStage.questions[0]!;
 
-  // Smooth scroll to top on mobile when phase, stage, or question changes
-  useEffect(() => {
-    try {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    } catch {
-      window.scrollTo(0, 0);
-    }
-  }, [phase, currentStageIdx, currentQuestionIdx]);
+  useStageScrollReset(phase, currentStageIdx, currentQuestionIdx);
 
-  // Load Voices of Saudi Pride wall entries
   const loadVoicesWall = async () => {
     setLoadingVoices(true);
     try {
@@ -313,7 +290,7 @@ export default function NationalJourneyPage() {
           localEntries = JSON.parse(raw) as GuestbookEntry[];
         }
       } catch {
-        // ignore storage errors
+        // ignore
       }
 
       const mergedMap = new Map<string, GuestbookEntry>();
@@ -344,12 +321,12 @@ export default function NationalJourneyPage() {
 
   useEffect(() => {
     return () => {
-      try {
-        if (audioRef.current) {
+      if (audioRef.current) {
+        try {
           audioRef.current.pause();
+        } catch {
+          // ignore
         }
-      } catch {
-        // ignore media element errors
       }
     };
   }, []);
@@ -359,25 +336,17 @@ export default function NationalJourneyPage() {
       playNationalSound('start');
     }
     try {
-      if (!audioRef.current) {
+      if (!audioRef.current && typeof Audio !== 'undefined') {
         const audio = new Audio(NATIONAL_INITIATIVE_META.audioTrackUrl);
         audio.loop = true;
         audio.volume = 0.25;
         audioRef.current = audio;
       }
       if (!audioMuted && audioRef.current) {
-        try {
-          const promise = audioRef.current.play();
-          if (promise !== undefined && typeof promise.then === 'function') {
-            promise
-              .then(() => setAudioPlaying(true))
-              .catch(() => setAudioPlaying(false));
-          } else {
-            setAudioPlaying(true);
-          }
-        } catch {
-          setAudioPlaying(false);
-        }
+        audioRef.current
+          .play()
+          .then(() => setAudioPlaying(true))
+          .catch(() => setAudioPlaying(false));
       }
     } catch {
       // ignore
@@ -391,22 +360,22 @@ export default function NationalJourneyPage() {
       playNationalSound('correct');
     }
     if (audioRef.current) {
-      try {
-        if (nextMuted) {
+      if (nextMuted) {
+        try {
           audioRef.current.pause();
-          setAudioPlaying(false);
-        } else {
-          const promise = audioRef.current.play();
-          if (promise !== undefined && typeof promise.then === 'function') {
-            promise
-              .then(() => setAudioPlaying(true))
-              .catch(() => setAudioPlaying(false));
-          } else {
-            setAudioPlaying(true);
-          }
+        } catch {
+          // ignore
         }
-      } catch {
         setAudioPlaying(false);
+      } else {
+        try {
+          audioRef.current
+            .play()
+            .then(() => setAudioPlaying(true))
+            .catch(() => setAudioPlaying(false));
+        } catch {
+          // ignore
+        }
       }
     }
   }
@@ -419,13 +388,12 @@ export default function NationalJourneyPage() {
     setSelectedOptionId(null);
     setAnsweredCorrectly(false);
     setRetryNotice(false);
-    setEarnedBadges([]);
     setPhase('journey-quiz');
   }
 
-  function handleSelectOption(optId: 'A' | 'B' | 'C', isCorrect: boolean) {
+  function handleSelectOption(optionId: 'A' | 'B' | 'C', isCorrect: boolean) {
     if (answeredCorrectly) return;
-    setSelectedOptionId(optId);
+    setSelectedOptionId(optionId);
 
     if (isCorrect) {
       setAnsweredCorrectly(true);
@@ -477,7 +445,7 @@ export default function NationalJourneyPage() {
       prideText.trim().length < 5
     ) {
       setPledgeError(
-        'فضلاً أكملي المحاور الثلاثة (حلمك، وعهدك، ورسالة الفخر) أو اضغطي على إحدى العبارات الملهمة بالأسفل للإدراج التلقائي.',
+        'فضلاً أكملي المحاور الثلاثة (حلمك، وعهدك، ورسالة الفخر) أو اضغطي على إحدى العبارات الملهمة للإدراج التلقائي.',
       );
       return;
     }
@@ -555,7 +523,7 @@ export default function NationalJourneyPage() {
         prev.map((item) => (item.id === id ? { ...item, likes: res.newLikes } : item)),
       );
     } catch {
-      // keep optimistic state
+      // keep optimistic
     }
   }
 
@@ -604,19 +572,242 @@ export default function NationalJourneyPage() {
     return `https://wa.me/?${new URLSearchParams({ text: shareText }).toString()}`;
   }, [studentName, studentGrade, verificationCode]);
 
+  // =========================================================================
+  // FULL-SCREEN MOBILE FOCUS MODE FOR STAGES 1–4 & BADGE CELEBRATION
+  // No PortalNav, No PortalFooter, Zero Scroll on Mobile
+  // =========================================================================
+  if (phase === 'journey-quiz' || phase === 'stage-celebration') {
+    return (
+      <div
+        className="fixed inset-0 z-50 flex h-dvh w-full flex-col justify-between overflow-hidden bg-gradient-to-b from-emerald-950 via-slate-950 to-emerald-950 text-white select-none"
+        dir="rtl"
+      >
+        {/* Top Compact App HUD Bar */}
+        <header className="shrink-0 border-b border-white/10 bg-black/30 px-3.5 py-2.5 backdrop-blur-md">
+          <div className="mx-auto flex max-w-3xl items-center justify-between gap-2">
+            <button
+              type="button"
+              onClick={handleResetJourney}
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white transition"
+              title="خروج"
+              aria-label="خروج"
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            <div className="flex flex-1 flex-col gap-1 px-2">
+              <div className="flex items-center justify-between text-[11px] font-black">
+                <span className="text-amber-300 truncate">
+                  المرحلة {currentStage.stageNumber}: {currentStage.badgeTitleAr}
+                </span>
+                <span className="text-emerald-300" dir="ltr">
+                  {currentQuestionIdx + 1} / {currentStage.questions.length}
+                </span>
+              </div>
+              <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
+                <div
+                  className="h-full rounded-full bg-gradient-to-l from-amber-400 to-emerald-400 transition-all duration-300"
+                  style={{ width: `${Math.max(10, totalProgressPercent)}%` }}
+                />
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={toggleAudioMute}
+              className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border transition ${
+                !audioMuted
+                  ? 'border-amber-400/50 bg-amber-400/15 text-amber-300'
+                  : 'border-white/15 bg-white/5 text-slate-400'
+              }`}
+              title={audioMuted ? 'تشغيل الصوت' : 'كتم الصوت'}
+            >
+              {audioMuted ? (
+                <VolumeX className="h-4 w-4" />
+              ) : (
+                <Volume2
+                  className={`h-4 w-4 shrink-0 text-amber-300 ${
+                    audioPlaying ? 'animate-pulse' : ''
+                  }`}
+                />
+              )}
+            </button>
+          </div>
+        </header>
+
+        {/* Center Viewport Area */}
+        <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center overflow-y-auto px-4 py-3">
+          {phase === 'journey-quiz' ? (
+            <div className="flex flex-col justify-center space-y-4">
+              <div className="text-center">
+                <span
+                  className="inline-block rounded-full border border-emerald-400/30 bg-emerald-500/15 px-3 py-0.5 text-[11px] font-black text-emerald-300"
+                  dir="ltr"
+                >
+                  {currentStage.titleEn}
+                </span>
+              </div>
+
+              <div className="rounded-2xl border border-white/15 bg-white/8 p-4 sm:p-6 text-center shadow-lg backdrop-blur-md">
+                <p
+                  className="text-base sm:text-2xl font-black leading-snug text-white select-text"
+                  dir="ltr"
+                >
+                  Q{currentQuestionIdx + 1}. {currentQuestion.prompt}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 gap-2.5" dir="ltr">
+                {currentQuestion.options.map((opt) => {
+                  const isSelected = selectedOptionId === opt.id;
+                  let styleClass =
+                    'border-white/15 bg-white/6 text-white hover:border-amber-300/60 hover:bg-white/12';
+
+                  if (answeredCorrectly && opt.isCorrect) {
+                    styleClass =
+                      'border-emerald-400 bg-emerald-500/25 text-white ring-2 ring-emerald-400/40 shadow-[0_0_20px_rgba(16,185,129,0.25)]';
+                  } else if (isSelected && !opt.isCorrect) {
+                    styleClass = 'border-amber-400 bg-amber-500/20 text-amber-100';
+                  }
+
+                  return (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => handleSelectOption(opt.id, opt.isCorrect)}
+                      disabled={answeredCorrectly}
+                      className={`flex items-center justify-between rounded-2xl border-2 px-4 py-3 sm:py-3.5 text-left transition active:scale-[0.99] min-h-[52px] ${styleClass}`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <span
+                          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-xs sm:text-sm font-black ${
+                            answeredCorrectly && opt.isCorrect
+                              ? 'bg-emerald-400 text-slate-950'
+                              : isSelected && !opt.isCorrect
+                              ? 'bg-amber-400 text-slate-950'
+                              : 'bg-white/10 text-amber-300'
+                          }`}
+                        >
+                          {opt.id}
+                        </span>
+                        <span className="text-sm sm:text-lg font-black">{opt.text}</span>
+                      </div>
+
+                      {answeredCorrectly && opt.isCorrect && (
+                        <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-3xl border-2 border-amber-400/60 bg-white/10 p-6 sm:p-8 text-center shadow-2xl backdrop-blur-xl animate-page-enter">
+              <div className="mx-auto flex h-18 w-18 sm:h-20 sm:w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-amber-400 via-amber-500 to-emerald-600 text-slate-950 shadow-xl">
+                <StageBadgeIcon className="h-9 w-9 sm:h-10 sm:w-10" icon={currentStage.badgeIcon} />
+              </div>
+              <span className="mt-4 inline-flex items-center gap-1 rounded-full bg-amber-400/20 border border-amber-300/40 px-3.5 py-1 text-xs font-black text-amber-300">
+                <Award className="h-3.5 w-3.5" />
+                <span>تم استحقاق الوسام بنجاح!</span>
+              </span>
+              <h2 className="mt-2.5 text-2xl sm:text-3xl font-black text-white">
+                وسام «{currentStage.badgeTitleAr}»
+              </h2>
+              <p className="mt-1 text-xs sm:text-sm font-black text-emerald-300" dir="ltr">
+                {currentStage.badgeTitleEn} Badge Unlocked!
+              </p>
+              <p className="mx-auto mt-2.5 max-w-md text-xs sm:text-sm font-semibold text-emerald-100 leading-relaxed">
+                فخورون بكِ يا <strong className="text-amber-300">{studentName}</strong>! أُضيف هذا
+                الوسام إلى جواز رحلتكِ الوطنية.
+              </p>
+
+              <button
+                type="button"
+                onClick={handleContinueToNextStage}
+                className="mt-6 w-full inline-flex min-h-13 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-300 px-6 py-3.5 text-sm sm:text-base font-black text-slate-950 shadow-lg transition hover:brightness-105 active:scale-95"
+              >
+                <span>
+                  {currentStageIdx + 1 < NATIONAL_JOURNEY_STAGES.length
+                    ? `الانطلاق إلى المرحلة ${currentStageIdx + 2}`
+                    : 'المحطة الختامية: عهدٌ يرويه المستقبل 🇸🇦'}
+                </span>
+                <ArrowLeft className="h-4 w-4 shrink-0" />
+              </button>
+            </div>
+          )}
+        </main>
+
+        {/* Bottom Docked Feedback & Action Bar (Duolingo-Style) */}
+        {phase === 'journey-quiz' && (
+          <footer
+            className={`shrink-0 border-t px-4 py-3 transition-colors duration-200 ${
+              answeredCorrectly
+                ? 'border-emerald-500/40 bg-emerald-950/95'
+                : retryNotice
+                ? 'border-amber-500/40 bg-amber-950/90'
+                : 'border-white/10 bg-black/40'
+            }`}
+          >
+            <div className="mx-auto max-w-2xl">
+              {answeredCorrectly ? (
+                <div className="space-y-2.5 animate-page-enter">
+                  <div className="flex items-start gap-2">
+                    <Sparkles className="h-4 w-4 text-amber-300 shrink-0 mt-0.5" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-black text-emerald-200 leading-relaxed">
+                        أحسنتِ إجابة صحيحة! {currentQuestion.factAr}
+                      </p>
+                      <p className="text-[11px] font-medium text-emerald-300/90 mt-0.5" dir="ltr">
+                        {currentQuestion.factEn}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleNextQuestion}
+                    className="flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-300 px-6 py-3 text-sm font-black text-slate-950 shadow-lg transition active:scale-95"
+                  >
+                    <span>
+                      {currentQuestionIdx + 1 === currentStage.questions.length
+                        ? `استلام وسام ${currentStage.badgeTitleAr} 🏆`
+                        : 'السؤال التالي'}
+                    </span>
+                    <ChevronLeft className="h-4 w-4 shrink-0" />
+                  </button>
+                </div>
+              ) : retryNotice ? (
+                <div className="flex items-center justify-between gap-3 py-1">
+                  <p className="text-xs font-black text-amber-200">
+                    اقتربتِ يا بطلة! فكّري مجدداً واختاري الإجابة الصحيحة لاكتشاف المعلومة الوطنية 🇸🇦
+                  </p>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between text-xs font-bold text-slate-400 py-1">
+                  <span>🏆 {currentStage.missionAr}</span>
+                  <span>اختاري الإجابة الصحيحة</span>
+                </div>
+              )}
+            </div>
+          </footer>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div
       className="relative flex min-h-dvh flex-col overflow-x-clip bg-gradient-to-b from-emerald-50/40 via-slate-50 to-amber-50/30 print:bg-white"
       dir="rtl"
     >
-      <div className="print:hidden">
-        <PublicBackdrop />
-        <PortalNav />
-      </div>
+      {phase !== 'final-chapter' && (
+        <div className="print:hidden">
+          <PublicBackdrop />
+          <PortalNav />
+        </div>
+      )}
 
-      <main className="relative z-10 mx-auto flex w-full max-w-5xl flex-1 flex-col px-3.5 sm:px-6 pb-20 pt-5 sm:pt-10 print:max-w-none print:p-0">
-        {/* Top Bar: Breadcrumb & National Audio Control (Mobile Optimized) */}
-        <div className="mb-4 sm:mb-5 flex flex-wrap items-center justify-between gap-2.5 print:hidden">
+      <main className="relative z-10 mx-auto flex w-full max-w-5xl flex-1 flex-col px-3.5 sm:px-6 pb-20 pt-4 sm:pt-8 print:max-w-none print:p-0">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2.5 print:hidden">
           <div className="flex items-center gap-1.5 text-xs font-bold text-slate-600">
             <Link className="hover:text-emerald-800 transition py-1" to="/">
               الرئيسية
@@ -652,114 +843,25 @@ export default function NationalJourneyPage() {
               title={audioMuted ? 'تشغيل الصوت الوطني' : 'كتم الصوت'}
             >
               {audioMuted ? (
-                <>
-                  <VolumeX className="h-4 w-4 text-slate-400 shrink-0" />
-                  <span className="hidden sm:inline">الصوت مكتوم</span>
-                </>
+                <VolumeX className="h-4 w-4 text-slate-400 shrink-0" />
               ) : (
-                <>
-                  <Volume2
-                    className={`h-4 w-4 shrink-0 text-amber-600 ${
-                      audioPlaying ? 'animate-pulse' : ''
-                    }`}
-                  />
-                  <span className="hidden sm:inline">المؤثرات الوطنية</span>
-                </>
+                <Volume2
+                  className={`h-4 w-4 shrink-0 text-amber-600 ${
+                    audioPlaying ? 'animate-pulse' : ''
+                  }`}
+                />
               )}
             </button>
           </div>
         </div>
 
-        {/* Journey Passport Progress Bar (Mobile-Friendly Stepper) */}
-        {(phase === 'journey-quiz' ||
-          phase === 'stage-celebration' ||
-          phase === 'final-chapter') && (
-          <div className="mb-5 rounded-2xl border border-emerald-200/80 bg-white/95 p-3.5 sm:p-4 shadow-xs backdrop-blur-md print:hidden">
-            <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5">
-              <div className="flex items-center gap-2 min-w-0">
-                <span className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-emerald-900 px-2.5 py-1 text-[11px] font-black text-amber-300">
-                  <span>🇸🇦 رحلة المجد</span>
-                </span>
-                <span className="text-xs font-bold text-slate-700 truncate">
-                  السفيرة: <strong className="font-black text-emerald-950">{studentName}</strong>
-                </span>
-              </div>
-              <span className="text-xs font-black text-emerald-800 shrink-0">
-                {totalProgressPercent}%
-              </span>
-            </div>
-
-            {/* Smooth Progress Line */}
-            <div className="mb-3 h-2 w-full overflow-hidden rounded-full bg-slate-100">
-              <div
-                className="h-full rounded-full bg-gradient-to-l from-emerald-600 via-teal-600 to-amber-500 transition-all duration-300"
-                style={{ width: `${Math.max(8, totalProgressPercent)}%` }}
-              />
-            </div>
-
-            {/* 5 Stations Compact Responsive Stepper */}
-            <div className="grid grid-cols-5 gap-1.5 sm:gap-2">
-              {NATIONAL_JOURNEY_STAGES.map((stg, idx) => {
-                const isEarned = earnedBadges.includes(stg.id);
-                const isCurrent =
-                  (phase === 'journey-quiz' || phase === 'stage-celebration') &&
-                  currentStageIdx === idx;
-                return (
-                  <div
-                    key={stg.id}
-                    className={`flex flex-col items-center justify-center rounded-xl border py-1.5 px-1 sm:p-2 text-center transition ${
-                      isEarned
-                        ? 'border-emerald-400 bg-emerald-50/90 text-emerald-900'
-                        : isCurrent
-                        ? 'border-amber-400 bg-amber-50/90 text-amber-950 ring-2 ring-amber-200'
-                        : 'border-slate-200/70 bg-slate-50/60 text-slate-400'
-                    }`}
-                  >
-                    <div className="flex items-center justify-center gap-1">
-                      {isEarned ? (
-                        <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-600 shrink-0" />
-                      ) : (
-                        <StageBadgeIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" icon={stg.badgeIcon} />
-                      )}
-                      <span className="text-[10px] font-black sm:hidden">{stg.stageNumber}</span>
-                    </div>
-                    <span className="mt-1 hidden sm:block text-[11px] font-black truncate max-w-full">
-                      {stg.badgeTitleAr}
-                    </span>
-                  </div>
-                );
-              })}
-
-              {/* Station 5: The Final Chapter */}
-              <div
-                className={`flex flex-col items-center justify-center rounded-xl border py-1.5 px-1 sm:p-2 text-center transition ${
-                  phase === 'final-chapter'
-                    ? 'border-amber-400 bg-amber-50 text-amber-950 ring-2 ring-amber-300'
-                    : 'border-slate-200/70 bg-slate-50/60 text-slate-400'
-                }`}
-              >
-                <div className="flex items-center justify-center gap-1">
-                  <Crown className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-500 shrink-0" />
-                  <span className="text-[10px] font-black sm:hidden">5</span>
-                </div>
-                <span className="mt-1 hidden sm:block text-[11px] font-black truncate max-w-full">
-                  عهد المستقبل
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ================================================================= */}
-        {/* PHASE 1: ROYAL WELCOME HUB (Mobile-First Order)                   */}
-        {/* ================================================================= */}
+        {/* PHASE 1: WELCOME */}
         {phase === 'welcome' && (
           <div className="space-y-6 animate-page-enter">
             <div className="overflow-hidden rounded-3xl border border-emerald-200/90 bg-white/95 p-4 sm:p-10 shadow-md backdrop-blur-xl text-center">
-              {/* National Artwork Banner */}
               <SaudiNationalBannerArtwork />
 
-              <div className="mt-5 sm:mt-7 inline-flex items-center gap-1.5 rounded-full bg-emerald-100/90 px-3.5 py-1 text-xs font-black text-emerald-900">
+              <div className="mt-5 inline-flex items-center gap-1.5 rounded-full bg-emerald-100/90 px-3.5 py-1 text-xs font-black text-emerald-900">
                 <Sparkles className="h-3.5 w-3.5 text-emerald-700 shrink-0" />
                 <span dir="ltr">🇸🇦 JOURNEY OF GLORY · رحلة المجد</span>
               </div>
@@ -773,23 +875,21 @@ export default function NationalJourneyPage() {
               >
                 {NATIONAL_INITIATIVE_META.mottoEn}
               </p>
-              <p className="mx-auto mt-2.5 max-w-2xl text-xs sm:text-sm font-semibold leading-relaxed text-slate-600">
-                رحلة تفاعلية ممتعة في حب المملكة العربية السعودية؛ نستكشف فيها تاريخنا العريق،
-                مدننا المقدسة، طبيعتنا الساحرة، وتراثنا الأصيل باللغة الإنجليزية، ونختتمها بكتابة
-                رسالة خالدة للمستقبل والحصول على شهادة{' '}
+              <p className="mx-auto mt-2 max-w-2xl text-xs sm:text-sm font-semibold leading-relaxed text-slate-600">
+                رحلة تفاعلية في حب المملكة العربية السعودية؛ نستكشف فيها تاريخنا، مدننا، طبيعتنا،
+                وتراثنا الأصيل باللغة الإنجليزية، ونختتمها بكتابة رسالة للمستقبل والحصول على شهادة{' '}
                 <strong className="text-emerald-900">
                   «سفيرة الوطن | Saudi Homeland Ambassador»
                 </strong>
                 .
               </p>
 
-              {/* Student Identity Box Placed Prominently for Mobile Thumb Reach */}
-              <div className="mx-auto mt-6 max-w-xl rounded-2xl border-2 border-emerald-200/90 bg-gradient-to-b from-emerald-50/60 to-white p-4 sm:p-6 text-right shadow-xs">
+              <div className="mx-auto mt-5 max-w-xl rounded-2xl border-2 border-emerald-200/90 bg-gradient-to-b from-emerald-50/60 to-white p-4 sm:p-6 text-right shadow-xs">
                 <h2 className="text-xs sm:text-sm font-black text-emerald-950 mb-3 flex items-center gap-1.5">
                   <ShieldCheck className="h-4 w-4 text-emerald-700 shrink-0" />
                   <span>سجّلي اسمكِ لبدء الرحلة وإصدار شهادة سفيرة الوطن:</span>
                 </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label
                       htmlFor="ambassador-name-input"
@@ -841,15 +941,14 @@ export default function NationalJourneyPage() {
                 </button>
               </div>
 
-              {/* 5 Stations Preview Grid (Compact 2-col on Mobile, 5-col on Desktop) */}
-              <div className="mt-7 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5 text-right">
+              <div className="mt-6 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5 text-right">
                 {NATIONAL_JOURNEY_STAGES.map((stg) => (
                   <div
                     key={stg.id}
-                    className="rounded-2xl border border-emerald-100 bg-gradient-to-b from-emerald-50/50 to-white p-3 sm:p-3.5 shadow-2xs"
+                    className="rounded-2xl border border-emerald-100 bg-gradient-to-b from-emerald-50/50 to-white p-3 shadow-2xs"
                   >
                     <div className="flex items-center justify-between gap-1">
-                      <span className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-800 text-amber-300 shadow-xs">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-800 text-amber-300 shadow-xs">
                         <StageBadgeIcon className="h-4 w-4" icon={stg.badgeIcon} />
                       </span>
                       <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-black text-emerald-900">
@@ -857,15 +956,15 @@ export default function NationalJourneyPage() {
                       </span>
                     </div>
                     <h3 className="mt-2 text-xs font-black text-slate-900">{stg.badgeTitleAr}</h3>
-                    <p className="text-[10px] sm:text-[11px] font-bold text-emerald-700" dir="ltr">
+                    <p className="text-[10px] font-bold text-emerald-700" dir="ltr">
                       {stg.badgeTitleEn}
                     </p>
                   </div>
                 ))}
 
-                <div className="col-span-2 sm:col-span-3 lg:col-span-1 rounded-2xl border-2 border-amber-300/80 bg-gradient-to-b from-amber-50/80 to-white p-3 sm:p-3.5 shadow-xs">
+                <div className="col-span-2 sm:col-span-3 lg:col-span-1 rounded-2xl border-2 border-amber-300/80 bg-gradient-to-b from-amber-50/80 to-white p-3 shadow-xs">
                   <div className="flex items-center justify-between gap-1">
-                    <span className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-slate-950 shadow-xs">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-slate-950 shadow-xs">
                       <Crown className="h-4 w-4" />
                     </span>
                     <span className="rounded-full bg-amber-200/80 px-2 py-0.5 text-[10px] font-black text-amber-950">
@@ -873,7 +972,7 @@ export default function NationalJourneyPage() {
                     </span>
                   </div>
                   <h3 className="mt-2 text-xs font-black text-slate-900">عهدٌ يرويه المستقبل</h3>
-                  <p className="text-[10px] sm:text-[11px] font-bold text-amber-800" dir="ltr">
+                  <p className="text-[10px] font-bold text-amber-800" dir="ltr">
                     My Promise, My Future
                   </p>
                 </div>
@@ -882,238 +981,51 @@ export default function NationalJourneyPage() {
           </div>
         )}
 
-        {/* ================================================================= */}
-        {/* PHASE 2: INTERACTIVE STAGES 1–4 (MASTERY LEARNING)                */}
-        {/* ================================================================= */}
-        {phase === 'journey-quiz' && (
-          <div className="rounded-3xl border border-emerald-200/90 bg-white/95 p-4 sm:p-9 shadow-sm backdrop-blur-xl animate-page-enter">
-            {/* Stage Header */}
-            <div className="flex flex-wrap items-center justify-between gap-2.5 border-b border-slate-100 pb-3.5">
-              <div>
-                <span
-                  className="text-[11px] sm:text-xs font-black tracking-wider text-emerald-700 uppercase block"
-                  dir="ltr"
-                >
-                  {currentStage.titleEn}
-                </span>
-                <h2 className="mt-0.5 text-base sm:text-2xl font-black text-slate-950">
-                  {currentStage.titleAr}
-                </h2>
-                <p className="text-xs font-semibold text-slate-500 mt-0.5">
-                  {currentStage.subtitleAr}
-                </p>
-              </div>
-              <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-black text-emerald-900 border border-emerald-200 shrink-0">
-                السؤال {currentQuestionIdx + 1} من {currentStage.questions.length}
-              </span>
-            </div>
-
-            {/* Question Prompt Card */}
-            <div className="mt-5 rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-50/50 via-white to-amber-50/30 p-4 sm:p-7 text-center">
-              <span
-                className="inline-block rounded-full bg-emerald-900/10 px-3 py-0.5 text-[11px] font-black text-emerald-900 mb-2"
-                dir="ltr"
-              >
-                Choose the correct answer
-              </span>
-              <p
-                className="text-base sm:text-2xl font-black leading-relaxed text-slate-950 select-text"
-                dir="ltr"
-              >
-                Q{currentQuestionIdx + 1}. {currentQuestion.prompt}
-              </p>
-            </div>
-
-            {/* 3 Options (Large Touch Targets on Mobile) */}
-            <div className="mt-4 sm:mt-5 grid grid-cols-1 gap-2.5 sm:gap-3" dir="ltr">
-              {currentQuestion.options.map((opt) => {
-                const isSelected = selectedOptionId === opt.id;
-                let styleClass =
-                  'border-slate-200 bg-white text-slate-900 hover:border-emerald-400 hover:bg-emerald-50/30';
-
-                if (answeredCorrectly && opt.isCorrect) {
-                  styleClass =
-                    'border-emerald-600 bg-emerald-50 text-emerald-950 ring-2 ring-emerald-200';
-                } else if (isSelected && !opt.isCorrect) {
-                  styleClass = 'border-amber-400 bg-amber-50 text-amber-950';
-                }
-
-                return (
-                  <button
-                    key={opt.id}
-                    type="button"
-                    onClick={() => handleSelectOption(opt.id, opt.isCorrect)}
-                    disabled={answeredCorrectly}
-                    className={`flex items-center justify-between rounded-2xl border-2 px-4 py-3.5 sm:px-5 sm:py-4 text-left transition active:scale-[0.99] min-h-[56px] ${styleClass}`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <span
-                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sm font-black ${
-                          answeredCorrectly && opt.isCorrect
-                            ? 'bg-emerald-600 text-white'
-                            : isSelected && !opt.isCorrect
-                            ? 'bg-amber-500 text-white'
-                            : 'bg-slate-100 text-slate-700'
-                        }`}
-                      >
-                        {opt.id}
-                      </span>
-                      <span className="text-sm sm:text-lg font-black">{opt.text}</span>
-                    </div>
-
-                    {answeredCorrectly && opt.isCorrect && (
-                      <CheckCircle2 className="h-6 w-6 text-emerald-600 shrink-0" />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Gentle Retry Prompt (No Game Over) */}
-            {retryNotice && !answeredCorrectly && (
-              <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50/90 p-3.5 text-center animate-page-enter">
-                <p className="text-xs sm:text-sm font-black text-amber-900">
-                  اقتربتِ يا بطلة! فكّري مجدداً واختاري الإجابة الصحيحة لاكتشاف المعلومة الوطنية 🇸🇦
-                </p>
-              </div>
-            )}
-
-            {/* Rich Bilingual Fact Card upon Correct Answer */}
-            {answeredCorrectly && (
-              <div className="mt-4 sm:mt-5 rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4 sm:p-5 animate-page-enter">
-                <div className="flex items-center gap-2 text-xs font-black text-emerald-900 mb-1.5">
-                  <Sparkles className="h-4 w-4 text-emerald-600 shrink-0" />
-                  <span>أحسنتِ إجابة صحيحة! · إضاءة وطنية</span>
-                </div>
-                <p className="text-xs sm:text-sm font-bold text-slate-800 leading-relaxed">
-                  {currentQuestion.factAr}
-                </p>
-                <p
-                  className="mt-1.5 text-xs font-semibold text-emerald-800 leading-relaxed"
-                  dir="ltr"
-                >
-                  {currentQuestion.factEn}
-                </p>
-              </div>
-            )}
-
-            {/* Next Question CTA (Full-Width Button on Mobile) */}
-            <div className="mt-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-t border-slate-100 pt-4 sm:pt-5">
-              <span className="text-xs font-bold text-slate-500 text-center sm:text-right">
-                🏆 {currentStage.missionAr}
-              </span>
-              <button
-                type="button"
-                onClick={handleNextQuestion}
-                disabled={!answeredCorrectly}
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-emerald-700 px-7 py-3 text-sm font-black text-white shadow-md shadow-emerald-700/20 transition hover:bg-emerald-800 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                <span>
-                  {currentQuestionIdx + 1 === currentStage.questions.length
-                    ? `استلام وسام ${currentStage.badgeTitleAr}`
-                    : 'السؤال التالي'}
-                </span>
-                <ChevronLeft className="h-4 w-4 shrink-0" />
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ================================================================= */}
-        {/* PHASE 3: STAGE BADGE CELEBRATION                                  */}
-        {/* ================================================================= */}
-        {phase === 'stage-celebration' && (
-          <div className="rounded-3xl border-2 border-amber-300/80 bg-white p-6 sm:p-10 text-center shadow-lg animate-page-enter">
-            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-amber-400 via-amber-500 to-emerald-700 text-white shadow-xl">
-              <StageBadgeIcon className="h-10 w-10" icon={currentStage.badgeIcon} />
-            </div>
-            <span className="mt-4 inline-flex items-center gap-1 rounded-full bg-amber-100 px-3.5 py-1 text-xs font-black text-amber-900">
-              <Award className="h-3.5 w-3.5 text-amber-600 shrink-0" />
-              <span>تم استحقاق الوسام بنجاح!</span>
-            </span>
-            <h2 className="mt-3 text-2xl sm:text-3xl font-black text-slate-950">
-              وسام «{currentStage.badgeTitleAr}»
-            </h2>
-            <p className="mt-1 text-sm font-black text-emerald-700" dir="ltr">
-              {currentStage.badgeTitleEn} Badge Unlocked!
-            </p>
-            <p className="mx-auto mt-3 max-w-lg text-xs sm:text-sm font-semibold text-slate-600 leading-relaxed">
-              فخورون بكِ يا <strong className="text-slate-900">{studentName}</strong>! لقد أتممتِ{' '}
-              {currentStage.titleAr} بنجاح وأُضيف هذا الوسام إلى جواز رحلتكِ الوطنية.
-            </p>
-
-            <div className="mt-7">
-              <button
-                type="button"
-                onClick={handleContinueToNextStage}
-                className="w-full sm:w-auto inline-flex min-h-13 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-700 to-teal-700 px-8 py-4 text-sm sm:text-base font-black text-white shadow-lg shadow-emerald-700/25 transition hover:brightness-110 active:scale-95"
-              >
-                <span>
-                  {currentStageIdx + 1 < NATIONAL_JOURNEY_STAGES.length
-                    ? `الانطلاق إلى المرحلة ${currentStageIdx + 2}`
-                    : 'الانتقال إلى المحطة الختامية: عهدٌ يرويه المستقبل 🇸🇦'}
-                </span>
-                <ArrowLeft className="h-4 w-4 shrink-0" />
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ================================================================= */}
-        {/* PHASE 4: STAGE 5 — THE FINAL CHAPTER (MY PROMISE, MY FUTURE)      */}
-        {/* ================================================================= */}
+        {/* PHASE 4: STAGE 5 — THE FINAL CHAPTER */}
         {phase === 'final-chapter' && (
-          <div className="space-y-6 animate-page-enter">
-            {/* Inspirational Intro Card */}
-            <div className="overflow-hidden rounded-3xl border border-amber-300/80 bg-gradient-to-br from-emerald-950 via-emerald-900 to-slate-950 p-5 sm:p-10 text-white shadow-xl">
+          <div className="space-y-5 animate-page-enter">
+            <div className="overflow-hidden rounded-3xl border border-amber-300/80 bg-gradient-to-br from-emerald-950 via-emerald-900 to-slate-950 p-5 sm:p-9 text-white shadow-xl">
               <div className="inline-flex items-center gap-2 rounded-full bg-amber-400/20 border border-amber-300/40 px-3.5 py-1 text-xs font-black text-amber-300">
                 <Crown className="h-3.5 w-3.5 shrink-0" />
                 <span dir="ltr">JOURNEY OF GLORY · THE FINAL CHAPTER</span>
               </div>
 
-              <h1 className="mt-3 text-xl sm:text-4xl font-black text-white">
+              <h1 className="mt-2.5 text-xl sm:text-3xl font-black text-white">
                 عهدٌ يرويه المستقبل | <span dir="ltr">The Promise That Lives On</span>
               </h1>
               <p className="mt-1 text-xs sm:text-sm font-bold text-amber-200">
                 {NATIONAL_INITIATIVE_META.mottoAr}
               </p>
 
-              <div className="mt-5 rounded-2xl border border-white/15 bg-white/10 p-4 sm:p-5 backdrop-blur-xs space-y-3">
-                <h2 className="text-sm sm:text-base font-black text-amber-300">
+              <div className="mt-4 rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur-xs space-y-2.5">
+                <h2 className="text-xs sm:text-base font-black text-amber-300">
                   المحطة الأخيرة: لو سألني المستقبل عن وطني… |{' '}
                   <span dir="ltr">If the Future Asked Me About My Homeland…</span>
                 </h2>
                 <p className="text-xs sm:text-sm font-medium leading-relaxed text-emerald-50" dir="ltr">
-                  You have discovered the story of your homeland, explored its treasures, and
-                  expressed your pride in its leadership. Now, imagine that ten years from today,
-                  someone asks you:{' '}
+                  Imagine that ten years from today, someone asks you:{' '}
                   <strong className="text-amber-300">
                     “What did you do to make your homeland proud of you?”
                   </strong>
                 </p>
-                <p className="text-xs sm:text-sm font-semibold leading-relaxed text-emerald-100 border-t border-white/10 pt-3">
-                  اكتشفتِ حكاية وطنك، وتعرّفتِ على كنوزه، وعبّرتِ عن اعتزازك بقيادته. والآن،
+                <p className="text-xs font-semibold leading-relaxed text-emerald-100 border-t border-white/10 pt-2">
                   تخيّلي أن أحدهم سألك بعد عشر سنوات:{' '}
                   <strong className="text-amber-300">ماذا فعلتِ لتجعلي وطنك فخوراً بكِ؟</strong>
                 </p>
               </div>
             </div>
 
-            {/* Interactive 3-Part Reflection Form */}
             <form
               onSubmit={handleCompleteFinalChapter}
-              className="rounded-3xl border border-emerald-200/90 bg-white/95 p-4 sm:p-9 shadow-sm space-y-6"
+              className="rounded-3xl border border-emerald-200/90 bg-white/95 p-4 sm:p-8 shadow-sm space-y-5"
             >
-              <div className="border-b border-slate-100 pb-4">
+              <div className="border-b border-slate-100 pb-3">
                 <span className="text-xs font-black text-emerald-700" dir="ltr">
                   FINAL CHALLENGE · MY PROMISE, MY FUTURE
                 </span>
-                <h2 className="mt-1 text-lg sm:text-2xl font-black text-slate-950">
-                  اكتبي رسالتكِ إلى مستقبلكِ (أو اضغطي على العبارات الملهمة بالأسفل)
+                <h2 className="mt-1 text-base sm:text-2xl font-black text-slate-950">
+                  اكتبي رسالتكِ إلى مستقبلكِ (أو اضغطي على إحدى العبارات الجاهزة)
                 </h2>
-                <p className="mt-1 text-xs font-semibold text-slate-500">
-                  ستُخلّد كلماتكِ في شهادتكِ الرسمية وفي جدار «أصواتٌ تحب الوطن | Voices of Saudi Pride».
-                </p>
               </div>
 
               {FINAL_CHAPTER_PROMPTS.map((item) => {
@@ -1133,21 +1045,20 @@ export default function NationalJourneyPage() {
                 return (
                   <div
                     key={item.id}
-                    className="rounded-2xl border border-slate-200/90 bg-slate-50/60 p-4 sm:p-5 space-y-3"
+                    className="rounded-2xl border border-slate-200/90 bg-slate-50/60 p-3.5 sm:p-5 space-y-3"
                   >
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                       <span
                         className="inline-flex self-start items-center gap-1.5 rounded-lg bg-emerald-900 px-2.5 py-1 text-xs font-black text-amber-300"
                         dir="ltr"
                       >
                         {item.numberLabel} — {item.titleEn}
                       </span>
-                      <span className="text-xs font-bold text-emerald-900 leading-relaxed">
+                      <span className="text-xs font-bold text-emerald-900">
                         {item.questionAr}
                       </span>
                     </div>
 
-                    {/* text-base on mobile prevents iOS Safari zoom */}
                     <textarea
                       rows={2}
                       dir="ltr"
@@ -1158,10 +1069,9 @@ export default function NationalJourneyPage() {
                       className="w-full rounded-xl border border-slate-200 bg-white p-3 text-base sm:text-sm font-bold text-slate-900 placeholder-slate-400 focus:border-emerald-600 focus:outline-hidden focus:ring-2 focus:ring-emerald-200 transition"
                     />
 
-                    {/* Mobile-Friendly Guided Inspiration Cards */}
-                    <div className="space-y-2">
+                    <div className="space-y-1.5">
                       <span className="block text-[11px] font-bold text-slate-500">
-                        ✨ عبارات ملهمة جاهزة (اضغطي على أي عبارة لإدراجها فوراً):
+                        ✨ اضغطي على أي عبارة لإدراجها فوراً:
                       </span>
                       <div className="grid grid-cols-1 gap-2">
                         {item.suggestions.map((sug, sIdx) => {
@@ -1171,10 +1081,10 @@ export default function NationalJourneyPage() {
                               key={sIdx}
                               type="button"
                               onClick={() => setValue(sug.textEn)}
-                              className={`w-full rounded-xl border p-3 text-right transition active:scale-[0.99] ${
+                              className={`w-full rounded-xl border p-2.5 text-right transition active:scale-[0.99] ${
                                 isChosen
                                   ? 'border-emerald-600 bg-emerald-100/90 text-emerald-950 ring-2 ring-emerald-200'
-                                  : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-300 hover:bg-emerald-50/50'
+                                  : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-300'
                               }`}
                             >
                               <div className="flex items-center justify-between gap-2">
@@ -1182,11 +1092,11 @@ export default function NationalJourneyPage() {
                                   {sug.labelAr}
                                 </span>
                                 <span className="rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 shrink-0">
-                                  {isChosen ? 'تم الاختيار ✓' : 'اضغطي للإدراج'}
+                                  {isChosen ? 'تم الاختيار ✓' : 'إدراج'}
                                 </span>
                               </div>
                               <p
-                                className="mt-1 text-xs font-semibold text-slate-600 text-left leading-relaxed"
+                                className="mt-1 text-[11px] font-semibold text-slate-600 text-left leading-relaxed"
                                 dir="ltr"
                               >
                                 {sug.textEn}
@@ -1222,15 +1132,12 @@ export default function NationalJourneyPage() {
           </div>
         )}
 
-        {/* ================================================================= */}
-        {/* PHASE 5: CORONATION, IMMORTAL STATEMENT, CERTIFICATE & WALL       */}
-        {/* ================================================================= */}
+        {/* PHASE 5: CORONATION & CERTIFICATE */}
         {phase === 'coronation' && (
-          <div className="space-y-8 sm:space-y-10 animate-page-enter">
-            {/* Moment of Immortality Card (No Numeric Grades!) */}
+          <div className="space-y-8 animate-page-enter">
             <div className="rounded-3xl border-2 border-amber-300/80 bg-gradient-to-br from-emerald-950 via-emerald-900 to-teal-950 p-5 sm:p-10 text-center text-white shadow-xl print:hidden">
-              <div className="mx-auto flex h-18 w-18 sm:h-20 sm:w-20 items-center justify-center rounded-3xl bg-amber-400/20 border-2 border-amber-300 text-amber-300 shadow-lg">
-                <Crown className="h-9 w-9 sm:h-10 sm:w-10" />
+              <div className="mx-auto flex h-18 w-18 items-center justify-center rounded-3xl bg-amber-400/20 border-2 border-amber-300 text-amber-300 shadow-lg">
+                <Crown className="h-9 w-9" />
               </div>
 
               <span className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-amber-400/20 px-4 py-1 text-xs font-black text-amber-200">
@@ -1254,7 +1161,6 @@ export default function NationalJourneyPage() {
                 </p>
               </div>
 
-              {/* Mobile-Friendly Action Buttons (Print PDF + WhatsApp Share + Restart) */}
               <div className="mt-6 flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center justify-center gap-3">
                 <button
                   type="button"
@@ -1284,20 +1190,10 @@ export default function NationalJourneyPage() {
               </div>
             </div>
 
-            {/* ============================================================= */}
-            {/* OFFICIAL ROYAL CERTIFICATE: SAUDI HOMELAND AMBASSADOR         */}
-            {/* ============================================================= */}
             <div
               id="homeland-ambassador-certificate"
               className="relative overflow-hidden rounded-3xl border-4 sm:border-8 border-double border-emerald-950 bg-gradient-to-b from-[#fdfcf7] via-white to-[#f4faf6] p-4 sm:p-12 shadow-2xl text-center ring-2 ring-amber-400/60 print:border-4 print:p-6 print:shadow-none print:m-0"
             >
-              {/* Corner Royal Gold Flourishes */}
-              <div className="absolute top-2.5 right-2.5 h-6 w-6 sm:h-8 sm:w-8 rounded-tr-md border-t-2 border-r-2 border-amber-500 pointer-events-none" />
-              <div className="absolute top-2.5 left-2.5 h-6 w-6 sm:h-8 sm:w-8 rounded-tl-md border-t-2 border-l-2 border-amber-500 pointer-events-none" />
-              <div className="absolute bottom-2.5 right-2.5 h-6 w-6 sm:h-8 sm:w-8 rounded-br-md border-b-2 border-r-2 border-amber-500 pointer-events-none" />
-              <div className="absolute bottom-2.5 left-2.5 h-6 w-6 sm:h-8 sm:w-8 rounded-bl-md border-b-2 border-l-2 border-amber-500 pointer-events-none" />
-
-              {/* Top Institutional Header */}
               <div className="relative z-10 flex flex-wrap items-start justify-between border-b border-emerald-200/80 pb-4 mb-5 gap-3 text-right">
                 <div>
                   <span className="block text-[10px] sm:text-[11px] font-black tracking-wider text-emerald-950">
@@ -1327,7 +1223,6 @@ export default function NationalJourneyPage() {
                 </div>
               </div>
 
-              {/* Certificate Main Title */}
               <div className="relative z-10 mb-5">
                 <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-300 px-3.5 py-1 text-[11px] sm:text-xs font-black text-amber-950 mb-2">
                   <Crown className="h-3.5 w-3.5 text-amber-600 shrink-0" />
@@ -1343,14 +1238,13 @@ export default function NationalJourneyPage() {
                   {IMMORTAL_PLEDGE_STATEMENT.certificateTitleEn} Certificate
                 </p>
                 <div className="mt-3 flex items-center justify-center gap-2">
-                  <div className="h-0.5 w-14 sm:w-16 bg-gradient-to-r from-transparent to-amber-500" />
+                  <div className="h-0.5 w-14 bg-gradient-to-r from-transparent to-amber-500" />
                   <Star className="h-4 w-4 text-amber-500 fill-amber-400" />
-                  <div className="h-0.5 w-14 sm:w-16 bg-gradient-to-l from-transparent to-amber-500" />
+                  <div className="h-0.5 w-14 bg-gradient-to-l from-transparent to-amber-500" />
                 </div>
               </div>
 
-              {/* Student Name & Citation */}
-              <div className="relative z-10 my-4 sm:my-5 max-w-2xl mx-auto">
+              <div className="relative z-10 my-4 max-w-2xl mx-auto">
                 <p className="text-xs sm:text-sm font-semibold text-slate-600">
                   تمنح منصة English Spark هذه الشهادة الفخرية للطالبة المتميزة:
                 </p>
@@ -1372,7 +1266,6 @@ export default function NationalJourneyPage() {
                 </p>
               </div>
 
-              {/* 4 Earned National Badges Row */}
               <div className="relative z-10 my-5 grid grid-cols-2 sm:grid-cols-4 gap-2 max-w-3xl mx-auto">
                 {NATIONAL_JOURNEY_STAGES.map((stg) => (
                   <div
@@ -1389,7 +1282,6 @@ export default function NationalJourneyPage() {
                 ))}
               </div>
 
-              {/* Student's Personal Immortal Pledge Box */}
               <div
                 className="relative z-10 my-5 max-w-3xl mx-auto rounded-2xl border border-amber-300/80 bg-amber-50/40 p-3.5 sm:p-5 text-left space-y-2"
                 dir="ltr"
@@ -1410,8 +1302,7 @@ export default function NationalJourneyPage() {
                 </p>
               </div>
 
-              {/* Signatures & Gold Seal Footer */}
-              <div className="relative z-10 mt-6 pt-5 border-t border-emerald-200/80 grid grid-cols-1 sm:grid-cols-3 items-center gap-4 sm:gap-5">
+              <div className="relative z-10 mt-6 pt-5 border-t border-emerald-200/80 grid grid-cols-1 sm:grid-cols-3 items-center gap-4">
                 <div className="text-center sm:text-right">
                   <span className="block text-[10px] font-bold text-slate-400 uppercase">
                     إشراف معلمة اللغة الإنجليزية
@@ -1419,10 +1310,6 @@ export default function NationalJourneyPage() {
                   <span className="block text-xs sm:text-sm font-black text-emerald-950 mt-1">
                     {TEACHER_OFFICIAL_NAME}
                   </span>
-                  <div className="mt-1.5 inline-flex items-center gap-1 rounded-md bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
-                    <ShieldCheck className="h-3 w-3 text-emerald-600 shrink-0" />
-                    <span>مبادرة في القلب وطن وقيادة</span>
-                  </div>
                 </div>
 
                 <div className="flex flex-col items-center justify-center">
@@ -1452,11 +1339,9 @@ export default function NationalJourneyPage() {
           </div>
         )}
 
-        {/* ================================================================= */}
-        {/* DIGITAL WALL: VOICES OF SAUDI PRIDE (أصوات تحب الوطن)              */}
-        {/* ================================================================= */}
+        {/* DIGITAL WALL */}
         {(phase === 'voices-wall' || phase === 'coronation') && (
-          <section className="mt-8 sm:mt-10 space-y-5 print:hidden animate-page-enter">
+          <section className="mt-8 space-y-5 print:hidden animate-page-enter">
             <div className="rounded-3xl border border-emerald-200/90 bg-gradient-to-r from-emerald-900 via-emerald-800 to-teal-900 p-5 sm:p-8 text-white shadow-md">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
@@ -1616,9 +1501,11 @@ export default function NationalJourneyPage() {
         )}
       </main>
 
-      <div className="print:hidden">
-        <PortalFooter />
-      </div>
+      {phase !== 'final-chapter' && (
+        <div className="print:hidden">
+          <PortalFooter />
+        </div>
+      )}
     </div>
   );
 }

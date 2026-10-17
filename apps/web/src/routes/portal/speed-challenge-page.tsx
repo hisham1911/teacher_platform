@@ -9,10 +9,12 @@ import {
   ChevronRight,
   ArrowLeft,
   Sparkles,
+  X,
 } from 'lucide-react';
 import { PublicBackdrop } from '../../components/layout/root-layout';
 import { PortalNav, PortalFooter } from '../../components/portal/portal-nav';
 import { speedQuestions } from '../../data/content/competitions';
+import { useStageScrollReset } from '../../lib/scroll-reset';
 
 type GameState = 'lobby' | 'playing' | 'timesup';
 
@@ -27,6 +29,7 @@ function playSound(type: 'correct' | 'wrong' | 'combo' | 'gameover') {
     if (type === 'correct') {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
+      osc.type = 'triangle';
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
@@ -89,6 +92,8 @@ export default function SpeedChallengePage() {
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useStageScrollReset(gameState);
 
   // Pick question by looping through pool
   const currentQ = speedQuestions[currentIndex % speedQuestions.length];
@@ -180,6 +185,110 @@ export default function SpeedChallengePage() {
     rankDesc = 'سرعة جيدة وتركيز ممتاز! يمكنك كسر رقمك القياسي بمحاولة ثانية.';
   }
 
+  // =========================================================================
+  // FULL-SCREEN MOBILE FOCUS PLAYING MODE
+  // No PortalNav, No PortalFooter, No Breadcrumb, Zero Scroll
+  // =========================================================================
+  if (gameState === 'playing' && currentQ) {
+    return (
+      <div
+        className="fixed inset-0 z-50 flex h-dvh w-full flex-col justify-between overflow-hidden bg-slate-950 p-4 text-white select-none"
+        dir="rtl"
+      >
+        {/* Top Header HUD Bar */}
+        <header className="shrink-0 border-b border-slate-800 pb-3">
+          <div className="mx-auto flex max-w-2xl items-center justify-between gap-3">
+            <button
+              type="button"
+              onClick={() => setGameState('lobby')}
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white transition"
+              title="خروج"
+              aria-label="خروج"
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            {/* Score */}
+            <div className="flex flex-col items-center">
+              <span className="text-[10px] font-bold text-slate-400">النقاط</span>
+              <span className="text-lg sm:text-xl font-black text-amber-400">{score}</span>
+            </div>
+
+            {/* Timer */}
+            <div className="flex flex-col items-center">
+              <div
+                className={`flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-xl border-2 text-base sm:text-lg font-black transition-colors ${
+                  timeLeft <= 10
+                    ? 'border-rose-500 bg-rose-500/20 text-rose-400 animate-pulse'
+                    : 'border-slate-700 bg-slate-800 text-white'
+                }`}
+              >
+                {timeLeft}
+              </div>
+              <span className="mt-0.5 text-[9px] font-bold text-slate-400">ثانية</span>
+            </div>
+
+            {/* Streak */}
+            <div className="flex flex-col items-center">
+              <span className="text-[10px] font-bold text-slate-400">التتابع</span>
+              <span
+                className={`text-lg sm:text-xl font-black transition-transform ${
+                  streak >= 3 ? 'text-rose-400 scale-110' : 'text-slate-300'
+                }`}
+              >
+                {streak > 0 ? `${streak} 🔥` : '0'}
+              </span>
+            </div>
+          </div>
+
+          {/* Time progress bar */}
+          <div className="mx-auto mt-2.5 h-1.5 w-full max-w-2xl overflow-hidden rounded-full bg-slate-800">
+            <div
+              className={`h-full transition-all duration-1000 ${
+                timeLeft <= 10 ? 'bg-rose-500' : 'bg-gradient-to-r from-amber-400 to-rose-500'
+              }`}
+              style={{ width: `${(timeLeft / 60) * 100}%` }}
+            />
+          </div>
+        </header>
+
+        {/* Center Question Card */}
+        <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center px-1 py-3">
+          <div
+            className={`rounded-2xl border p-4 sm:p-6 text-center transition-all ${
+              feedback === 'correct'
+                ? 'border-emerald-500 bg-emerald-950/60'
+                : feedback === 'wrong'
+                ? 'border-rose-500 bg-rose-950/60'
+                : 'border-slate-800 bg-slate-900/90'
+            }`}
+          >
+            <span className="text-xs font-bold text-slate-400">{currentQ.category}</span>
+            <p className="mt-2 text-lg sm:text-2xl font-black leading-snug text-white select-text" dir="ltr">
+              {currentQ.prompt}
+            </p>
+          </div>
+        </main>
+
+        {/* Bottom 4 Quick Options (2x2 grid under thumbs) */}
+        <footer className="shrink-0 pb-2">
+          <div className="mx-auto max-w-2xl grid grid-cols-2 gap-2.5" dir="ltr">
+            {currentQ.options.map((opt, oIdx) => (
+              <button
+                key={oIdx}
+                type="button"
+                onClick={() => handleAnswer(opt.isCorrect)}
+                className="rounded-xl sm:rounded-2xl border border-slate-700 bg-slate-800/90 p-3 sm:p-4 text-center text-sm sm:text-base font-black text-white shadow-xs transition hover:border-amber-400 hover:bg-slate-750 active:scale-95 min-h-[52px]"
+              >
+                {opt.text}
+              </button>
+            ))}
+          </div>
+        </footer>
+      </div>
+    );
+  }
+
   return (
     <div className="relative flex min-h-dvh flex-col overflow-x-clip bg-slate-50/50" dir="rtl">
       <PublicBackdrop />
@@ -251,86 +360,6 @@ export default function SpeedChallengePage() {
                 <span>انطلق في التحدي!</span>
                 <ArrowLeft className="h-4 w-4" />
               </button>
-            </div>
-          </div>
-        )}
-
-        {/* PLAYING STAGE */}
-        {gameState === 'playing' && currentQ && (
-          <div className="w-full rounded-2xl sm:rounded-3xl border border-slate-800 bg-slate-900 p-5 sm:p-8 shadow-2xl text-white">
-            {/* Header: Score, Timer, Streak */}
-            <div className="mb-5 flex items-center justify-between">
-              {/* Score */}
-              <div className="flex flex-col">
-                <span className="text-[11px] font-bold text-slate-400">النقاط</span>
-                <span className="text-xl sm:text-2xl font-black text-amber-400">{score}</span>
-              </div>
-
-              {/* Timer */}
-              <div className="flex flex-col items-center">
-                <div
-                  className={`flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl border-2 text-lg sm:text-xl font-black transition-colors ${
-                    timeLeft <= 10
-                      ? 'border-rose-500 bg-rose-500/20 text-rose-400 animate-pulse'
-                      : 'border-slate-700 bg-slate-800 text-white'
-                  }`}
-                >
-                  {timeLeft}
-                </div>
-                <span className="mt-0.5 text-[10px] font-bold text-slate-400">ثانية</span>
-              </div>
-
-              {/* Streak */}
-              <div className="flex flex-col items-end">
-                <span className="text-[11px] font-bold text-slate-400">التتابع</span>
-                <span
-                  className={`text-xl sm:text-2xl font-black transition-transform ${
-                    streak >= 3 ? 'text-rose-400 scale-110' : 'text-slate-300'
-                  }`}
-                >
-                  {streak > 0 ? `${streak} 🔥` : '0'}
-                </span>
-              </div>
-            </div>
-
-            {/* Time progress bar */}
-            <div className="mb-6 h-2 w-full overflow-hidden rounded-full bg-slate-800">
-              <div
-                className={`h-full transition-all duration-1000 ${
-                  timeLeft <= 10 ? 'bg-rose-500' : 'bg-gradient-to-r from-amber-400 to-rose-500'
-                }`}
-                style={{ width: `${(timeLeft / 60) * 100}%` }}
-              />
-            </div>
-
-            {/* Question Card */}
-            <div
-              className={`mb-5 rounded-2xl border p-5 text-center transition-all ${
-                feedback === 'correct'
-                  ? 'border-emerald-500 bg-emerald-950/60'
-                  : feedback === 'wrong'
-                  ? 'border-rose-500 bg-rose-950/60'
-                  : 'border-slate-800 bg-slate-800/80'
-              }`}
-            >
-              <span className="text-xs font-bold text-slate-400">{currentQ.category}</span>
-              <p className="mt-2 text-xl sm:text-2xl font-black leading-snug text-white select-text" dir="ltr">
-                {currentQ.prompt}
-              </p>
-            </div>
-
-            {/* 4 Quick Options */}
-            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2" dir="ltr">
-              {currentQ.options.map((opt, oIdx) => (
-                <button
-                  key={oIdx}
-                  type="button"
-                  onClick={() => handleAnswer(opt.isCorrect)}
-                  className="rounded-xl sm:rounded-2xl border border-slate-700 bg-slate-800/90 p-3.5 sm:p-4 text-center text-base sm:text-lg font-black text-white shadow-xs transition hover:border-amber-400 hover:bg-slate-750 active:scale-95 min-h-[50px]"
-                >
-                  {opt.text}
-                </button>
-              ))}
             </div>
           </div>
         )}

@@ -8,9 +8,11 @@ import {
   ChevronRight,
   CheckCircle2,
   XCircle,
+  X,
 } from 'lucide-react';
 import { PortalNav, PortalFooter } from '../../components/portal/portal-nav';
 import { challengeQuestions } from '../../data/content/challenge';
+import { useStageScrollReset } from '../../lib/scroll-reset';
 
 type Stage = 'welcome' | 'playing' | 'result';
 
@@ -71,6 +73,8 @@ export default function MillionChallengePage() {
   const [isCorrectFeedback, setIsCorrectFeedback] = useState<boolean | null>(null);
 
   const question = challengeQuestions[currentLevel];
+
+  useStageScrollReset(stage, currentLevel);
 
   function handleStart() {
     if (name.trim().length < 2) return;
@@ -134,11 +138,13 @@ export default function MillionChallengePage() {
 
   return (
     <div className="challenge-shell flex min-h-dvh flex-col" dir="rtl">
-      <PortalNav variant="dark" />
+      <div className={stage === 'playing' ? 'hidden lg:block' : ''}>
+        <PortalNav variant="dark" />
+      </div>
 
       <main className="relative z-10 flex flex-1 flex-col items-center justify-center px-4 py-8 sm:py-12">
         {/* Breadcrumb on Mobile/Desktop */}
-        <div className="mb-4 self-start max-w-6xl w-full mx-auto flex items-center gap-1.5 text-xs font-bold text-sky-200/70">
+        <div className={`mb-4 self-start max-w-6xl w-full mx-auto flex items-center gap-1.5 text-xs font-bold text-sky-200/70 ${stage === 'playing' ? 'hidden lg:flex' : ''}`}>
           <Link to="/competitions" className="hover:text-amber-400 transition">
             المسابقات
           </Link>
@@ -229,8 +235,17 @@ export default function MillionChallengePage() {
 
             {/* Main Question Area */}
             <div className="lg:col-span-9">
-              {/* Mobile Header / Ladder info */}
-              <div className="mb-4 flex items-center justify-between rounded-2xl bg-white/5 px-5 py-3 text-xs sm:text-sm font-bold text-sky-200 lg:hidden border border-white/10">
+              {/* Mobile Header / Ladder info with X exit button */}
+              <div className="mb-4 flex items-center justify-between rounded-2xl bg-white/5 px-4 py-2.5 text-xs sm:text-sm font-bold text-sky-200 lg:hidden border border-white/10">
+                <button
+                  type="button"
+                  onClick={handleRestart}
+                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/15 bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white transition"
+                  title="خروج"
+                  aria-label="خروج"
+                >
+                  <X className="h-4 w-4" />
+                </button>
                 <span>المستوى {question.level} من 15</span>
                 <span className="flex items-center gap-1.5 text-[var(--challenge-accent)] font-black">
                   ♦ {question.points.toLocaleString()} نقطة
@@ -245,8 +260,9 @@ export default function MillionChallengePage() {
                   {question.prompt}
                 </p>
 
-                {isCorrectFeedback !== null && (
-                  <div className="mt-5 flex justify-center">
+                {/* Zero layout shift fixed container */}
+                <div className="mt-3 flex min-h-10 items-center justify-center">
+                  {isCorrectFeedback !== null && (
                     <div
                       className={
                         isCorrectFeedback ? 'challenge-feedback-ok' : 'challenge-feedback-bad'
@@ -256,8 +272,8 @@ export default function MillionChallengePage() {
                         ? 'إجابة صحيحة! ننتقل للسؤال التالي...'
                         : 'إجابة خاطئة! انتهى التحدي.'}
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
 
               {/* 4 Options on Mobile & Desktop */}
@@ -361,7 +377,9 @@ export default function MillionChallengePage() {
         )}
       </main>
 
-      <PortalFooter variant="dark" />
+      <div className={stage === 'playing' ? 'hidden lg:block' : ''}>
+        <PortalFooter variant="dark" />
+      </div>
     </div>
   );
 }
