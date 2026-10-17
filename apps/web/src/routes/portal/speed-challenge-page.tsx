@@ -321,6 +321,29 @@ export default function SpeedChallengePage() {
               لديك 60 ثانية لحل أكبر قدر ممكن من الأسئلة السريعة! كل إجابة صحيحة تمنحك نقاطاً، وكل 3 إجابات متتالية تضاعف نقاطك 🔥
             </p>
 
+            <div className="mx-auto mt-6 max-w-sm">
+              <label htmlFor="speed-player-name" className="mb-1.5 block text-right text-xs font-bold text-slate-700">
+                اسم الكريم:
+              </label>
+              <input
+                id="speed-player-name"
+                type="text"
+                value={playerName}
+                onChange={(e) => setPlayerName(e.target.value)}
+                placeholder="اكتب اسمك للبدء..."
+                className="w-full rounded-2xl border border-slate-300 bg-white px-5 py-3 text-center text-base font-bold text-slate-900 placeholder-slate-400 focus:border-rose-500 focus:outline-none focus:ring-4 focus:ring-rose-100"
+              />
+              <button
+                type="button"
+                onClick={handleStart}
+                disabled={playerName.trim().length < 2}
+                className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-rose-500 to-amber-500 py-3.5 text-xs sm:text-sm font-black text-white shadow-md shadow-rose-500/25 transition hover:brightness-110 active:scale-95 disabled:from-slate-200 disabled:to-slate-300 disabled:text-slate-400 disabled:shadow-none disabled:cursor-not-allowed"
+              >
+                <span>انطلق في التحدي!</span>
+                <ArrowLeft className="h-4 w-4" />
+              </button>
+            </div>
+
             <div className="mt-6 grid grid-cols-1 gap-2.5 sm:grid-cols-3 text-right">
               <div className="rounded-xl border border-slate-100 bg-slate-50/80 p-3.5">
                 <Clock className="h-5 w-5 text-amber-500" />
@@ -337,29 +360,6 @@ export default function SpeedChallengePage() {
                 <h2 className="mt-2 text-xs sm:text-sm font-bold text-slate-900">رقم قياسي</h2>
                 <p className="text-[11px] text-slate-500">نافس وتصدر المراتب</p>
               </div>
-            </div>
-
-            <div className="mx-auto mt-6 max-w-sm">
-              <label htmlFor="speed-player-name" className="mb-1.5 block text-right text-xs font-bold text-slate-700">
-                اسم الكريم:
-              </label>
-              <input
-                id="speed-player-name"
-                type="text"
-                value={playerName}
-                onChange={(e) => setPlayerName(e.target.value)}
-                placeholder="اكتب اسمك للبدء..."
-                className="w-full rounded-2xl border border-slate-300 bg-white px-5 py-3 text-center text-sm sm:text-base font-bold text-slate-900 placeholder-slate-400 focus:border-rose-500 focus:outline-none focus:ring-4 focus:ring-rose-100"
-              />
-              <button
-                type="button"
-                onClick={handleStart}
-                disabled={playerName.trim().length < 2}
-                className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-rose-500 to-amber-500 py-3.5 text-xs sm:text-sm font-black text-white shadow-md shadow-rose-500/25 transition hover:brightness-110 active:scale-95 disabled:from-slate-200 disabled:to-slate-300 disabled:text-slate-400 disabled:shadow-none disabled:cursor-not-allowed"
-              >
-                <span>انطلق في التحدي!</span>
-                <ArrowLeft className="h-4 w-4" />
-              </button>
             </div>
           </div>
         )}
