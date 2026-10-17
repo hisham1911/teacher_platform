@@ -1,11 +1,18 @@
 import type { ChallengeQuestion } from './types';
 
+export const SAFE_HAVEN_LEVELS = [5, 10] as const;
+
+export const MILLION_POINTS_LADDER = [
+  100, 200, 300, 500, 1000, 2000, 4000, 8000, 16000, 32000, 64000, 125000, 250000, 500000, 1000000,
+] as const;
+
 export const challengeQuestions: ChallengeQuestion[] = [
   {
     id: 'cq-1',
     level: 1,
     points: 100,
     prompt: 'What does "Hello" mean in Arabic?',
+    hint: 'كلمة ترحيبية يومية نستخدمها عند لقاء الآخرين والبدء في الحديث (Greeting).',
     options: [
       { text: 'وداعاً', isCorrect: false },
       { text: 'مرحباً', isCorrect: true },
@@ -18,6 +25,7 @@ export const challengeQuestions: ChallengeQuestion[] = [
     level: 2,
     points: 200,
     prompt: 'Which word is a color?',
+    hint: 'فكري في لون السماء الصافية في يوم مشمس ومياه البحر الهادئة (Sky & Sea).',
     options: [
       { text: 'Blue', isCorrect: true },
       { text: 'Table', isCorrect: false },
@@ -30,6 +38,7 @@ export const challengeQuestions: ChallengeQuestion[] = [
     level: 3,
     points: 300,
     prompt: '"Book" means ___ in Arabic',
+    hint: 'شيء قيّم نتصفح أوراقه لقراءة القصص واكتساب المعرفة (Something we read).',
     options: [
       { text: 'قلم', isCorrect: false },
       { text: 'باب', isCorrect: false },
@@ -42,6 +51,7 @@ export const challengeQuestions: ChallengeQuestion[] = [
     level: 4,
     points: 500,
     prompt: 'I ___ a student.',
+    hint: 'ضمير المتكلم المفرد (I) يأخذ دائماً الفعل المساعد "am" في زمن المضارع البسيط.',
     options: [
       { text: 'is', isCorrect: false },
       { text: 'are', isCorrect: false },
@@ -54,6 +64,7 @@ export const challengeQuestions: ChallengeQuestion[] = [
     level: 5,
     points: 1000,
     prompt: 'She ___ to school every day.',
+    hint: 'مع الفاعل المفرد الغائب (He, She, It) نضيف (s/es) للفعل في المضارع البسيط.',
     options: [
       { text: 'go', isCorrect: false },
       { text: 'goes', isCorrect: true },
@@ -66,6 +77,7 @@ export const challengeQuestions: ChallengeQuestion[] = [
     level: 6,
     points: 2000,
     prompt: 'What is the past tense of "eat"?',
+    hint: 'فعل غير منتظم (Irregular Verb) يتغير شكله ونطقه في صيغة الماضي البسيط: eat ➔ ...',
     options: [
       { text: 'ate', isCorrect: true },
       { text: 'eated', isCorrect: false },
@@ -78,10 +90,11 @@ export const challengeQuestions: ChallengeQuestion[] = [
     level: 7,
     points: 4000,
     prompt: 'Choose the correct sentence:',
+    hint: 'مع الفاعل المفرد (He) ننفي الفعل في المضارع البسيط باستخدام "doesn\'t + المصدر".',
     options: [
-      { text: 'He don\'t like coffee.', isCorrect: false },
+      { text: "He don't like coffee.", isCorrect: false },
       { text: 'He not like coffee.', isCorrect: false },
-      { text: 'He doesn\'t like coffee.', isCorrect: true },
+      { text: "He doesn't like coffee.", isCorrect: true },
       { text: 'He no like coffee.', isCorrect: false },
     ],
   },
@@ -90,6 +103,7 @@ export const challengeQuestions: ChallengeQuestion[] = [
     level: 8,
     points: 8000,
     prompt: 'I have been studying English ___ two years.',
+    hint: 'نستخدم "for" للدلالة على المدة الزمنية الكلية المحددة (Duration of time).',
     options: [
       { text: 'since', isCorrect: false },
       { text: 'for', isCorrect: true },
@@ -102,6 +116,7 @@ export const challengeQuestions: ChallengeQuestion[] = [
     level: 9,
     points: 16000,
     prompt: 'If I ___ rich, I would travel around the world.',
+    hint: 'في الجمل الشرطية من النوع الثاني (Second Conditional) لافتراض خيالي، نستخدم "were" رسمياً.',
     options: [
       { text: 'am', isCorrect: false },
       { text: 'was', isCorrect: false },
@@ -114,6 +129,7 @@ export const challengeQuestions: ChallengeQuestion[] = [
     level: 10,
     points: 32000,
     prompt: 'The book ___ by the student yesterday.',
+    hint: 'صيغة المبني للمجهول في الماضي البسيط (Past Passive): was/were + التصريف الثالث (V3).',
     options: [
       { text: 'was read', isCorrect: true },
       { text: 'is read', isCorrect: false },
@@ -126,6 +142,7 @@ export const challengeQuestions: ChallengeQuestion[] = [
     level: 11,
     points: 64000,
     prompt: 'Which is correct? "I look forward ___"',
+    hint: 'العبارة الشهيرة "look forward to" يتبعها دائماً صيغة اسم الفعل Gerund (V + ing).',
     options: [
       { text: 'to hear from you', isCorrect: false },
       { text: 'hearing from you', isCorrect: false },
@@ -138,6 +155,7 @@ export const challengeQuestions: ChallengeQuestion[] = [
     level: 12,
     points: 125000,
     prompt: 'She asked me where I ___',
+    hint: 'في الكلام المنقول (Reported Speech)، يرجع زمن السؤال خطوة إلى الماضي مع ترتيب جملة خبرية.',
     options: [
       { text: 'live', isCorrect: false },
       { text: 'lived', isCorrect: true },
@@ -150,6 +168,7 @@ export const challengeQuestions: ChallengeQuestion[] = [
     level: 13,
     points: 250000,
     prompt: 'Not only ___ intelligent, but also hardworking.',
+    hint: 'عند بدء الجملة بعبارة نفي أو قيد مثل "Not only"، نطبق أسلوب التقديم والتأخير (Inversion: Verb + Subject).',
     options: [
       { text: 'she is', isCorrect: false },
       { text: 'she', isCorrect: false },
@@ -162,6 +181,7 @@ export const challengeQuestions: ChallengeQuestion[] = [
     level: 14,
     points: 500000,
     prompt: 'Had I known earlier, I ___ differently.',
+    hint: 'الشرطية الثالثة المقلوبة (Inverted Third Conditional): "Had + Subject + V3" يقابلها "would have + V3".',
     options: [
       { text: 'would have acted', isCorrect: true },
       { text: 'will act', isCorrect: false },
@@ -174,6 +194,7 @@ export const challengeQuestions: ChallengeQuestion[] = [
     level: 15,
     points: 1000000,
     prompt: 'The phenomenon ___ scientists for decades.',
+    hint: 'كلمة "phenomenon" اسم مفرد (جمعها phenomena)، لذا تأخذ الفعل المفرد "has baffled" في المضارع التام.',
     options: [
       { text: 'have baffled', isCorrect: false },
       { text: 'has baffled', isCorrect: true },
@@ -182,3 +203,208 @@ export const challengeQuestions: ChallengeQuestion[] = [
     ],
   },
 ];
+
+export const backupChallengeQuestions: ChallengeQuestion[] = [
+  {
+    id: 'bcq-1',
+    level: 1,
+    points: 100,
+    prompt: 'What does "Thank you" mean in Arabic?',
+    hint: 'عبارة امتنان وتقدير نقولها دائماً لمن يقدّم لنا معروفاً أو مساعدة.',
+    options: [
+      { text: 'شكراً', isCorrect: true },
+      { text: 'عفواً', isCorrect: false },
+      { text: 'مرحباً', isCorrect: false },
+      { text: 'وداعاً', isCorrect: false },
+    ],
+  },
+  {
+    id: 'bcq-2',
+    level: 2,
+    points: 200,
+    prompt: 'Which of the following is an animal?',
+    hint: 'كائن أليف محبوب يمشي على أربع، يحب اللعب ويموء بلطف (Pet animal).',
+    options: [
+      { text: 'Cat', isCorrect: true },
+      { text: 'Chair', isCorrect: false },
+      { text: 'Pen', isCorrect: false },
+      { text: 'Spoon', isCorrect: false },
+    ],
+  },
+  {
+    id: 'bcq-3',
+    level: 3,
+    points: 300,
+    prompt: 'The opposite of "Hot" is ___',
+    hint: 'عكس الساخن هو البارد والمنعش مثل مكعبات الثلج في يوم حار (Opposite of hot).',
+    options: [
+      { text: 'Cold', isCorrect: true },
+      { text: 'Warm', isCorrect: false },
+      { text: 'Dry', isCorrect: false },
+      { text: 'Fast', isCorrect: false },
+    ],
+  },
+  {
+    id: 'bcq-4',
+    level: 4,
+    points: 500,
+    prompt: 'They ___ playing football in the garden now.',
+    hint: 'ضمير الجمع (They) يأخذ دائماً الفعل المساعد "are" في زمن المضارع المستمر.',
+    options: [
+      { text: 'are', isCorrect: true },
+      { text: 'is', isCorrect: false },
+      { text: 'am', isCorrect: false },
+      { text: 'be', isCorrect: false },
+    ],
+  },
+  {
+    id: 'bcq-5',
+    level: 5,
+    points: 1000,
+    prompt: 'He usually ___ his breakfast at 7:00 AM.',
+    hint: 'مع كلمة الدلالة (usually) والفاعل المفرد (He) نضيف (s) للفعل في المضارع البسيط.',
+    options: [
+      { text: 'eats', isCorrect: true },
+      { text: 'eat', isCorrect: false },
+      { text: 'eating', isCorrect: false },
+      { text: 'eaten', isCorrect: false },
+    ],
+  },
+  {
+    id: 'bcq-6',
+    level: 6,
+    points: 2000,
+    prompt: 'What is the past tense of the verb "go"?',
+    hint: 'فعل شاذ شهير يتغير شكله بالكامل في الماضي البسيط: go ➔ ...',
+    options: [
+      { text: 'went', isCorrect: true },
+      { text: 'goed', isCorrect: false },
+      { text: 'gone', isCorrect: false },
+      { text: 'going', isCorrect: false },
+    ],
+  },
+  {
+    id: 'bcq-7',
+    level: 7,
+    points: 4000,
+    prompt: 'Which question is punctuated correctly?',
+    hint: 'الجملة الاستفهامية المباشرة يجب أن تنتهي دائماً بعلامة استفهام (?) وليس نقطة.',
+    options: [
+      { text: 'Where do you live?', isCorrect: true },
+      { text: 'Where do you live.', isCorrect: false },
+      { text: 'Where do you live!', isCorrect: false },
+      { text: 'Where you live?', isCorrect: false },
+    ],
+  },
+  {
+    id: 'bcq-8',
+    level: 8,
+    points: 8000,
+    prompt: 'She is very good ___ speaking English fluently.',
+    hint: 'الصفة "good" تقترن دائماً بحرف الجر "at" للتعبير عن البراعة والمهارة (Good at).',
+    options: [
+      { text: 'at', isCorrect: true },
+      { text: 'in', isCorrect: false },
+      { text: 'on', isCorrect: false },
+      { text: 'with', isCorrect: false },
+    ],
+  },
+  {
+    id: 'bcq-9',
+    level: 9,
+    points: 16000,
+    prompt: 'By the time the teacher arrived, the students ___ the exercise.',
+    hint: 'الحدث الأسبق في الماضي يأتي في زمن الماضي التام: had + التصريف الثالث (V3).',
+    options: [
+      { text: 'had finished', isCorrect: true },
+      { text: 'have finished', isCorrect: false },
+      { text: 'finish', isCorrect: false },
+      { text: 'finishing', isCorrect: false },
+    ],
+  },
+  {
+    id: 'bcq-10',
+    level: 10,
+    points: 32000,
+    prompt: 'The ancient castles ___ centuries ago.',
+    hint: 'الفاعل جمع (castles) في زمن الماضي؛ المبني للمجهول يتطلب were + التصريف الثالث (V3).',
+    options: [
+      { text: 'were built', isCorrect: true },
+      { text: 'was built', isCorrect: false },
+      { text: 'are built', isCorrect: false },
+      { text: 'built', isCorrect: false },
+    ],
+  },
+  {
+    id: 'bcq-11',
+    level: 11,
+    points: 64000,
+    prompt: 'You had better ___ an umbrella; it looks like rain.',
+    hint: 'التركيب التحذيري "had better" يتبعه دائماً مصدر الفعل مجرداً بدون to (Bare Infinitive).',
+    options: [
+      { text: 'take', isCorrect: true },
+      { text: 'to take', isCorrect: false },
+      { text: 'taking', isCorrect: false },
+      { text: 'took', isCorrect: false },
+    ],
+  },
+  {
+    id: 'bcq-12',
+    level: 12,
+    points: 125000,
+    prompt: 'Scarcely ___ started the match when lightning struck.',
+    hint: 'عند بدء الجملة بظرف مقيد مثل "Scarcely"، نستخدم تقديم الفعل المساعد: had + Subject.',
+    options: [
+      { text: 'had they', isCorrect: true },
+      { text: 'they had', isCorrect: false },
+      { text: 'did they', isCorrect: false },
+      { text: 'have they', isCorrect: false },
+    ],
+  },
+  {
+    id: 'bcq-13',
+    level: 13,
+    points: 250000,
+    prompt: 'It is essential that every student ___ on time for the exam.',
+    hint: 'في صيغة الـ Subjunctive بعد عبارات مثل "It is essential that"، نستخدم المصدر المجرد (be).',
+    options: [
+      { text: 'be', isCorrect: true },
+      { text: 'is', isCorrect: false },
+      { text: 'was', isCorrect: false },
+      { text: 'will be', isCorrect: false },
+    ],
+  },
+  {
+    id: 'bcq-14',
+    level: 14,
+    points: 500000,
+    prompt: '___ no circumstances should personal passwords be shared.',
+    hint: 'التعبير الاصطلاحي الإنجليزي الصارم "Under no circumstances" يعني قطعياً تحت أي ظرف.',
+    options: [
+      { text: 'Under', isCorrect: true },
+      { text: 'In', isCorrect: false },
+      { text: 'At', isCorrect: false },
+      { text: 'With', isCorrect: false },
+    ],
+  },
+  {
+    id: 'bcq-15',
+    level: 15,
+    points: 1000000,
+    prompt: 'The jury ___ divided in their individual verdicts.',
+    hint: 'الاسم الجمعي (jury) يعامل كجمع ويأخذ "were" عندما يتصرف أعضاؤه كأفراد متباينين في الرأي.',
+    options: [
+      { text: 'were', isCorrect: true },
+      { text: 'was', isCorrect: false },
+      { text: 'is', isCorrect: false },
+      { text: 'has been', isCorrect: false },
+    ],
+  },
+];
+
+export function getBackupQuestion(level: number, currentId?: string): ChallengeQuestion | undefined {
+  const match = backupChallengeQuestions.find(
+    (q) => q.level === level && (!currentId || q.id !== currentId)
+  );
+  return match;
+}

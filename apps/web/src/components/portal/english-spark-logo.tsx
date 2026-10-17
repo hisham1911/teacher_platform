@@ -115,17 +115,17 @@ export function EnglishSparkLogo({
           aria-label="English Spark Official Logo"
           role="img"
         >
-          {/* Graceful curved dashed flight trail */}
+          {/* Graceful curved dashed flight trail lifted above text */}
           <path
-            d="M 220 38 C 242 36, 260 30, 274 20 C 282 14, 288 12, 296 14"
+            d="M 226 28 C 246 24, 264 18, 280 12"
             stroke={trailColor}
             strokeWidth="2"
             strokeDasharray="3 4"
             strokeLinecap="round"
           />
 
-          {/* Gentle Origami Paper Airplane (matching teacher infographics) */}
-          <g transform="translate(290, 0) rotate(14) scale(0.95)">
+          {/* Gentle Origami Paper Airplane hovering 8-10px safely above Spark text */}
+          <g transform="translate(284, 8) rotate(10) scale(0.88)">
             {/* Main wing */}
             <polygon points="44,4 4,19 23,31" fill="#7dd3fc" />
             {/* Top highlight facet */}
@@ -212,7 +212,7 @@ export function EnglishSparkLogo({
         <svg
           width="215"
           height="46"
-          viewBox="0 0 268 54"
+          viewBox="0 0 268 64"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
           style={{ direction: 'ltr' }}
@@ -220,17 +220,17 @@ export function EnglishSparkLogo({
           aria-label="English Spark Logo"
           role="img"
         >
-          {/* Dotted Flight Trail */}
+          {/* Dotted Flight Trail lifted above text */}
           <path
-            d="M 148 16 C 160 15, 172 12, 180 7"
+            d="M 144 14 C 156 11, 166 8, 176 3"
             stroke={trailColor}
             strokeWidth="1.8"
             strokeDasharray="2.5 3"
             strokeLinecap="round"
           />
 
-          {/* Soft Origami Airplane */}
-          <g transform="translate(182, -2) rotate(14) scale(0.68)">
+          {/* Soft Origami Airplane hovering 7-8px above Spark letters */}
+          <g transform="translate(178, -3) rotate(10) scale(0.62)">
             <polygon points="44,4 4,19 23,31" fill="#7dd3fc" />
             <polygon points="44,4 23,31 38,41" fill="#bae6fd" />
             <polygon points="23,31 38,41 27,39" fill="#0284c7" />
@@ -248,9 +248,9 @@ export function EnglishSparkLogo({
 
           {/* Left Rays */}
           <g stroke={raysLeftColor} strokeWidth="2.4" strokeLinecap="round" opacity="0.85">
-            <line x1="22" y1="21" x2="25" y2="13" />
-            <line x1="18" y1="28" x2="8" y2="21" />
-            <line x1="17" y1="36" x2="7" y2="38" />
+            <line x1="22" y1="26" x2="25" y2="18" />
+            <line x1="18" y1="33" x2="8" y2="26" />
+            <line x1="17" y1="41" x2="7" y2="43" />
           </g>
 
           {/* Soft Rounded Text */}
@@ -260,23 +260,23 @@ export function EnglishSparkLogo({
             fontWeight="800"
             letterSpacing="-0.3px"
           >
-            <text x="32" y="39" fill={englishColor}>
+            <text x="32" y="44" fill={englishColor}>
               English
             </text>
-            <text x="144" y="39" fill={sparkColor}>
+            <text x="144" y="44" fill={sparkColor}>
               Spark
             </text>
           </g>
 
           {/* Right Rays */}
           <g stroke={raysRightColor} strokeWidth="2.2" strokeLinecap="round" opacity="0.9">
-            <line x1="234" y1="25" x2="244" y2="19" />
-            <line x1="234" y1="33" x2="244" y2="38" />
+            <line x1="234" y1="30" x2="244" y2="24" />
+            <line x1="234" y1="38" x2="244" y2="43" />
           </g>
 
           {/* Spark Star */}
           <path
-            d="M 240 42 Q 240 45 243 45 Q 240 45 240 48 Q 240 45 237 45 Q 240 45 240 42 Z"
+            d="M 240 47 Q 240 50 243 50 Q 240 50 240 53 Q 240 50 237 50 Q 240 50 240 47 Z"
             fill={sparkColor}
           />
         </svg>

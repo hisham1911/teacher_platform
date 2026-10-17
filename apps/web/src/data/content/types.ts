@@ -75,6 +75,7 @@ export interface ChallengeQuestion {
   prompt: string;
   options: QuizOption[];
   points: number;
+  hint?: string;
 }
 
 export type PortalSection = {
