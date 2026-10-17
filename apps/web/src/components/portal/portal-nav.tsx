@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Link, useLocation } from 'react-router';
 import {
   Menu,
@@ -12,6 +12,8 @@ import {
   MessageSquareHeart,
   Home,
   Sparkles,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import type { ComponentType } from 'react';
 import { EnglishSparkLogo } from './english-spark-logo';
@@ -96,6 +98,50 @@ export function PortalNav({ variant = 'light' }: { variant?: 'light' | 'dark' } 
   const { pathname } = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const isDark = variant === 'dark';
+
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const checkScroll = useCallback(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const { scrollLeft, scrollWidth, clientWidth } = el;
+    const maxScroll = scrollWidth - clientWidth;
+    if (maxScroll <= 4) {
+      setCanScrollLeft(false);
+      setCanScrollRight(false);
+      return;
+    }
+    const absScroll = Math.abs(scrollLeft);
+    setCanScrollRight(absScroll > 6);
+    setCanScrollLeft(absScroll < maxScroll - 6);
+  }, []);
+
+  useEffect(() => {
+    checkScroll();
+    const handleResize = () => checkScroll();
+    window.addEventListener('resize', handleResize);
+    const t = setTimeout(checkScroll, 120);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      clearTimeout(t);
+    };
+  }, [checkScroll]);
+
+  useEffect(() => {
+    checkScroll();
+  }, [pathname, checkScroll]);
+
+  const scrollLeftDirection = () => {
+    if (!scrollContainerRef.current) return;
+    scrollContainerRef.current.scrollBy({ left: -180, behavior: 'smooth' });
+  };
+
+  const scrollRightDirection = () => {
+    if (!scrollContainerRef.current) return;
+    scrollContainerRef.current.scrollBy({ left: 180, behavior: 'smooth' });
+  };
 
   return (
     <nav
@@ -207,56 +253,109 @@ export function PortalNav({ variant = 'light' }: { variant?: 'light' | 'dark' } 
         </div>
       </div>
 
-      {/* Mobile Horizontal Pill Scroll (Fast, elegant single-tap access) */}
-      <div
-        className={`lg:hidden border-t px-2 py-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden flex items-center gap-1.5 transition-colors ${
-          isDark ? 'border-white/10 bg-slate-900/98' : 'border-slate-100/80 bg-slate-50/98'
-        }`}
-      >
-        <Link
-          to="/"
-          className={`shrink-0 flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
-            pathname === '/'
-              ? isDark
-                ? 'bg-amber-400 text-slate-950 shadow-xs'
-                : 'bg-violet-700 text-white shadow-xs'
-              : isDark
-              ? 'bg-white/10 text-slate-200 border border-white/10 hover:bg-white/15'
-              : 'bg-white text-slate-700 border border-slate-200/70 hover:bg-slate-100'
-          }`}
-        >
-          <Home className="h-3.5 w-3.5" />
-          <span>الرئيسية</span>
-        </Link>
-        {navLinks.map((link) => {
-          const Icon = link.Icon;
-          const isActive =
-            pathname === link.path ||
-            pathname.startsWith(link.path + '/') ||
-            (link.path === '/competitions' && pathname.startsWith('/challenge'));
-          return (
-            <Link
-              key={link.path}
-              to={link.path}
-              className={`shrink-0 flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
-                isActive
-                  ? isDark
-                    ? 'bg-amber-400 text-slate-950 shadow-xs'
-                    : 'bg-violet-700 text-white shadow-xs'
-                  : isDark
-                  ? 'bg-white/10 text-slate-200 border border-white/10 hover:bg-white/15'
-                  : 'bg-white text-slate-700 border border-slate-200/70 hover:bg-slate-100'
+      {/* Mobile Horizontal Pill Scroll with Peek Effect & Smart Scroll Controls */}
+      <div className="relative lg:hidden">
+        {/* Right Scroll Indicator & Button (appears when scrolled away from right) */}
+        {canScrollRight && (
+          <div
+            className={`absolute right-0 top-0 bottom-0 z-10 flex items-center pr-1 pl-3 pointer-events-none transition-opacity ${
+              isDark
+                ? 'bg-gradient-to-l from-slate-900 via-slate-900/90 to-transparent'
+                : 'bg-gradient-to-l from-slate-50 via-slate-50/90 to-transparent'
+            }`}
+          >
+            <button
+              type="button"
+              onClick={scrollRightDirection}
+              aria-label="تمرير لليمين"
+              className={`pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full border shadow-xs transition active:scale-95 ${
+                isDark
+                  ? 'border-white/20 bg-slate-800 text-amber-300 hover:bg-slate-700'
+                  : 'border-slate-200 bg-white text-violet-700 hover:bg-slate-50'
               }`}
             >
-              <Icon
-                className={`h-3.5 w-3.5 ${
-                  isActive ? (isDark ? 'text-slate-950' : 'text-white') : isDark ? 'text-slate-400' : 'text-slate-400'
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+
+        {/* Scrollable Pills Container */}
+        <div
+          ref={scrollContainerRef}
+          onScroll={checkScroll}
+          className={`border-t px-2 py-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden flex items-center gap-1.5 transition-colors ${
+            isDark ? 'border-white/10 bg-slate-900/98' : 'border-slate-100/80 bg-slate-50/98'
+          }`}
+        >
+          <Link
+            to="/"
+            className={`shrink-0 flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
+              pathname === '/'
+                ? isDark
+                  ? 'bg-amber-400 text-slate-950 shadow-xs'
+                  : 'bg-violet-700 text-white shadow-xs'
+                : isDark
+                ? 'bg-white/10 text-slate-200 border border-white/10 hover:bg-white/15'
+                : 'bg-white text-slate-700 border border-slate-200/70 hover:bg-slate-100'
+            }`}
+          >
+            <Home className="h-3.5 w-3.5" />
+            <span>الرئيسية</span>
+          </Link>
+          {navLinks.map((link) => {
+            const Icon = link.Icon;
+            const isActive =
+              pathname === link.path ||
+              pathname.startsWith(link.path + '/') ||
+              (link.path === '/competitions' && pathname.startsWith('/challenge'));
+            return (
+              <Link
+                key={link.path}
+                to={link.path}
+                className={`shrink-0 flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
+                  isActive
+                    ? isDark
+                      ? 'bg-amber-400 text-slate-950 shadow-xs'
+                      : 'bg-violet-700 text-white shadow-xs'
+                    : isDark
+                    ? 'bg-white/10 text-slate-200 border border-white/10 hover:bg-white/15'
+                    : 'bg-white text-slate-700 border border-slate-200/70 hover:bg-slate-100'
                 }`}
-              />
-              <span>{link.label}</span>
-            </Link>
-          );
-        })}
+              >
+                <Icon
+                  className={`h-3.5 w-3.5 ${
+                    isActive ? (isDark ? 'text-slate-950' : 'text-white') : isDark ? 'text-slate-400' : 'text-slate-400'
+                  }`}
+                />
+                <span>{link.label}</span>
+              </Link>
+            );
+          })}
+        </div>
+
+        {/* Left Scroll Indicator & Button (appears when there are more items to the left) */}
+        {canScrollLeft && (
+          <div
+            className={`absolute left-0 top-0 bottom-0 z-10 flex items-center pl-1 pr-3 pointer-events-none transition-opacity ${
+              isDark
+                ? 'bg-gradient-to-r from-slate-900 via-slate-900/90 to-transparent'
+                : 'bg-gradient-to-r from-white via-white/90 to-transparent'
+            }`}
+          >
+            <button
+              type="button"
+              onClick={scrollLeftDirection}
+              aria-label="المزيد من الأقسام"
+              className={`pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full border shadow-xs transition animate-pulse hover:animate-none active:scale-95 ${
+                isDark
+                  ? 'border-white/20 bg-slate-800 text-amber-300 hover:bg-slate-700'
+                  : 'border-slate-200 bg-white text-violet-700 hover:bg-slate-50'
+              }`}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Mobile Drawer (Polished bottom sheet style) */}

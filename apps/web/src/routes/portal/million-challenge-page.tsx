@@ -141,7 +141,8 @@ export default function MillionChallengePage() {
   // FULL-SCREEN LOCKED 100dvh GAME MODE FOR 'playing'
   // =========================================================================
   if (stage === 'playing' && question) {
-    const progressPercent = Math.round(((currentLevel + 1) / challengeQuestions.length) * 100);
+    const completedLevels = currentLevel + (isCorrectFeedback === true ? 1 : 0);
+    const progressPercent = Math.round((completedLevels / challengeQuestions.length) * 100);
 
     return (
       <div

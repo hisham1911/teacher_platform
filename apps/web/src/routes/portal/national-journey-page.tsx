@@ -607,7 +607,7 @@ export default function NationalJourneyPage() {
               <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
                 <div
                   className="h-full rounded-full bg-gradient-to-l from-amber-400 to-emerald-400 transition-all duration-300"
-                  style={{ width: `${Math.max(10, totalProgressPercent)}%` }}
+                  style={{ width: `${totalProgressPercent}%` }}
                 />
               </div>
             </div>
@@ -782,9 +782,8 @@ export default function NationalJourneyPage() {
                   </p>
                 </div>
               ) : (
-                <div className="flex items-center justify-between text-xs font-bold text-slate-400 py-1">
+                <div className="flex items-center justify-center text-center text-xs font-bold text-slate-300 py-1">
                   <span>🏆 {currentStage.missionAr}</span>
-                  <span>اختاري الإجابة الصحيحة</span>
                 </div>
               )}
             </div>

@@ -377,7 +377,8 @@ export default function PlacementTestPage() {
   // FULL-SCREEN LOCKED 100dvh GAME MODE FOR 'testing'
   // =========================================================================
   if (stage === 'testing' && currentQ) {
-    const progressPercent = Math.round(((currentIndex + 1) / totalQuestions) * 100);
+    const completedCount = currentIndex;
+    const progressPercent = Math.round((completedCount / totalQuestions) * 100);
 
     return (
       <div
@@ -426,7 +427,7 @@ export default function PlacementTestPage() {
                 {currentQ.sectionTitle}
               </span>
               <span className="text-[11px] font-bold text-slate-500 truncate">
-                الطالبة: <strong className="text-slate-900">{studentName}</strong>
+                الاسم: <strong className="text-slate-900">{studentName}</strong>
               </span>
             </div>
 
@@ -476,22 +477,18 @@ export default function PlacementTestPage() {
           </div>
         </main>
 
-        {/* Bottom Docked Navigation Bar (Always Visible at Thumb Reach) */}
+        {/* Bottom Docked Navigation Bar (Balanced & Uniform Height) */}
         <footer className="shrink-0 border-t border-slate-200 bg-white px-4 py-3 shadow-[0_-4px_20px_rgba(15,23,42,0.05)]">
-          <div className="mx-auto flex max-w-2xl items-center justify-between gap-3">
-            {currentIndex > 0 ? (
+          <div className="mx-auto flex max-w-2xl items-center gap-2.5">
+            {currentIndex > 0 && (
               <button
                 type="button"
                 onClick={handlePreviousQuestion}
-                className="inline-flex min-h-12 items-center justify-center gap-1 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-black text-slate-700 hover:bg-slate-100 transition shrink-0"
+                className="inline-flex h-12 min-w-[104px] shrink-0 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-100/80 px-4 text-xs sm:text-sm font-black text-slate-700 hover:bg-slate-200/70 active:scale-[0.99] transition whitespace-nowrap"
               >
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="h-4 w-4 shrink-0" />
                 <span>السابق</span>
               </button>
-            ) : (
-              <span className="text-xs font-bold text-slate-400 px-2">
-                اختاري الإجابة للمتابعة
-              </span>
             )}
 
             <button
@@ -500,17 +497,17 @@ export default function PlacementTestPage() {
               disabled={!selectedOptionId}
               aria-label={
                 currentIndex + 1 === totalQuestions
-                  ? 'إنهاء التقييم وعرض النتيجة'
+                  ? 'إنهاء الاختبار وعرض الشهادة'
                   : 'تأكيد والانتقال للسؤال التالي'
               }
-              className="flex-1 sm:flex-initial inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-8 py-3 text-xs sm:text-sm font-black text-white shadow-md shadow-indigo-600/20 transition hover:bg-indigo-700 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex-1 inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 text-xs sm:text-sm font-black text-white shadow-sm shadow-indigo-600/20 transition hover:bg-indigo-700 active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
             >
               <span>
                 {currentIndex + 1 === totalQuestions
                   ? 'إنهاء الاختبار وعرض الشهادة'
-                  : 'تأكيد والانتقال للسؤال التالي'}
+                  : 'السؤال التالي'}
               </span>
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronLeft className="h-4 w-4 shrink-0" />
             </button>
           </div>
         </footer>
