@@ -126,7 +126,7 @@ Teachers can also share video lessons and helpful quizzes with students at home.
       },
       {
         id: 'tl-3',
-        prompt: 'Which word best describes modern technology in education?',
+        prompt: 'Which phrase best describes modern technology in education?',
         options: [
           { text: 'Interactive and exciting', isCorrect: true },
           { text: 'Boring and slow', isCorrect: false },

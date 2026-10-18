@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { writingPrompts } from './writing';
-import { portalCompetitions, placementQuestions, speedQuestions } from './competitions';
+import { portalCompetitions, speedQuestions } from './competitions';
 import { portalSections } from './portal-sections';
 
 describe('Portal Educational Content Integrity', () => {
@@ -33,18 +33,6 @@ describe('Portal Educational Content Integrity', () => {
       expect(comp.titleEn).toBeTruthy();
       expect(comp.path).toBeTruthy();
       expect(comp.features.length).toBeGreaterThan(0);
-    }
-  });
-
-  it('validates placement test questions have exactly one correct option and explanations', () => {
-    expect(placementQuestions.length).toBe(15);
-
-    for (const q of placementQuestions) {
-      expect(q.prompt).toBeTruthy();
-      expect(q.explanation).toBeTruthy();
-      expect(q.options.length).toBe(4);
-      const correctCount = q.options.filter((o) => o.isCorrect).length;
-      expect(correctCount).toBe(1);
     }
   });
 

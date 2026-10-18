@@ -14,10 +14,7 @@ export const writingPrompts: WritingPrompt[] = [
     scrambledWords: ['visited', 'We', 'yesterday', 'the', 'museum', 'national'],
     acceptableAnswers: [
       'We visited the national museum yesterday.',
-      'We visited the national museum yesterday',
       'Yesterday, we visited the national museum.',
-      'Yesterday we visited the national museum.',
-      'Yesterday we visited the national museum',
     ],
     modelAnswer: 'We visited the national museum yesterday.',
     explanationAr: 'الجملة الإنجليزية تبدأ بالفاعل (We) ثم الفعل الماضي (visited) ثم المفعول به موصوفاً (the national museum) وأخيراً ظرف الزمان (yesterday).',
@@ -31,15 +28,13 @@ export const writingPrompts: WritingPrompt[] = [
     level: 'easy',
     instructionAr: 'اقرأ الجملة التالية، اكتشف الخطأ النحوي وأعد كتابة الجملة بشكل صحيح.',
     instructionEn: 'Find the grammar mistake and rewrite the sentence correctly.',
-    promptText: 'He don\'t likes playing tennis.',
+    promptText: 'He don\'t like playing tennis.',
     acceptableAnswers: [
       'He doesn\'t like playing tennis.',
-      'He doesn\'t like playing tennis',
       'He does not like playing tennis.',
-      'He does not like playing tennis',
     ],
     modelAnswer: 'He doesn\'t like playing tennis.',
-    explanationAr: 'مع الضمير He نستخدم doesn\'t للنفي وليس don\'t، وبعد doesn\'t يعود الفعل الأساسي إلى صيغة المصدر المجرد (like) بدون حرف s.',
+    explanationAr: 'مع الضمير He نستخدم doesn\'t وليس don\'t في النفي، فتصبح الجملة الصحيحة: (He doesn\'t like playing tennis). لاحظ أن الفعل بعد doesn\'t يبقى في المصدر المجرد (like) بدون حرف s.',
   },
   {
     id: 'wp-3',
@@ -54,7 +49,6 @@ export const writingPrompts: WritingPrompt[] = [
     scrambledWords: ['you', 'do', 'Where', 'live', '?'],
     acceptableAnswers: [
       'Where do you live?',
-      'Where do you live',
     ],
     modelAnswer: 'Where do you live?',
     explanationAr: 'ترتيب السؤال في المضارع البسيط: أداة الاستفهام (Where) + الفعل المساعد (do) + الفاعل (you) + الفعل الأساسي (live).',
@@ -71,7 +65,6 @@ export const writingPrompts: WritingPrompt[] = [
     promptText: 'She went to school on car yesterday.',
     acceptableAnswers: [
       'She went to school by car yesterday.',
-      'She went to school by car yesterday',
       'She went to school in a car yesterday.',
     ],
     modelAnswer: 'She went to school by car yesterday.',

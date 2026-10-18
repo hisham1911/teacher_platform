@@ -49,7 +49,7 @@ export default function PlacementTestPage() {
   const [selectedLevelId, setSelectedLevelId] = useState<LevelChoiceId>('comprehensive');
   const [studentName, setStudentName] = useState('');
   const [studentGrade, setStudentGrade] = useState<string>(GRADE_OPTIONS[0] ?? 'الصف الأول متوسط');
-  const [verificationCode] = useState(
+  const [verificationCode, setVerificationCode] = useState(
     () => 'SPARK-PL-' + Math.random().toString(36).substring(2, 8).toUpperCase()
   );
 
@@ -92,11 +92,12 @@ export default function PlacementTestPage() {
     if (!selectedOptionId) return;
     const updated = { ...userAnswers, [currentIndex]: selectedOptionId };
     setUserAnswers(updated);
-    setSelectedOptionId(null);
 
     if (currentIndex + 1 < totalQuestions) {
       setCurrentIndex((prev) => prev + 1);
+      setSelectedOptionId(updated[currentIndex + 1] ?? null);
     } else {
+      setSelectedOptionId(null);
       if (startTime) {
         setElapsedSeconds(Math.round((Date.now() - startTime) / 1000));
       }
@@ -120,6 +121,9 @@ export default function PlacementTestPage() {
 
   function handlePreviousQuestion() {
     if (currentIndex > 0) {
+      if (selectedOptionId) {
+        setUserAnswers((prev) => ({ ...prev, [currentIndex]: selectedOptionId }));
+      }
       const prevIdx = currentIndex - 1;
       setCurrentIndex(prevIdx);
       setSelectedOptionId(userAnswers[prevIdx] ?? null);
@@ -132,6 +136,7 @@ export default function PlacementTestPage() {
     setUserAnswers({});
     setSelectedOptionId(null);
     setStartTime(null);
+    setVerificationCode('SPARK-PL-' + Math.random().toString(36).substring(2, 8).toUpperCase());
   }
 
   function handlePrintCertificate() {
@@ -825,13 +830,13 @@ export default function PlacementTestPage() {
               <div className="relative z-10 flex flex-wrap items-start justify-between border-b border-indigo-100/80 pb-4 mb-6 gap-3 text-right">
                 <div>
                   <span className="block text-[11px] font-black tracking-wider text-indigo-950 uppercase">
-                    المملكة العربية السعودية • وزارة التعليم
+                    مبادرة تعليمية إثرائية · منصة English Spark
                   </span>
                   <span className="block text-[10px] font-bold text-slate-500">
-                    إدارة التعليم بمنطقة جازان • مدرسة متوسطة وثانوية الجرادية
+                    مدرسة متوسطة وثانوية الجرادية
                   </span>
                   <span className="block text-[10px] font-black text-indigo-700">
-                    منصة ومبادرة English Spark للتميز والابتكار اللغوي
+                    إشراف معلمات اللغة الإنجليزية
                   </span>
                 </div>
 
@@ -854,7 +859,7 @@ export default function PlacementTestPage() {
                     ID: {verificationCode}
                   </span>
                   <span className="block text-[9px] font-bold text-emerald-700">
-                    Digitally Verified ✓
+                    Issued by English Spark Portal
                   </span>
                 </div>
               </div>
@@ -1040,7 +1045,7 @@ export default function PlacementTestPage() {
                   </span>
                   <div className="mt-2 text-[10px] font-bold text-slate-500">
                     <span>Issued: </span>
-                    <span className="font-mono text-indigo-900 font-black">{new Date().toLocaleDateString('ar-SA')}</span>
+                    <span className="font-mono text-indigo-900 font-black">{new Date().toLocaleDateString('en-GB')}</span>
                   </div>
                 </div>
               </div>

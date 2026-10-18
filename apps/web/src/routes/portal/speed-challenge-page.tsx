@@ -93,9 +93,16 @@ export default function SpeedChallengePage() {
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const feedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasRecordedResultRef = useRef(false);
 
   useStageScrollReset(gameState);
+
+  useEffect(() => {
+    return () => {
+      if (feedbackTimeoutRef.current) clearTimeout(feedbackTimeoutRef.current);
+    };
+  }, []);
 
   // Pick question by looping through pool
   const currentQ = speedQuestions[currentIndex % speedQuestions.length];
@@ -103,6 +110,10 @@ export default function SpeedChallengePage() {
   // Start / Restart game
   function handleStart() {
     if (playerName.trim().length < 2) return;
+    if (feedbackTimeoutRef.current) {
+      clearTimeout(feedbackTimeoutRef.current);
+      feedbackTimeoutRef.current = null;
+    }
     hasRecordedResultRef.current = false;
     setGameState('playing');
     setTimeLeft(60);
@@ -119,6 +130,7 @@ export default function SpeedChallengePage() {
   useEffect(() => {
     if (gameState === 'timesup' && !hasRecordedResultRef.current) {
       hasRecordedResultRef.current = true;
+      playSound('gameover');
       const totalAnswered = correctCount + wrongCount;
       let title = 'مشارك رائع';
       if (score >= 250) {
@@ -152,7 +164,6 @@ export default function SpeedChallengePage() {
         if (prev <= 1) {
           clearInterval(timerRef.current!);
           setGameState('timesup');
-          playSound('gameover');
           return 0;
         }
         return prev - 1;
@@ -193,7 +204,8 @@ export default function SpeedChallengePage() {
     }
 
     // Move to next question instantly
-    setTimeout(() => {
+    feedbackTimeoutRef.current = setTimeout(() => {
+      feedbackTimeoutRef.current = null;
       setFeedback(null);
       setCurrentIndex((prev) => prev + 1);
     }, 250);
@@ -306,7 +318,7 @@ export default function SpeedChallengePage() {
                 key={oIdx}
                 type="button"
                 onClick={() => handleAnswer(opt.isCorrect)}
-                className="rounded-xl sm:rounded-2xl border border-slate-700 bg-slate-800/90 p-3 sm:p-4 text-center text-sm sm:text-base font-black text-white shadow-xs transition hover:border-amber-400 hover:bg-slate-750 active:scale-95 min-h-[52px]"
+                className="rounded-xl sm:rounded-2xl border border-slate-700 bg-slate-800/90 p-3 sm:p-4 text-center text-sm sm:text-base font-black text-white shadow-xs transition hover:border-amber-400 hover:bg-slate-700 active:scale-95 min-h-[52px]"
               >
                 {opt.text}
               </button>

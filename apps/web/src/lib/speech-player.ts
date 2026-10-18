@@ -72,55 +72,12 @@ function playAudioFile(url: string, options: SpeechPlayerOptions): () => void {
   }
 }
 
-function playFallbackAudio(text: string, options: SpeechPlayerOptions): () => void {
-  try {
-    const cleanChunk = encodeURIComponent(text.slice(0, 200).trim());
-    const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=en&client=tw-ob&q=${cleanChunk}`;
-    const audio = new Audio(url);
-    try {
-      (audio as unknown as { referrerPolicy?: string }).referrerPolicy = 'no-referrer';
-      audio.setAttribute('referrerpolicy', 'no-referrer');
-    } catch {
-      // Ignore
-    }
-    activeAudioElement = audio;
-
-    audio.onplay = () => {
-      options.onStart?.();
-    };
-    audio.onended = () => {
-      activeAudioElement = null;
-      options.onEnd?.();
-    };
-    audio.onerror = (e) => {
-      activeAudioElement = null;
-      options.onError?.(e);
-      options.onEnd?.();
-    };
-
-    audio.play().catch((err) => {
-      activeAudioElement = null;
-      options.onError?.(err);
-      options.onEnd?.();
-    });
-
-    return () => {
-      stopEnglishSpeech();
-    };
-  } catch (err) {
-    options.onError?.(err);
-    options.onEnd?.();
-    return () => {};
-  }
-}
-
 /**
  * Robust cross-browser and mobile audio/speech playback that handles:
  * 1. Direct MP3 audio playback if an audio URL is provided.
  * 2. Synchronous invocation in user gesture context (no setTimeout, fixing iOS/Android block).
  * 3. Inclusive Android Google TTS and iOS voice discovery.
- * 4. Graceful streaming audio fallback with no-referrer policy if mobile browser blocks Web Speech API.
- * 5. Resolving cancel/speak race conditions.
+ * 4. Resolving cancel/speak race conditions.
  */
 export function playEnglishSpeech(
   textOrUrl: string,
@@ -164,7 +121,9 @@ export function playEnglishSpeech(
   }
 
   if (!('speechSynthesis' in window)) {
-    return playFallbackAudio(cleanSource, options);
+    options.onError?.(new Error('Speech synthesis is not supported in this browser'));
+    options.onEnd?.();
+    return () => {};
   }
 
   // Resume synthesis in case browser paused it
@@ -189,10 +148,7 @@ export function playEnglishSpeech(
     utterance.voice = englishVoice;
   }
 
-  let hasStartedSpeaking = false;
-
   utterance.onstart = () => {
-    hasStartedSpeaking = true;
     options.onStart?.();
   };
 
@@ -204,11 +160,6 @@ export function playEnglishSpeech(
   utterance.onerror = (e) => {
     globalActiveUtterance = null;
     if (e.error !== 'canceled' && e.error !== 'interrupted') {
-      if (!hasStartedSpeaking) {
-        // Fallback to audio stream if speech synthesis fails to start on mobile
-        playFallbackAudio(textToSpeak, options);
-        return;
-      }
       options.onError?.(e);
     }
     options.onEnd?.();
@@ -221,9 +172,11 @@ export function playEnglishSpeech(
     if (globalActiveUtterance === utterance) {
       window.speechSynthesis.speak(utterance);
     }
-  } catch {
+  } catch (err) {
     globalActiveUtterance = null;
-    return playFallbackAudio(textToSpeak, options);
+    options.onError?.(err);
+    options.onEnd?.();
+    return () => {};
   }
 
   return () => {
@@ -261,6 +214,11 @@ export function stopEnglishSpeech(): void {
 export function useSpeechPlayer(text: string | null | undefined, options: Omit<SpeechPlayerOptions, 'onStart' | 'onEnd'> = {}) {
   const [isPlaying, setIsPlaying] = useState(false);
   const cancelRef = useRef<(() => void) | null>(null);
+  const optionsRef = useRef(options);
+
+  useEffect(() => {
+    optionsRef.current = options;
+  }, [options]);
 
   // Stop when text changes or unmounts
   useEffect(() => {
@@ -280,20 +238,18 @@ export function useSpeechPlayer(text: string | null | undefined, options: Omit<S
     }
 
     cancelRef.current = playEnglishSpeech(text, {
-      ...options,
+      ...optionsRef.current,
       onStart: () => setIsPlaying(true),
       onEnd: () => setIsPlaying(false),
       onError: () => setIsPlaying(false),
     });
     setIsPlaying(true);
-  }, [isPlaying, text, options]);
+  }, [isPlaying, text]);
 
-  return {
-    isPlaying,
-    toggle,
-    stop: () => {
-      stopEnglishSpeech();
-      setIsPlaying(false);
-    },
-  };
+  const stop = useCallback(() => {
+    stopEnglishSpeech();
+    setIsPlaying(false);
+  }, []);
+
+  return { isPlaying, toggle, stop };
 }

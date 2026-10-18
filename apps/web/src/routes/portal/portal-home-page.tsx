@@ -241,7 +241,7 @@ export default function PortalHomePage() {
                   </span>
                   <span
                     aria-hidden="true"
-                    className={`flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-slate-400 border border-slate-200/60 shadow-2xs transition-all duration-300 group-hover:bg-gradient-to-r group-hover:${theme.gradient} group-hover:text-white group-hover:border-transparent group-hover:translate-x-[-2px]`}
+                    className={`flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-slate-400 border border-slate-200/60 shadow-2xs transition-all duration-300 ${theme.hoverBtnClass} group-hover:translate-x-[-2px]`}
                   >
                     <ArrowLeft className="h-4 w-4" />
                   </span>

@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Play, Video, RotateCcw, AlertCircle } from 'lucide-react';
+import { Play, Video, RotateCcw, AlertCircle, ExternalLink } from 'lucide-react';
 
 interface PortalVideoPlayerProps {
   src?: string;
@@ -130,19 +130,51 @@ export function PortalVideoPlayer({
     );
   }
 
-  // YouTube / external embed fallback
+  const isKnownEmbed =
+    embedUrl.startsWith('https://www.youtube.com/embed/') ||
+    embedUrl.startsWith('https://player.vimeo.com/video/') ||
+    embedUrl.startsWith('https://drive.google.com/file/');
+
+  // YouTube / external embed
+  if (isKnownEmbed) {
+    return (
+      <div
+        className={`overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200 bg-slate-950 shadow-md aspect-video ${className}`}
+      >
+        <iframe
+          src={embedUrl}
+          title={title}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowFullScreen
+          referrerPolicy="strict-origin-when-cross-origin"
+          className="h-full w-full border-0"
+        />
+      </div>
+    );
+  }
+
+  // Friendly fallback for missing or non-embeddable videos
   return (
     <div
-      className={`overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200 bg-slate-950 shadow-md aspect-video ${className}`}
+      className={`flex aspect-video flex-col items-center justify-center rounded-2xl sm:rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center ${className}`}
     >
-      <iframe
-        src={embedUrl}
-        title={title}
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-        allowFullScreen
-        referrerPolicy="strict-origin-when-cross-origin"
-        className="h-full w-full border-0"
-      />
+      <AlertCircle className="h-10 w-10 text-slate-300 mb-2" />
+      <p className="text-xs sm:text-sm font-bold text-slate-600">
+        {raw
+          ? 'يتعذر تشغيل هذا الفيديو داخل الصفحة مباشرةً.'
+          : 'لا يوجد فيديو مرفق بهذا الدرس حالياً.'}
+      </p>
+      {raw && (
+        <a
+          href={raw}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-3 inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-violet-700 active:scale-95 transition"
+        >
+          <ExternalLink className="h-3.5 w-3.5" />
+          <span>فتح الفيديو في نافذة جديدة</span>
+        </a>
+      )}
     </div>
   );
 }

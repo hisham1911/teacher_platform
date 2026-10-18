@@ -142,7 +142,7 @@ export const challengeQuestions: ChallengeQuestion[] = [
     level: 11,
     points: 64000,
     prompt: 'Which is correct? "I look forward ___"',
-    hint: 'العبارة الشهيرة "look forward to" يتبعها دائماً صيغة اسم الفعل Gerund (V + ing).',
+    hint: 'العبارة الشهيرة "look forward to" تتبعها دائماً صيغة اسم الفعل Gerund (V + ing).',
     options: [
       { text: 'to hear from you', isCorrect: false },
       { text: 'hearing from you', isCorrect: false },

@@ -41,6 +41,7 @@ export const SECTION_THEMES: Record<
     glow: string;
     ring: string;
     shadow: string;
+    hoverBtnClass: string;
   }
 > = {
   grammar: {
@@ -53,6 +54,7 @@ export const SECTION_THEMES: Record<
     glow: 'from-violet-500/15 via-indigo-500/5 to-transparent',
     ring: 'hover:ring-violet-400/25',
     shadow: 'hover:shadow-violet-900/10 hover:border-violet-300',
+    hoverBtnClass: 'group-hover:bg-violet-700 group-hover:text-white group-hover:border-transparent',
   },
   reading: {
     gradient: 'from-sky-500 to-blue-600',
@@ -64,6 +66,7 @@ export const SECTION_THEMES: Record<
     glow: 'from-sky-500/15 via-blue-500/5 to-transparent',
     ring: 'hover:ring-sky-400/25',
     shadow: 'hover:shadow-sky-900/10 hover:border-sky-300',
+    hoverBtnClass: 'group-hover:bg-sky-600 group-hover:text-white group-hover:border-transparent',
   },
   listening: {
     gradient: 'from-purple-600 to-pink-600',
@@ -75,6 +78,7 @@ export const SECTION_THEMES: Record<
     glow: 'from-purple-500/15 via-pink-500/5 to-transparent',
     ring: 'hover:ring-purple-400/25',
     shadow: 'hover:shadow-purple-900/10 hover:border-purple-300',
+    hoverBtnClass: 'group-hover:bg-purple-600 group-hover:text-white group-hover:border-transparent',
   },
   writing: {
     gradient: 'from-emerald-600 to-teal-700',
@@ -86,6 +90,7 @@ export const SECTION_THEMES: Record<
     glow: 'from-emerald-500/15 via-teal-500/5 to-transparent',
     ring: 'hover:ring-emerald-400/25',
     shadow: 'hover:shadow-emerald-900/10 hover:border-emerald-300',
+    hoverBtnClass: 'group-hover:bg-emerald-600 group-hover:text-white group-hover:border-transparent',
   },
   speaking: {
     gradient: 'from-amber-500 to-orange-600',
@@ -97,6 +102,7 @@ export const SECTION_THEMES: Record<
     glow: 'from-amber-500/15 via-orange-500/5 to-transparent',
     ring: 'hover:ring-amber-400/25',
     shadow: 'hover:shadow-amber-900/10 hover:border-amber-300',
+    hoverBtnClass: 'group-hover:bg-amber-500 group-hover:text-white group-hover:border-transparent',
   },
   competitions: {
     gradient: 'from-amber-500 via-amber-600 to-yellow-600',
@@ -108,6 +114,7 @@ export const SECTION_THEMES: Record<
     glow: 'from-amber-500/18 via-yellow-500/8 to-transparent',
     ring: 'hover:ring-amber-400/25',
     shadow: 'hover:shadow-amber-900/12 hover:border-amber-300',
+    hoverBtnClass: 'group-hover:bg-amber-600 group-hover:text-white group-hover:border-transparent',
   },
   guestbook: {
     gradient: 'from-rose-500 to-fuchsia-600',
@@ -119,6 +126,7 @@ export const SECTION_THEMES: Record<
     glow: 'from-rose-500/15 via-pink-500/5 to-transparent',
     ring: 'hover:ring-rose-400/25',
     shadow: 'hover:shadow-rose-900/10 hover:border-rose-300',
+    hoverBtnClass: 'group-hover:bg-rose-600 group-hover:text-white group-hover:border-transparent',
   },
 };
 
@@ -143,6 +151,7 @@ const DEFAULT_THEME = {
   glow: 'from-violet-500/15 via-indigo-500/5 to-transparent',
   ring: 'hover:ring-violet-400/25',
   shadow: 'hover:shadow-violet-900/10 hover:border-violet-300',
+  hoverBtnClass: 'group-hover:bg-violet-700 group-hover:text-white group-hover:border-transparent',
 };
 
 export function getSectionTheme(id: string) {

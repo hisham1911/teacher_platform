@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router';
 import {
   Award,
@@ -117,11 +117,23 @@ export default function MillionChallengePage() {
 
   useStageScrollReset(stage, currentLevel);
 
+  const feedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (feedbackTimeoutRef.current) clearTimeout(feedbackTimeoutRef.current);
+    };
+  }, []);
+
   const baseQuestion = challengeQuestions[currentLevel];
   const question: ChallengeQuestion | undefined = activeBackupQuestion || baseQuestion;
 
   function handleStart() {
     if (name.trim().length < 2) return;
+    if (feedbackTimeoutRef.current) {
+      clearTimeout(feedbackTimeoutRef.current);
+      feedbackTimeoutRef.current = null;
+    }
     setStage('playing');
     setCurrentLevel(0);
     setSelected(null);
@@ -198,7 +210,8 @@ export default function MillionChallengePage() {
     const levelIndex = currentLevel;
 
     if (correct) {
-      setTimeout(() => {
+      feedbackTimeoutRef.current = setTimeout(() => {
+        feedbackTimeoutRef.current = null;
         setTotalPoints(earned);
         if (levelIndex + 1 < challengeQuestions.length) {
           setCurrentLevel(levelIndex + 1);
@@ -228,7 +241,8 @@ export default function MillionChallengePage() {
     } else {
       // Wrong answer: 2.5s delay to let student read correct answer and explanation in bottom dock
       const guaranteed = calculateGuaranteedPoints(levelIndex);
-      setTimeout(() => {
+      feedbackTimeoutRef.current = setTimeout(() => {
+        feedbackTimeoutRef.current = null;
         setFinalPoints(guaranteed);
         setFinalLevel(levelIndex);
         setResultReason(guaranteed > 0 ? 'safe_haven' : 'lost');
@@ -247,6 +261,10 @@ export default function MillionChallengePage() {
   }
 
   function handleRestart() {
+    if (feedbackTimeoutRef.current) {
+      clearTimeout(feedbackTimeoutRef.current);
+      feedbackTimeoutRef.current = null;
+    }
     setStage('welcome');
     setName('');
     setCurrentLevel(0);
@@ -711,7 +729,9 @@ export default function MillionChallengePage() {
                   ? `تم تأمين رصيدك بنجاح عند المستوى ${finalLevel} من 15`
                   : resultReason === 'safe_haven'
                   ? `توقفت عند المستوى ${finalLevel} وخرجت برصيد محطة الأمان المضمون!`
-                  : `توقفت عند المستوى ${finalLevel} قبل الوصول لمحطة الأمان الأولى.`}
+                  : finalLevel === 0
+                  ? 'لم تجتز السؤال الأول — حاول مرة أخرى!'
+                  : `اجتزت ${finalLevel} من 15 مستوى (توقفت عند السؤال ${finalLevel + 1})`}
               </p>
             </div>
 

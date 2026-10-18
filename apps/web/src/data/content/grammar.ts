@@ -100,7 +100,7 @@ export const grammarTopics: GrammarTopic[] = [
       },
       {
         id: 'pp-4',
-        prompt: 'They ___ watching TV now, they are sleeping.',
+        prompt: 'They ___ watching TV now; they are sleeping.',
         hint: 'نفي المضارع المستمر بإضافة not بعد are',
         options: [
           { text: 'are not', isCorrect: true },

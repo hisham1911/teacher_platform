@@ -820,6 +820,36 @@ function getLocalResults(): StudentQuizResultRecord[] {
   }
 }
 
+const RESULT_CATEGORY_VALUES: StudentQuizResultRecord['category'][] = [
+  'placement',
+  'grammar',
+  'reading',
+  'listening',
+  'million',
+  'speed',
+  'competition',
+];
+
+function clampPercentage(value: number): number {
+  return Math.min(100, Math.max(0, Math.round(value)));
+}
+
+function resolveResultCategory(
+  parsed: Partial<StudentQuizResultRecord>
+): StudentQuizResultRecord['category'] {
+  if (parsed.category && RESULT_CATEGORY_VALUES.includes(parsed.category)) {
+    return parsed.category;
+  }
+  const title = parsed.activityTitle ?? '';
+  if (title.includes('المليون')) return 'million';
+  if (title.includes('السرعة')) return 'speed';
+  if (title.includes('سفيرة') || title.includes('وطن')) return 'competition';
+  if (title.includes('المستوى') || title.includes('التشخيص')) return 'placement';
+  if (title.includes('استماع')) return 'listening';
+  if (title.includes('قراءة')) return 'reading';
+  return 'grammar';
+}
+
 export const studentResultsClient = {
   async getAllResults(): Promise<StudentQuizResultRecord[]> {
     const config = getSupabaseConfig();
@@ -851,11 +881,11 @@ export const studentResultsClient = {
                 id: String(r.id),
                 studentName: parsed.studentName || r.name,
                 studentGrade: parsed.studentGrade || r.role || 'المرحلة المتوسطة',
-                category: parsed.category || 'grammar',
+                category: resolveResultCategory(parsed),
                 activityTitle: parsed.activityTitle || 'نشاط تفاعلي',
                 score: Number(parsed.score ?? 0),
                 totalQuestions: Number(parsed.totalQuestions ?? 10),
-                percentage: Number(parsed.percentage ?? 0),
+                percentage: clampPercentage(Number(parsed.percentage ?? 0)),
                 cefrLevel: parsed.cefrLevel,
                 verificationCode: parsed.verificationCode || `SPARK-${r.id}`,
                 createdAt: parsed.createdAt || r.created_at,
@@ -888,9 +918,11 @@ export const studentResultsClient = {
       }
     }
 
-    const merged = Array.from(map.values()).sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
+    const merged = Array.from(map.values())
+      .map((r) => ({ ...r, percentage: clampPercentage(r.percentage) }))
+      .sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
 
     if (merged.length > 0) {
       try {
@@ -914,7 +946,9 @@ export const studentResultsClient = {
     cefrLevel?: string;
     verificationCode?: string;
   }): Promise<StudentQuizResultRecord> {
-    const percentage = Math.round((input.score / Math.max(1, input.totalQuestions)) * 100);
+    const percentage = clampPercentage(
+      (input.score / Math.max(1, input.totalQuestions)) * 100
+    );
     const verificationCode =
       input.verificationCode ||
       'SPARK-' + Math.random().toString(36).substring(2, 7).toUpperCase();

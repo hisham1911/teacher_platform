@@ -1,6 +1,7 @@
-import { ExternalLink, Mic, Sparkles } from 'lucide-react';
+import { ExternalLink, Mic, Sparkles, Square, Volume2 } from 'lucide-react';
 import { PublicBackdrop } from '../../components/layout/root-layout';
 import { PortalNav, PortalFooter } from '../../components/portal/portal-nav';
+import { useSpeechPlayer } from '../../lib/speech-player';
 
 interface SpeakingLink {
   titleAr: string;
@@ -29,6 +30,78 @@ const speakingLinks: SpeakingLink[] = [
     url: 'https://engnovate.com/pronunciation-exercises',
   },
 ];
+
+interface PronunciationLabItem {
+  phrase: string;
+  ipa: string;
+  hintAr: string;
+}
+
+const pronunciationLabItems: PronunciationLabItem[] = [
+  {
+    phrase: 'Think',
+    ipa: '/θɪŋk/',
+    hintAr: 'أخرج طرف لسانك قليلاً بين أسنانك مع دفع الهواء دون اهتزاز الأوتار الصوتية (صوت θ المهموس).',
+  },
+  {
+    phrase: 'This',
+    ipa: '/ðɪs/',
+    hintAr: 'نفس موضع اللسان بين الأسنان لكن مع اهتزاز الأوتار الصوتية (صوت ð المجهور).',
+  },
+  {
+    phrase: 'Vision',
+    ipa: '/ˈvɪʒ.ən/',
+    hintAr: 'صوت الجيم الفرنسية الهادئة (ʒ) وسط الكلمة قبل نهاية المقطع -ən.',
+  },
+  {
+    phrase: 'Water',
+    ipa: '/ˈwɔː.tər/',
+    hintAr: 'في النطق الأمريكي تُنطق التاء بين حرفي علة كأنها د خفيفة سريعة (Flap T).',
+  },
+  {
+    phrase: 'Comfortable',
+    ipa: '/ˈkʌmf.tə.bəl/',
+    hintAr: 'ادمج المقاطع بسلاسة: «كَمف-تَ-بُل» بدل تشديد كل مقطع على حدة.',
+  },
+  {
+    phrase: 'Schedule',
+    ipa: '/ˈʃed.juːl/',
+    hintAr: 'النطق الأشيع: «شيد-يول»، وليس «سكيدول».',
+  },
+];
+
+const dailySpeakPhrases: { phrase: string; meaningAr: string }[] = [
+  { phrase: 'Good morning! How are you today?', meaningAr: 'صباح الخير! كيف حالك اليوم؟' },
+  { phrase: 'Could you repeat that, please?', meaningAr: 'هل يمكنك إعادة ذلك من فضلك؟' },
+  { phrase: 'I would like a cup of tea, please.', meaningAr: 'أود كوباً من الشاي من فضلك.' },
+  { phrase: 'Excuse me, where is the library?', meaningAr: 'عذراً، أين تقع المكتبة؟' },
+  { phrase: 'That sounds like a great idea!', meaningAr: 'تبدو فكرة رائعة!' },
+  { phrase: 'Thank you so much for your help.', meaningAr: 'شكراً جزيلاً على مساعدتك.' },
+];
+
+function PronounceButton({ text, className = 'mt-3' }: { text: string; className?: string }) {
+  const { isPlaying, toggle } = useSpeechPlayer(text);
+
+  return (
+    <button
+      type="button"
+      onClick={toggle}
+      aria-label={`استمع إلى نطق: ${text}`}
+      className={`${className} inline-flex items-center justify-center gap-2 rounded-xl border px-3.5 py-2 text-xs font-black transition active:scale-95 ${
+        isPlaying
+          ? 'border-amber-300 bg-amber-50 text-amber-900'
+          : 'border-slate-200 bg-white text-slate-700 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-900'
+      }`}
+    >
+      {isPlaying ? (
+        <Square className="h-3.5 w-3.5 fill-current" />
+      ) : (
+        <Volume2 className="h-3.5 w-3.5" />
+      )}
+      <span>{isPlaying ? 'إيقاف الاستماع' : 'استمع للنطق الصحيح 🔊'}</span>
+    </button>
+  );
+}
 
 export default function SpeakingIndexPage() {
   return (
@@ -117,6 +190,73 @@ export default function SpeakingIndexPage() {
               </div>
             </a>
           ))}
+        </section>
+
+        {/* Interactive Pronunciation Lab */}
+        <section
+          className="animate-page-enter mx-auto mt-10 max-w-5xl sm:mt-14"
+          style={{ animationDelay: '200ms' }}
+        >
+          <div className="rounded-2xl border border-amber-200/90 bg-white/90 p-5 shadow-xs ring-1 ring-slate-900/5 backdrop-blur-xl sm:rounded-3xl sm:p-7">
+            <div className="border-b border-amber-100 pb-4">
+              <h2 className="flex flex-wrap items-center gap-2 text-lg font-black text-slate-950 sm:text-xl">
+                <Sparkles className="h-5 w-5 text-amber-600" />
+                <span>معمل النطق الصوتي السريع</span>
+                <span dir="ltr" className="text-xs font-bold text-amber-700">
+                  Interactive Pronunciation Lab
+                </span>
+              </h2>
+              <p className="mt-1 text-xs font-semibold text-slate-600 sm:text-sm">
+                اضغط زر الاستماع على أي بطاقة أو عبارة لتسمع النطق الصحيح مباشرة داخل الصفحة دون مغادرتها.
+              </p>
+            </div>
+
+            <div className="mt-5 grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+              {pronunciationLabItems.map((item) => (
+                <div
+                  key={item.phrase}
+                  className="flex flex-col rounded-2xl border border-amber-100 bg-gradient-to-br from-white via-white/95 to-amber-50/40 p-4 shadow-2xs transition hover:border-amber-300 hover:shadow-xs"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-base font-black text-slate-950" dir="ltr">
+                      {item.phrase}
+                    </span>
+                    <span
+                      className="rounded-lg border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-800"
+                      dir="ltr"
+                    >
+                      {item.ipa}
+                    </span>
+                  </div>
+                  <p className="mt-2 flex-1 text-xs font-semibold leading-relaxed text-slate-600">
+                    {item.hintAr}
+                  </p>
+                  <PronounceButton text={item.phrase} />
+                </div>
+              ))}
+            </div>
+
+            <h3 className="mb-3 mt-8 flex items-center gap-2 text-base font-black text-slate-950">
+              <Mic className="h-4 w-4 text-amber-600" />
+              <span>عبارات يومية جاهزة للتدريب</span>
+            </h3>
+            <div className="space-y-2.5">
+              {dailySpeakPhrases.map((item) => (
+                <div
+                  key={item.phrase}
+                  className="flex flex-col gap-2 rounded-2xl border border-slate-200/80 bg-white p-3.5 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+                >
+                  <div className="min-w-0">
+                    <p className="text-xs font-black text-slate-900 sm:text-sm" dir="ltr">
+                      {item.phrase}
+                    </p>
+                    <p className="mt-0.5 text-xs font-semibold text-slate-500">{item.meaningAr}</p>
+                  </div>
+                  <PronounceButton text={item.phrase} className="shrink-0" />
+                </div>
+              ))}
+            </div>
+          </div>
         </section>
       </div>
 

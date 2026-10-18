@@ -81,16 +81,27 @@ function formatTimeAgo(dateString: string): string {
     const diffSec = Math.floor((Date.now() - date.getTime()) / 1000);
     if (diffSec < 60) return 'الآن';
     const diffMin = Math.floor(diffSec / 60);
-    if (diffMin < 60) return `منذ ${diffMin} دقيقة`;
+    if (diffMin < 60) {
+      if (diffMin === 1) return 'منذ دقيقة';
+      if (diffMin === 2) return 'منذ دقيقتين';
+      return `منذ ${diffMin} دقيقة`;
+    }
     const diffHour = Math.floor(diffMin / 60);
+    if (diffHour === 1) return 'منذ ساعة';
+    if (diffHour === 2) return 'منذ ساعتين';
     if (diffHour < 24) return `منذ ${diffHour} ساعة`;
     const diffDay = Math.floor(diffHour / 24);
     if (diffDay === 1) return 'أمس';
+    if (diffDay === 2) return 'منذ يومين';
     if (diffDay < 7) return `منذ ${diffDay} أيام`;
     return date.toLocaleDateString('ar-SA');
   } catch {
     return 'مؤخراً';
   }
+}
+
+function clampPercent(value: number | undefined): number {
+  return Math.min(100, Math.max(0, Math.round(value || 0)));
 }
 
 function getResultStatus(percentage: number): { label: string; badgeClass: string } {
@@ -528,8 +539,8 @@ export default function TeacherAdminPage() {
       `"${r.activityTitle}"`,
       r.score,
       r.totalQuestions,
-      `"${r.percentage}%"`,
-      `"${getResultStatus(r.percentage || 0).label}"`,
+      `"${clampPercent(r.percentage)}%"`,
+      `"${getResultStatus(clampPercent(r.percentage)).label}"`,
       `"${new Date(r.createdAt).toLocaleDateString('ar-SA')}"`,
     ]);
     const csv = '\uFEFF' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
@@ -561,7 +572,7 @@ export default function TeacherAdminPage() {
       'حلمي للمملكة (Dream)',
       'عهدي وعملي (Promise)',
       'رسالة الفخر (Pride)',
-      'إشادة وتوثيق المعلمة',
+      'إشادة وتوثيق',
       'الإعجابات',
       'التاريخ',
     ];
@@ -758,11 +769,11 @@ export default function TeacherAdminPage() {
     if (results.length === 0) {
       return { totalAttempts: 0, avgPercentage: 0, passedCount: 0, needsSupportCount: 0, highestScore: 0 };
     }
-    const totalPercentage = results.reduce((acc, r) => acc + (r.percentage || 0), 0);
+    const totalPercentage = results.reduce((acc, r) => acc + clampPercent(r.percentage), 0);
     const avgPercentage = Math.round(totalPercentage / results.length);
-    const passedCount = results.filter((r) => (r.percentage || 0) >= 60).length;
-    const needsSupportCount = results.filter((r) => (r.percentage || 0) < 60).length;
-    const highestScore = Math.max(...results.map((r) => r.percentage || 0));
+    const passedCount = results.filter((r) => clampPercent(r.percentage) >= 60).length;
+    const needsSupportCount = results.filter((r) => clampPercent(r.percentage) < 60).length;
+    const highestScore = Math.max(...results.map((r) => clampPercent(r.percentage)));
     return {
       totalAttempts: results.length,
       avgPercentage,
@@ -1395,7 +1406,7 @@ export default function TeacherAdminPage() {
                     </tr>
                   ) : (
                     filteredResults.map((r) => {
-                      const status = getResultStatus(r.percentage || 0);
+                      const status = getResultStatus(clampPercent(r.percentage));
                       return (
                         <tr key={r.id} className="hover:bg-slate-50">
                           <td className="p-3 font-black text-slate-900">{r.studentName}</td>
@@ -1406,7 +1417,7 @@ export default function TeacherAdminPage() {
                           </td>
                           <td className="p-3">
                             <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-black text-slate-800">
-                              {r.percentage}%
+                              {clampPercent(r.percentage)}%
                             </span>
                           </td>
                           <td className="p-3">
@@ -1451,7 +1462,7 @@ export default function TeacherAdminPage() {
                   </h2>
                 </div>
                 <p className="text-xs font-semibold text-slate-500 mt-1">
-                  متابعة رسائل العهد وأحلام الطالبات لمستقبل المملكة مع إمكانية إضافة إشادة وتوثيق المعلمة المعتمد.
+                  متابعة رسائل العهد وأحلام الطالبات لمستقبل المملكة مع إمكانية إضافة إشادة وتوثيق معتمد.
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -1481,7 +1492,7 @@ export default function TeacherAdminPage() {
                 <span className="text-[10px] text-slate-500">رسائل عهد وأحلام موثقة</span>
               </div>
               <div className="rounded-2xl border border-amber-200/80 bg-amber-50/60 p-4">
-                <span className="block text-xs font-bold text-amber-800">مشاركات بإشادة وتوثيق المعلمة</span>
+                <span className="block text-xs font-bold text-amber-800">مشاركات بإشادة وتوثيق</span>
                 <p className="mt-1 text-2xl font-black text-amber-950">
                   {nationalEntries.filter((e) => Boolean(e.teacherReply)).length}
                 </p>
@@ -1547,8 +1558,8 @@ export default function TeacherAdminPage() {
                             <Sparkles className="h-3.5 w-3.5 text-amber-600" />
                             <span>
                               {entry.teacherReply
-                                ? 'تعديل إشادة المعلمة ✨'
-                                : 'إضافة إشادة وتوثيق المعلمة ✨'}
+                                ? 'تعديل إشادة وتوثيق ✨'
+                                : 'إضافة إشادة وتوثيق ✨'}
                             </span>
                           </button>
                           <button
@@ -1597,7 +1608,7 @@ export default function TeacherAdminPage() {
                       {entry.teacherReply && !isReplying && (
                         <div className="mt-3 rounded-xl border border-emerald-300 bg-emerald-50 p-3 text-right">
                           <span className="block text-xs font-black text-emerald-900">
-                            ✨ إشادة وتوثيق المعلمة ({TEACHER_OFFICIAL_NAME}):
+                            ✨ إشادة وتوثيق ({TEACHER_OFFICIAL_NAME}):
                           </span>
                           <p className="mt-1 text-xs font-bold text-slate-800">
                             {entry.teacherReply}
@@ -1609,7 +1620,7 @@ export default function TeacherAdminPage() {
                       {isReplying && (
                         <div className="mt-3 rounded-2xl border-2 border-amber-300 bg-amber-50/70 p-3.5 sm:p-4 text-right animate-page-enter">
                           <label className="block text-xs font-black text-amber-950 mb-1.5">
-                            كتابة إشادة وتوثيق المعلمة المعتمد للطالبة (يظهر فوراً على جدار الوطن والشهادة):
+                            كتابة إشادة وتوثيق معتمد للطالبة (يظهر فوراً على جدار الوطن والشهادة):
                           </label>
                           <textarea
                             rows={2}

@@ -60,10 +60,10 @@ Local Guide: You are welcome!`,
         id: 'dir-1',
         prompt: 'Which polite question is used to ask for directions?',
         options: [
-          { text: 'Tell me direction quickly!', isCorrect: false },
-          { text: 'Where is library now?', isCorrect: false },
+          { text: 'Tell me the direction quickly!', isCorrect: false },
+          { text: 'Where is the library now?', isCorrect: false },
           { text: 'Could you please tell me how to get to the library?', isCorrect: true },
-          { text: 'Give me map immediately!', isCorrect: false },
+          { text: 'Give me a map immediately!', isCorrect: false },
         ],
       },
       {
@@ -223,7 +223,7 @@ Presenter 2: In today's episode, we share helpful phrases and tips for learning 
     level: 'easy',
     mediaUrl: '/content/videos/prepositions-game.mp4',
     posterUrl: '/content/videos/posters/prepositions-game.jpg',
-    audioScript: `Watch the colored cups game to master: in, on, under, behind, next to, between, near, in front of.`,
+    audioScript: `Watch the colored cups game to master prepositions of place: in, on, under, behind, next to, between, near, in front of.`,
     questions: [
       {
         id: 'prep-1',

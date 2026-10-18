@@ -89,7 +89,7 @@ export default function WritingIndexPage() {
           className="animate-page-enter mx-auto mt-8 sm:mt-12 grid max-w-6xl grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3"
           style={{ animationDelay: '100ms' }}
         >
-          {filtered.map((item, index) => (
+          {filtered.map((item) => (
             <Link
               key={item.slug}
               to={`/writing/${item.slug}`}
@@ -118,7 +118,7 @@ export default function WritingIndexPage() {
               <div className="relative z-10">
                 <div className="mb-3 flex items-center justify-between">
                   <span className="rounded-lg bg-emerald-100/80 px-2 py-0.5 text-xs font-black text-emerald-800">
-                    تدريب #{index + 1}
+                    تدريب #{writingPrompts.findIndex((p) => p.slug === item.slug) + 1}
                   </span>
                   <div className="flex items-center gap-1.5">
                     <span

@@ -36,11 +36,20 @@ function formatTimeAgo(dateString: string): string {
     const diffSec = Math.floor((Date.now() - date.getTime()) / 1000);
     if (diffSec < 60) return 'الآن';
     const diffMin = Math.floor(diffSec / 60);
-    if (diffMin < 60) return `منذ ${diffMin} دقيقة`;
+    if (diffMin < 60) {
+      if (diffMin === 1) return 'منذ دقيقة';
+      if (diffMin === 2) return 'منذ دقيقتين';
+      return `منذ ${diffMin} دقيقة`;
+    }
     const diffHour = Math.floor(diffMin / 60);
-    if (diffHour < 24) return `منذ ${diffHour} ساعة`;
+    if (diffHour < 24) {
+      if (diffHour === 1) return 'منذ ساعة';
+      if (diffHour === 2) return 'منذ ساعتين';
+      return `منذ ${diffHour} ساعة`;
+    }
     const diffDay = Math.floor(diffHour / 24);
     if (diffDay === 1) return 'أمس';
+    if (diffDay === 2) return 'منذ يومين';
     if (diffDay < 7) return `منذ ${diffDay} أيام`;
     return date.toLocaleDateString('ar-SA');
   } catch {
@@ -175,7 +184,7 @@ export default function GuestbookPage() {
             سجل الزوار والتعليقات <span className="text-rose-600" dir="ltr">Guestbook</span>
           </h1>
           <p className="mt-2.5 text-xs sm:text-sm font-semibold text-slate-600 leading-relaxed">
-            مساحة تواصل لطلاب وطالبات وأولياء أمور ومعلمي مدرسة متوسطة وثانوية الجرادية وكافة الزوار لمشاركة كلمات الدعم والتقدير لمبادرة المعلمة {TEACHER_OFFICIAL_NAME}
+            مساحة تواصل لطلاب وطالبات وأولياء أمور ومعلمي مدرسة متوسطة وثانوية الجرادية وكافة الزوار لمشاركة كلمات الدعم والتقدير لمبادرة {TEACHER_OFFICIAL_NAME}
           </p>
         </section>
 
@@ -305,7 +314,7 @@ export default function GuestbookPage() {
           ) : entries.length === 0 ? (
             <div className="rounded-2xl border border-slate-200 bg-white/80 p-8 text-center">
               <p className="text-xs sm:text-sm font-semibold text-slate-500">
-                لا توجد تعليقات حتى الآن، كوني أول من يشارك كلمته التشجيعية! ✨
+                لا توجد تعليقات حتى الآن — بادر بمشاركة كلمتك التشجيعية الأولى! ✨
               </p>
             </div>
           ) : (

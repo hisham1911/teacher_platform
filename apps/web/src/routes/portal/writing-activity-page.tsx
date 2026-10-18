@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   Sparkles,
   ArrowLeft,
+  XCircle,
 } from 'lucide-react';
 import { PublicBackdrop } from '../../components/layout/root-layout';
 import { PortalNav, PortalFooter } from '../../components/portal/portal-nav';
@@ -58,26 +59,32 @@ export default function WritingActivityPage() {
 
   const [studentText, setStudentText] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [answerWords, setAnswerWords] = useState<string[]>([]);
+  const [availableWords, setAvailableWords] = useState<string[]>(
+    () => prompt?.scrambledWords ?? []
+  );
 
   const { isPlaying: isPlayingAudio, toggle: speakModelAnswer } = useSpeechPlayer(prompt?.modelAnswer);
 
   if (!prompt) return <Navigate to="/writing" replace />;
 
   const nextPrompt = writingPrompts[promptIndex + 1];
+  const isWordBuilder = prompt.category === 'sentence' && Boolean(prompt.scrambledWords?.length);
+  const studentAnswer = isWordBuilder ? answerWords.join(' ') : studentText.trim();
 
   // Automated check if exact match
-  const normalizedStudent = studentText.trim().toLowerCase().replace(/[.,!?;:]/g, '');
+  const normalizedStudent = studentAnswer.trim().toLowerCase().replace(/[.,!?;:]/g, '');
   const isExactMatch = prompt.acceptableAnswers
     ? prompt.acceptableAnswers.some(
         (ans) => ans.trim().toLowerCase().replace(/[.,!?;:]/g, '') === normalizedStudent,
       )
     : false;
 
-  const wordCount = studentText.trim() ? studentText.trim().split(/\s+/).length : 0;
+  const wordCount = studentAnswer ? studentAnswer.split(/\s+/).length : 0;
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!studentText.trim()) return;
+    if (!studentAnswer) return;
     setSubmitted(true);
     playTone(isExactMatch ? 'correct' : 'submitted');
   }
@@ -85,12 +92,30 @@ export default function WritingActivityPage() {
   function handleReset() {
     setStudentText('');
     setSubmitted(false);
+    setAnswerWords([]);
+    setAvailableWords(prompt?.scrambledWords ?? []);
   }
 
-  function handleWordClick(word: string) {
+  function handleAvailableWordClick(index: number) {
     if (submitted) return;
-    const cleanWord = word.trim();
-    setStudentText((prev) => (prev ? `${prev} ${cleanWord}` : cleanWord));
+    const word = availableWords[index];
+    if (word === undefined) return;
+    setAvailableWords((prev) => prev.filter((_, i) => i !== index));
+    setAnswerWords((prev) => [...prev, word]);
+  }
+
+  function handleAnswerWordClick(index: number) {
+    if (submitted) return;
+    const word = answerWords[index];
+    if (word === undefined) return;
+    setAnswerWords((prev) => prev.filter((_, i) => i !== index));
+    setAvailableWords((prev) => [...prev, word]);
+  }
+
+  function handleClearAnswer() {
+    setStudentText('');
+    setAnswerWords([]);
+    setAvailableWords(prompt?.scrambledWords ?? []);
   }
 
   return (
@@ -150,23 +175,56 @@ export default function WritingActivityPage() {
               </p>
             </div>
 
-            {/* Scrambled word pills */}
+            {/* Sentence word builder: answer area + available words */}
             {prompt.scrambledWords && !submitted && (
-              <div className="mt-4">
-                <p className="text-xs font-bold text-slate-500 mb-2">
-                  اضغط على الكلمات لإضافتها بالترتيب الصحيح:
-                </p>
-                <div className="flex flex-wrap gap-2" dir="ltr">
-                  {prompt.scrambledWords.map((word, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => handleWordClick(word)}
-                      className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs sm:text-sm font-bold text-slate-800 shadow-xs hover:border-emerald-300 hover:bg-emerald-50 transition active:scale-95"
-                    >
-                      {word}
-                    </button>
-                  ))}
+              <div className="mt-4 space-y-3">
+                <div>
+                  <p className="text-xs font-bold text-slate-500 mb-2">
+                    منطقة الإجابة — اضغط على أي كلمة لإزالتها وإعادتها للقائمة:
+                  </p>
+                  <div
+                    className={`flex min-h-14 flex-wrap items-center gap-2 rounded-2xl border-2 border-dashed p-3 transition ${
+                      answerWords.length > 0
+                        ? 'border-emerald-300 bg-emerald-50/50'
+                        : 'border-slate-200 bg-slate-50/60'
+                    }`}
+                    dir="ltr"
+                  >
+                    {answerWords.length === 0 ? (
+                      <span className="text-xs font-bold text-slate-400" dir="rtl">
+                        اضغط على الكلمات من القائمة أدناه لبناء الجملة هنا...
+                      </span>
+                    ) : (
+                      answerWords.map((word, idx) => (
+                        <button
+                          key={`${word}-${idx}`}
+                          type="button"
+                          onClick={() => handleAnswerWordClick(idx)}
+                          className="rounded-xl border border-emerald-300 bg-white px-3 py-2 text-xs sm:text-sm font-black text-emerald-900 shadow-xs hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 transition active:scale-95"
+                          title="إزالة هذه الكلمة"
+                        >
+                          {word}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-slate-500 mb-2">
+                    الكلمات المتاحة — اضغط على الكلمة لإضافتها بالترتيب الصحيح:
+                  </p>
+                  <div className="flex flex-wrap gap-2" dir="ltr">
+                    {availableWords.map((word, idx) => (
+                      <button
+                        key={`${word}-${idx}`}
+                        type="button"
+                        onClick={() => handleAvailableWordClick(idx)}
+                        className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs sm:text-sm font-bold text-slate-800 shadow-xs hover:border-emerald-300 hover:bg-emerald-50 transition active:scale-95"
+                      >
+                        {word}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
@@ -204,7 +262,16 @@ export default function WritingActivityPage() {
                 </span>
               </div>
 
-              {prompt.category === 'paragraph' ? (
+              {isWordBuilder ? (
+                <div
+                  className="rounded-2xl border-2 border-slate-200 bg-slate-50/60 px-4 py-3.5 text-base font-bold text-slate-900 min-h-13"
+                  dir="ltr"
+                >
+                  {studentAnswer || (
+                    <span className="font-medium text-slate-400">Build your sentence above...</span>
+                  )}
+                </div>
+              ) : prompt.category === 'paragraph' ? (
                 <textarea
                   id={inputId}
                   rows={5}
@@ -232,16 +299,16 @@ export default function WritingActivityPage() {
                 <div className="mt-4 flex flex-wrap gap-2.5">
                   <button
                     type="submit"
-                    disabled={!studentText.trim()}
+                    disabled={!studentAnswer}
                     className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-emerald-700 px-7 text-xs sm:text-sm font-black text-white shadow-md shadow-emerald-700/20 hover:bg-emerald-800 transition-all disabled:opacity-50 active:scale-95"
                   >
                     <Send className="h-4 w-4" />
                     <span>تحقق من الإجابة وعرض النموذج</span>
                   </button>
-                  {studentText && (
+                  {(isWordBuilder ? answerWords.length > 0 : studentText) && (
                     <button
                       type="button"
-                      onClick={() => setStudentText('')}
+                      onClick={handleClearAnswer}
                       className="rounded-2xl border border-slate-200 bg-white px-4 text-xs font-bold text-slate-600 hover:bg-slate-50"
                     >
                       مسح
@@ -276,6 +343,21 @@ export default function WritingActivityPage() {
                 </h3>
                 <p className="mt-1 text-xs sm:text-sm font-semibold text-emerald-800">
                   كتبت الجملة بدقة نحوية وإملائية كاملة متوافقة مع الإجابة النموذجية.
+                </p>
+              </div>
+            )}
+
+            {/* Clear red guidance when the answer does not match the model */}
+            {prompt.acceptableAnswers && !isExactMatch && (
+              <div className="rounded-2xl sm:rounded-3xl border border-rose-200 bg-rose-50/90 p-5 sm:p-6 text-center shadow-xs">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-600 text-white shadow-xs mb-2">
+                  <XCircle className="h-6 w-6" />
+                </div>
+                <h3 className="text-base sm:text-lg font-black text-rose-950">
+                  إجابة غير صحيحة، راجع ترتيب الكلمات أو علامات الترقيم وحاول مجدداً
+                </h3>
+                <p className="mt-1 text-xs sm:text-sm font-semibold text-rose-800">
+                  قارن إجابتك مع نموذج الإجابة أدناه ثم اضغط «إعادة المحاولة والتعديل».
                 </p>
               </div>
             )}
@@ -330,7 +412,7 @@ export default function WritingActivityPage() {
                 <p className="text-[10px] font-black uppercase tracking-wider text-amber-800 mb-1">
                   Your Answer:
                 </p>
-                <p className="text-sm sm:text-base font-semibold text-slate-800">{studentText}</p>
+                <p className="text-sm sm:text-base font-semibold text-slate-800">{studentAnswer}</p>
               </div>
 
               {/* Teacher Explanation */}

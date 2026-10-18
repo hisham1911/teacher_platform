@@ -34,6 +34,8 @@ import {
   NATIONAL_JOURNEY_STAGES,
   FINAL_CHAPTER_PROMPTS,
   IMMORTAL_PLEDGE_STATEMENT,
+  encodeVoiceMessage,
+  parseVoiceMessage,
   type NationalJourneyStage,
 } from '../../data/content/national-journey-data';
 import {
@@ -65,97 +67,6 @@ const GRADE_OPTIONS = [
 ];
 
 const LOCAL_VOICES_STORAGE_KEY = 'spark_national_pride_voices_v1';
-
-interface ParsedVoicePayload {
-  dream: string;
-  promise: string;
-  pride: string;
-  rawMessage: string;
-}
-
-function encodeVoiceMessage(dream: string, promise: string, pride: string): string {
-  return [
-    `🌟 My Dream for Saudi Arabia: ${dream.trim()}`,
-    `🤝 My Promise in Action: ${promise.trim()}`,
-    `🇸🇦 A Message of Pride: ${pride.trim()}`,
-  ].join('\n');
-}
-
-function parseVoiceMessage(message: string): ParsedVoicePayload {
-  const lines = message
-    .split('\n')
-    .map((l) => l.trim())
-    .filter(Boolean);
-  let dream = '';
-  let promise = '';
-  let pride = '';
-
-  for (const line of lines) {
-    if (line.includes('My Dream for Saudi Arabia:')) {
-      dream = line.split('My Dream for Saudi Arabia:')[1]?.trim() ?? '';
-    } else if (line.includes('My Promise in Action:')) {
-      promise = line.split('My Promise in Action:')[1]?.trim() ?? '';
-    } else if (line.includes('A Message of Pride:')) {
-      pride = line.split('A Message of Pride:')[1]?.trim() ?? '';
-    }
-  }
-
-  return {
-    dream,
-    promise,
-    pride,
-    rawMessage: message,
-  };
-}
-
-function playNationalSound(type: 'start' | 'correct' | 'retry' | 'badge' | 'coronation') {
-  try {
-    const AudioCtx =
-      window.AudioContext ||
-      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-    if (!AudioCtx) return;
-    const ctx = new AudioCtx();
-
-    const playNote = (freq: number, startOffset: number, duration: number, gainVal = 0.12) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'triangle';
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.frequency.setValueAtTime(freq, ctx.currentTime + startOffset);
-      gain.gain.setValueAtTime(gainVal, ctx.currentTime + startOffset);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + startOffset + duration);
-      osc.start(ctx.currentTime + startOffset);
-      osc.stop(ctx.currentTime + startOffset + duration);
-    };
-
-    if (type === 'correct') {
-      playNote(523.25, 0, 0.22, 0.12);
-      playNote(659.25, 0.12, 0.3, 0.14);
-    } else if (type === 'retry') {
-      playNote(329.63, 0, 0.2, 0.08);
-      playNote(293.66, 0.15, 0.25, 0.08);
-    } else if (type === 'badge') {
-      [523.25, 659.25, 783.99, 1046.5].forEach((f, idx) => {
-        playNote(f, idx * 0.1, 0.35, 0.14);
-      });
-    } else if (type === 'start' || type === 'coronation') {
-      const melody = [
-        { f: 392.0, t: 0, d: 0.35 },
-        { f: 440.0, t: 0.22, d: 0.35 },
-        { f: 523.25, t: 0.44, d: 0.4 },
-        { f: 587.33, t: 0.7, d: 0.45 },
-        { f: 659.25, t: 1.0, d: 0.55 },
-        { f: 783.99, t: 1.35, d: 0.8 },
-      ];
-      melody.forEach((n) => {
-        playNote(n.f, n.t, n.d, 0.14);
-      });
-    }
-  } catch {
-    // Ignore if AudioContext is blocked
-  }
-}
 
 function StageBadgeIcon({
   icon,
@@ -222,7 +133,7 @@ export default function NationalJourneyPage() {
   const [studentGrade, setStudentGrade] = useState<string>(
     GRADE_OPTIONS[0] ?? 'الصف الأول المتوسط',
   );
-  const [verificationCode] = useState(
+  const [verificationCode, setVerificationCode] = useState(
     () => 'SPARK-KSA-' + Math.random().toString(36).substring(2, 8).toUpperCase(),
   );
 
@@ -311,9 +222,6 @@ export default function NationalJourneyPage() {
   }, []);
 
   function startNationalAudio() {
-    if (!audioMuted) {
-      playNationalSound('start');
-    }
     try {
       if (!audioRef.current && typeof Audio !== 'undefined') {
         const audio = new Audio(NATIONAL_INITIATIVE_META.audioTrackUrl);
@@ -335,9 +243,6 @@ export default function NationalJourneyPage() {
   function toggleAudioMute() {
     const nextMuted = !audioMuted;
     setAudioMuted(nextMuted);
-    if (!nextMuted) {
-      playNationalSound('correct');
-    }
     if (audioRef.current) {
       if (nextMuted) {
         try {
@@ -356,6 +261,8 @@ export default function NationalJourneyPage() {
           // ignore
         }
       }
+    } else if (!nextMuted) {
+      startNationalAudio();
     }
   }
 
@@ -377,10 +284,8 @@ export default function NationalJourneyPage() {
     if (isCorrect) {
       setAnsweredCorrectly(true);
       setRetryNotice(false);
-      if (!audioMuted) playNationalSound('correct');
     } else {
       setRetryNotice(true);
-      if (!audioMuted) playNationalSound('retry');
     }
   }
 
@@ -396,7 +301,6 @@ export default function NationalJourneyPage() {
       if (!earnedBadges.includes(currentStage.id)) {
         setEarnedBadges((prev) => [...prev, currentStage.id]);
       }
-      if (!audioMuted) playNationalSound('badge');
       setPhase('stage-celebration');
     }
   }
@@ -474,7 +378,24 @@ export default function NationalJourneyPage() {
         verificationCode,
       });
 
-      if (!audioMuted) playNationalSound('coronation');
+      if (!audioMuted) {
+        try {
+          if (!audioRef.current && typeof Audio !== 'undefined') {
+            const audio = new Audio(NATIONAL_INITIATIVE_META.audioTrackUrl);
+            audio.loop = true;
+            audio.volume = 0.25;
+            audioRef.current = audio;
+          }
+          if (audioRef.current) {
+            void audioRef.current
+              .play()
+              .then(() => setAudioPlaying(true))
+              .catch(() => setAudioPlaying(false));
+          }
+        } catch {
+          // ignore
+        }
+      }
       setPhase('coronation');
     } finally {
       setSubmittingPledge(false);
@@ -528,6 +449,9 @@ export default function NationalJourneyPage() {
     setSelectedOptionId(null);
     setAnsweredCorrectly(false);
     setRetryNotice(false);
+    setVerificationCode(
+      'SPARK-KSA-' + Math.random().toString(36).substring(2, 8).toUpperCase(),
+    );
   }
 
   const totalProgressPercent = useMemo(() => {
@@ -675,7 +599,7 @@ export default function NationalJourneyPage() {
                     {entry.teacherReply && (
                       <div className="mt-3 rounded-xl border border-emerald-300 bg-emerald-50 p-3">
                         <span className="block text-[11px] font-black text-emerald-900">
-                          ✨ إشادة المعلمة ({TEACHER_OFFICIAL_NAME}):
+                          ✨ إشادة ({TEACHER_OFFICIAL_NAME}):
                         </span>
                         <p className="mt-1 text-xs font-bold text-slate-800">
                           {entry.teacherReply}
@@ -1366,13 +1290,13 @@ export default function NationalJourneyPage() {
               <div className="relative z-10 flex flex-wrap items-start justify-between border-b border-emerald-200/80 pb-4 mb-5 gap-3 text-right">
                 <div>
                   <span className="block text-[10px] sm:text-[11px] font-black tracking-wider text-emerald-950">
-                    المملكة العربية السعودية · وزارة التعليم
+                    مبادرة تعليمية إثرائية · منصة English Spark
                   </span>
                   <span className="block text-[10px] font-bold text-slate-600">
                     {NATIONAL_INITIATIVE_META.initiativeTitleAr}
                   </span>
                   <span className="block text-[10px] font-black text-emerald-700">
-                    منصة English Spark التعليمية
+                    مدرسة متوسطة وثانوية الجرادية
                   </span>
                 </div>
 
@@ -1474,7 +1398,7 @@ export default function NationalJourneyPage() {
               <div className="relative z-10 mt-6 pt-5 border-t border-emerald-200/80 grid grid-cols-1 sm:grid-cols-3 items-center gap-4">
                 <div className="text-center sm:text-right">
                   <span className="block text-[10px] font-bold text-slate-400 uppercase">
-                    إشراف معلمة اللغة الإنجليزية
+                    إشراف
                   </span>
                   <span className="block text-xs sm:text-sm font-black text-emerald-950 mt-1">
                     {TEACHER_OFFICIAL_NAME}
@@ -1497,7 +1421,7 @@ export default function NationalJourneyPage() {
                     Issued Date & Verification
                   </span>
                   <span className="block text-xs font-black text-emerald-950 mt-1">
-                    {new Date().toLocaleDateString('ar-SA')}
+                    {new Date().toLocaleDateString('en-GB')}
                   </span>
                   <span className="block text-[10px] font-mono font-bold text-slate-500 mt-1">
                     {verificationCode}

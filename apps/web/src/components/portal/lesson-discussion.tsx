@@ -42,11 +42,20 @@ function formatTimeAgo(dateString: string): string {
     const diffSec = Math.floor((Date.now() - date.getTime()) / 1000);
     if (diffSec < 60) return 'الآن';
     const diffMin = Math.floor(diffSec / 60);
-    if (diffMin < 60) return `منذ ${diffMin} دقيقة`;
+    if (diffMin < 60) {
+      if (diffMin === 1) return 'منذ دقيقة';
+      if (diffMin === 2) return 'منذ دقيقتين';
+      return `منذ ${diffMin} دقيقة`;
+    }
     const diffHour = Math.floor(diffMin / 60);
-    if (diffHour < 24) return `منذ ${diffHour} ساعة`;
+    if (diffHour < 24) {
+      if (diffHour === 1) return 'منذ ساعة';
+      if (diffHour === 2) return 'منذ ساعتين';
+      return `منذ ${diffHour} ساعة`;
+    }
     const diffDay = Math.floor(diffHour / 24);
     if (diffDay === 1) return 'أمس';
+    if (diffDay === 2) return 'منذ يومين';
     if (diffDay < 7) return `منذ ${diffDay} أيام`;
     return date.toLocaleDateString('ar-SA');
   } catch {
@@ -344,7 +353,7 @@ export function LessonDiscussion({ topicSlug, topicTitle }: LessonDiscussionProp
             استفسارات وأسئلة الدرس ({entries.length})
           </h3>
           <span className="text-xs text-slate-400">
-            محدث مباشرة
+            سجل المشاركات التفاعلي
           </span>
         </div>
 
@@ -357,7 +366,7 @@ export function LessonDiscussion({ topicSlug, topicTitle }: LessonDiscussionProp
           <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 py-10 text-center">
             <MessageCircleQuestion className="h-10 w-10 text-slate-300 mb-2" />
             <p className="text-sm font-bold text-slate-600">لا توجد استفسارات بعد حول هذه القاعدة</p>
-            <p className="text-xs text-slate-400 mt-1">كن أول من يطرح سؤالاً على المعلمة {TEACHER_OFFICIAL_NAME}!</p>
+            <p className="text-xs text-slate-400 mt-1">كن أول من يطرح سؤالاً بإشراف {TEACHER_OFFICIAL_NAME}!</p>
           </div>
         ) : (
           <div className="space-y-3">
