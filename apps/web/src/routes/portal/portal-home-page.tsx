@@ -175,13 +175,81 @@ export default function PortalHomePage() {
               (section.count ? `${section.count} درس` : 'ابدأ الآن');
             const isGuestbook = section.id === 'guestbook';
 
+            if (isGuestbook) {
+              return (
+                <Link
+                  key={section.id}
+                  to={section.path}
+                  className={`group relative flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-5 overflow-hidden rounded-2xl sm:rounded-3xl border ${theme.border} ${theme.surface} p-5 sm:p-7 shadow-xs backdrop-blur-xl ring-1 ring-slate-900/5 transition-all duration-300 hover:-translate-y-1.5 ${theme.shadow} ${theme.ring} active:translate-y-0 sm:col-span-2 lg:col-span-3`}
+                >
+                  {/* Luminous Specular Top Highlight */}
+                  <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/90 to-transparent"
+                  />
+
+                  {/* Ambient Interior Corner Glow */}
+                  <div
+                    aria-hidden="true"
+                    className={`pointer-events-none absolute -top-10 -left-10 h-36 w-36 rounded-full bg-gradient-to-br ${theme.glow} blur-2xl opacity-75 transition-opacity duration-300 group-hover:opacity-100`}
+                  />
+
+                  {/* Subtle Decorative Background Watermark Icon */}
+                  <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute -bottom-4 -left-4 text-slate-900/[0.035] transition-all duration-500 scale-100 group-hover:scale-110 group-hover:opacity-100"
+                  >
+                    <SectionIcon id={section.id} className="h-28 w-28 sm:h-32 sm:w-32" />
+                  </div>
+
+                  {/* Main Content Area: Icon + Details */}
+                  <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-5 flex-1 min-w-0">
+                    <div
+                      className={`flex h-13 w-13 sm:h-16 sm:w-16 shrink-0 items-center justify-center rounded-2xl sm:rounded-3xl bg-gradient-to-br ${theme.gradient} text-white shadow-md shadow-rose-900/10 transition-transform duration-300 group-hover:scale-105`}
+                    >
+                      <SectionIcon id={section.id} className="h-6 w-6 sm:h-8 sm:w-8" />
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      {/* Unified Badges Row */}
+                      <div className="mb-2 flex flex-wrap items-center gap-2">
+                        <span
+                          className="rounded-full border border-rose-200/80 bg-white/90 backdrop-blur-xs px-2.5 py-0.5 text-[11px] font-bold text-rose-800 shadow-2xs"
+                          dir="ltr"
+                        >
+                          {section.titleEn}
+                        </span>
+                        <span
+                          className={`inline-flex items-center gap-1.5 rounded-full ${theme.bgSoft} border border-rose-100 px-3 py-0.5 text-xs font-bold ${theme.text} shadow-2xs whitespace-nowrap`}
+                        >
+                          <span className={`h-1.5 w-1.5 rounded-full ${theme.dot} animate-pulse`} />
+                          {badgeLabel}
+                        </span>
+                      </div>
+
+                      <h2 className="text-lg sm:text-xl font-black text-slate-950 transition-colors group-hover:text-rose-950">
+                        {section.titleAr}
+                      </h2>
+                      <p className="mt-1 text-xs sm:text-sm font-semibold leading-6 sm:leading-7 text-slate-600">
+                        {section.description}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* CTA Action on Left */}
+                  <div className="relative z-10 w-full sm:w-auto flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-rose-500 to-fuchsia-600 px-5 sm:px-6 py-3 sm:py-3.5 text-xs sm:text-sm font-black text-white shadow-md shadow-rose-600/20 transition group-hover:brightness-110">
+                    <span>شارك بكلمتك في سجل الزوار</span>
+                    <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
+                  </div>
+                </Link>
+              );
+            }
+
             return (
               <Link
                 key={section.id}
                 to={section.path}
-                className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl sm:rounded-3xl border ${theme.border} ${theme.surface} p-5 sm:p-6 shadow-xs backdrop-blur-xl ring-1 ring-slate-900/5 transition-all duration-300 hover:-translate-y-1.5 ${theme.shadow} ${theme.ring} active:translate-y-0 ${
-                  isGuestbook ? 'sm:col-span-2 lg:col-span-3 sm:flex-row sm:items-center sm:gap-8' : ''
-                }`}
+                className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl sm:rounded-3xl border ${theme.border} ${theme.surface} p-5 sm:p-6 shadow-xs backdrop-blur-xl ring-1 ring-slate-900/5 transition-all duration-300 hover:-translate-y-1.5 ${theme.shadow} ${theme.ring} active:translate-y-0`}
               >
                 {/* Luminous Specular Top Highlight */}
                 <div
@@ -203,7 +271,7 @@ export default function PortalHomePage() {
                   <SectionIcon id={section.id} className="h-24 w-24 sm:h-28 sm:w-28" />
                 </div>
 
-                <div className={`relative z-10 ${isGuestbook ? 'sm:flex-1' : ''}`}>
+                <div className="relative z-10">
                   <div className="mb-4 flex items-center justify-between">
                     <div
                       className={`flex h-12 w-12 sm:h-13 sm:w-13 items-center justify-center rounded-2xl bg-gradient-to-br ${theme.gradient} text-white shadow-md shadow-slate-900/10 transition-transform duration-300 group-hover:scale-105`}
@@ -226,13 +294,7 @@ export default function PortalHomePage() {
                   </p>
                 </div>
 
-                <div
-                  className={`relative z-10 mt-5 flex items-center justify-between border-t border-slate-200/60 pt-3.5 ${
-                    isGuestbook
-                      ? 'sm:mt-0 sm:border-t-0 sm:pt-0 sm:flex-col sm:items-end sm:justify-center sm:gap-3.5 sm:shrink-0'
-                      : ''
-                  }`}
-                >
+                <div className="relative z-10 mt-5 flex items-center justify-between border-t border-slate-200/60 pt-3.5">
                   <span
                     className={`inline-flex items-center gap-1.5 rounded-full ${theme.bgSoft} px-3 py-1 text-xs font-bold ${theme.text} shadow-2xs whitespace-nowrap`}
                   >
