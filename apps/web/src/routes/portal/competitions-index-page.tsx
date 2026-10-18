@@ -12,6 +12,7 @@ import {
 import { PortalNav, PortalFooter } from '../../components/portal/portal-nav';
 import { PublicBackdrop } from '../../components/layout/root-layout';
 import { portalCompetitions } from '../../data/content/competitions';
+import { ChampionsLeaderboard } from '../../components/portal/champions-leaderboard';
 
 function CompetitionIcon({ id, className = 'h-7 w-7' }: { id: string; className?: string }) {
   if (id === 'million') return <Award className={className} />;
@@ -195,6 +196,16 @@ export default function CompetitionsIndexPage() {
               );
             })}
           </div>
+        </section>
+
+        {/* Champions Leaderboard Section */}
+        <section className="mx-auto max-w-5xl px-4 pb-20">
+          <ChampionsLeaderboard
+            category="all"
+            showTabs={true}
+            title="لوحة شرف المتصدرين (Live Champions Leaderboard)"
+            subtitle="أفضل 10 أبطال في تحديات اللغة الإنجليزية — تُعرض أعلى نتيجة محققة لكل متسابق لمنع التكرار"
+          />
         </section>
       </main>
 

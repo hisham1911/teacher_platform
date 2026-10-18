@@ -774,8 +774,9 @@ export default function TeacherAdminPage() {
     const passedCount = results.filter((r) => clampPercent(r.percentage) >= 60).length;
     const needsSupportCount = results.filter((r) => clampPercent(r.percentage) < 60).length;
     const highestScore = Math.max(...results.map((r) => clampPercent(r.percentage)));
+    const totalAttempts = results.reduce((acc, r) => acc + (r.attemptsCount || 1), 0);
     return {
-      totalAttempts: results.length,
+      totalAttempts,
       avgPercentage,
       passedCount,
       needsSupportCount,
@@ -1409,7 +1410,16 @@ export default function TeacherAdminPage() {
                       const status = getResultStatus(clampPercent(r.percentage));
                       return (
                         <tr key={r.id} className="hover:bg-slate-50">
-                          <td className="p-3 font-black text-slate-900">{r.studentName}</td>
+                          <td className="p-3 font-black text-slate-900">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span>{r.studentName}</span>
+                              {r.attemptsCount && r.attemptsCount > 1 ? (
+                                <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-black text-violet-700">
+                                  {r.attemptsCount} محاولات
+                                </span>
+                              ) : null}
+                            </div>
+                          </td>
                           <td className="p-3 font-semibold text-slate-700">{r.studentGrade || '—'}</td>
                           <td className="p-3 font-bold text-indigo-900">{r.activityTitle}</td>
                           <td className="p-3 font-mono font-bold" dir="ltr">

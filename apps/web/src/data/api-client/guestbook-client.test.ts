@@ -7,6 +7,8 @@ import {
   logoutTeacher,
   getTeacherSession,
   studentResultsClient,
+  normalizeStudentKey,
+  deduplicateStudentResults,
   customLessonsClient,
   getMergedGrammarTopics,
   uploadMediaToSupabase,
@@ -222,6 +224,61 @@ describe('Guestbook Client & Validation', () => {
       const all = await studentResultsClient.getAllResults();
       expect(all.some((r) => r.id === recorded.id)).toBe(false);
       logoutTeacher();
+    });
+
+    it('normalizes student keys accurately', () => {
+      const key1 = normalizeStudentKey('  سارة أحمد  ', 'million');
+      const key2 = normalizeStudentKey('ساره احمد', 'MILLION');
+      expect(key1).toBe('million::ساره احمد');
+      expect(key1).toBe(key2);
+    });
+
+    it('deduplicates multiple attempts retaining highest score and counting attempts', async () => {
+      // First attempt: score 5
+      await studentResultsClient.recordResult({
+        studentName: 'ريما فهد',
+        category: 'speed',
+        activityTitle: 'تحدي السرعة',
+        score: 5,
+        totalQuestions: 10,
+      });
+
+      // Second attempt: score 9 (higher score)
+      await studentResultsClient.recordResult({
+        studentName: 'ريما فهد',
+        category: 'speed',
+        activityTitle: 'تحدي السرعة',
+        score: 9,
+        totalQuestions: 10,
+      });
+
+      // Third attempt: score 3 (lower score)
+      await studentResultsClient.recordResult({
+        studentName: 'ريما فهد',
+        category: 'speed',
+        activityTitle: 'تحدي السرعة',
+        score: 3,
+        totalQuestions: 10,
+      });
+
+      const all = await studentResultsClient.getAllResults({ deduplicate: true });
+      const rimaEntries = all.filter((r) => r.studentName === 'ريما فهد' && r.category === 'speed');
+
+      expect(rimaEntries.length).toBe(1);
+      expect(rimaEntries[0]!.score).toBe(9);
+      expect(rimaEntries[0]!.attemptsCount).toBe(3);
+
+      // Verify deduplicateStudentResults directly
+      const rawDedup = deduplicateStudentResults(all);
+      expect(rawDedup.length).toBe(all.length);
+    });
+
+    it('returns leaderboard sorted descending by score', async () => {
+      const leaderboard = await studentResultsClient.getLeaderboardByCategory('speed');
+      expect(leaderboard.length).toBeGreaterThan(0);
+      for (let i = 0; i < leaderboard.length - 1; i++) {
+        expect(leaderboard[i]!.score).toBeGreaterThanOrEqual(leaderboard[i + 1]!.score);
+      }
     });
   });
 

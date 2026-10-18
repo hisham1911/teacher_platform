@@ -28,6 +28,18 @@ export interface TeacherSession {
   name: string;
   loggedInAt: string;
 }
+ 
+export const GRADE_OPTIONS = [
+  'الصف الأول متوسط',
+  'الصف الثاني متوسط',
+  'الصف الثالث متوسط',
+  'المرحلة الثانوية — أول ثانوي',
+  'المرحلة الثانوية — ثاني ثانوي',
+  'المرحلة الثانوية — ثالث ثانوي',
+  'ولي أمر',
+  'معلم / مهتم باللغة',
+  'زائر كريم',
+];
 
 export interface StudentQuizResultRecord {
   id: string;
@@ -41,6 +53,7 @@ export interface StudentQuizResultRecord {
   cefrLevel?: string;
   verificationCode?: string;
   createdAt: string;
+  attemptsCount?: number;
 }
 
 export interface CustomLessonRecord {
@@ -804,6 +817,84 @@ const DEFAULT_STUDENT_RESULTS: StudentQuizResultRecord[] = [
     verificationCode: 'SPARK-GR-44B2',
     createdAt: new Date(Date.now() - 6 * 3600 * 1000).toISOString(),
   },
+  {
+    id: 'seed-res-3',
+    studentName: 'سارة علي حكمي',
+    studentGrade: 'الصف الثاني متوسط',
+    category: 'million',
+    activityTitle: 'تحدي المليون Spark',
+    score: 15,
+    totalQuestions: 15,
+    percentage: 100,
+    cefrLevel: 'B2 - Advanced',
+    verificationCode: 'SPARK-ML-1000',
+    createdAt: new Date(Date.now() - 8 * 3600 * 1000).toISOString(),
+  },
+  {
+    id: 'seed-res-4',
+    studentName: 'شهد أحمد محنشي',
+    studentGrade: 'الصف الثالث متوسط',
+    category: 'million',
+    activityTitle: 'تحدي المليون Spark',
+    score: 12,
+    totalQuestions: 15,
+    percentage: 80,
+    cefrLevel: 'B1 - Intermediate',
+    verificationCode: 'SPARK-ML-1250',
+    createdAt: new Date(Date.now() - 14 * 3600 * 1000).toISOString(),
+  },
+  {
+    id: 'seed-res-5',
+    studentName: 'ريم عبدالله صميلي',
+    studentGrade: 'المرحلة الثانوية — أول ثانوي',
+    category: 'million',
+    activityTitle: 'تحدي المليون Spark',
+    score: 10,
+    totalQuestions: 15,
+    percentage: 67,
+    cefrLevel: 'B1 - Intermediate',
+    verificationCode: 'SPARK-ML-3200',
+    createdAt: new Date(Date.now() - 20 * 3600 * 1000).toISOString(),
+  },
+  {
+    id: 'seed-res-6',
+    studentName: 'أثير حسن عريشي',
+    studentGrade: 'الصف الثاني متوسط',
+    category: 'speed',
+    activityTitle: 'تحدي السرعة Spark',
+    score: 22,
+    totalQuestions: 22,
+    percentage: 100,
+    cefrLevel: 'B2 - Advanced',
+    verificationCode: 'SPARK-SP-991',
+    createdAt: new Date(Date.now() - 4 * 3600 * 1000).toISOString(),
+  },
+  {
+    id: 'seed-res-7',
+    studentName: 'بيان خالد مشهور',
+    studentGrade: 'الصف الثالث متوسط',
+    category: 'speed',
+    activityTitle: 'تحدي السرعة Spark',
+    score: 19,
+    totalQuestions: 20,
+    percentage: 95,
+    cefrLevel: 'B2 - Advanced',
+    verificationCode: 'SPARK-SP-882',
+    createdAt: new Date(Date.now() - 10 * 3600 * 1000).toISOString(),
+  },
+  {
+    id: 'seed-res-8',
+    studentName: 'جود سلطان مدخلي',
+    studentGrade: 'الصف الأول متوسط',
+    category: 'speed',
+    activityTitle: 'تحدي السرعة Spark',
+    score: 16,
+    totalQuestions: 18,
+    percentage: 89,
+    cefrLevel: 'B1 - Intermediate',
+    verificationCode: 'SPARK-SP-773',
+    createdAt: new Date(Date.now() - 18 * 3600 * 1000).toISOString(),
+  },
 ];
 
 function getLocalResults(): StudentQuizResultRecord[] {
@@ -850,8 +941,59 @@ function resolveResultCategory(
   return 'grammar';
 }
 
+/**
+ * تطبيع اسم الطالب ونوع المسابقة لمنع التكرار (إزالة المسافات الزائدة، توحيد الهمزات والتاء)
+ */
+export function normalizeStudentKey(name: string, category: string): string {
+  const cleanName = (name || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[أإآ]/g, 'ا')
+    .replace(/ة/g, 'ه')
+    .replace(/ى/g, 'ي')
+    .replace(/\s+/g, ' ');
+  return `${(category || '').trim().toLowerCase()}::${cleanName}`;
+}
+
+/**
+ * دمج المحاولات المكررة لنفس الطالب في نفس المسابقة والاحتفاظ بأعلى درجة/نقاط
+ */
+export function deduplicateStudentResults(
+  results: StudentQuizResultRecord[]
+): StudentQuizResultRecord[] {
+  const groups = new Map<string, StudentQuizResultRecord[]>();
+
+  for (const r of results) {
+    const key = normalizeStudentKey(r.studentName, r.category);
+    const existing = groups.get(key) || [];
+    existing.push(r);
+    groups.set(key, existing);
+  }
+
+  const deduplicated: StudentQuizResultRecord[] = [];
+
+  for (const attempts of groups.values()) {
+    // الترتيب: أعلى درجة أولاً، ثم أعلى نسبة، ثم أحدث تاريخ
+    attempts.sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      if (b.percentage !== a.percentage) return b.percentage - a.percentage;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+
+    const best = attempts[0]!;
+    deduplicated.push({
+      ...best,
+      attemptsCount: attempts.length,
+    });
+  }
+
+  return deduplicated.sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+}
+
 export const studentResultsClient = {
-  async getAllResults(): Promise<StudentQuizResultRecord[]> {
+  async getAllResults(options?: { deduplicate?: boolean }): Promise<StudentQuizResultRecord[]> {
     const config = getSupabaseConfig();
     const cloudResults: StudentQuizResultRecord[] = [];
 
@@ -924,16 +1066,35 @@ export const studentResultsClient = {
         (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
 
+    const shouldDedupe = options?.deduplicate ?? true;
+    const finalResults = shouldDedupe ? deduplicateStudentResults(merged) : merged;
+
     if (merged.length > 0) {
       try {
         localStorage.setItem(RESULTS_STORAGE_KEY, JSON.stringify(merged));
       } catch {
         // ignore
       }
-      return merged;
+      return finalResults;
     }
 
-    return DEFAULT_STUDENT_RESULTS;
+    return shouldDedupe ? deduplicateStudentResults(DEFAULT_STUDENT_RESULTS) : DEFAULT_STUDENT_RESULTS;
+  },
+
+  async getLeaderboardByCategory(
+    category: 'million' | 'speed' | 'placement' | 'competition' | 'all'
+  ): Promise<StudentQuizResultRecord[]> {
+    const all = await this.getAllResults({ deduplicate: true });
+    const filtered =
+      category === 'all'
+        ? all.filter((r) => r.category === 'million' || r.category === 'speed' || r.category === 'competition')
+        : all.filter((r) => r.category === category);
+
+    return filtered.sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      if (b.percentage !== a.percentage) return b.percentage - a.percentage;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
   },
 
   async recordResult(input: {

@@ -20,7 +20,8 @@ import {
   getBackupQuestion,
 } from '../../data/content/challenge';
 import type { ChallengeQuestion } from '../../data/content/types';
-import { studentResultsClient } from '../../data/api-client/guestbook-client';
+import { GRADE_OPTIONS, studentResultsClient } from '../../data/api-client/guestbook-client';
+import { ChampionsLeaderboard } from '../../components/portal/champions-leaderboard';
 import { useStageScrollReset } from '../../lib/scroll-reset';
 
 type Stage = 'welcome' | 'playing' | 'result';
@@ -97,6 +98,7 @@ function playTone(type: 'correct' | 'wrong' | 'win' | 'lifeline') {
 export default function MillionChallengePage() {
   const [stage, setStage] = useState<Stage>('welcome');
   const [name, setName] = useState('');
+  const [grade, setGrade] = useState<string>(GRADE_OPTIONS[0] ?? 'الصف الأول متوسط');
   const [currentLevel, setCurrentLevel] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
   const [totalPoints, setTotalPoints] = useState(0);
@@ -191,7 +193,7 @@ export default function MillionChallengePage() {
       activityTitle: 'تحدي المليون Spark',
       score: currentLevel,
       totalQuestions: 15,
-      studentGrade: `${banked.toLocaleString()} ⭐ (انسحاب ذكي)`,
+      studentGrade: `${grade} • ${banked.toLocaleString()} ⭐ (انسحاب ذكي)`,
       cefrLevel: banked >= 32000 ? 'B1 - Intermediate' : 'A2 - Elementary',
     });
   }
@@ -233,7 +235,7 @@ export default function MillionChallengePage() {
             activityTitle: 'تحدي المليون Spark',
             score: 15,
             totalQuestions: 15,
-            studentGrade: '1,000,000 ⭐ (بطل المليون)',
+            studentGrade: `${grade} • 1,000,000 ⭐ (بطل المليون)`,
             cefrLevel: 'B2 - Advanced',
           });
         }
@@ -253,7 +255,7 @@ export default function MillionChallengePage() {
           activityTitle: 'تحدي المليون Spark',
           score: levelIndex,
           totalQuestions: 15,
-          studentGrade: `${guaranteed.toLocaleString()} ⭐ (المستوى ${levelIndex})`,
+          studentGrade: `${grade} • ${guaranteed.toLocaleString()} ⭐ (المستوى ${levelIndex})`,
           cefrLevel: guaranteed >= 32000 ? 'B1 - Intermediate' : 'A2 - Elementary',
         });
       }, 2600);
@@ -643,21 +645,51 @@ export default function MillionChallengePage() {
               <h1 className="mt-1.5 text-2xl font-black text-white sm:text-4xl">تحدي المليون Spark</h1>
             </div>
 
-            {/* Input & Start Button First on Mobile for Immediate Thumb Reach */}
-            <div>
-              <input
-                type="text"
-                placeholder="اكتب اسمك هنا للبدء..."
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full min-h-12 rounded-2xl bg-white/10 px-5 py-3 text-center text-base sm:text-lg font-bold text-white placeholder-white/40 outline-none ring-2 ring-white/10 transition-all focus:bg-white/15 focus:ring-[var(--challenge-accent)]"
-                maxLength={30}
-              />
+            {/* Input with Grade & Start Button */}
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-right">
+                <div>
+                  <label className="mb-1 block text-xs font-bold text-sky-200">
+                    اسم الطالب / الطالبة:
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="مثال: سارة أحمد الخالدي..."
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="w-full min-h-12 rounded-2xl bg-white/10 px-4 py-2.5 text-center sm:text-right text-base font-bold text-white placeholder-white/40 outline-none ring-2 ring-white/10 transition-all focus:bg-white/15 focus:ring-[var(--challenge-accent)]"
+                    maxLength={35}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-bold text-sky-200">
+                    الصف الدراسي:
+                  </label>
+                  <select
+                    value={grade}
+                    onChange={(e) => setGrade(e.target.value)}
+                    className="w-full min-h-12 rounded-2xl bg-slate-800/90 border border-white/20 px-3.5 py-2.5 text-xs sm:text-sm font-bold text-white outline-none focus:ring-2 focus:ring-[var(--challenge-accent)] cursor-pointer"
+                  >
+                    {GRADE_OPTIONS.map((g) => (
+                      <option key={g} value={g} className="bg-slate-900 text-white">
+                        {g}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {name.trim().length >= 2 && !name.trim().includes(' ') && (
+                <p className="text-xs font-bold text-amber-300 animate-page-enter">
+                  💡 فضلاً اكتب الاسم الثنائي أو الثلاثي لتوثيق نتيجتك في لوحة الشرف
+                </p>
+              )}
+
               <button
                 type="button"
                 onClick={handleStart}
                 disabled={name.trim().length < 2}
-                className="mt-3.5 w-full flex min-h-13 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500 px-8 py-3.5 text-base font-black text-slate-950 shadow-[0_0_30px_rgba(251,191,36,0.35)] transition hover:brightness-105 active:scale-[0.98] disabled:opacity-40"
+                className="w-full flex min-h-13 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500 px-8 py-3.5 text-base font-black text-slate-950 shadow-[0_0_30px_rgba(251,191,36,0.35)] transition hover:brightness-105 active:scale-[0.98] disabled:opacity-40 cursor-pointer"
               >
                 <Sparkles className="h-5 w-5" />
                 <span>ابدأ التحدي الآن</span>
@@ -689,6 +721,18 @@ export default function MillionChallengePage() {
               </ul>
             </div>
           </div>
+        )}
+
+        {stage === 'welcome' && (
+          <ChampionsLeaderboard
+            category="million"
+            variant="dark"
+            showTabs={false}
+            limit={10}
+            title="لوحة شرف أبطال المليون 🏆"
+            subtitle="أعلى 10 أبطال حققوا أكبر عدد من النقاط والجوائز"
+            className="w-full max-w-xl mt-6"
+          />
         )}
 
         {stage === 'result' && (
@@ -759,6 +803,18 @@ export default function MillionChallengePage() {
               </Link>
             </div>
           </div>
+        )}
+
+        {stage === 'result' && (
+          <ChampionsLeaderboard
+            category="million"
+            variant="dark"
+            showTabs={false}
+            limit={10}
+            title="لوحة شرف أبطال المليون 🏆"
+            subtitle="قارن رصيدك بأبطال التحدي المتصدرين"
+            className="w-full max-w-xl mt-6"
+          />
         )}
       </main>
 

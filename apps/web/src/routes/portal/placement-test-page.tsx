@@ -27,22 +27,10 @@ import {
   type PlacementQuestionItem,
   type SkillCategory,
 } from '../../data/content/placement-data';
-import { TEACHER_OFFICIAL_NAME, studentResultsClient } from '../../data/api-client/guestbook-client';
+import { TEACHER_OFFICIAL_NAME, studentResultsClient, GRADE_OPTIONS } from '../../data/api-client/guestbook-client';
 
 type Stage = 'select-level' | 'testing' | 'result';
 type LevelChoiceId = 'comprehensive' | 'level-1' | 'level-2' | 'level-3';
-
-const GRADE_OPTIONS = [
-  'الصف الأول متوسط',
-  'الصف الثاني متوسط',
-  'الصف الثالث متوسط',
-  'المرحلة الثانوية — أول ثانوي',
-  'المرحلة الثانوية — ثاني ثانوي',
-  'المرحلة الثانوية — ثالث ثانوي',
-  'ولي أمر',
-  'معلم / مهتم باللغة',
-  'زائر كريم',
-];
 
 export default function PlacementTestPage() {
   const [stage, setStage] = useState<Stage>('select-level');
