@@ -981,11 +981,11 @@ export default function TeacherAdminPage() {
         </section>
 
         {/* Main 4 Section Tabs */}
-        <section className="mb-6 flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-xs">
+        <section className="mb-6 grid grid-cols-2 gap-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-xs lg:grid-cols-4 sm:gap-2.5">
           <button
             type="button"
             onClick={() => setDashboardSection('qna')}
-            className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-black transition ${
+            className={`inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-center text-xs font-black transition ${
               dashboardSection === 'qna'
                 ? 'bg-violet-700 text-white shadow-xs'
                 : 'text-slate-600 hover:bg-slate-100'
@@ -998,7 +998,7 @@ export default function TeacherAdminPage() {
           <button
             type="button"
             onClick={() => setDashboardSection('national')}
-            className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-black transition ${
+            className={`inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-center text-xs font-black transition ${
               dashboardSection === 'national'
                 ? 'bg-emerald-700 text-white shadow-xs'
                 : 'text-slate-600 hover:bg-slate-100'
@@ -1013,7 +1013,7 @@ export default function TeacherAdminPage() {
           <button
             type="button"
             onClick={() => setDashboardSection('results')}
-            className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-black transition ${
+            className={`inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-center text-xs font-black transition ${
               dashboardSection === 'results'
                 ? 'bg-indigo-600 text-white shadow-xs'
                 : 'text-slate-600 hover:bg-slate-100'
@@ -1026,7 +1026,7 @@ export default function TeacherAdminPage() {
           <button
             type="button"
             onClick={() => setDashboardSection('lessons')}
-            className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-black transition ${
+            className={`inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-center text-xs font-black transition ${
               dashboardSection === 'lessons'
                 ? 'bg-emerald-600 text-white shadow-xs'
                 : 'text-slate-600 hover:bg-slate-100'
@@ -1793,10 +1793,14 @@ export default function TeacherAdminPage() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {topicsList.map((topic) => (
+                      {topicsList.map((topic, index) => (
                         <div
                           key={topic.slug}
-                          className="rounded-2xl border border-slate-200 p-4 flex flex-col justify-between bg-slate-50/50 hover:bg-white hover:border-violet-300 transition"
+                          className={`rounded-2xl border border-slate-200 p-4 flex flex-col justify-between bg-slate-50/50 hover:bg-white hover:border-violet-300 transition ${
+                            index === topicsList.length - 1 && topicsList.length % 3 === 1
+                              ? 'lg:col-span-3'
+                              : ''
+                          }`}
                         >
                           <div>
                             <span className="text-[11px] font-black text-violet-700" dir="ltr">

@@ -151,7 +151,7 @@ export default function PortalHomePage() {
                 <p className="mt-1 max-w-2xl text-xs sm:text-sm font-semibold leading-relaxed text-slate-600">
                   رحلة تفاعلية من 5 محطات في تاريخ المملكة ومدنها وطبيعتها وتراثها، تختتمينها بكتابة رسالتكِ في
                   جدار «أصوات تحب الوطن» والحصول على شهادة{' '}
-                  <strong className="text-emerald-800">«سفيرة الوطن | Saudi Homeland Ambassador»</strong>.
+                  <strong className="inline-block whitespace-nowrap text-emerald-800">«سفيرة الوطن | Saudi Homeland Ambassador»</strong>.
                 </p>
               </div>
             </div>

@@ -243,7 +243,7 @@ export function PortalNav({ variant = 'light' }: { variant?: 'light' | 'dark' } 
         {/* Right Scroll Indicator & Button (appears when scrolled away from right) */}
         {canScrollRight && (
           <div
-            className={`absolute right-0 top-0 bottom-0 z-10 flex items-center pr-1 pl-3 pointer-events-none transition-opacity ${
+            className={`absolute right-0 top-0 bottom-0 z-10 flex items-center pr-1 pl-3 pointer-events-none transition-opacity duration-300 ${
               isDark
                 ? 'bg-gradient-to-l from-slate-900 via-slate-900/90 to-transparent'
                 : 'bg-gradient-to-l from-slate-50 via-slate-50/90 to-transparent'
@@ -253,7 +253,7 @@ export function PortalNav({ variant = 'light' }: { variant?: 'light' | 'dark' } 
               type="button"
               onClick={scrollRightDirection}
               aria-label="تمرير لليمين"
-              className={`pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full border shadow-xs transition active:scale-95 ${
+              className={`pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full border shadow-xs transition-all duration-300 animate-pulse hover:animate-none active:scale-95 ${
                 isDark
                   ? 'border-white/20 bg-slate-800 text-amber-300 hover:bg-slate-700'
                   : 'border-slate-200 bg-white text-violet-700 hover:bg-slate-50'
@@ -321,7 +321,7 @@ export function PortalNav({ variant = 'light' }: { variant?: 'light' | 'dark' } 
         {/* Left Scroll Indicator & Button (appears when there are more items to the left) */}
         {canScrollLeft && (
           <div
-            className={`absolute left-0 top-0 bottom-0 z-10 flex items-center pl-1 pr-3 pointer-events-none transition-opacity ${
+            className={`absolute left-0 top-0 bottom-0 z-10 flex items-center pl-1 pr-3 pointer-events-none transition-opacity duration-300 ${
               isDark
                 ? 'bg-gradient-to-r from-slate-900 via-slate-900/90 to-transparent'
                 : 'bg-gradient-to-r from-white via-white/90 to-transparent'
@@ -331,7 +331,7 @@ export function PortalNav({ variant = 'light' }: { variant?: 'light' | 'dark' } 
               type="button"
               onClick={scrollLeftDirection}
               aria-label="المزيد من الأقسام"
-              className={`pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full border shadow-xs transition animate-pulse hover:animate-none active:scale-95 ${
+              className={`pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full border shadow-xs transition-all duration-300 animate-pulse hover:animate-none active:scale-95 ${
                 isDark
                   ? 'border-white/20 bg-slate-800 text-amber-300 hover:bg-slate-700'
                   : 'border-slate-200 bg-white text-violet-700 hover:bg-slate-50'

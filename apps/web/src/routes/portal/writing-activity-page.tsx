@@ -183,7 +183,7 @@ export default function WritingActivityPage() {
                     منطقة الإجابة — اضغط على أي كلمة لإزالتها وإعادتها للقائمة:
                   </p>
                   <div
-                    className={`flex min-h-14 flex-wrap items-center gap-2 rounded-2xl border-2 border-dashed p-3 transition ${
+                    className={`flex min-h-14 flex-wrap items-center justify-start gap-2 text-left rounded-2xl border-2 border-dashed p-3 transition ${
                       answerWords.length > 0
                         ? 'border-emerald-300 bg-emerald-50/50'
                         : 'border-slate-200 bg-slate-50/60'
@@ -213,7 +213,7 @@ export default function WritingActivityPage() {
                   <p className="text-xs font-bold text-slate-500 mb-2">
                     الكلمات المتاحة — اضغط على الكلمة لإضافتها بالترتيب الصحيح:
                   </p>
-                  <div className="flex flex-wrap gap-2" dir="ltr">
+                  <div className="flex flex-wrap items-center justify-start gap-2 text-left" dir="ltr">
                     {availableWords.map((word, idx) => (
                       <button
                         key={`${word}-${idx}`}
@@ -264,7 +264,7 @@ export default function WritingActivityPage() {
 
               {isWordBuilder ? (
                 <div
-                  className="rounded-2xl border-2 border-slate-200 bg-slate-50/60 px-4 py-3.5 text-base font-bold text-slate-900 min-h-13"
+                  className="rounded-2xl border-2 border-slate-200 bg-slate-50/60 px-4 py-3.5 text-base font-bold text-slate-900 min-h-13 justify-start text-left"
                   dir="ltr"
                 >
                   {studentAnswer || (

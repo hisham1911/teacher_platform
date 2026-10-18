@@ -873,7 +873,7 @@ export default function NationalJourneyPage() {
       )}
 
       <main className="relative z-10 mx-auto flex w-full max-w-5xl flex-1 flex-col px-3.5 sm:px-6 pb-20 pt-4 sm:pt-8 print:max-w-none print:p-0">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-2.5 print:hidden">
+        <div className="mb-4 flex items-center justify-between gap-2 print:hidden">
           <div className="flex items-center gap-1.5 text-xs font-bold text-slate-600">
             <Link className="hover:text-emerald-800 transition py-1" to="/">
               الرئيسية
@@ -885,7 +885,7 @@ export default function NationalJourneyPage() {
             </span>
           </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+          <div className="flex items-center gap-2 justify-end">
             <button
               type="button"
               onClick={toggleAudioMute}

@@ -456,16 +456,13 @@ export default function PlacementTestPage() {
                     key={opt.id}
                     type="button"
                     onClick={() => setSelectedOptionId(opt.id)}
-                    className={`flex items-center justify-between rounded-2xl border-2 px-4 py-2.5 sm:px-5 sm:py-3.5 text-right transition active:scale-[0.99] min-h-[48px] sm:min-h-[54px] ${
+                    className={`flex w-full items-center gap-3.5 text-left rounded-2xl border-2 px-4 py-2.5 sm:px-5 sm:py-3.5 transition active:scale-[0.99] min-h-[48px] sm:min-h-[54px] ${
                       isSelected
                         ? 'border-indigo-600 bg-indigo-50/90 font-black text-indigo-950 shadow-xs ring-2 ring-indigo-200'
                         : 'border-slate-200/90 bg-white hover:border-indigo-300 hover:bg-slate-50 font-bold text-slate-800'
                     }`}
                     dir="ltr"
                   >
-                    <span className="text-left text-sm sm:text-base font-bold leading-snug flex-1 mr-3">
-                      {opt.text}
-                    </span>
                     <span
                       className={`flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-xl text-xs font-black transition ${
                         isSelected
@@ -474,6 +471,9 @@ export default function PlacementTestPage() {
                       }`}
                     >
                       {letter}
+                    </span>
+                    <span className="text-left text-sm sm:text-base font-bold leading-snug flex-1">
+                      {opt.text}
                     </span>
                   </button>
                 );
