@@ -400,17 +400,19 @@ export const guestbookClient = {
             teacher_reply?: string;
             replied_at?: string;
           }>;
-          return rows.map((r) => ({
-            id: String(r.id),
-            name: r.name,
-            role: r.role,
-            message: r.message,
-            createdAt: r.created_at,
-            likes: Number(r.likes || 0),
-            topicSlug: r.topic_slug,
-            teacherReply: r.teacher_reply,
-            repliedAt: r.replied_at,
-          }));
+          return rows
+            .filter((r) => r.topic_slug !== '__student_result__')
+            .map((r) => ({
+              id: String(r.id),
+              name: r.name,
+              role: r.role,
+              message: r.message,
+              createdAt: r.created_at,
+              likes: Number(r.likes || 0),
+              topicSlug: r.topic_slug,
+              teacherReply: r.teacher_reply,
+              repliedAt: r.replied_at,
+            }));
         } else {
           const errText = await res.text().catch(() => '');
           console.warn(`[Guestbook] Supabase getEntries error (${res.status}):`, errText);
@@ -450,17 +452,19 @@ export const guestbookClient = {
             teacher_reply?: string;
             replied_at?: string;
           }>;
-          return rows.map((r) => ({
-            id: String(r.id),
-            name: r.name,
-            role: r.role,
-            message: r.message,
-            createdAt: r.created_at,
-            likes: Number(r.likes || 0),
-            topicSlug: r.topic_slug,
-            teacherReply: r.teacher_reply,
-            repliedAt: r.replied_at,
-          }));
+          return rows
+            .filter((r) => r.topic_slug !== '__student_result__')
+            .map((r) => ({
+              id: String(r.id),
+              name: r.name,
+              role: r.role,
+              message: r.message,
+              createdAt: r.created_at,
+              likes: Number(r.likes || 0),
+              topicSlug: r.topic_slug,
+              teacherReply: r.teacher_reply,
+              repliedAt: r.replied_at,
+            }));
         }
       } catch {
         // Fallback to local aggregation
@@ -819,10 +823,12 @@ function getLocalResults(): StudentQuizResultRecord[] {
 export const studentResultsClient = {
   async getAllResults(): Promise<StudentQuizResultRecord[]> {
     const config = getSupabaseConfig();
+    const cloudResults: StudentQuizResultRecord[] = [];
+
     if (config) {
       try {
         const res = await fetch(
-          `${config.url}/rest/v1/student_results?select=*&order=created_at.desc&limit=300`,
+          `${config.url}/rest/v1/guestbook_entries?select=*&topic_slug=eq.__student_result__&order=created_at.desc&limit=300`,
           {
             headers: {
               apikey: config.anonKey,
@@ -833,32 +839,69 @@ export const studentResultsClient = {
         if (res.ok) {
           const rows = (await res.json()) as Array<{
             id: string | number;
-            student_name: string;
-            student_grade: string;
-            section_title: string;
-            score: number;
-            total_questions: number;
-            percentage: number;
+            name: string;
+            role: string;
+            message: string;
             created_at: string;
           }>;
-          return rows.map((r) => ({
-            id: String(r.id),
-            studentName: r.student_name,
-            studentGrade: r.student_grade || 'المرحلة المتوسطة',
-            category: 'grammar',
-            activityTitle: r.section_title,
-            score: Number(r.score),
-            totalQuestions: Number(r.total_questions),
-            percentage: Number(r.percentage),
-            verificationCode: `SPARK-${r.id}`,
-            createdAt: r.created_at,
-          }));
+          for (const r of rows) {
+            try {
+              const parsed = JSON.parse(r.message) as Partial<StudentQuizResultRecord>;
+              cloudResults.push({
+                id: String(r.id),
+                studentName: parsed.studentName || r.name,
+                studentGrade: parsed.studentGrade || r.role || 'المرحلة المتوسطة',
+                category: parsed.category || 'grammar',
+                activityTitle: parsed.activityTitle || 'نشاط تفاعلي',
+                score: Number(parsed.score ?? 0),
+                totalQuestions: Number(parsed.totalQuestions ?? 10),
+                percentage: Number(parsed.percentage ?? 0),
+                cefrLevel: parsed.cefrLevel,
+                verificationCode: parsed.verificationCode || `SPARK-${r.id}`,
+                createdAt: parsed.createdAt || r.created_at,
+              });
+            } catch {
+              // Ignore invalid JSON messages
+            }
+          }
         }
       } catch {
-        // fallback to local
+        // Fallback to local
       }
     }
-    return getLocalResults();
+
+    // Merge cloud results with local results, deduplicating by verificationCode or id
+    const localList = getLocalResults();
+    const map = new Map<string, StudentQuizResultRecord>();
+
+    // 1. Cloud results
+    for (const r of cloudResults) {
+      const key = r.verificationCode || r.id;
+      map.set(key, r);
+    }
+
+    // 2. Local results
+    for (const r of localList) {
+      const key = r.verificationCode || r.id;
+      if (!map.has(key)) {
+        map.set(key, r);
+      }
+    }
+
+    const merged = Array.from(map.values()).sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+
+    if (merged.length > 0) {
+      try {
+        localStorage.setItem(RESULTS_STORAGE_KEY, JSON.stringify(merged));
+      } catch {
+        // ignore
+      }
+      return merged;
+    }
+
+    return DEFAULT_STUDENT_RESULTS;
   },
 
   async recordResult(input: {
@@ -876,30 +919,6 @@ export const studentResultsClient = {
       input.verificationCode ||
       'SPARK-' + Math.random().toString(36).substring(2, 7).toUpperCase();
 
-    const config = getSupabaseConfig();
-    if (config) {
-      try {
-        await fetch(`${config.url}/rest/v1/student_results`, {
-          method: 'POST',
-          headers: {
-            apikey: config.anonKey,
-            Authorization: `Bearer ${config.anonKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            student_name: input.studentName.trim(),
-            student_grade: input.studentGrade || 'عام',
-            section_title: input.activityTitle,
-            score: input.score,
-            total_questions: input.totalQuestions,
-            percentage,
-          }),
-        });
-      } catch {
-        // fallback
-      }
-    }
-
     const record: StudentQuizResultRecord = {
       id: `res-${Date.now()}`,
       studentName: input.studentName.trim(),
@@ -913,6 +932,36 @@ export const studentResultsClient = {
       verificationCode,
       createdAt: new Date().toISOString(),
     };
+
+    const config = getSupabaseConfig();
+    if (config) {
+      try {
+        const res = await fetch(`${config.url}/rest/v1/guestbook_entries`, {
+          method: 'POST',
+          headers: {
+            apikey: config.anonKey,
+            Authorization: `Bearer ${config.anonKey}`,
+            'Content-Type': 'application/json',
+            Prefer: 'return=representation',
+          },
+          body: JSON.stringify({
+            name: record.studentName,
+            role: record.studentGrade,
+            message: JSON.stringify(record),
+            topic_slug: '__student_result__',
+            likes: 0,
+          }),
+        });
+        if (res.ok) {
+          const inserted = (await res.json()) as Array<{ id: string | number }>;
+          if (inserted?.[0]) {
+            record.id = String(inserted[0].id);
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
 
     try {
       const current = getLocalResults();
@@ -928,7 +977,7 @@ export const studentResultsClient = {
     const config = getSupabaseConfig();
     if (config) {
       try {
-        await fetch(`${config.url}/rest/v1/student_results?id=eq.${id}`, {
+        await fetch(`${config.url}/rest/v1/guestbook_entries?id=eq.${id}`, {
           method: 'DELETE',
           headers: {
             apikey: config.anonKey,

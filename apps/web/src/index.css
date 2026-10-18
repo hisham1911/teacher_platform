@@ -33,7 +33,20 @@
   --live-surface-raised: oklch(0.225 0.032 222);
   --live-border: oklch(0.36 0.045 210);
   --live-emerald: oklch(0.78 0.16 165);
-  --live-amber: oklch(0.82 0.16 82);
+}
+
+@layer base {
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']),
+  a[href],
+  select,
+  summary,
+  label[for] {
+    cursor: pointer;
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
 }
 
 @keyframes float-slow {

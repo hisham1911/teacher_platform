@@ -41,7 +41,6 @@ export function EnglishSparkLogo({
   const sparkColor = isDark ? '#38bdf8' : isTeal ? '#0284c7' : '#0284c7';
   const raysLeftColor = isDark ? '#94a3b8' : '#475569';
   const raysRightColor = isDark ? '#38bdf8' : '#0ea5e9';
-  const trailColor = isDark ? 'rgba(56, 189, 248, 0.45)' : 'rgba(2, 132, 199, 0.35)';
 
   // Icon Only (Favicon, app emblem, avatar)
   if (variant === 'icon') {
@@ -115,15 +114,6 @@ export function EnglishSparkLogo({
           aria-label="English Spark Official Logo"
           role="img"
         >
-          {/* Graceful curved dashed flight trail lifted safely above text */}
-          <path
-            d="M 218 32 C 234 24, 250 16, 266 10"
-            stroke={trailColor}
-            strokeWidth="2"
-            strokeDasharray="3 4"
-            strokeLinecap="round"
-          />
-
           {/* Gentle Origami Paper Airplane hovering safely above Spark text away from letter r */}
           <g transform="translate(266, 6) rotate(8) scale(0.78)">
             {/* Main wing */}
@@ -220,15 +210,6 @@ export function EnglishSparkLogo({
           aria-label="English Spark Logo"
           role="img"
         >
-          {/* Dotted Flight Trail lifted cleanly above text */}
-          <path
-            d="M 136 22 C 148 16, 158 10, 168 5"
-            stroke={trailColor}
-            strokeWidth="1.8"
-            strokeDasharray="2.5 3"
-            strokeLinecap="round"
-          />
-
           {/* Soft Origami Airplane hovering safely above Spark letters away from letter r */}
           <g transform="translate(168, -2) rotate(8) scale(0.52)">
             <polygon points="44,4 4,19 23,31" fill="#7dd3fc" />

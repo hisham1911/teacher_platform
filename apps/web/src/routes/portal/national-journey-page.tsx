@@ -542,7 +542,7 @@ export default function NationalJourneyPage() {
   const whatsappShareUrl = useMemo(() => {
     const shareText = [
       `🇸🇦 فخورة بحصولي على شهادة «سفيرة الوطن | Saudi Homeland Ambassador» في مبادرة (${NATIONAL_INITIATIVE_META.initiativeTitleAr}) عبر منصة English Spark!`,
-      `الطالبة: ${studentName} (${studentGrade})`,
+      `الاسم: ${studentName} (${studentGrade})`,
       `رمز التوثيق: ${verificationCode}`,
       typeof window !== 'undefined' ? window.location.href : '',
     ]
@@ -1415,7 +1415,7 @@ export default function NationalJourneyPage() {
 
               <div className="relative z-10 my-4 max-w-2xl mx-auto">
                 <p className="text-xs sm:text-sm font-semibold text-slate-600">
-                  تمنح منصة English Spark هذه الشهادة الفخرية للطالبة المتميزة:
+                  تمنح منصة English Spark هذه الشهادة التقديرية إلى:
                 </p>
                 <h3 className="text-2xl sm:text-5xl font-black text-emerald-950 my-3 break-words">
                   {studentName}

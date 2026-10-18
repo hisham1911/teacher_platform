@@ -102,9 +102,10 @@ export default function CompetitionsIndexPage() {
             {portalCompetitions.map((comp) => {
               const theme = getCompCardTheme(comp.id);
               return (
-                <div
+                <Link
                   key={comp.id}
-                  className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl sm:rounded-3xl border ${theme.border} ${theme.surface} p-6 sm:p-7 shadow-xs backdrop-blur-xl ring-1 ring-slate-900/5 transition-all duration-300 hover:-translate-y-1.5 ${theme.shadow} ${theme.ring}`}
+                  to={comp.path}
+                  className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl sm:rounded-3xl border ${theme.border} ${theme.surface} p-6 sm:p-7 shadow-xs backdrop-blur-xl ring-1 ring-slate-900/5 transition-all duration-300 hover:-translate-y-1.5 cursor-pointer ${theme.shadow} ${theme.ring}`}
                 >
                   {/* Luminous Specular Top Highlight */}
                   <div
@@ -181,17 +182,16 @@ export default function CompetitionsIndexPage() {
                         <span>{comp.questionCount} سؤالاً</span>
                       </span>
                     </div>
-                    <Link
-                      to={comp.path}
-                      className={`flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r ${comp.gradient} py-3.5 text-xs sm:text-sm font-black text-white shadow-md shadow-slate-900/10 transition-all duration-200 hover:brightness-110 active:scale-[0.98]`}
+                    <div
+                      className={`flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r ${comp.gradient} py-3.5 text-xs sm:text-sm font-black text-white shadow-md shadow-slate-900/10 transition-all duration-200 group-hover:brightness-110 active:scale-[0.98]`}
                     >
                       <span>
                         {comp.id === 'placement' ? 'ابدأ التقييم والتشخيص' : 'ابدأ التحدي الآن'}
                       </span>
                       <ArrowLeft className="h-4 w-4" />
-                    </Link>
+                    </div>
                   </div>
-                </div>
+                </Link>
               );
             })}
           </div>

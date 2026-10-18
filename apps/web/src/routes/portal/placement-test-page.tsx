@@ -628,7 +628,8 @@ export default function PlacementTestPage() {
                   return (
                     <div
                       key={lvl.id}
-                      className={`group relative flex flex-col justify-between rounded-3xl border-2 p-5 sm:p-6 transition-all duration-200 shadow-xs backdrop-blur-xl ${
+                      onClick={() => setSelectedLevelId(lvl.id)}
+                      className={`group relative flex flex-col justify-between rounded-3xl border-2 p-5 sm:p-6 transition-all duration-200 shadow-xs backdrop-blur-xl cursor-pointer ${
                         isSelected
                           ? 'border-indigo-600 bg-white ring-4 ring-indigo-100 shadow-md'
                           : 'border-slate-200/80 bg-white/95 hover:border-indigo-300 hover:shadow-md'
@@ -746,7 +747,7 @@ export default function PlacementTestPage() {
               </span>
 
               <h1 className="mt-3 text-2xl sm:text-4xl font-black text-slate-950">
-                تقرير تشخيص المستوى: {studentName}
+                نتيجة الاختبار: {studentName}
               </h1>
               <p className="mt-1 text-xs sm:text-sm font-semibold text-slate-500">
                 {studentGrade} • مدرسة متوسطة وثانوية الجرادية • إشراف معلمات اللغة الإنجليزية
@@ -880,7 +881,7 @@ export default function PlacementTestPage() {
               {/* Awardee Presentation */}
               <div className="relative z-10 my-6 max-w-2xl mx-auto">
                 <p className="text-xs sm:text-sm font-semibold text-slate-500 leading-relaxed mb-1">
-                  تَفخَر المنصة ومبادرة English Spark بمنح هذه الشهادة الرسمية إلى / This is to Proudly Certify that:
+                  تمنح منصة English Spark هذه الشهادة التقديرية إلى / This is to Proudly Certify that:
                 </p>
                 <h3 className="text-3xl sm:text-5xl font-black text-indigo-950 my-4 sm:my-5 tracking-normal leading-normal font-sans">
                   {studentName}

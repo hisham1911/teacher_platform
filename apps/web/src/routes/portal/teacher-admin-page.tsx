@@ -31,6 +31,10 @@ import {
   Image as ImageIcon,
   Video,
   X,
+  RefreshCw,
+  ArrowUp,
+  ArrowDown,
+  Copy,
 } from 'lucide-react';
 import { PublicBackdrop } from '../../components/layout/root-layout';
 import { PortalNav, PortalFooter, SaudiEmblemIcon } from '../../components/portal/portal-nav';
@@ -89,8 +93,27 @@ function formatTimeAgo(dateString: string): string {
   }
 }
 
+function getResultStatus(percentage: number): { label: string; badgeClass: string } {
+  if (percentage >= 85) {
+    return {
+      label: 'ممتاز · متقن 🌟',
+      badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+    };
+  }
+  if (percentage >= 60) {
+    return {
+      label: 'جيد جداً · مجتاز ✓',
+      badgeClass: 'bg-sky-100 text-sky-800 border-sky-200',
+    };
+  }
+  return {
+    label: 'بحاجة لدعم ومراجعة',
+    badgeClass: 'bg-amber-100 text-amber-800 border-amber-200',
+  };
+}
+
 /**
- * مكون محرر بنك الأسئلة الموحد (يدعم نص السؤال + الملاحظة/الشرح التوضيحي Hint + الخيارات)
+ * مكون محرر بنك الأسئلة الموحد (يدعم نص السؤال + الملاحظة/الشرح التوضيحي Hint + الخيارات + التكرار وإعادة الترتيب)
  */
 function QuestionsListEditor({
   questions,
@@ -112,6 +135,31 @@ function QuestionsListEditor({
       ],
     };
     onChange([...questions, newQ]);
+  }
+
+  function handleDuplicateQuestion(idx: number) {
+    const target = questions[idx];
+    if (!target) return;
+    const duplicated: QuizQuestion = {
+      ...target,
+      id: `q-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      prompt: target.prompt,
+      options: target.options.map((o) => ({ ...o })),
+    };
+    const next = [...questions];
+    next.splice(idx + 1, 0, duplicated);
+    onChange(next);
+  }
+
+  function handleMoveQuestion(idx: number, direction: 'up' | 'down') {
+    const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (targetIdx < 0 || targetIdx >= questions.length) return;
+    const next = [...questions];
+    const moved = next[idx];
+    if (!moved) return;
+    next.splice(idx, 1);
+    next.splice(targetIdx, 0, moved);
+    onChange(next);
   }
 
   function handleRemoveQuestion(idx: number) {
@@ -172,7 +220,7 @@ function QuestionsListEditor({
         <button
           type="button"
           onClick={handleAddQuestion}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-violet-100 px-3 py-1.5 text-xs font-black text-violet-800 hover:bg-violet-200 transition"
+          className="inline-flex items-center gap-1.5 rounded-xl bg-violet-100 px-3 py-1.5 text-xs font-black text-violet-800 hover:bg-violet-200 transition cursor-pointer"
         >
           <Plus className="h-3.5 w-3.5" />
           <span>إضافة سؤال</span>
@@ -184,20 +232,57 @@ function QuestionsListEditor({
           key={q.id || qIdx}
           className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3.5 sm:p-4 space-y-3"
         >
-          <div className="flex items-center justify-between">
-            <span className="rounded-lg bg-slate-200/80 px-2.5 py-0.5 text-[11px] font-black text-slate-700">
-              سؤال #{qIdx + 1}
-            </span>
-            {questions.length > 1 && (
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="rounded-lg bg-slate-200/80 px-2.5 py-0.5 text-[11px] font-black text-slate-700">
+                سؤال #{qIdx + 1}
+              </span>
+              <div className="flex items-center rounded-lg border border-slate-200 bg-white p-0.5">
+                <button
+                  type="button"
+                  disabled={qIdx === 0}
+                  onClick={() => handleMoveQuestion(qIdx, 'up')}
+                  className="rounded p-1 text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:hover:bg-transparent transition cursor-pointer"
+                  title="تحريك للأعلى ↑"
+                  aria-label="تحريك للأعلى"
+                >
+                  <ArrowUp className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  type="button"
+                  disabled={qIdx === questions.length - 1}
+                  onClick={() => handleMoveQuestion(qIdx, 'down')}
+                  className="rounded p-1 text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:hover:bg-transparent transition cursor-pointer"
+                  title="تحريك للأسفل ↓"
+                  aria-label="تحريك للأسفل"
+                >
+                  <ArrowDown className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => handleRemoveQuestion(qIdx)}
-                className="inline-flex items-center gap-1 text-xs font-bold text-rose-600 hover:text-rose-800 transition"
+                onClick={() => handleDuplicateQuestion(qIdx)}
+                className="inline-flex items-center gap-1 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-xs font-bold text-indigo-700 hover:bg-indigo-100 transition cursor-pointer"
+                title="نسخ هذا السؤال بكل خياراته"
               >
-                <Trash2 className="h-3.5 w-3.5" />
-                <span>حذف السؤال</span>
+                <Copy className="h-3.5 w-3.5" />
+                <span>نسخ السؤال</span>
               </button>
-            )}
+              {questions.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => handleRemoveQuestion(qIdx)}
+                  className="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1 text-xs font-bold text-rose-700 hover:bg-rose-100 transition cursor-pointer"
+                  title="حذف السؤال"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  <span>حذف</span>
+                </button>
+              )}
+            </div>
           </div>
 
           <div>
@@ -306,6 +391,7 @@ export default function TeacherAdminPage() {
   const [results, setResults] = useState<StudentQuizResultRecord[]>([]);
   const [resultSearch, setResultSearch] = useState('');
   const [resultCategoryFilter, setResultCategoryFilter] = useState<'all' | 'placement' | 'competition'>('all');
+  const [refreshingResults, setRefreshingResults] = useState(false);
 
   // 3. Multi-Skill Educational Content Data
   const [topicsList, setTopicsList] = useState<GrammarTopic[]>(() => getMergedGrammarTopics());
@@ -412,16 +498,38 @@ export default function TeacherAdminPage() {
     }
   }
 
+  async function handleRefreshResults() {
+    setRefreshingResults(true);
+    try {
+      const fresh = await studentResultsClient.getAllResults();
+      setResults(fresh);
+      showToast('تم تحديث قائمة النتائج بنجاح! 🔄');
+    } catch {
+      showToast('تعذر تحديث النتائج، يرجى المحاولة لاحقاً');
+    } finally {
+      setRefreshingResults(false);
+    }
+  }
+
   function handleExportResultsCsv() {
-    const headers = ['اسم الطالبة', 'الصف الدراسي', 'النشاط / الاختبار', 'الدرجة', 'الدرجة الكلية', 'النسبة المئوية', 'رمز التحقق', 'التاريخ'];
+    const headers = [
+      'اسم الطالبة',
+      'التفاصيل / الرصيد',
+      'النشاط / الاختبار',
+      'الدرجة',
+      'الدرجة الكلية',
+      'النسبة المئوية',
+      'التقدير والحالة',
+      'التاريخ',
+    ];
     const rows = results.map((r) => [
       `"${r.studentName}"`,
-      `"${r.studentGrade}"`,
+      `"${r.studentGrade || '—'}"`,
       `"${r.activityTitle}"`,
       r.score,
       r.totalQuestions,
       `"${r.percentage}%"`,
-      `"${r.verificationCode || ''}"`,
+      `"${getResultStatus(r.percentage || 0).label}"`,
       `"${new Date(r.createdAt).toLocaleDateString('ar-SA')}"`,
     ]);
     const csv = '\uFEFF' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
@@ -648,14 +756,18 @@ export default function TeacherAdminPage() {
 
   const resultStats = useMemo(() => {
     if (results.length === 0) {
-      return { totalAttempts: 0, avgPercentage: 0, highestScore: 0 };
+      return { totalAttempts: 0, avgPercentage: 0, passedCount: 0, needsSupportCount: 0, highestScore: 0 };
     }
     const totalPercentage = results.reduce((acc, r) => acc + (r.percentage || 0), 0);
     const avgPercentage = Math.round(totalPercentage / results.length);
+    const passedCount = results.filter((r) => (r.percentage || 0) >= 60).length;
+    const needsSupportCount = results.filter((r) => (r.percentage || 0) < 60).length;
     const highestScore = Math.max(...results.map((r) => r.percentage || 0));
     return {
       totalAttempts: results.length,
       avgPercentage,
+      passedCount,
+      needsSupportCount,
       highestScore,
     };
   }, [results]);
@@ -1158,8 +1270,18 @@ export default function TeacherAdminPage() {
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
+                  onClick={handleRefreshResults}
+                  disabled={refreshingResults}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-60 transition cursor-pointer"
+                  title="تحديث النتائج سحابياً"
+                >
+                  <RefreshCw className={`h-4 w-4 ${refreshingResults ? 'animate-spin text-indigo-600' : ''}`} />
+                  <span>تحديث القائمة 🔄</span>
+                </button>
+                <button
+                  type="button"
                   onClick={handleExportResultsCsv}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-black text-white shadow-xs hover:bg-emerald-700 transition"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-black text-white shadow-xs hover:bg-emerald-700 transition cursor-pointer"
                 >
                   <FileSpreadsheet className="h-4 w-4" />
                   <span>تصدير لملف Excel (CSV)</span>
@@ -1167,7 +1289,7 @@ export default function TeacherAdminPage() {
                 <button
                   type="button"
                   onClick={() => window.print()}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 cursor-pointer"
                 >
                   <Printer className="h-4 w-4" />
                   <span>طباعة الكشف</span>
@@ -1175,22 +1297,27 @@ export default function TeacherAdminPage() {
               </div>
             </div>
 
-            {/* Top Results Metrics Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {/* Top Results Metrics Cards (4 Analytical Pillars) */}
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
               <div className="rounded-2xl border border-indigo-100 bg-indigo-50/60 p-4">
                 <span className="block text-xs font-bold text-indigo-800">إجمالي المحاولات والاختبارات</span>
                 <p className="mt-1 text-2xl font-black text-indigo-950">{resultStats.totalAttempts}</p>
                 <span className="text-[10px] text-slate-500">عبر جميع الأقسام والمسابقات</span>
               </div>
               <div className="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4">
-                <span className="block text-xs font-bold text-emerald-800">متوسط نسبة الإتقان العامة</span>
+                <span className="block text-xs font-bold text-emerald-800">متوسط نسبة الإتقان</span>
                 <p className="mt-1 text-2xl font-black text-emerald-950">{resultStats.avgPercentage}%</p>
                 <span className="text-[10px] text-slate-500">متوسط درجات الطالبات</span>
               </div>
+              <div className="rounded-2xl border border-sky-100 bg-sky-50/60 p-4">
+                <span className="block text-xs font-bold text-sky-800">الطالبات المجتازات (≥ 60%)</span>
+                <p className="mt-1 text-2xl font-black text-sky-950">{resultStats.passedCount}</p>
+                <span className="text-[10px] text-slate-500">إتقان واجتياز ناجح</span>
+              </div>
               <div className="rounded-2xl border border-amber-100 bg-amber-50/60 p-4">
-                <span className="block text-xs font-bold text-amber-800">أعلى نتيجة محققة</span>
-                <p className="mt-1 text-2xl font-black text-amber-950">{resultStats.highestScore}%</p>
-                <span className="text-[10px] text-slate-500">العلامة الكاملة والإتقان</span>
+                <span className="block text-xs font-bold text-amber-800">بحاجة لدعم ومراجعة (&lt; 60%)</span>
+                <p className="mt-1 text-2xl font-black text-amber-950">{resultStats.needsSupportCount}</p>
+                <span className="text-[10px] text-slate-500">تتطلب خطة دعم ومتابعة</span>
               </div>
             </div>
 
@@ -1200,7 +1327,7 @@ export default function TeacherAdminPage() {
                 <button
                   type="button"
                   onClick={() => setResultCategoryFilter('all')}
-                  className={`rounded-xl px-3 py-1.5 text-xs font-black transition ${
+                  className={`rounded-xl px-3 py-1.5 text-xs font-black transition cursor-pointer ${
                     resultCategoryFilter === 'all'
                       ? 'bg-indigo-600 text-white shadow-2xs'
                       : 'text-slate-600 hover:bg-white'
@@ -1211,7 +1338,7 @@ export default function TeacherAdminPage() {
                 <button
                   type="button"
                   onClick={() => setResultCategoryFilter('placement')}
-                  className={`rounded-xl px-3 py-1.5 text-xs font-black transition ${
+                  className={`rounded-xl px-3 py-1.5 text-xs font-black transition cursor-pointer ${
                     resultCategoryFilter === 'placement'
                       ? 'bg-indigo-600 text-white shadow-2xs'
                       : 'text-slate-600 hover:bg-white'
@@ -1222,7 +1349,7 @@ export default function TeacherAdminPage() {
                 <button
                   type="button"
                   onClick={() => setResultCategoryFilter('competition')}
-                  className={`rounded-xl px-3 py-1.5 text-xs font-black transition ${
+                  className={`rounded-xl px-3 py-1.5 text-xs font-black transition cursor-pointer ${
                     resultCategoryFilter === 'competition'
                       ? 'bg-indigo-600 text-white shadow-2xs'
                       : 'text-slate-600 hover:bg-white'
@@ -1250,11 +1377,11 @@ export default function TeacherAdminPage() {
                 <thead>
                   <tr className="border-b border-slate-200 bg-slate-50 text-slate-500 font-black">
                     <th className="p-3">اسم الطالبة</th>
-                    <th className="p-3">الصف الدراسي</th>
+                    <th className="p-3">التفاصيل / الرصيد</th>
                     <th className="p-3">الاختبار / النشاط</th>
                     <th className="p-3">الدرجة</th>
                     <th className="p-3">النسبة</th>
-                    <th className="p-3">رمز التحقق</th>
+                    <th className="p-3">التقدير والحالة</th>
                     <th className="p-3">التاريخ</th>
                     <th className="p-3 text-center">إجراءات</th>
                   </tr>
@@ -1267,33 +1394,42 @@ export default function TeacherAdminPage() {
                       </td>
                     </tr>
                   ) : (
-                    filteredResults.map((r) => (
-                      <tr key={r.id} className="hover:bg-slate-50">
-                        <td className="p-3 font-black text-slate-900">{r.studentName}</td>
-                        <td className="p-3 font-semibold text-slate-600">{r.studentGrade}</td>
-                        <td className="p-3 font-bold text-indigo-900">{r.activityTitle}</td>
-                        <td className="p-3 font-mono font-bold" dir="ltr">
-                          {r.score} / {r.totalQuestions}
-                        </td>
-                        <td className="p-3">
-                          <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-black text-emerald-800">
-                            {r.percentage}%
-                          </span>
-                        </td>
-                        <td className="p-3 font-mono text-xs text-slate-500">{r.verificationCode || '—'}</td>
-                        <td className="p-3 text-xs text-slate-400">{formatTimeAgo(r.createdAt)}</td>
-                        <td className="p-3 text-center">
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteResult(r.id)}
-                            className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition"
-                            title="حذف النتيجة من السجل"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))
+                    filteredResults.map((r) => {
+                      const status = getResultStatus(r.percentage || 0);
+                      return (
+                        <tr key={r.id} className="hover:bg-slate-50">
+                          <td className="p-3 font-black text-slate-900">{r.studentName}</td>
+                          <td className="p-3 font-semibold text-slate-700">{r.studentGrade || '—'}</td>
+                          <td className="p-3 font-bold text-indigo-900">{r.activityTitle}</td>
+                          <td className="p-3 font-mono font-bold" dir="ltr">
+                            {r.score} / {r.totalQuestions}
+                          </td>
+                          <td className="p-3">
+                            <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-black text-slate-800">
+                              {r.percentage}%
+                            </span>
+                          </td>
+                          <td className="p-3">
+                            <span
+                              className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-black ${status.badgeClass}`}
+                            >
+                              {status.label}
+                            </span>
+                          </td>
+                          <td className="p-3 text-xs text-slate-400">{formatTimeAgo(r.createdAt)}</td>
+                          <td className="p-3 text-center">
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteResult(r.id)}
+                              className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition cursor-pointer"
+                              title="حذف النتيجة من السجل"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>

@@ -120,13 +120,22 @@ export default function SpeedChallengePage() {
     if (gameState === 'timesup' && !hasRecordedResultRef.current) {
       hasRecordedResultRef.current = true;
       const totalAnswered = correctCount + wrongCount;
+      let title = 'مشارك رائع';
+      if (score >= 250) {
+        title = 'أسطورة السرعة والذكاء';
+      } else if (score >= 150) {
+        title = 'المفكر الصاروخي';
+      } else if (score >= 80) {
+        title = 'بطل متقدّم';
+      }
       void studentResultsClient.recordResult({
-        studentName: playerName.trim() || 'طالبة متميزة',
+        studentName: playerName.trim() || 'طالب متميز',
         category: 'speed',
         activityTitle: 'تحدي السرعة Spark',
-        score: score,
+        score: correctCount,
         totalQuestions: Math.max(1, totalAnswered),
-        cefrLevel: score >= 15 ? 'B2 - Advanced' : score >= 8 ? 'B1 - Intermediate' : 'A2 - Elementary',
+        studentGrade: `${title} (${score} نقطة)`,
+        cefrLevel: correctCount >= 15 ? 'B2 - Advanced' : correctCount >= 8 ? 'B1 - Intermediate' : 'A2 - Elementary',
       });
     }
   }, [gameState, score, correctCount, wrongCount, playerName]);

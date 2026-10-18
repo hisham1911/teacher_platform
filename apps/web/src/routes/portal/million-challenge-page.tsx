@@ -177,8 +177,9 @@ export default function MillionChallengePage() {
       studentName: name.trim() || 'طالب متميز',
       category: 'million',
       activityTitle: 'تحدي المليون Spark',
-      score: banked,
-      totalQuestions: 1000000,
+      score: currentLevel,
+      totalQuestions: 15,
+      studentGrade: `${banked.toLocaleString()} ⭐ (انسحاب ذكي)`,
       cefrLevel: banked >= 32000 ? 'B1 - Intermediate' : 'A2 - Elementary',
     });
   }
@@ -217,8 +218,9 @@ export default function MillionChallengePage() {
             studentName: name.trim() || 'طالب متميز',
             category: 'million',
             activityTitle: 'تحدي المليون Spark',
-            score: 1000000,
-            totalQuestions: 1000000,
+            score: 15,
+            totalQuestions: 15,
+            studentGrade: '1,000,000 ⭐ (بطل المليون)',
             cefrLevel: 'B2 - Advanced',
           });
         }
@@ -235,8 +237,9 @@ export default function MillionChallengePage() {
           studentName: name.trim() || 'طالب متميز',
           category: 'million',
           activityTitle: 'تحدي المليون Spark',
-          score: guaranteed,
-          totalQuestions: 1000000,
+          score: levelIndex,
+          totalQuestions: 15,
+          studentGrade: `${guaranteed.toLocaleString()} ⭐ (المستوى ${levelIndex})`,
           cefrLevel: guaranteed >= 32000 ? 'B1 - Intermediate' : 'A2 - Elementary',
         });
       }, 2600);
