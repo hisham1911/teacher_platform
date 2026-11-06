@@ -562,6 +562,12 @@ export function PortalFooter({ variant = 'light' }: { variant?: 'light' | 'dark'
               •
             </span>
             <Link
+              to="/teacher-admin"
+              className={isDark ? 'text-slate-400 hover:text-amber-400 transition-colors' : 'text-slate-500 hover:text-violet-700 transition-colors'}
+            >
+              لوحة المعلمة
+            </Link>
+            <Link
               to="/privacy"
               className={isDark ? 'text-slate-400 hover:text-amber-400 transition-colors' : 'text-slate-500 hover:text-violet-700 transition-colors'}
             >
