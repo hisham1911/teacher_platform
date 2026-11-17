@@ -241,6 +241,24 @@ export default function CertificatesPage() {
               </div>
               <div className="flex flex-wrap items-center gap-3 sm:col-span-2">
                 <Button type="submit" disabled={saveMutation.isPending}>{saveMutation.isPending ? <ButtonSpinner /> : currentTemplate ? 'حفظ التعديلات' : 'إنشاء القالب'}</Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() =>
+                    setDraft({
+                      ...draft,
+                      name: 'مبادرة «وطنٌ في القلب وقيادة في الروح»',
+                      titleText: 'شهادة اجتياز',
+                      bodyText:
+                        'تقديراً لإنجازك في القلب وقيادة في الروح، وإعزازاً بالهوية الوطنية وقيم الولاء والانتماء — وطنٌ نفخر به وقيادة نعتز بها',
+                      issuerName: 'متوسطة وثانوية الجرادية - قسم اللغة الإنجليزية',
+                      primaryColor: '#165B33',
+                      secondaryColor: '#C5A059',
+                    })
+                  }
+                >
+                  🇸🇦 تعبئة بيانات مبادرة الوطن
+                </Button>
                 {templateMessage ? <p role="status" className="text-sm text-slate-600">{templateMessage}</p> : null}
               </div>
             </form>

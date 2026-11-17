@@ -9,6 +9,9 @@ import {
   AlertCircle,
   Trash2,
   Loader2,
+  ShieldCheck,
+  CornerDownLeft,
+  X,
 } from 'lucide-react';
 import { PublicBackdrop } from '../../components/layout/root-layout';
 import { PortalNav, PortalFooter } from '../../components/portal/portal-nav';
@@ -72,6 +75,11 @@ export default function GuestbookPage() {
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
 
   const isTeacherAdmin = isTeacherLoggedIn();
+
+  // Teacher reply state
+  const [activeReplyId, setActiveReplyId] = useState<string | null>(null);
+  const [teacherReplyText, setTeacherReplyText] = useState('');
+  const [replySubmitting, setReplySubmitting] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -165,6 +173,33 @@ export default function GuestbookPage() {
     }
   }
 
+  async function handleTeacherReplySubmit(id: string) {
+    if (!teacherReplyText.trim()) return;
+    setReplySubmitting(true);
+    try {
+      const ok = await guestbookClient.addTeacherReply(id, teacherReplyText.trim());
+      if (ok) {
+        setEntries((prev) =>
+          prev.map((item) =>
+            item.id === id
+              ? {
+                  ...item,
+                  teacherReply: teacherReplyText.trim(),
+                  repliedAt: new Date().toISOString(),
+                }
+              : item
+          )
+        );
+        setActiveReplyId(null);
+        setTeacherReplyText('');
+      } else {
+        alert('حدث خطأ في صلاحية المعلمة، يرجى تسجيل الدخول أولاً.');
+      }
+    } finally {
+      setReplySubmitting(false);
+    }
+  }
+
   return (
     <div className="relative flex min-h-dvh flex-col overflow-x-clip bg-slate-50/50" dir="rtl">
       <PublicBackdrop />
@@ -186,6 +221,12 @@ export default function GuestbookPage() {
           <p className="mt-2.5 text-xs sm:text-sm font-semibold text-slate-600 leading-relaxed">
             مساحة تواصل لطلاب وطالبات وأولياء أمور ومعلمي مدرسة متوسطة وثانوية الجرادية وكافة الزوار لمشاركة كلمات الدعم والتقدير لمبادرة {TEACHER_OFFICIAL_NAME}
           </p>
+          {isTeacherAdmin && (
+            <div className="mt-3.5 inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3.5 py-1.5 text-xs font-bold text-emerald-800 border border-emerald-200 shadow-xs">
+              <ShieldCheck className="h-4 w-4 text-emerald-600" />
+              <span>{TEACHER_OFFICIAL_NAME} (وضع الرد والإشراف مفعّل)</span>
+            </div>
+          )}
         </section>
 
         {/* Comment Submission Form */}
@@ -340,14 +381,26 @@ export default function GuestbookPage() {
                         {formatTimeAgo(entry.createdAt)}
                       </span>
                       {isTeacherAdmin && (
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(entry.id)}
-                          title="حذف هذا التعليق"
-                          className="rounded-md bg-rose-50 p-1 text-rose-600 hover:bg-rose-100 transition"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
+                        <div className="flex items-center gap-1.5 mr-1 border-r border-slate-200 pr-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveReplyId(activeReplyId === entry.id ? null : entry.id);
+                              setTeacherReplyText(entry.teacherReply || '');
+                            }}
+                            className="rounded-lg bg-rose-100 px-2.5 py-1 text-[11px] font-black text-rose-800 hover:bg-rose-200 transition cursor-pointer"
+                          >
+                            {entry.teacherReply ? 'تعديل الرد' : 'رد المعلمة'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(entry.id)}
+                            title="حذف هذا التعليق"
+                            className="rounded-md bg-rose-50 p-1 text-rose-600 hover:bg-rose-100 transition cursor-pointer"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -355,6 +408,83 @@ export default function GuestbookPage() {
                   <p className="text-xs sm:text-sm font-semibold leading-relaxed text-slate-700 select-text whitespace-pre-line">
                     {entry.message}
                   </p>
+
+                  {/* Teacher Reply Card (if answered) */}
+                  {entry.teacherReply && (
+                    <div className="mt-3.5 rounded-xl border border-rose-200/90 bg-gradient-to-br from-rose-50/70 via-white to-pink-50/40 p-3.5 shadow-xs">
+                      <div className="flex flex-wrap items-center justify-between gap-y-1.5 gap-x-2 border-b border-rose-100/80 pb-2 mb-2">
+                        <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+                          <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-rose-600 to-fuchsia-600 text-white shadow-xs">
+                            <Sparkles className="h-3 w-3" />
+                          </div>
+                          <span className="text-xs font-black text-rose-950 whitespace-nowrap">
+                            رد {TEACHER_OFFICIAL_NAME}
+                          </span>
+                          <span className="inline-flex items-center shrink-0 rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-800 whitespace-nowrap">
+                            الرد المعتمد
+                          </span>
+                        </div>
+                        {entry.repliedAt && (
+                          <span className="text-[10px] font-semibold text-slate-400 shrink-0 mr-auto">
+                            {formatTimeAgo(entry.repliedAt)}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs sm:text-sm font-semibold leading-relaxed text-slate-800 select-text whitespace-pre-line">
+                        {entry.teacherReply}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Teacher Inline Reply Box */}
+                  {isTeacherAdmin && activeReplyId === entry.id && (
+                    <div className="mt-3 rounded-xl border border-rose-300 bg-rose-50/80 p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-black text-rose-950 flex items-center gap-1">
+                          <CornerDownLeft className="h-3.5 w-3.5 text-rose-700" />
+                          <span>كتابة رد {TEACHER_OFFICIAL_NAME} على هذه الكلمة:</span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setActiveReplyId(null)}
+                          className="text-slate-400 hover:text-slate-600 cursor-pointer"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                      <textarea
+                        value={teacherReplyText}
+                        onChange={(e) => setTeacherReplyText(e.target.value)}
+                        placeholder="اكتبي التوجيه أو كلمة الشكر والتقدير هنا..."
+                        rows={3}
+                        className="w-full resize-none rounded-lg border border-rose-200 bg-white p-2.5 text-xs font-medium text-slate-800 placeholder-slate-400 focus:border-rose-500 focus:outline-hidden focus:ring-1 focus:ring-rose-300"
+                      />
+                      <div className="mt-2 flex justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setActiveReplyId(null)}
+                          className="rounded-lg px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-200/50 cursor-pointer"
+                        >
+                          إلغاء
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleTeacherReplySubmit(entry.id)}
+                          disabled={replySubmitting || !teacherReplyText.trim()}
+                          className="inline-flex items-center gap-1 rounded-lg bg-rose-600 px-4 py-1.5 text-xs font-black text-white hover:bg-rose-700 disabled:opacity-50 transition cursor-pointer"
+                        >
+                          {replySubmitting ? (
+                            <>
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              <span>جاري النشر...</span>
+                            </>
+                          ) : (
+                            <span>نشر الرد الرسمي</span>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
                   <div className="mt-3.5 flex items-center justify-between border-t border-slate-100 pt-2.5">
                     <span className="text-[10px] text-slate-400 font-semibold">

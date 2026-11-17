@@ -21,6 +21,7 @@ import {
   MessageSquareHeart,
   ChevronRight,
   GraduationCap,
+  Award,
   Plus,
   Edit3,
   FileSpreadsheet,
@@ -600,6 +601,60 @@ export default function TeacherAdminPage() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     showToast('تم تصدير سجل أصوات الوطن بصيغة Excel (CSV) بنجاح! 🇸🇦');
+  }
+
+  async function handleDownloadStudentCertificate(studentName: string) {
+    try {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.src = '/saudi-national-certificate-template.png';
+
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error('Failed to load certificate template'));
+      });
+
+      const canvas = document.createElement('canvas');
+      canvas.width = 3508;
+      canvas.height = 2481;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('Could not get 2d canvas context');
+
+      ctx.drawImage(img, 0, 0, 3508, 2481);
+
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#3f2a0b';
+
+      let fontSize = 76;
+      if (studentName.length > 25) fontSize = 62;
+      if (studentName.length > 35) fontSize = 50;
+
+      ctx.font = `bold ${fontSize}px "Traditional Arabic", "Amiri", "Cairo", "Segoe UI", Arial, sans-serif`;
+      ctx.shadowColor = 'rgba(255, 255, 255, 0.7)';
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 2;
+      ctx.shadowBlur = 4;
+
+      ctx.fillText(studentName.trim() || 'طالبة متميزة', 1754, 1270);
+
+      canvas.toBlob((blob) => {
+        if (!blob) return;
+        const blobUrl = URL.createObjectURL(blob);
+        const downloadLink = document.createElement('a');
+        const safeName = (studentName.trim() || 'طالبة').replace(/\s+/g, '_');
+        downloadLink.href = blobUrl;
+        downloadLink.download = `شهادة_مبادرة_الوطن_${safeName}.png`;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+        URL.revokeObjectURL(blobUrl);
+      }, 'image/png');
+      showToast(`تم تنزيل شهادة ${studentName} بنجاح! 📜`);
+    } catch (err) {
+      console.error('Failed to download student certificate', err);
+      showToast('تعذر تنزيل الشهادة، تأكد من اتصال الإنترنت.');
+    }
   }
 
   // --- Handlers: Grammar ---
@@ -1552,6 +1607,15 @@ export default function TeacherAdminPage() {
                         </div>
 
                         <div className="flex items-center gap-2 self-end sm:self-auto">
+                          <button
+                            type="button"
+                            onClick={() => handleDownloadStudentCertificate(entry.name)}
+                            className="inline-flex items-center gap-1 rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-1.5 text-xs font-black text-emerald-900 hover:bg-emerald-100 transition"
+                            title="تحميل الشهادة الرسمية للطالبة"
+                          >
+                            <Award className="h-3.5 w-3.5 text-emerald-700" />
+                            <span>الشهادة الرسمية 📜</span>
+                          </button>
                           <button
                             type="button"
                             onClick={() => {

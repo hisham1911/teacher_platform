@@ -93,6 +93,8 @@ const DEFAULT_GUESTBOOK_ENTRIES: GuestbookEntry[] = [
     message: 'مبادرة رائعة ومفيدة جداً من معلمات اللغة الإنجليزية، بطاقات القواعد والألوان جعلت حفظ الأزمنة وفهمها أسهل بكثير!',
     createdAt: new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString(),
     likes: 18,
+    teacherReply: 'أهلاً بكِ يا سارة 🌸 فخورات جداً بتميزكِ وحرصكِ، ويسعدنا دائماً أن تكون بطاقات القواعد عوناً لكِ في تفوقكِ وإتقانكِ للغة!',
+    repliedAt: new Date(Date.now() - 2 * 24 * 3600 * 1000 + 3600 * 1000).toISOString(),
   },
   {
     id: 'entry-2',
@@ -101,6 +103,8 @@ const DEFAULT_GUESTBOOK_ENTRIES: GuestbookEntry[] = [
     message: 'بارك الله في هذه الجهود المميزة في إنتاج المعرفة. تصميم المنصة وتنوع المسابقات يرفع دافعية الطالبات للتعلم. شكر خاص لمعلمات اللغة الإنجليزية وإدارة المدرسة.',
     createdAt: new Date(Date.now() - 3 * 24 * 3600 * 1000).toISOString(),
     likes: 24,
+    teacherReply: 'أهلاً بكِ زميلتنا الفاضلة أ. هدى 🌿 شهادة نعتز بها جميعاً، ونسعى دائماً لتقديم كل ما يثري الميدان التعليمي ويحفز طالباتنا المتميزات.',
+    repliedAt: new Date(Date.now() - 3 * 24 * 3600 * 1000 + 7200 * 1000).toISOString(),
   },
   {
     id: 'entry-3',

@@ -44,11 +44,13 @@ export interface PledgePromptConfig {
 export const NATIONAL_INITIATIVE_META = {
   slug: 'national-pride',
   initiativeTitleAr: 'مبادرة في القلب وطن وقيادة',
+  officialInitiativeTitleAr: 'مبادرة «وطنٌ في القلب وقيادة في الروح»',
+  officialInitiativeTitleEn: 'A Nation in Our Hearts, Leadership in Our Souls',
   initiativeTitleEn: 'In Our Hearts: Homeland & Leadership',
   mainTitleAr: 'رحلة المجد',
   mainTitleEn: 'Journey of Glory',
-  mottoEn: 'A heart full of loyalty. A voice full of pride. A future full of promise.',
-  mottoAr: 'قلبٌ يعتز، وصوتٌ يفخر، ومستقبلٌ نصنعه بالعلم والعمل.',
+  mottoEn: 'A Nation to Be Proud Of, A Leadership to Cherish.',
+  mottoAr: 'وطنٌ نفخر به وقيادة نعتز بها.',
   audioTrackUrl: '/audio/saudi-national-melody.mp3',
 } as const;
 
@@ -415,12 +417,21 @@ export const IMMORTAL_PLEDGE_STATEMENT = {
     "I carry my homeland's identity with pride. I honor its leadership through respect and responsibility. I will turn my knowledge into achievement and my dreams into meaningful contributions to Saudi Arabia's future.",
   bodyAr:
     'أحمل هوية وطني بفخر، وأعبّر عن اعتزازي بقيادته بالاحترام والمسؤولية، وأحوّل علمي إلى إنجاز، وأحلامي إلى إسهامات تصنع مستقبل المملكة.',
-  certificateTitleEn: 'Saudi Homeland Ambassador',
-  certificateTitleAr: 'سفيرة الوطن',
+  certificateTitleEn: 'CERTIFICATE OF COMPLETION',
+  certificateTitleAr: 'شهادة اجتياز',
+  initiativeTitleAr: 'مبادرة «وطنٌ في القلب وقيادة في الروح»',
+  initiativeTitleEn: 'A Nation in Our Hearts, Leadership in Our Souls',
   certificateReasonEn:
-    'For completing Journey of Glory and expressing pride, belonging, and commitment to the future of Saudi Arabia.',
+    'In recognition of successfully completing the initiative and celebrating Saudi identity, loyalty, and belonging.',
   certificateReasonAr:
-    'لإتمام رحلة المجد والتعبير عن الاعتزاز والانتماء والالتزام بالمساهمة في مستقبل المملكة العربية السعودية.',
+    'تقديراً لإنجازك في القلب وقيادة في الروح، وإعزازاً بالهوية الوطنية وقيم الولاء والانتماء.',
+  sloganAr: 'وطنٌ نفخر به وقيادة نعتز بها.',
+  sloganEn: 'A Nation to Be Proud Of, A Leadership to Cherish.',
+  schoolNameAr: 'يسر متوسطة وثانوية الجرادية ممثلة بقسم اللغة الإنجليزية',
+  principalNameEn: 'Amna Daghreeri',
+  principalNameAr: 'أ. آمنة دغريري',
+  teachersEn: ['Maryam Al-Sumaili', 'Anissa Al-Arishi', 'Shuqra Al-Madkhali', 'Salma Al-Arishi'],
+  teachersAr: ['مريم صميلي', 'أنيسة عريشي', 'شقراء مدخلي', 'سلمى عريشي'],
 } as const;
 
 export interface ParsedVoicePayload {

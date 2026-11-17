@@ -10,6 +10,7 @@ import {
   Volume2,
   VolumeX,
   Printer,
+  Download,
   Heart,
   ShieldCheck,
   Compass,
@@ -17,7 +18,6 @@ import {
   Palmtree,
   Building2,
   Feather,
-  Star,
   RotateCcw,
   Trash2,
   Send,
@@ -28,7 +28,6 @@ import {
 } from 'lucide-react';
 import { PublicBackdrop } from '../../components/layout/root-layout';
 import { PortalNav, PortalFooter, SaudiEmblemIcon } from '../../components/portal/portal-nav';
-import { EnglishSparkLogo } from '../../components/portal/english-spark-logo';
 import {
   NATIONAL_INITIATIVE_META,
   NATIONAL_JOURNEY_STAGES,
@@ -153,6 +152,7 @@ export default function NationalJourneyPage() {
   const [prideText, setPrideText] = useState('');
   const [submittingPledge, setSubmittingPledge] = useState(false);
   const [pledgeError, setPledgeError] = useState<string | null>(null);
+  const [isDownloadingCert, setIsDownloadingCert] = useState(false);
 
   const [voices, setVoices] = useState<GuestbookEntry[]>([]);
   const [loadingVoices, setLoadingVoices] = useState(false);
@@ -442,6 +442,65 @@ export default function NationalJourneyPage() {
     setVoices((prev) => prev.filter((item) => item.id !== id));
   }
 
+  async function handleDownloadCertificateImage() {
+    setIsDownloadingCert(true);
+    try {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.src = '/saudi-national-certificate-template.png';
+
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error('Failed to load certificate template'));
+      });
+
+      const canvas = document.createElement('canvas');
+      canvas.width = 3508;
+      canvas.height = 2481;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('Could not get 2d canvas context');
+
+      ctx.drawImage(img, 0, 0, 3508, 2481);
+
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#3f2a0b';
+
+      let fontSize = 76;
+      if (studentName.length > 25) fontSize = 62;
+      if (studentName.length > 35) fontSize = 50;
+
+      ctx.font = `bold ${fontSize}px "Traditional Arabic", "Amiri", "Cairo", "Segoe UI", Arial, sans-serif`;
+      ctx.shadowColor = 'rgba(255, 255, 255, 0.7)';
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 2;
+      ctx.shadowBlur = 4;
+
+      ctx.fillText(studentName.trim() || 'طالبة متميزة', 1754, 1270);
+
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          window.print();
+          return;
+        }
+        const blobUrl = URL.createObjectURL(blob);
+        const downloadLink = document.createElement('a');
+        const safeName = (studentName.trim() || 'طالبة').replace(/\s+/g, '_');
+        downloadLink.href = blobUrl;
+        downloadLink.download = `شهادة_مبادرة_الوطن_${safeName}.png`;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+        URL.revokeObjectURL(blobUrl);
+      }, 'image/png');
+    } catch (err) {
+      console.error('Error generating certificate download:', err);
+      window.print();
+    } finally {
+      setIsDownloadingCert(false);
+    }
+  }
+
   function handleResetJourney() {
     setPhase('welcome');
     setCurrentStageIdx(0);
@@ -465,7 +524,7 @@ export default function NationalJourneyPage() {
 
   const whatsappShareUrl = useMemo(() => {
     const shareText = [
-      `🇸🇦 فخورة بحصولي على شهادة «سفيرة الوطن | Saudi Homeland Ambassador» في مبادرة (${NATIONAL_INITIATIVE_META.initiativeTitleAr}) عبر منصة English Spark!`,
+      `🇸🇦 فخورة بحصولي على شهادة اجتياز ${NATIONAL_INITIATIVE_META.officialInitiativeTitleAr} من مدرسة متوسطة وثانوية الجرادية!`,
       `الاسم: ${studentName} (${studentGrade})`,
       `رمز التوثيق: ${verificationCode}`,
       typeof window !== 'undefined' ? window.location.href : '',
@@ -957,7 +1016,10 @@ export default function NationalJourneyPage() {
               </div>
 
               <h1 className="mt-2.5 text-2xl sm:text-4xl font-black text-slate-950">
-                {NATIONAL_INITIATIVE_META.initiativeTitleAr}
+                {NATIONAL_INITIATIVE_META.officialInitiativeTitleAr}
+                <span className="block text-sm sm:text-base font-bold text-emerald-800 mt-1">
+                  {NATIONAL_INITIATIVE_META.initiativeTitleAr}
+                </span>
               </h1>
               <p
                 className="mt-1 text-xs sm:text-sm font-black tracking-wide text-emerald-700"
@@ -1257,17 +1319,26 @@ export default function NationalJourneyPage() {
               <div className="mt-6 flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center justify-center gap-3">
                 <button
                   type="button"
+                  onClick={handleDownloadCertificateImage}
+                  disabled={isDownloadingCert}
+                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-400 px-6 py-3 text-xs sm:text-sm font-black text-slate-950 shadow-lg hover:from-amber-300 hover:to-yellow-300 transition active:scale-95 disabled:opacity-70"
+                >
+                  <Download className="h-4 w-4 shrink-0" />
+                  <span>{isDownloadingCert ? 'جارٍ إعداد الشهادة...' : 'تحميل الشهادة الرسمية (عالية الدقة PNG)'}</span>
+                </button>
+                <button
+                  type="button"
                   onClick={() => window.print()}
-                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-amber-400 px-6 py-3 text-xs sm:text-sm font-black text-slate-950 shadow-lg hover:bg-amber-300 transition"
+                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-emerald-600 border border-emerald-400/40 px-6 py-3 text-xs sm:text-sm font-black text-white shadow-md hover:bg-emerald-500 transition active:scale-95"
                 >
                   <Printer className="h-4 w-4 shrink-0" />
-                  <span>طباعة / حفظ شهادة سفيرة الوطن (PDF)</span>
+                  <span>طباعة الشهادة الرسمية (A4 Landscape)</span>
                 </button>
                 <a
                   href={whatsappShareUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-emerald-600 border border-emerald-400/40 px-6 py-3 text-xs sm:text-sm font-black text-white shadow-md hover:bg-emerald-500 transition"
+                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-teal-800 border border-teal-500/40 px-6 py-3 text-xs sm:text-sm font-black text-white shadow-md hover:bg-teal-700 transition active:scale-95"
                 >
                   <Share2 className="h-4 w-4 shrink-0" />
                   <span>مشاركة الفخر عبر واتساب</span>
@@ -1275,7 +1346,7 @@ export default function NationalJourneyPage() {
                 <button
                   type="button"
                   onClick={handleResetJourney}
-                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-white/25 bg-white/10 px-5 py-3 text-xs sm:text-sm font-bold text-white hover:bg-white/20 transition"
+                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-white/25 bg-white/10 px-5 py-3 text-xs sm:text-sm font-bold text-white hover:bg-white/20 transition active:scale-95"
                 >
                   <RotateCcw className="h-4 w-4 shrink-0" />
                   <span>إعادة الرحلة</span>
@@ -1283,87 +1354,119 @@ export default function NationalJourneyPage() {
               </div>
             </div>
 
+            {/* Print Stylesheet for clean Edge-to-Edge A4 Landscape output */}
+            <style>{`
+              @media print {
+                @page {
+                  size: A4 landscape;
+                  margin: 0;
+                }
+                html, body {
+                  margin: 0 !important;
+                  padding: 0 !important;
+                  background: #fff !important;
+                }
+                #homeland-ambassador-certificate {
+                  width: 100vw !important;
+                  max-width: 100vw !important;
+                  height: 100vh !important;
+                  max-height: 100vh !important;
+                  margin: 0 !important;
+                  padding: 0 !important;
+                  border: none !important;
+                  border-radius: 0 !important;
+                  box-shadow: none !important;
+                  ring: none !important;
+                  display: flex !important;
+                  align-items: center !important;
+                  justify-content: center !important;
+                  page-break-inside: avoid !important;
+                  break-inside: avoid !important;
+                }
+                #homeland-ambassador-certificate > div {
+                  width: 100% !important;
+                  height: 100% !important;
+                }
+                #homeland-ambassador-certificate img {
+                  width: 100% !important;
+                  height: 100% !important;
+                  object-fit: contain !important;
+                }
+              }
+            `}</style>
+
+            {/* OFFICIAL DIPLOMA CERTIFICATE — THE MASTERPIECE */}
             <div
               id="homeland-ambassador-certificate"
-              className="relative overflow-hidden rounded-3xl border-4 sm:border-8 border-double border-emerald-950 bg-gradient-to-b from-[#fdfcf7] via-white to-[#f4faf6] p-4 sm:p-12 shadow-2xl text-center ring-2 ring-amber-400/60 print:border-4 print:p-6 print:shadow-none print:m-0"
+              className="relative mx-auto w-full max-w-4xl overflow-hidden rounded-3xl border-4 sm:border-8 border-amber-400/90 bg-white shadow-2xl ring-4 ring-emerald-950/20 print:max-w-none print:w-full print:rounded-none print:border-0 print:shadow-none print:ring-0 print:m-0"
             >
-              <div className="relative z-10 flex flex-wrap items-start justify-between border-b border-emerald-200/80 pb-4 mb-5 gap-3 text-right">
+              {/* Aspect Ratio Container (3508 / 2481 ~ A4 Landscape) */}
+              <div className="relative w-full aspect-[3508/2481] overflow-hidden select-none bg-[#fdfcf7]">
+                {/* High Resolution Official Certificate Background Image */}
+                <img
+                  src="/saudi-national-certificate-template.webp"
+                  alt="شهادة اجتياز مبادرة وطن في القلب وقيادة في الروح"
+                  className="absolute inset-0 h-full w-full object-contain pointer-events-none"
+                  loading="eager"
+                />
+
+                {/* Student Name Placed Precisely Inside Golden Ribbon Frame */}
+                <div
+                  className="absolute flex items-center justify-center text-center pointer-events-none"
+                  style={{
+                    top: '51.2%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    width: '44%',
+                    height: '5.8%',
+                  }}
+                >
+                  <span
+                    className="font-serif font-black tracking-wide text-[#3f2a0b] drop-shadow-xs line-clamp-1"
+                    style={{
+                      fontSize: 'clamp(14px, 2.7vw, 38px)',
+                      lineHeight: 1.1,
+                      textShadow: '0 1px 2px rgba(255, 255, 255, 0.7)',
+                    }}
+                    dir="rtl"
+                  >
+                    {studentName}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* COMPANION CARD: PLEDGE SUMMARY & SCHOOL CREDENTIALS (SCREEN ONLY) */}
+            <div className="relative mx-auto w-full max-w-4xl overflow-hidden rounded-3xl border border-emerald-200/90 bg-white p-5 sm:p-8 shadow-md space-y-6 print:hidden">
+              <div className="flex flex-wrap items-center justify-between border-b border-emerald-100 pb-4 gap-3 text-right">
                 <div>
-                  <span className="block text-[10px] sm:text-[11px] font-black tracking-wider text-emerald-950">
-                    مبادرة تعليمية إثرائية · منصة English Spark
-                  </span>
-                  <span className="block text-[10px] font-bold text-slate-600">
-                    {NATIONAL_INITIATIVE_META.initiativeTitleAr}
-                  </span>
-                  <span className="block text-[10px] font-black text-emerald-700">
-                    مدرسة متوسطة وثانوية الجرادية
-                  </span>
-                </div>
-
-                <div className="mx-auto hidden md:flex flex-col items-center justify-center">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl shadow-md ring-2 ring-amber-400/70 overflow-hidden bg-emerald-950">
-                    <EnglishSparkLogo className="h-14 w-14" isDark={true} variant="icon" />
+                  <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-0.5 text-xs font-black text-emerald-900 mb-1">
+                    <Crown className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                    <span>سفيرة الوطن · SAUDI HOMELAND AMBASSADOR</span>
                   </div>
+                  <h3 className="text-lg sm:text-xl font-black text-slate-900">
+                    ملخص إنجاز رحلة المجد وتوثيق المبادرة
+                  </h3>
+                  <p className="text-xs text-slate-500 font-semibold mt-0.5">
+                    {IMMORTAL_PLEDGE_STATEMENT.schoolNameAr}
+                  </p>
                 </div>
-
                 <div className="text-left" dir="ltr">
-                  <span className="inline-block rounded-full bg-emerald-50 border border-emerald-300 px-2.5 py-0.5 text-[10px] font-black text-emerald-900">
-                    Journey of Glory · رحلة المجد
-                  </span>
-                  <span className="block text-[10px] font-mono font-bold text-slate-500 mt-1">
+                  <span className="block text-[11px] font-mono font-bold text-slate-500">
                     ID: {verificationCode}
                   </span>
+                  <span className="block text-xs font-bold text-slate-600 mt-0.5">
+                    {new Date().toLocaleDateString('ar-SA')}
+                  </span>
                 </div>
               </div>
 
-              <div className="relative z-10 mb-5">
-                <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-300 px-3.5 py-1 text-[11px] sm:text-xs font-black text-amber-950 mb-2">
-                  <Crown className="h-3.5 w-3.5 text-amber-600 shrink-0" />
-                  <span>SAUDI HOMELAND AMBASSADOR · وسام سفيرة الوطن</span>
-                </div>
-                <h2 className="text-2xl sm:text-4xl font-black text-emerald-950">
-                  شهادة {IMMORTAL_PLEDGE_STATEMENT.certificateTitleAr}
-                </h2>
-                <p
-                  className="text-[11px] sm:text-sm font-black tracking-widest text-amber-700 uppercase mt-1"
-                  dir="ltr"
-                >
-                  {IMMORTAL_PLEDGE_STATEMENT.certificateTitleEn} Certificate
-                </p>
-                <div className="mt-3 flex items-center justify-center gap-2">
-                  <div className="h-0.5 w-14 bg-gradient-to-r from-transparent to-amber-500" />
-                  <Star className="h-4 w-4 text-amber-500 fill-amber-400" />
-                  <div className="h-0.5 w-14 bg-gradient-to-l from-transparent to-amber-500" />
-                </div>
-              </div>
-
-              <div className="relative z-10 my-4 max-w-2xl mx-auto">
-                <p className="text-xs sm:text-sm font-semibold text-slate-600">
-                  تمنح منصة English Spark هذه الشهادة التقديرية إلى:
-                </p>
-                <h3 className="text-2xl sm:text-5xl font-black text-emerald-950 my-3 break-words">
-                  {studentName}
-                </h3>
-                <span className="inline-block rounded-full bg-emerald-50 border border-emerald-200 px-4 py-1 text-xs font-bold text-emerald-900">
-                  {studentGrade}
-                </span>
-
-                <p className="mt-4 text-xs sm:text-sm font-bold text-slate-800 leading-relaxed">
-                  {IMMORTAL_PLEDGE_STATEMENT.certificateReasonAr}
-                </p>
-                <p
-                  className="mt-1 text-[11px] sm:text-xs font-semibold text-emerald-800 leading-relaxed"
-                  dir="ltr"
-                >
-                  {IMMORTAL_PLEDGE_STATEMENT.certificateReasonEn}
-                </p>
-              </div>
-
-              <div className="relative z-10 my-5 grid grid-cols-2 sm:grid-cols-4 gap-2 max-w-3xl mx-auto">
+              {/* 4 Badges */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                 {NATIONAL_JOURNEY_STAGES.map((stg) => (
                   <div
                     key={stg.id}
-                    className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-2.5 text-center"
+                    className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-3 text-center"
                   >
                     <span className="block text-xs font-black text-emerald-950">
                       ✓ {stg.badgeTitleAr}
@@ -1375,11 +1478,12 @@ export default function NationalJourneyPage() {
                 ))}
               </div>
 
+              {/* Student's Pledge */}
               <div
-                className="relative z-10 my-5 max-w-3xl mx-auto rounded-2xl border border-amber-300/80 bg-amber-50/40 p-3.5 sm:p-5 text-left space-y-2"
+                className="rounded-2xl border border-amber-300/80 bg-amber-50/40 p-4 sm:p-5 text-left space-y-2.5"
                 dir="ltr"
               >
-                <div className="text-center mb-2">
+                <div className="text-center mb-1">
                   <span className="text-[11px] font-black uppercase tracking-wider text-amber-900">
                     My Promise, My Future · عهدي لمستقبل وطني
                   </span>
@@ -1395,36 +1499,22 @@ export default function NationalJourneyPage() {
                 </p>
               </div>
 
-              <div className="relative z-10 mt-6 pt-5 border-t border-emerald-200/80 grid grid-cols-1 sm:grid-cols-3 items-center gap-4">
+              {/* Official Supervision Credentials */}
+              <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-600">
                 <div className="text-center sm:text-right">
-                  <span className="block text-[10px] font-bold text-slate-400 uppercase">
-                    إشراف
+                  <span className="block font-bold text-slate-400 text-[10px] uppercase">
+                    مديرة المدرسة
                   </span>
-                  <span className="block text-xs sm:text-sm font-black text-emerald-950 mt-1">
-                    {TEACHER_OFFICIAL_NAME}
+                  <span className="font-black text-slate-900 mt-0.5 block">
+                    {IMMORTAL_PLEDGE_STATEMENT.principalNameAr} ({IMMORTAL_PLEDGE_STATEMENT.principalNameEn})
                   </span>
                 </div>
-
-                <div className="flex flex-col items-center justify-center">
-                  <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-tr from-amber-500 via-yellow-300 to-amber-600 p-1 shadow-lg ring-4 ring-amber-400/30">
-                    <div className="flex h-full w-full flex-col items-center justify-center rounded-full bg-emerald-950 p-1 text-white border-2 border-dashed border-amber-200 text-center">
-                      <Crown className="h-3.5 w-3.5 text-amber-300" />
-                      <span className="text-[8px] font-black text-amber-200">سفيرة الوطن</span>
-                      <span className="text-[7px] font-bold text-emerald-200">HOMELAND</span>
-                      <span className="text-[7px] font-bold text-amber-300">AMBASSADOR</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="text-center sm:text-left" dir="ltr">
-                  <span className="block text-[10px] font-bold text-slate-400 uppercase">
-                    Issued Date & Verification
+                <div className="text-center sm:text-left">
+                  <span className="block font-bold text-slate-400 text-[10px] uppercase">
+                    معلمات قسم اللغة الإنجليزية
                   </span>
-                  <span className="block text-xs font-black text-emerald-950 mt-1">
-                    {new Date().toLocaleDateString('en-GB')}
-                  </span>
-                  <span className="block text-[10px] font-mono font-bold text-slate-500 mt-1">
-                    {verificationCode}
+                  <span className="font-bold text-emerald-900 mt-0.5 block">
+                    {IMMORTAL_PLEDGE_STATEMENT.teachersAr.join(' · ')}
                   </span>
                 </div>
               </div>
