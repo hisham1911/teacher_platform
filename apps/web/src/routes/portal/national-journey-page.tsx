@@ -460,23 +460,47 @@ export default function NationalJourneyPage() {
       const ctx = canvas.getContext('2d');
       if (!ctx) throw new Error('Could not get 2d canvas context');
 
+      // 1. Ensure royal Arabic font "Amiri" is loaded in memory for Canvas
+      try {
+        if ('fonts' in document) {
+          await document.fonts.load("bold 118px 'Amiri'");
+          await document.fonts.ready;
+        }
+      } catch {
+        // Fallback to system fonts
+      }
+
       ctx.drawImage(img, 0, 0, 3508, 2481);
+
+      const cleanName = studentName.trim() || 'طالبة متميزة';
+      const fontStack = "'Amiri', 'Traditional Arabic', 'Scheherazade New', 'Cairo', serif";
+      let fontSize = 118;
+      ctx.font = `bold ${fontSize}px ${fontStack}`;
+
+      // Max allowable width inside the ribbon is 1350px (out of 1542px ribbon width)
+      while (ctx.measureText(cleanName).width > 1350 && fontSize > 60) {
+        fontSize -= 4;
+        ctx.font = `bold ${fontSize}px ${fontStack}`;
+      }
 
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillStyle = '#3f2a0b';
+      ctx.fillStyle = '#3c2505';
 
-      let fontSize = 76;
-      if (studentName.length > 25) fontSize = 62;
-      if (studentName.length > 35) fontSize = 50;
-
-      ctx.font = `bold ${fontSize}px "Traditional Arabic", "Amiri", "Cairo", "Segoe UI", Arial, sans-serif`;
-      ctx.shadowColor = 'rgba(255, 255, 255, 0.7)';
+      // Dual-pass rendering for crisp embossed calligraphy look:
+      // Pass 1: Warm glowing backlight shadow
+      ctx.shadowColor = 'rgba(255, 255, 255, 0.9)';
       ctx.shadowOffsetX = 0;
       ctx.shadowOffsetY = 2;
       ctx.shadowBlur = 4;
+      ctx.fillText(cleanName, 1754, 1270);
 
-      ctx.fillText(studentName.trim() || 'طالبة متميزة', 1754, 1270);
+      // Pass 2: Sharp foreground ink with subtle depth
+      ctx.shadowColor = 'rgba(60, 37, 5, 0.25)';
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 1;
+      ctx.shadowBlur = 1;
+      ctx.fillText(cleanName, 1754, 1270);
 
       canvas.toBlob((blob) => {
         if (!blob) {
@@ -1422,11 +1446,12 @@ export default function NationalJourneyPage() {
                   }}
                 >
                   <span
-                    className="font-serif font-black tracking-wide text-[#3f2a0b] drop-shadow-xs line-clamp-1"
+                    className="font-bold tracking-wide text-[#3c2505] drop-shadow-xs line-clamp-1"
                     style={{
-                      fontSize: 'clamp(14px, 2.7vw, 38px)',
+                      fontFamily: "'Amiri', 'Traditional Arabic', serif",
+                      fontSize: 'clamp(16px, 3.3vw, 44px)',
                       lineHeight: 1.1,
-                      textShadow: '0 1px 2px rgba(255, 255, 255, 0.7)',
+                      textShadow: '0 1px 2px rgba(255, 255, 255, 0.75)',
                     }}
                     dir="rtl"
                   >
