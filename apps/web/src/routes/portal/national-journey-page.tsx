@@ -463,7 +463,7 @@ export default function NationalJourneyPage() {
       // 1. Ensure royal Arabic font "Amiri" is loaded in memory for Canvas
       try {
         if ('fonts' in document) {
-          await document.fonts.load("bold 118px 'Amiri'");
+          await document.fonts.load("bold 98px 'Amiri'");
           await document.fonts.ready;
         }
       } catch {
@@ -474,12 +474,13 @@ export default function NationalJourneyPage() {
 
       const cleanName = studentName.trim() || 'طالبة متميزة';
       const fontStack = "'Amiri', 'Traditional Arabic', 'Scheherazade New', 'Cairo', serif";
-      let fontSize = 118;
+      let fontSize = 98;
       ctx.font = `bold ${fontSize}px ${fontStack}`;
 
-      // Max allowable width inside the ribbon is 1350px (out of 1542px ribbon width)
-      while (ctx.measureText(cleanName).width > 1350 && fontSize > 60) {
-        fontSize -= 4;
+      // Max allowable width inside the ribbon is 1320px (out of 1542px ribbon width)
+      // leaving breathing room so tall ascenders (Lam/Alif) and descenders never touch borders
+      while (ctx.measureText(cleanName).width > 1320 && fontSize > 50) {
+        fontSize -= 2;
         ctx.font = `bold ${fontSize}px ${fontStack}`;
       }
 
@@ -493,14 +494,14 @@ export default function NationalJourneyPage() {
       ctx.shadowOffsetX = 0;
       ctx.shadowOffsetY = 2;
       ctx.shadowBlur = 4;
-      ctx.fillText(cleanName, 1754, 1270);
+      ctx.fillText(cleanName, 1754, 1271);
 
       // Pass 2: Sharp foreground ink with subtle depth
       ctx.shadowColor = 'rgba(60, 37, 5, 0.25)';
       ctx.shadowOffsetX = 0;
       ctx.shadowOffsetY = 1;
       ctx.shadowBlur = 1;
-      ctx.fillText(cleanName, 1754, 1270);
+      ctx.fillText(cleanName, 1754, 1271);
 
       canvas.toBlob((blob) => {
         if (!blob) {
@@ -1449,8 +1450,8 @@ export default function NationalJourneyPage() {
                     className="font-bold tracking-wide text-[#3c2505] drop-shadow-xs line-clamp-1"
                     style={{
                       fontFamily: "'Amiri', 'Traditional Arabic', serif",
-                      fontSize: 'clamp(16px, 3.3vw, 44px)',
-                      lineHeight: 1.1,
+                      fontSize: 'clamp(14px, 2.7vw, 36px)',
+                      lineHeight: 1.15,
                       textShadow: '0 1px 2px rgba(255, 255, 255, 0.75)',
                     }}
                     dir="rtl"
